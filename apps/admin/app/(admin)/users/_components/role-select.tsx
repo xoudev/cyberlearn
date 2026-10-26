@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useTransition } from "react";
 import type { UserRole } from "@cyberlearn/db";
 import { Select } from "@cyberlearn/ui";
+import { notifyResult } from "@/lib/notify";
 import { ROLE_LABEL, isUserRole, roleChangeQuestion, roleTone } from "@/lib/roles";
 import { toneColor } from "../../_components/admin-ui";
 import { updateUserRoleAction } from "../../_actions/user-actions";
@@ -23,8 +24,9 @@ import { useAdminConfirmation } from "../../_components/admin-confirmation";
  * Picking a role asks first. The select sits in a sorted, searchable table
  * where the row under the pointer is not always the row one meant, and the
  * change it makes is a privilege: the question names the account and the role
- * so that the click is a decision. A refusal from the server (oneself, the last
- * administrator) is shown under the control, which stays on the current role.
+ * so that the click is a decision. What the server answers is said in a toast:
+ * the new role, or its refusal (oneself, the last administrator), the control
+ * then staying on the current role.
  */
 
 // Least privileged first: a select reads as a ladder, and the ladder should
@@ -43,16 +45,17 @@ export function RoleSelect({
   currentRole: string;
 }): React.ReactElement {
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const confirm = useAdminConfirmation();
 
   async function changeRole(next: string): Promise<void> {
     if (!isUserRole(next) || next === currentRole) return;
     if (!(await confirm(roleChangeQuestion(handle, currentRole, next)))) return;
-    setError(null);
     startTransition(async () => {
       const result = await updateUserRoleAction(userId, next);
-      if (!result.ok) setError(result.error ?? "Le changement de rôle a échoué.");
+      notifyResult(result, {
+        success: `${handle} a désormais le rôle ${ROLE_LABEL[next]}.`,
+        error: "Le changement de rôle a échoué.",
+      });
     });
   }
 
@@ -79,21 +82,6 @@ export function RoleSelect({
           void changeRole(next);
         }}
       />
-      {error !== null && (
-        <span
-          role="alert"
-          className="mono"
-          style={{
-            maxWidth: 260,
-            whiteSpace: "normal",
-            fontSize: 10.5,
-            lineHeight: 1.45,
-            color: toneColor("danger"),
-          }}
-        >
-          {error}
-        </span>
-      )}
     </span>
   );
 }

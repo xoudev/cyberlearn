@@ -10,7 +10,22 @@ import {
   type ServerGridFacet,
 } from "../../_components/data-grid";
 import type { ContentStatus } from "../../_components/content-status";
+import { notifyResult } from "@/lib/notify";
 import { bulkUpdateLessonStatusAction } from "../_actions/lesson-actions";
+
+/** What a bulk change did, in a toast: "3 leçons publiées". */
+function bulkNotice(count: number, status: ContentStatus): string {
+  const s = count > 1 ? "s" : "";
+  const what = `${String(count)} leçon${s}`;
+  switch (status) {
+    case "PUBLISHED":
+      return `${what} publiée${s}.`;
+    case "DRAFT":
+      return `${what} remise${s} en brouillon.`;
+    case "ARCHIVED":
+      return `${what} archivée${s}.`;
+  }
+}
 
 /**
  * A lesson folder's grid: the console's DataGrid, server-driven, with a box
@@ -37,26 +52,25 @@ export function LessonsGrid({
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const offPage = [...selected].filter((id) => !rows.some((row) => row.id === id)).length;
 
   function clear(): void {
     setSelected(new Set());
     setConfirmArchive(false);
-    setBulkError(null);
   }
 
   function runBulk(next: ContentStatus): void {
     const ids = [...selected];
     if (ids.length === 0) return;
     setConfirmArchive(false);
-    setBulkError(null);
     startTransition(async () => {
       const res = await bulkUpdateLessonStatusAction(ids, next);
-      if (res.error !== undefined) {
-        setBulkError(res.error);
-      } else {
+      const ok = notifyResult(res, {
+        success: bulkNotice(res.count ?? ids.length, next),
+        error: "Les statuts n'ont pas pu être changés.",
+      });
+      if (ok) {
         setSelected(new Set());
         router.refresh();
       }
@@ -148,11 +162,6 @@ export function LessonsGrid({
         </div>
 
         {isPending && <span aria-live="polite">En cours…</span>}
-        {bulkError !== null && (
-          <span className="a-bulk-warning" role="alert">
-            {bulkError}
-          </span>
-        )}
 
         <button type="button" className="a-bulk-clear" onClick={clear}>
           Tout désélectionner

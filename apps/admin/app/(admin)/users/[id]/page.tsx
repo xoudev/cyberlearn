@@ -6,8 +6,11 @@ import { Card, GhostLink, KpiCard, Monogram, PageHeader, Tag } from "../../_comp
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
 import {
   auditLogRepository,
+  badgeRepository,
   banRepository,
   certificateRepository,
+  contentReportRepository,
+  isTicketOpen,
   lessonProgressRepository,
   moderationRepository,
   noteReportRepository,
@@ -16,17 +19,22 @@ import {
   quizRepository,
   ticketRepository,
   userRepository,
+  xpLedgerRepository,
 } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { isUploadedAvatar } from "@cyberlearn/types";
 import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
+import { consoleDateFormat } from "@/lib/console-time";
+import { RECENT_LEDGER_ROWS } from "@/lib/gamification-corrections";
 import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { avatarLabel } from "@/lib/user-record";
 import { AuditPanel } from "./_components/audit-panel";
+import { authorContentHref } from "./_components/author-content";
 import { BanForm } from "./_components/ban-form";
 import { CertificatesPanel } from "./_components/certificates-panel";
 import { DeleteUserForm } from "./_components/delete-user-form";
+import { GamificationPanel } from "./_components/gamification-panel";
 import { MfaResetForm } from "./_components/mfa-reset-form";
 import { ModerationPanel } from "./_components/moderation-panel";
 import { PreferencesPanel } from "./_components/preferences-panel";
@@ -35,6 +43,8 @@ import { ProgressPanel } from "./_components/progress-panel";
 import { ResetProgressForm } from "./_components/reset-progress-form";
 import { SignInActions } from "./_components/sign-in-actions";
 import { TicketsPanel } from "./_components/tickets-panel";
+import { describeBanAppeal } from "../../tickets/appealed-ban";
+import { USER_CARDS, USER_CRUMBS, USER_DETAIL_KPI_LABELS } from "../_components/columns";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -42,7 +52,7 @@ export const metadata: Metadata = { title: "Compte" };
 export const dynamic = "force-dynamic";
 
 function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(d);
+  return consoleDateFormat({ dateStyle: "long", timeStyle: "short" }).format(d);
 }
 
 /** How Supabase names a sign-in method, and how support says it. */
@@ -98,6 +108,8 @@ export default async function AdminUserPage({
     moderationTotal,
     noteReports,
     noteReportTotal,
+    contentReports,
+    contentGestures,
     auditRows,
     paths,
     exams,
@@ -105,6 +117,9 @@ export default async function AdminUserPage({
     lessonCounts,
     certificates,
     placementResetAt,
+    ledger,
+    heldBadges,
+    activeBadges,
   ] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
@@ -115,6 +130,11 @@ export default async function AdminUserPage({
     moderationRepository.countForUser(user.id),
     noteReportRepository.againstAuthor(user.id, RECENT_ROWS),
     noteReportRepository.countAgainstAuthor(user.id),
+    // What the contents it published drew, and what the console did to them:
+    // the reports are filed against a content and the gestures logged against
+    // it too, so neither is among the lines about the account itself.
+    contentReportRepository.againstAuthor(user.id, RECENT_ROWS),
+    auditLogRepository.contentGesturesOnAuthor(user.id, RECENT_ROWS),
     auditLogRepository.recentForUser(user.id, RECENT_ROWS),
     pathRepository.findProgressForConsole(user.id),
     quizRepository.latestAttemptsForConsole(user.id),
@@ -123,22 +143,36 @@ export default async function AdminUserPage({
     certificateRepository.findAllForConsole(user.id),
     // Only an account without a result can have been asked to sit it again.
     user.placementResult === null ? placementRepository.lastResetAt(user.id) : null,
+    xpLedgerRepository.recentForUser(user.id, RECENT_LEDGER_ROWS),
+    badgeRepository.heldForConsole(user.id),
+    badgeRepository.findAllActive(),
   ]);
 
   const stamp = (date: Date): string =>
-    new Intl.DateTimeFormat("fr-FR", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "Europe/Paris",
-    }).format(date);
+    consoleDateFormat({ dateStyle: "short", timeStyle: "short" }).format(date);
 
+  // The appeal's ticket is among the account's own: it was opened by the person
+  // the ban is on. Its status says whether the appeal still waits for an answer.
+  const appealTicketId = active?.appealTicketId ?? null;
+  const appealTicket =
+    appealTicketId === null ? undefined : tickets.find((ticket) => ticket.id === appealTicketId);
   const activeBan = active
     ? {
         reason: active.reason,
         endsLabel: banTimeLeft(active.expiresAt),
         issuedOn: stamp(active.createdAt),
         issuedBy: active.issuedBy?.displayName ?? null,
-        appealTicketId: active.appealTicketId,
+        appeal:
+          appealTicketId === null
+            ? null
+            : {
+                ticketId: appealTicketId,
+                ...describeBanAppeal(
+                  appealTicket === undefined
+                    ? null
+                    : { status: appealTicket.status, open: isTicketOpen(appealTicket.status) },
+                ),
+              },
       }
     : null;
 
@@ -162,7 +196,7 @@ export default async function AdminUserPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Comptes" }, { label: "Utilisateurs", href: "/users" }]}
+        crumbs={USER_CRUMBS}
         title={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
             <Monogram text={handle.replace("@", "")} size={32} tone={roleTone(user.role)} />
@@ -174,21 +208,41 @@ export default async function AdminUserPage({
           <>
             {/* What was done to the account, from the console. */}
             <GhostLink href={`/audit?target=${user.id}`}>Journal d&apos;audit</GhostLink>
+            {/* The file its holder downloads from the site, for a request made
+                to the team. A plain link: the file comes from a route, not a
+                page the router could render. No `download` attribute, so a
+                refusal (too many exports, an account gone) opens as a page
+                that says why rather than as a failed download. */}
+            <a href={`/users/${user.id}/export`} className="a-btn a-btn--ghost">
+              Exporter les données (RGPD)
+            </a>
             <GhostLink href="/users">Retour aux comptes</GhostLink>
           </>
         }
       />
 
       <div className="a-kpi-grid">
-        <KpiCard label="Niveau" value={String(user.level)} tone="accent" />
-        <KpiCard label="XP" value={user.xpTotal.toLocaleString("fr-FR")} tone="info" />
-        <KpiCard label="Série" value={`${String(user.streakDays)} j`} tone="warning" />
-        <KpiCard label="Badges" value={String(user._count.badges)} tone="purple" />
+        <KpiCard label={USER_DETAIL_KPI_LABELS[0]} value={String(user.level)} tone="accent" />
+        <KpiCard
+          label={USER_DETAIL_KPI_LABELS[1]}
+          value={user.xpTotal.toLocaleString("fr-FR")}
+          tone="info"
+        />
+        <KpiCard
+          label={USER_DETAIL_KPI_LABELS[2]}
+          value={`${String(user.streakDays)} j`}
+          tone="warning"
+        />
+        <KpiCard
+          label={USER_DETAIL_KPI_LABELS[3]}
+          value={String(user._count.badges)}
+          tone="purple"
+        />
       </div>
 
       <div className="a-split">
         <div className="a-stack" style={{ alignContent: "start" }}>
-          <Card title="Compte" pad>
+          <Card title={USER_CARDS.account} pad>
             <div className="a-defrow">
               {/* Read-only here. Changing a role is something you do while
                   scanning a list of people, which is where that control lives. */}
@@ -229,7 +283,8 @@ export default async function AdminUserPage({
               userId={user.id}
               email={user.email}
               displayName={user.displayName || handle}
-              factorCount={signIn.verifiedTotp + signIn.pendingTotp}
+              verifiedCount={signIn.verifiedTotp}
+              abandonedCount={signIn.pendingTotp}
               refusal={mfaResetRefusal({
                 actorId: viewer.id,
                 targetId: user.id,
@@ -261,6 +316,16 @@ export default async function AdminUserPage({
             now={now}
           />
 
+          {/* The four figures at the top of the page, corrected by hand. */}
+          <GamificationPanel
+            userId={user.id}
+            handle={handle}
+            standing={user}
+            ledger={ledger}
+            held={heldBadges}
+            activeBadges={activeBadges}
+          />
+
           <CertificatesPanel certificates={certificates} />
         </div>
 
@@ -274,6 +339,9 @@ export default async function AdminUserPage({
             eventTotal={moderationTotal}
             noteReports={noteReports}
             noteReportTotal={noteReportTotal}
+            contentReports={contentReports}
+            contentGestures={contentGestures}
+            contentHref={authorContentHref(user.id, contentReports.rows, contentGestures.rows)}
           />
 
           <AuditPanel userId={user.id} rows={auditRows} />
@@ -363,7 +431,7 @@ function SignInCard({
 }): React.ReactElement {
   if (state.status === "missing") {
     return (
-      <Card title="Connexion" pad>
+      <Card title={USER_CARDS.signIn} pad>
         <p className="a-form-notice">
           Aucun identifiant de connexion n&apos;est rattaché à ce compte : il n&apos;a pas été créé
           par l&apos;inscription. Il ne peut pas se connecter, et aucun e-mail ne peut l&apos;y
@@ -374,7 +442,7 @@ function SignInCard({
   }
   if (state.status === "unavailable") {
     return (
-      <Card title="Connexion" pad>
+      <Card title={USER_CARDS.signIn} pad>
         <p className="a-form-error">
           Supabase n&apos;a pas répondu : l&apos;état de connexion de ce compte n&apos;a pas pu être
           lu. Recharge la page dans un instant.
@@ -385,7 +453,7 @@ function SignInCard({
 
   const confirmed = state.emailConfirmedAt !== null;
   return (
-    <Card title="Connexion" pad>
+    <Card title={USER_CARDS.signIn} pad>
       <div className="a-defrow">
         <span className="a-defrow-label">Adresse e-mail</span>
         {state.emailConfirmedAt !== null ? (

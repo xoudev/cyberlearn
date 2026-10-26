@@ -7,6 +7,8 @@
  * not a link.
  */
 
+import type { FriendshipView } from "@cyberlearn/lib/social/friendship";
+
 export interface RosterPerson {
   id: string;
   username: string | null;
@@ -21,6 +23,12 @@ export interface ClassmateIdentity {
   /** Whether the row says who it is. "Anonyme" otherwise. */
   visible: boolean;
   isFriend: boolean;
+  /**
+   * Where the reader stands with this classmate, for the row's "Ajouter":
+   * null on the reader's own row and on an "Anonyme" one, where it would say
+   * which classmate already asked, or was asked.
+   */
+  friendship: FriendshipView | null;
 }
 
 /** displayName can be an empty string, so || falls through it to the handle. */
@@ -37,16 +45,25 @@ function nameOf(person: RosterPerson): string {
 export function classmateIdentity(
   person: RosterPerson,
   viewerId: string,
-  friendIds: ReadonlySet<string>,
+  // The reader's relations with the classmates named, from
+  // friendshipRepository.viewsOf. A classmate missing from it is a stranger.
+  relations: ReadonlyMap<string, FriendshipView>,
 ): ClassmateIdentity {
   const self = person.id === viewerId;
   const visible = self || person.preferences?.publicProfile !== false;
+  const friendship = !self && visible ? (relations.get(person.id) ?? "none") : null;
   return {
     name: visible ? nameOf(person) : "Anonyme",
     username: visible ? person.username : null,
     visible,
-    isFriend: !self && visible && friendIds.has(person.id),
+    isFriend: friendship === "friends",
+    friendship,
   };
+}
+
+/** Whether a roster person's row would name them for the class: whose relation is worth reading. */
+export function namedToClass(person: RosterPerson, viewerId: string): boolean {
+  return person.id !== viewerId && person.preferences?.publicProfile !== false;
 }
 
 /**

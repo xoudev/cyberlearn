@@ -43,6 +43,8 @@ export default function ContactPage(): React.ReactElement {
     setTheme(known);
     setLoadedAt(String(Date.now()));
   }, []);
+  // What the theme control starts from: what a refused send held, else the link's.
+  const shownTheme = state.values?.theme ?? initialTheme;
 
   if (state.success)
     return (
@@ -74,6 +76,7 @@ export default function ContactPage(): React.ReactElement {
           type="email"
           required
           autoComplete="email"
+          defaultValue={state.values?.email ?? ""}
           placeholder="toi@exemple.fr"
           aria-invalid={Boolean(state.fieldErrors?.email)}
           aria-describedby={state.fieldErrors?.email ? "contact-email-error" : undefined}
@@ -84,16 +87,16 @@ export default function ContactPage(): React.ReactElement {
         <label htmlFor="contact-theme">Thème</label>
         <Select
           id="contact-theme"
-          key={initialTheme || "theme"}
+          key={shownTheme || "theme"}
           name="theme"
           required
-          defaultValue={initialTheme}
+          defaultValue={shownTheme}
           placeholder="Choisir un thème…"
           options={THEMES}
           onChange={setTheme}
           panelClassName="contact-options"
         />
-        {theme === "ESTABLISHMENT_REQUEST" && (
+        {(theme || shownTheme) === "ESTABLISHMENT_REQUEST" && (
           <aside className="contact-checklist">
             <h2>À mettre dans ton message</h2>
             <ul>
@@ -115,7 +118,10 @@ export default function ContactPage(): React.ReactElement {
           required
           minLength={5}
           maxLength={200}
-          defaultValue={incidentRef ? `Incident ${incidentRef}` : (initialSubject ?? undefined)}
+          defaultValue={
+            state.values?.subject ??
+            (incidentRef ? `Incident ${incidentRef}` : (initialSubject ?? undefined))
+          }
           placeholder="Résume ta demande en quelques mots"
           aria-invalid={Boolean(state.fieldErrors?.subject)}
           aria-describedby={state.fieldErrors?.subject ? "contact-subject-error" : undefined}
@@ -131,6 +137,7 @@ export default function ContactPage(): React.ReactElement {
           minLength={20}
           maxLength={5000}
           rows={7}
+          defaultValue={state.values?.message ?? ""}
           placeholder="Décris ta demande en détail…"
           aria-invalid={Boolean(state.fieldErrors?.message)}
           aria-describedby={state.fieldErrors?.message ? "contact-message-error" : undefined}

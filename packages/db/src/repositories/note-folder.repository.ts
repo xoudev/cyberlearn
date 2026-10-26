@@ -68,4 +68,12 @@ export const noteFolderRepository = {
     });
     return res.count > 0;
   },
+
+  /** Every folder the account made, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.noteFolder.findMany({
+      where: { userId },
+      select: { name: true, color: true, createdAt: true },
+    });
+  },
 };

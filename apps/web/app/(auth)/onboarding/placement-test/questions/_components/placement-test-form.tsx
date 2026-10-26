@@ -2,7 +2,7 @@
 
 // Local answer selection and the server action result update this form.
 import React, { useActionState, useState } from "react";
-import Link from "next/link";
+import { skipOnboarding } from "../../../_actions/finalize-onboarding";
 import { submitPlacementTest, type PlacementActionState } from "../_actions/submit-placement";
 import {
   PLACEMENT_CATEGORY_LABEL,
@@ -112,9 +112,15 @@ export function PlacementTestForm({
           >
             {isPending ? "Validation en cours…" : "Valider le test"}
           </button>
-          <Link className="ob-shell__link" href="/dashboard">
-            Passer et aller au tableau de bord
-          </Link>
+          <button
+            className="ob-shell__link"
+            type="submit"
+            formAction={skipOnboarding}
+            formNoValidate
+            disabled={isPending}
+          >
+            {isPending ? "Enregistrement…" : "Passer · aller au tableau de bord"}
+          </button>
         </div>
       </form>
     </div>

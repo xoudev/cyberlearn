@@ -1,11 +1,14 @@
 "use client";
 
-import { ACCENT, BORDER, MONO, MUTED, RED } from "@cyberlearn/ui";
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { parsePhotoOsint } from "@cyberlearn/types";
 import { distanceKm, distanceLabel, parseCoordinates, type Point } from "@/lib/osint/geo";
 import { type MetadataRow, readMetadata } from "@/lib/osint/metadata";
+import { labStack } from "./lab-stack";
 import { OsintMap } from "./osint-map";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
+import "./photo-osint.css";
 
 /**
  * <PhotoOsint>: a photo, its real metadata read from its bytes (exifr, in the
@@ -46,7 +49,7 @@ function MetadataTable({ rows }: { rows: readonly MetadataRow[] }): React.ReactE
     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.tag} style={{ borderTop: `1px solid ${BORDER}` }}>
+          <tr key={row.tag} style={{ borderTop: "1px solid var(--color-border-default)" }}>
             <th
               scope="row"
               style={{
@@ -57,7 +60,14 @@ function MetadataTable({ rows }: { rows: readonly MetadataRow[] }): React.ReactE
               }}
             >
               {row.label}
-              <span style={{ display: "block", fontFamily: MONO, fontSize: 11, color: MUTED }}>
+              <span
+                style={{
+                  display: "block",
+                  fontFamily: MONO,
+                  fontSize: LAB_LABEL_SIZE,
+                  color: "var(--color-text-muted)",
+                }}
+              >
                 {row.tag}
               </span>
             </th>
@@ -165,16 +175,14 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: `1px solid ${BORDER}`,
+          borderBottom: "1px solid var(--color-border-default)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          OSINT · PHOTO
-        </span>
+        <span style={labKicker(ACCENT)}>OSINT · PHOTO</span>
         {exercise.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {exercise.title}
@@ -187,104 +195,123 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
           {exercise.task}
         </p>
 
-        <figure style={{ margin: 0, display: "grid", gap: 6 }}>
-          {/* A static picture of public/osint, read byte for byte below: next/image would re-encode it. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={exercise.src}
-            alt={exercise.alt}
-            style={{
-              width: "100%",
-              height: "auto",
-              display: "block",
-              border: `1px solid ${BORDER}`,
-            }}
-          />
-          {exercise.caption ? (
-            <figcaption style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED, marginRight: 8 }}>
-                LÉGENDE QUI CIRCULE
-              </span>
-              « {exercise.caption} »
-            </figcaption>
-          ) : null}
-        </figure>
+        {/* The photo and what it says on one side, the map on the other, once
+            the block is wide enough for both (photo-osint.css). */}
+        <div className="photo-osint__panes">
+          <div style={labStack(14)}>
+            <figure style={{ margin: 0, display: "grid", gap: 6 }}>
+              {/* A static picture of public/osint, read byte for byte below: next/image would re-encode it. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={exercise.src}
+                alt={exercise.alt}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  border: "1px solid var(--color-border-default)",
+                }}
+              />
+              {exercise.caption ? (
+                <figcaption style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: LAB_LABEL_SIZE,
+                      color: "var(--color-text-muted)",
+                      marginRight: 8,
+                    }}
+                  >
+                    LÉGENDE QUI CIRCULE
+                  </span>
+                  « {exercise.caption} »
+                </figcaption>
+              ) : null}
+            </figure>
 
-        <div style={{ display: "grid", gap: 8 }}>
-          {rows === null ? (
-            <button
-              type="button"
-              onClick={() => void read()}
-              disabled={busy}
-              className="btn btn--accent btn--sm"
-              style={{ justifySelf: "start" }}
-            >
-              {busy ? "Lecture…" : "Lire les métadonnées (EXIF)"}
-            </button>
-          ) : (
-            <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>
-                MÉTADONNÉES DU FICHIER
-              </span>
-              <MetadataTable rows={rows} />
+            <div style={{ display: "grid", gap: 8 }}>
+              {rows === null ? (
+                <button
+                  type="button"
+                  onClick={() => void read()}
+                  disabled={busy}
+                  className="btn btn--accent btn--sm"
+                  style={{ justifySelf: "start" }}
+                >
+                  {busy ? "Lecture…" : "Lire les métadonnées (EXIF)"}
+                </button>
+              ) : (
+                <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: LAB_LABEL_SIZE,
+                      color: "var(--color-text-muted)",
+                    }}
+                  >
+                    MÉTADONNÉES DU FICHIER
+                  </span>
+                  <MetadataTable rows={rows} />
+                </div>
+              )}
+              {readError ? (
+                <p style={{ margin: 0, color: RED, fontSize: 14 }}>
+                  La photo n&apos;a pas pu être lue. Recharge la page et réessaie.
+                </p>
+              ) : null}
             </div>
-          )}
-          {readError ? (
-            <p style={{ margin: 0, color: RED, fontSize: 14 }}>
-              La photo n&apos;a pas pu être lue. Recharge la page et réessaie.
-            </p>
-          ) : null}
-        </div>
+          </div>
 
-        <div style={{ display: "grid", gap: 8 }}>
-          <OsintMap guess={guess} truth={found ? answer : null} onPick={place} />
-          <form onSubmit={placeTyped} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input
-              value={typed}
-              onChange={(e) => {
-                setTyped(e.target.value);
-              }}
-              disabled={found}
-              aria-label="Coordonnées du point"
-              aria-invalid={typedWrong}
-              placeholder={`45.76, 4.83  ou  45° 45' 44" N 4° 49' 37" E`}
-              spellCheck={false}
-              style={{
-                flex: "1 1 220px",
-                minWidth: 0,
-                padding: "8px 10px",
-                background: "var(--color-bg-elevated)",
-                border: `1px solid ${typedWrong ? RED : BORDER}`,
-                color: "var(--color-text-primary)",
-                fontFamily: MONO,
-                fontSize: 13,
-              }}
-            />
-            <button type="submit" disabled={found} className="btn btn--ghost btn--sm">
-              Placer
-            </button>
-          </form>
-          {typedWrong ? (
-            <p style={{ margin: 0, color: RED, fontSize: 13 }}>
-              Coordonnées illisibles : latitude puis longitude, en décimal ou en degrés, minutes,
-              secondes.
-            </p>
-          ) : null}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontFamily: MONO, fontSize: 12, color: MUTED }}>
-              {guess === null
-                ? "Pas encore de point : clique sur la carte."
-                : `Ton point : ${guess.latitude.toFixed(4)}, ${guess.longitude.toFixed(4)}`}
-            </span>
-            <button
-              type="button"
-              onClick={check}
-              disabled={guess === null || found}
-              className="btn btn--accent btn--sm"
-              style={{ marginLeft: "auto" }}
-            >
-              Valider ce lieu
-            </button>
+          <div style={labStack(8)}>
+            <OsintMap guess={guess} truth={found ? answer : null} onPick={place} />
+            <form onSubmit={placeTyped} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                value={typed}
+                onChange={(e) => {
+                  setTyped(e.target.value);
+                }}
+                disabled={found}
+                aria-label="Coordonnées du point"
+                aria-invalid={typedWrong}
+                placeholder={`45.76, 4.83  ou  45° 45' 44" N 4° 49' 37" E`}
+                spellCheck={false}
+                style={{
+                  flex: "1 1 220px",
+                  minWidth: 0,
+                  padding: "8px 10px",
+                  background: "var(--color-bg-elevated)",
+                  border: `1px solid ${typedWrong ? RED : "var(--color-border-default)"}`,
+                  color: "var(--color-text-primary)",
+                  fontFamily: MONO,
+                  fontSize: 13,
+                }}
+              />
+              <button type="submit" disabled={found} className="btn btn--ghost btn--sm">
+                Placer
+              </button>
+            </form>
+            {typedWrong ? (
+              <p style={{ margin: 0, color: RED, fontSize: 13 }}>
+                Coordonnées illisibles : latitude puis longitude, en décimal ou en degrés, minutes,
+                secondes.
+              </p>
+            ) : null}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-muted)" }}>
+                {guess === null
+                  ? "Pas encore de point : clique sur la carte."
+                  : `Ton point : ${guess.latitude.toFixed(4)}, ${guess.longitude.toFixed(4)}`}
+              </span>
+              <button
+                type="button"
+                onClick={check}
+                disabled={guess === null || found}
+                className="btn btn--accent btn--sm"
+                style={{ marginLeft: "auto" }}
+              >
+                Valider ce lieu
+              </button>
+            </div>
           </div>
         </div>
 
@@ -320,7 +347,12 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
 
         {found ? (
           <div
-            style={{ display: "grid", gap: 8, borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}
+            style={{
+              display: "grid",
+              gap: 8,
+              borderTop: "1px solid var(--color-border-default)",
+              paddingTop: 12,
+            }}
           >
             {cleaned === null ? (
               <>
@@ -339,7 +371,13 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
               </>
             ) : (
               <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>
+                <span
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: LAB_LABEL_SIZE,
+                    color: "var(--color-text-muted)",
+                  }}
+                >
                   APRÈS NETTOYAGE
                 </span>
                 <MetadataTable rows={cleaned} />

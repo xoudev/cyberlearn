@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
+import type { WrappedPayload } from "@cyberlearn/lib/gamification/wrapped";
 import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
 import type { DuelBoard, DuelView } from "@/lib/duels";
 import type {
@@ -9,6 +10,8 @@ import type {
   TournamentView,
 } from "@/lib/tournaments";
 import type { MockQuestion, MockResult } from "@cyberlearn/lib/exam/mock";
+import type { ContentReportSurfaceKey } from "@cyberlearn/lib/moderation/report-reasons";
+import type { AppealView } from "@cyberlearn/lib/tickets/appeal";
 import type { MockOverview } from "@/lib/mock-exam";
 import type {
   ChallengeDetail,
@@ -22,7 +25,13 @@ import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
-import type { FriendLists, PublicProfile } from "@/lib/friends";
+import {
+  readFriendsActivity,
+  type FriendLists,
+  type FriendsActivity,
+  type FriendshipView,
+  type PublicProfile,
+} from "@/lib/friends";
 import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
 import { readCompletionReply, type CompletionReply } from "@/lib/lesson-completion";
 import type { QaQuestion } from "@/lib/lesson-qa";
@@ -31,28 +40,36 @@ import { readLessonLocks, type LessonLock } from "@/lib/lesson-locks";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
 import { readPathCovers, type PathCover } from "@/lib/path-covers";
+import {
+  moduleReviewPath,
+  readRecallAnswer,
+  readRecallReply,
+  REVIEW_CARDS_PATH,
+  type ModuleAnswer,
+  type RecallAnswerReply,
+  type RecallView,
+} from "@/lib/rappel";
+import { firstNonEmpty } from "@/lib/public-env";
 import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
 // The one copy of the site's address in the app, without a trailing slash so
 // every "<SITE_URL>/path" holds a single one.
-export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr").replace(
-  /\/+$/u,
-  "",
-);
+export const SITE_URL = firstNonEmpty(
+  process.env.EXPO_PUBLIC_SITE_URL,
+  "https://cyberlearn.fr",
+).replace(/\/+$/u, "");
 
 function requestWithToken(path: string, token: string, init?: RequestInit): Promise<Response> {
   // A multipart body sets its own Content-Type, boundary included.
   const json = !(init?.body instanceof FormData);
-  return fetch(`${SITE_URL}${path}`, {
-    ...init,
-    headers: {
-      ...(json ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers ?? {}),
-    },
-  });
+  // Headers, not a spread: a caller's headers may be a Headers or a list of
+  // pairs, which spread into an object as nothing. Theirs win over ours.
+  const headers = new Headers(init?.headers);
+  if (json && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(`${SITE_URL}${path}`, { ...init, headers });
 }
 
 /** Authenticated fetch that refreshes and retries once after an expired JWT. */
@@ -146,6 +163,21 @@ export async function appealBanApi(message: string): Promise<{ ok: boolean; erro
 }
 
 /**
+ * Where the appeal stands and what the team answered: the site's /banned, whose
+ * ticket page the ban gate closes to the appeal's own author. Null when no
+ * appeal was filed.
+ */
+export async function fetchBanAppealApi(): Promise<AppealView | null> {
+  const res = await authedFetch("/api/mobile/ban/appeal");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/ban/appeal/route.ts).
+  const body = (await res.json()) as
+    | { ok: true; appeal: AppealView | null }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.appeal;
+}
+
+/**
  * Sets a new password without the old one: accepted only in a session opened
  * by the emailed recovery code less than 15 minutes ago. `expired` says the
  * window has closed and the code has to be asked for again.
@@ -192,6 +224,7 @@ export async function saveOnboardingProfileApi(input: {
       method: "POST",
       body: JSON.stringify(input),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/onboarding/profile/route.ts).
     return (await res.json()) as OnboardingProfileReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -248,6 +281,7 @@ export async function saveOnboardingGoalsApi(answers: {
 /** The caller's test: the questions without their answers, or why there is none. */
 export async function fetchPlacementApi(): Promise<PlacementTest> {
   const res = await authedFetch("/api/mobile/placement");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/placement/route.ts).
   const body = (await res.json()) as ({ ok: true } & PlacementTest) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   if (body.status === "open") {
@@ -273,6 +307,7 @@ export async function submitPlacementApi(
       method: "POST",
       body: JSON.stringify({ answers: placementAnswersFrom(selected) }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/placement/submit/route.ts).
     return (await res.json()) as PlacementSubmitReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -296,6 +331,7 @@ export async function claimQuestApi(questId: string): Promise<ClaimQuestReply> {
       method: "POST",
       body: JSON.stringify({ questId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/quests/claim/route.ts).
     return (await res.json()) as ClaimQuestReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -317,6 +353,7 @@ export interface StreakOverview {
 /** The reader's streak panel, as the site's dashboard and profile read it. */
 export async function fetchStreakApi(): Promise<StreakOverview> {
   const res = await authedFetch("/api/mobile/streak");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/streak/route.ts).
   const body = (await res.json()) as
     | ({ ok: true } & StreakOverview)
     | { ok: false; error?: string };
@@ -336,6 +373,7 @@ export async function fetchStreakApi(): Promise<StreakOverview> {
 /** The groups for a term, parcours first; none below two characters. */
 export async function searchApi(term: string): Promise<SearchGroupItem[]> {
   const res = await authedFetch(`/api/mobile/search?q=${encodeURIComponent(term)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/search/route.ts).
   const body = (await res.json()) as
     | { ok: true; groups: SearchGroupItem[] }
     | { ok: false; error?: string };
@@ -359,6 +397,7 @@ export interface LessonAccess {
  */
 export async function fetchLessonAccessApi(): Promise<LessonAccess> {
   const res = await authedFetch("/api/mobile/lesson-access");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/lesson-access/route.ts).
   const body = (await res.json()) as
     | { ok: true; unlockAll: boolean; waivedLessonIds?: unknown }
     | { ok: false; error?: string };
@@ -421,6 +460,7 @@ export async function fetchPathCoversApi(): Promise<Map<string, PathCover>> {
  */
 export async function fetchMyRankApi(): Promise<number | null> {
   const res = await authedFetch("/api/mobile/rank");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/rank/route.ts).
   const body = (await res.json()) as
     | { ok: true; rank: number | null }
     | { ok: false; error?: string };
@@ -453,6 +493,7 @@ export interface BadgeCollection {
 /** The whole collection, built by the same service as the site's page. */
 export async function fetchBadgeCollectionApi(): Promise<BadgeCollection> {
   const res = await authedFetch("/api/mobile/badges");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/badges/route.ts).
   const body = (await res.json()) as
     | ({ ok: true } & BadgeCollection)
     | { ok: false; error?: string };
@@ -482,6 +523,7 @@ export async function ratePathApi(
       method: "POST",
       body: JSON.stringify({ pathId, score, ...(feedback ? { feedback } : {}) }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/rating/route.ts).
     return (await res.json()) as RatePathReply;
   } catch {
     return { ok: false, error: "Ta note n'a pas pu être envoyée. Réessaie." };
@@ -494,6 +536,7 @@ export async function fetchMyPathRating(
 ): Promise<{ score: number; feedback: string | null } | null> {
   try {
     const res = await authedFetch(`/api/mobile/rating?pathId=${encodeURIComponent(pathId)}`);
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/rating/route.ts).
     const body = (await res.json()) as {
       ok: boolean;
       score?: number | null;
@@ -525,6 +568,7 @@ export async function answerQuizApi(
       method: "POST",
       body: JSON.stringify({ lessonId, quizId, selected }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/quiz-answer/route.ts).
     const body = (await res.json()) as QuizAnswerReply;
     return body;
   } catch {
@@ -546,30 +590,58 @@ export async function reportQuizApi(
       method: "POST",
       body: JSON.stringify({ lessonId, quizId, reason, comment }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/quiz-report/route.ts).
     return (await res.json()) as QuizReportReply;
   } catch {
     return { ok: false, error: "Le signalement n'a pas pu être envoyé. Réessaie." };
   }
 }
 
-export type GradeReviewReply =
-  | { ok: true; reviewXp: number; nextReviewAt: string | null; mastered: boolean }
-  | { ok: false; error: string };
+// ── Rappel du jour et Réviser ce module (the site's lib/revisions/daily-recall.ts) ──
+// The older SM-2 queue keeps its route (/api/mobile/review) for the apps
+// already installed; this one no longer calls it.
 
-/** Grades a due review through the site's service (SM-2 step, XP, no double grading). */
-export async function gradeReviewApi(
-  scheduleId: string,
-  quality: 1 | 3 | 5,
-): Promise<GradeReviewReply> {
+async function fetchRecall(path: string): Promise<RecallView> {
+  const res = await authedFetch(path);
+  const reply = readRecallReply(await res.json());
+  if (!reply.ok) throw new Error(reply.error);
+  return reply.recall;
+}
+
+/** The day's recall, drawn on the server on its first opening of the day, with the answers given. */
+export function fetchDailyRecallApi(): Promise<RecallView> {
+  return fetchRecall(REVIEW_CARDS_PATH);
+}
+
+/** "Réviser ce module": six questions at most from the module's lessons finished, the same all day. */
+export function fetchModuleReviewApi(slug: string, moduleNumber: number): Promise<RecallView> {
+  return fetchRecall(moduleReviewPath(slug, moduleNumber));
+}
+
+/** Posts one answer; null when the server could not be reached or its reply not read. */
+async function postRecallAnswer(body: object): Promise<RecallAnswerReply | null> {
   try {
-    const res = await authedFetch("/api/mobile/review", {
+    const res = await authedFetch(REVIEW_CARDS_PATH, {
       method: "POST",
-      body: JSON.stringify({ scheduleId, quality }),
+      body: JSON.stringify(body),
     });
-    return (await res.json()) as GradeReviewReply;
+    return readRecallAnswer(await res.json());
   } catch {
-    return { ok: false, error: "La révision n'a pas pu être enregistrée. Réessaie." };
+    return null;
   }
+}
+
+/** One answer to the day's recall: final, checked on the server; the last one hands it in. */
+export function answerDailyRecallApi(
+  index: number,
+  selected: number,
+): Promise<RecallAnswerReply | null> {
+  return postRecallAnswer({ index, selected });
+}
+
+/** One answer to a module's review: checked on the server, nothing recorded. */
+export function answerModuleReviewApi(answer: ModuleAnswer): Promise<RecallAnswerReply | null> {
+  return postRecallAnswer(answer);
 }
 
 /** Finishes a lesson: recorded, refused with its reason, or not synced (see lesson-completion). */
@@ -603,6 +675,12 @@ export interface LeaderboardEntry {
    * from a server older than the friend marks.
    */
   isFriend?: boolean;
+  /**
+   * Where the reader stands with this player, for the row's "Ajouter": only
+   * on a public row that is not the reader's own (the server decides), null
+   * everywhere else, absent from a server older than it (nothing offered).
+   */
+  friendship?: FriendshipView | null;
   /**
    * The row's picture, ready to draw: a signed URL, a built-in path or a glyph
    * marker, signed by the server as on the site. Null on an anonymised row,
@@ -663,6 +741,7 @@ export async function fetchLeaderboard(
   period: LeaderboardPeriod = "all",
 ): Promise<LeaderboardData> {
   const res = await authedFetch(leaderboardPath(period));
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/leaderboard/route.ts).
   const body = (await res.json()) as
     | ({ ok: true } & Omit<LeaderboardData, "periodSince" | "totalPlayers" | "period"> &
         Partial<Pick<LeaderboardData, "periodSince" | "totalPlayers">> & { period?: unknown })
@@ -690,14 +769,20 @@ export interface FriendWriteReply {
 
 export async function fetchFriendsApi(): Promise<FriendLists> {
   const res = await authedFetch("/api/mobile/friends");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/friends/route.ts).
   const body = (await res.json()) as ({ ok: true } & FriendLists) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return { incoming: body.incoming, friends: body.friends, outgoing: body.outgoing };
 }
 
-async function friendWrite(path: string, userId: string): Promise<FriendWriteReply> {
+async function friendWrite(
+  path: string,
+  who: { userId: string } | { username: string },
+): Promise<FriendWriteReply> {
   try {
-    const res = await authedFetch(path, { method: "POST", body: JSON.stringify({ userId }) });
+    const res = await authedFetch(path, { method: "POST", body: JSON.stringify(who) });
+    // SAFETY: the friends routes' own JSON (apps/web/app/api/mobile/friends/{request,accept,
+    // remove,decline}/route.ts), which share one reply shape.
     return (await res.json()) as FriendWriteReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -705,22 +790,49 @@ async function friendWrite(path: string, userId: string): Promise<FriendWriteRep
 }
 
 export function requestFriendApi(userId: string): Promise<FriendWriteReply> {
-  return friendWrite("/api/mobile/friends/request", userId);
+  return friendWrite("/api/mobile/friends/request", { userId });
+}
+
+/**
+ * Asks a player of the public leaderboard by the handle the row shows: its
+ * rows carry no id, and the server finds it only among the players it names.
+ */
+export function requestFriendByHandleApi(username: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/request", { username });
 }
 
 export function acceptFriendApi(userId: string): Promise<FriendWriteReply> {
-  return friendWrite("/api/mobile/friends/accept", userId);
+  return friendWrite("/api/mobile/friends/accept", { userId });
 }
 
 /** Declines, cancels or unfriends: one call, as on the site. */
 export function removeFriendApi(userId: string): Promise<FriendWriteReply> {
-  return friendWrite("/api/mobile/friends/remove", userId);
+  return friendWrite("/api/mobile/friends/remove", { userId });
+}
+
+/**
+ * Refuses a request, and only a request still waiting: a notification's
+ * "Refuser", which must not end a friendship accepted since it arrived.
+ */
+export function declineFriendApi(userId: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/decline", { userId });
+}
+
+/** "Tes amis" on the home tab: the friends' recent moments, as the site's dashboard reads them. */
+export async function fetchFriendsActivityApi(): Promise<FriendsActivity> {
+  const res = await authedFetch("/api/mobile/friends/activity");
+  // Read, not cast: the home tab reads `items.length`, and a reply of another
+  // version without `items` must be a failed load, not a crash.
+  const read = readFriendsActivity(await res.json());
+  if (!read.ok) throw new Error(read.error);
+  return read.activity;
 }
 
 /** Somebody's profile page; null when it does not exist or is closed to the reader. */
 export async function fetchProfileApi(username: string): Promise<PublicProfile | null> {
   const res = await authedFetch(`/api/mobile/profile?username=${encodeURIComponent(username)}`);
   if (res.status === 404) return null;
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/profile/route.ts).
   const body = (await res.json()) as
     | { ok: true; profile: PublicProfile }
     | { ok: false; error?: string };
@@ -794,6 +906,7 @@ export interface MyClassData {
  */
 export async function fetchMyClass(): Promise<MyClassData> {
   const res = await authedFetch("/api/mobile/my-class");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/my-class/route.ts).
   const body = (await res.json()) as ({ ok: true } & MyClassData) | { ok: false };
   if (!body.ok) throw new Error("Chargement impossible");
   return { classes: body.classes, work: body.work };
@@ -815,6 +928,7 @@ export interface ModerationEvent {
 
 export async function fetchModerationRecordApi(): Promise<ModerationEvent[]> {
   const res = await authedFetch("/api/mobile/moderation");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/moderation/route.ts).
   const body = (await res.json()) as
     | { ok: true; events: ModerationEvent[] }
     | { ok: false; error?: string };
@@ -831,6 +945,7 @@ export async function fetchModerationRecordApi(): Promise<ModerationEvent[]> {
  */
 export async function fetchMyAvatarUrl(): Promise<string | null> {
   const res = await authedFetch("/api/mobile/avatar");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/avatar/route.ts).
   const body = (await res.json()) as { ok: true; avatarUrl: string | null } | { ok: false };
   if (!body.ok) return null;
   return body.avatarUrl;
@@ -849,6 +964,7 @@ export async function uploadAvatarPhotoApi(
     // descriptor; the DOM typing it shares only knows Blob.
     form.append("avatar", part as unknown as Blob);
     const res = await authedFetch("/api/mobile/avatar", { method: "POST", body: form });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/avatar/route.ts).
     const body = (await res.json()) as
       | { ok: true; avatarUrl: string | null }
       | { ok: false; error?: string };
@@ -863,6 +979,7 @@ export async function uploadAvatarPhotoApi(
 /** The notes other people handed to the reader: the site's "Reçues". */
 export async function fetchReceivedNotesApi(): Promise<IncomingNote[]> {
   const res = await authedFetch("/api/mobile/notes/shared");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/notes/shared/route.ts).
   const body = (await res.json()) as
     | { ok: true; notes: IncomingNote[] }
     | { ok: false; error?: string };
@@ -873,6 +990,7 @@ export async function fetchReceivedNotesApi(): Promise<IncomingNote[]> {
 /** Who a note can go to, and who already holds it. */
 export async function fetchShareAudienceApi(noteId: string): Promise<ShareAudience> {
   const res = await authedFetch(`/api/mobile/notes/share?noteId=${encodeURIComponent(noteId)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/notes/share/route.ts).
   const body = (await res.json()) as ({ ok: true } & ShareAudience) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return { entries: body.entries, noAudience: body.noAudience };
@@ -894,6 +1012,7 @@ export async function shareNoteApi(
       method: "POST",
       body: JSON.stringify({ noteId, recipientIds }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/notes/share/route.ts).
     return (await res.json()) as ShareNoteReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -944,6 +1063,29 @@ export async function reportReceivedNoteApi(
   }
 }
 
+/**
+ * Reports what somebody else published (a forum message, a question or an
+ * answer under a lesson, a challenge solution) to the team, through the
+ * site's service: same reasons, same checks, same hourly limit.
+ */
+export async function reportContentApi(
+  surface: ContentReportSurfaceKey,
+  contentId: string,
+  reason: string,
+  comment: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/reports", {
+      method: "POST",
+      body: JSON.stringify({ surface, contentId, reason, comment }),
+    });
+    const reply = readActionResponse(await res.json());
+    return reply.ok ? { ok: true } : { ok: false, error: reply.error ?? "Signalement refusé." };
+  } catch {
+    return { ok: false, error: "Le signalement n'a pas pu être envoyé. Réessaie." };
+  }
+}
+
 // ── Path final exam (the site's service: draw, 30-minute limit, 48 h wait) ────
 
 export type ExamStatusReply =
@@ -953,6 +1095,7 @@ export type ExamStatusReply =
 /** Where the exam of the path `slug` stands for the signed-in learner. */
 export async function fetchExamStatusApi(slug: string): Promise<ExamStatusReply> {
   const res = await authedFetch(`/api/mobile/exam?slug=${encodeURIComponent(slug)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/exam/route.ts).
   return (await res.json()) as ExamStatusReply;
 }
 
@@ -974,6 +1117,7 @@ export async function startExamApi(pathId: string): Promise<StartExamReply> {
       method: "POST",
       body: JSON.stringify({ pathId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/exam/start/route.ts).
     return (await res.json()) as StartExamReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1001,6 +1145,7 @@ export async function submitExamApi(
       method: "POST",
       body: JSON.stringify({ attemptId, answers }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/exam/submit/route.ts).
     return (await res.json()) as SubmitExamReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1027,7 +1172,7 @@ export async function claimCertificateApi(
 export type WrappedReply =
   | {
       open: true;
-      payload: import("@cyberlearn/lib/gamification/wrapped").WrappedPayload | null;
+      payload: WrappedPayload | null;
       handle: string;
       periodKey: string;
     }
@@ -1036,6 +1181,7 @@ export type WrappedReply =
 /** The reader's recap when it is open, or when it next opens: the server's clock decides. */
 export async function fetchWrappedApi(): Promise<WrappedReply> {
   const res = await authedFetch("/api/mobile/wrapped");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/wrapped/route.ts).
   const body = (await res.json()) as ({ ok: true } & WrappedReply) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return body.open
@@ -1075,6 +1221,8 @@ export interface ForumWriteReply {
 
 async function forumRead<T>(path: string): Promise<T> {
   const res = await authedFetch(path);
+  // SAFETY: the forum routes' own JSON (apps/web/app/api/mobile/forum/**/route.ts); each caller
+  // names the shape of the route it reads as `T`.
   const body = (await res.json()) as ({ ok: true } & T) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return body;
@@ -1103,6 +1251,7 @@ export function fetchForumThreadApi(
 async function forumWrite(path: string, body: unknown): Promise<ForumWriteReply> {
   try {
     const res = await authedFetch(path, { method: "POST", body: JSON.stringify(body) });
+    // SAFETY: the forum write routes' own JSON (apps/web/app/api/mobile/forum/**/route.ts).
     return (await res.json()) as ForumWriteReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1141,6 +1290,7 @@ export async function fetchLessonRatingApi(lessonId: string): Promise<{
     const res = await authedFetch(
       `/api/mobile/lesson-rating?lessonId=${encodeURIComponent(lessonId)}`,
     );
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/lesson-rating/route.ts).
     const body = (await res.json()) as
       | {
           ok: true;
@@ -1172,6 +1322,7 @@ export async function rateLessonApi(
       method: "POST",
       body: JSON.stringify({ lessonId, score, ...(feedback ? { feedback } : {}) }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/lesson-rating/route.ts).
     return (await res.json()) as RatePathReply;
   } catch {
     return { ok: false, error: "Ta note n'a pas pu être envoyée. Réessaie." };
@@ -1180,6 +1331,7 @@ export async function rateLessonApi(
 
 export async function fetchLessonQaApi(lessonId: string): Promise<QaQuestion[]> {
   const res = await authedFetch(`/api/mobile/lesson-qa?lessonId=${encodeURIComponent(lessonId)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/lesson-qa/route.ts).
   const body = (await res.json()) as
     | { ok: true; questions: QaQuestion[] }
     | { ok: false; error?: string };
@@ -1193,6 +1345,7 @@ export type QaWriteReply = { ok: true; heldForReview?: true } | { ok: false; err
 async function qaWrite(path: string, body: unknown): Promise<QaWriteReply> {
   try {
     const res = await authedFetch(path, { method: "POST", body: JSON.stringify(body) });
+    // SAFETY: the Q&A write routes' own JSON (apps/web/app/api/mobile/lesson-qa/**/route.ts).
     return (await res.json()) as QaWriteReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1226,6 +1379,7 @@ export function upvoteLessonAnswerApi(answerId: string): Promise<QaWriteReply> {
 
 export async function fetchSupportTicketsApi(): Promise<SupportTicketSummary[]> {
   const res = await authedFetch("/api/mobile/support");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/support/route.ts).
   const body = (await res.json()) as
     | { ok: true; tickets: SupportTicketSummary[] }
     | { ok: false; error?: string };
@@ -1235,6 +1389,7 @@ export async function fetchSupportTicketsApi(): Promise<SupportTicketSummary[]> 
 
 export async function fetchSupportThreadApi(id: string): Promise<SupportThread> {
   const res = await authedFetch(`/api/mobile/support/ticket?id=${encodeURIComponent(id)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/support/ticket/route.ts).
   const body = (await res.json()) as
     | { ok: true; ticket: SupportThread }
     | { ok: false; error?: string };
@@ -1257,6 +1412,7 @@ export async function fileSupportTicketApi(input: {
       method: "POST",
       body: JSON.stringify(input),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/support/route.ts).
     return (await res.json()) as FileTicketReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1283,6 +1439,7 @@ export async function replySupportTicketApi(
 /** The active challenges, with where the caller stands. */
 export async function fetchChallengesApi(): Promise<ChallengeList> {
   const res = await authedFetch("/api/mobile/challenges");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/route.ts).
   const body = (await res.json()) as
     | { ok: true; items: ChallengeItem[]; weekly?: WeeklyChallenge | null }
     | { ok: false; error?: string };
@@ -1293,6 +1450,7 @@ export async function fetchChallengesApi(): Promise<ChallengeList> {
 /** One challenge: statement, state, revealed hints. Never the flag. */
 export async function fetchChallengeApi(slug: string): Promise<ChallengeDetail> {
   const res = await authedFetch(`/api/mobile/challenges/detail?slug=${encodeURIComponent(slug)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/detail/route.ts).
   const body = (await res.json()) as
     | { ok: true; challenge: ChallengeDetail }
     | { ok: false; error?: string };
@@ -1310,6 +1468,7 @@ export async function submitChallengeFlagApi(
       method: "POST",
       body: JSON.stringify({ challengeId, flag }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/flag/route.ts).
     const body = (await res.json()) as {
       ok: boolean;
       correct?: boolean;
@@ -1335,6 +1494,7 @@ export async function revealChallengeHintApi(
       method: "POST",
       body: JSON.stringify({ hintId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/hint/route.ts).
     const body = (await res.json()) as { ok: boolean; content?: string; error?: string };
     if (body.content !== undefined) return { content: body.content };
     return { error: body.error ?? "Indice indisponible." };
@@ -1350,6 +1510,7 @@ export async function completeChallengeApi(challengeId: string): Promise<{ error
       method: "POST",
       body: JSON.stringify({ challengeId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/complete/route.ts).
     const body = (await res.json()) as { ok: boolean; error?: string };
     return body.error ? { error: body.error } : {};
   } catch {
@@ -1364,6 +1525,7 @@ export async function fetchSheetApi(slug: string, module: number): Promise<Revis
   const res = await authedFetch(
     `/api/mobile/sheet?path=${encodeURIComponent(slug)}&module=${String(module)}`,
   );
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/sheet/route.ts).
   const body = (await res.json()) as
     | { ok: true; sheet: RevisionSheet }
     | { ok: false; error?: string };
@@ -1378,6 +1540,7 @@ export async function fetchWriteupsApi(challengeId: string): Promise<WriteupBoar
   const res = await authedFetch(
     `/api/mobile/challenges/writeups?challengeId=${encodeURIComponent(challengeId)}`,
   );
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/writeups/route.ts).
   const body = (await res.json()) as
     | { ok: true; board: WriteupBoard }
     | { ok: false; error?: string };
@@ -1395,6 +1558,7 @@ export async function publishWriteupApi(
       method: "POST",
       body: JSON.stringify({ challengeId, content }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/writeups/route.ts).
     return (await res.json()) as WriteupReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1408,6 +1572,7 @@ export async function deleteWriteupApi(challengeId: string): Promise<WriteupRepl
       method: "DELETE",
       body: JSON.stringify({ challengeId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/challenges/writeups/route.ts).
     return (await res.json()) as WriteupReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1419,6 +1584,7 @@ export async function deleteWriteupApi(challengeId: string): Promise<WriteupRepl
 /** What a path's mock exam covers, and the attempts already made. */
 export async function fetchMockOverviewApi(slug: string): Promise<MockOverview> {
   const res = await authedFetch(`/api/mobile/mock-exam?slug=${encodeURIComponent(slug)}`);
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/mock-exam/route.ts).
   const body = (await res.json()) as
     | { ok: true; overview: MockOverview }
     | { ok: false; error?: string };
@@ -1443,6 +1609,7 @@ export async function startMockExamApi(pathId: string): Promise<MockStartReply> 
       method: "POST",
       body: JSON.stringify({ pathId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/mock-exam/route.ts).
     return (await res.json()) as MockStartReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1463,6 +1630,7 @@ export async function submitMockExamApi(
       method: "POST",
       body: JSON.stringify({ attemptId, answers }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/mock-exam/submit/route.ts).
     return (await res.json()) as MockSubmitReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1477,6 +1645,7 @@ export async function submitMockExamApi(
  */
 export async function fetchDuelsApi(): Promise<DuelBoard> {
   const res = await authedFetch("/api/mobile/duels");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/duels/route.ts).
   const body = (await res.json()) as ({ ok: true } & DuelBoard) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return {
@@ -1501,6 +1670,7 @@ export async function createDuelApi(
       method: "POST",
       body: JSON.stringify({ opponentId, pathId }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/duels/route.ts).
     return (await res.json()) as DuelReply<{ id: string }>;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1511,6 +1681,7 @@ export async function createDuelApi(
 export async function fetchDuelApi(id: string): Promise<DuelView | null> {
   const res = await authedFetch(`/api/mobile/duels/play?id=${encodeURIComponent(id)}`);
   if (res.status === 404) return null;
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/duels/play/route.ts).
   const body = (await res.json()) as { ok: true; duel: DuelView } | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return body.duel;
@@ -1523,6 +1694,7 @@ export async function respondToDuelApi(id: string, accept: boolean): Promise<Due
       method: "POST",
       body: JSON.stringify({ action: "respond", id, accept }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/duels/play/route.ts).
     return (await res.json()) as DuelReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1540,6 +1712,7 @@ export async function answerDuelApi(
       method: "POST",
       body: JSON.stringify({ action: "answer", duelId, index, selected }),
     });
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/duels/play/route.ts).
     return (await res.json()) as DuelReply<{ correct: boolean; correctIndex: number }>;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -1551,6 +1724,8 @@ export async function answerDuelApi(
 /** The reader's tournaments, and the server's clock when it listed them. */
 export interface TournamentList {
   tournaments: TournamentSummary[];
+  /** Whether the reader is in a class or teaches one: what an empty list explains. */
+  inClass: boolean;
   serverNow: string;
 }
 
@@ -1559,11 +1734,16 @@ export async function fetchTournamentsApi(): Promise<TournamentList> {
   const res = await authedFetch("/api/mobile/tournaments");
   // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/route.ts).
   const body = (await res.json()) as
-    | { ok: true; tournaments: TournamentSummary[]; serverNow?: string }
+    | { ok: true; tournaments: TournamentSummary[]; inClass?: boolean; serverNow?: string }
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  // A site older than this app sends no clock: the phone's stands in for it.
-  return { tournaments: body.tournaments, serverNow: body.serverNow ?? new Date().toISOString() };
+  return {
+    tournaments: body.tournaments,
+    // A site older than this app says nothing of the classes: the empty list
+    // keeps the words it had, and the phone's clock stands in for the server's.
+    inClass: body.inClass ?? true,
+    serverNow: body.serverNow ?? new Date().toISOString(),
+  };
 }
 
 /** One tournament, its challenges and its scoreboard; null when it is not the reader's. */
@@ -1606,7 +1786,8 @@ export async function submitTournamentFlagApi(
       method: "POST",
       body: JSON.stringify({ tournamentId, challengeId, flag }),
     });
-    // SAFETY: the route's own JSON, the service's TournamentFlagResult.
+    // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/play/route.ts), the
+    // service's TournamentFlagResult.
     return (await res.json()) as TournamentFlagReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };

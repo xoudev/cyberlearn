@@ -5,8 +5,12 @@ import { notFound, redirect } from "next/navigation";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
+import { lessonTabTitle, readLesson } from "@/lib/lessons/read-lesson";
+import { NO_RESUME, lessonResume } from "@/lib/lessons/resume";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
+import { sectionFromQuery } from "@cyberlearn/lib/revisions/passage";
 import {
+  exerciseRepository,
   friendshipRepository,
   lessonQuizRepository,
   quizReportRepository,
@@ -29,32 +33,39 @@ import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
 import "./lesson-detail.css";
 
-// Not the lesson's own title: the slug alone would put the title of a
-// class-only lesson in the tab of anyone who guessed its address.
-export const metadata: Metadata = { title: "Leçon" };
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 interface Props {
   params: Promise<{ slug: string }>;
+  /** `section`: the section to open on, from 1 ("Revoir ce passage", revisions/passage.ts). */
+  searchParams: Promise<{ section?: string | string[] }>;
 }
 
-export default async function LessonPage({ params }: Props): Promise<React.ReactElement> {
+/**
+ * The lesson's own title in the tab. Not read from the slug alone, which would
+ * put the title of a class-only lesson in the tab of anyone who guessed its
+ * address: it comes from the page's own reader-scoped read, cached for the
+ * request (lib/lessons/read-lesson.ts), and is "Leçon" where the reader has no
+ * lesson to see.
+ */
+export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
   const { slug } = await params;
+  return { title: await lessonTabTitle(slug) };
+}
+
+export default async function LessonPage({
+  params,
+  searchParams,
+}: Props): Promise<React.ReactElement> {
+  const { slug } = await params;
+  const { section: sectionParam } = await searchParams;
 
   const authUser = await requireRequestUser();
 
-  // Scoped to the reader: a lesson written for a class is published, so
-  // looking it up by slug alone would hand it to anyone who guessed one.
-  let lesson = await lessonRepository.findBySlug(slug, authUser.id);
-  // An administrator may open what nobody else can yet: a draft, to see it as
-  // the site renders it before publishing. Nothing is recorded for them on it,
-  // and the page says so; the catalogue still lists nothing unpublished.
-  let reviewing = false;
-  if (!lesson && (await unlocksEveryLesson(authUser.id))) {
-    lesson = await lessonRepository.findBySlugForReview(slug);
-    reviewing = lesson !== null;
-  }
+  // Scoped to the reader, an administrator being allowed a draft: nothing is
+  // recorded for them on it, and the page says so. The tab's title reads the
+  // same cached result (generateMetadata above), so it costs no query.
+  const { lesson, reviewing } = await readLesson(slug, authUser.id);
   if (!lesson) notFound();
 
   const [
@@ -68,6 +79,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     reportedQuizIds,
     unlockAll,
     friendIds,
+    passedExercises,
   ] = await Promise.all([
     lessonRepository.findProgress(authUser.id, lesson.id),
     // "Next" used to mean the next lesson published anywhere in the catalogue,
@@ -93,6 +105,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     unlocksEveryLesson(authUser.id),
     // The reader's friends, marked beside their names in the questions.
     friendshipRepository.friendIds(authUser.id),
+    // The exercises passed in this lesson: a Python challenge passed holds its
+    // section shut no more when the lesson is opened again.
+    exerciseRepository.listForLesson(authUser.id, lesson.id),
   ]);
   const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
@@ -132,6 +147,25 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const toc = extractToc(lesson.contentMdx);
   const sections = toc.filter((t) => t.level === 2);
   const mdxSections = splitMdxSections(lesson.contentMdx);
+  // A link back to a passage opens its section, where the reader may open
+  // any section already: a lesson they finished (canOpenSection), or an
+  // administrator's preview. Anywhere else the lesson starts at its start.
+  // With the lesson already on screen, the stepper meets the request itself:
+  // it keeps its state across this page's renders.
+  const settled = isCompleted || reviewing;
+  // A lesson not finished opens where the reader stopped, read from what they
+  // did (lib/lessons/resume.ts), not on its first section with every one
+  // ahead shut in the plan.
+  const resume = settled
+    ? NO_RESUME
+    : lessonResume(
+        mdxSections,
+        new Set(quizAnswers.map((a) => a.quizId)),
+        new Set(passedExercises),
+      );
+  const initialStep = settled
+    ? sectionFromQuery(sectionParam, Math.max(1, sections.length))
+    : resume.step;
 
   const stepper = (
     <LessonStepper
@@ -141,6 +175,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       isCompleted={isCompleted}
       reviewing={reviewing}
       sections={sections}
+      initialStep={initialStep}
+      initialDoneSteps={resume.doneSteps}
+      initialExercisesDone={resume.exercisesDone}
       note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
       planExtra={
         <>

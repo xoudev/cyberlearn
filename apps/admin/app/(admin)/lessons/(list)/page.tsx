@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { lessonRepository, quizReportRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader, PrimaryLink } from "../../_components/admin-ui";
 import { ArchiveFirstCatalogueButton } from "../../_components/archive-first-catalogue-button";
-import { LESSON_COLUMNS, lessonFacets } from "../_components/lesson-columns";
+import { LESSON_COLUMNS, LESSONS_HEADER, lessonFacets } from "../_components/lesson-columns";
 import { lessonGridRows } from "../_components/lesson-rows";
 import { LessonsGrid } from "../_components/lessons-grid";
 import type { RawParams } from "@/lib/grid-params";
@@ -41,8 +41,8 @@ export default async function AdminLessonsPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }]}
-        title={`Leçons (${String(counts.PUBLISHED + counts.DRAFT)})`}
+        crumbs={LESSONS_HEADER.crumbs}
+        title={`${LESSONS_HEADER.title} (${String(counts.PUBLISHED + counts.DRAFT)})`}
         description={`${String(counts.PUBLISHED)} publiée${counts.PUBLISHED !== 1 ? "s" : ""} · ${String(counts.DRAFT)} brouillon${counts.DRAFT !== 1 ? "s" : ""}. Les leçons archivées sont rangées à part.`}
         actions={
           <>

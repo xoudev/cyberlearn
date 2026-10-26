@@ -4,9 +4,11 @@
 import { usePathname } from "next/navigation";
 import { isActiveHref, sidebarGroups } from "@/lib/sidebar/items";
 
-const sections = sidebarGroups({ hasClasses: true, showRevisions: true, dueReviews: 0 }).flatMap(
-  (group) => group.items,
-);
+const sections = sidebarGroups({
+  hasClasses: true,
+  showRevisions: true,
+  duelInvitations: 0,
+}).flatMap((group) => group.items);
 
 export function NavigationLocation(): React.JSX.Element {
   const pathname = usePathname();

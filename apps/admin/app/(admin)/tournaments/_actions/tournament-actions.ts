@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { LIVE_CLASS_FILTER, prisma, tournamentRepository, type Prisma } from "@cyberlearn/db";
+import {
+  auditLogRepository,
+  LIVE_CLASS_FILTER,
+  prisma,
+  tournamentRepository,
+  type Prisma,
+} from "@cyberlearn/db";
+import { AUDIT_ACTION, type AuditAction } from "@cyberlearn/db/audit-actions";
 import {
   parisLocalToDate,
   TOURNAMENT_LIMITS,
@@ -11,6 +18,7 @@ import {
   windowProblem,
 } from "@cyberlearn/lib/challenges/tournament";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { announceTournament } from "@/lib/tournament-notice";
 
 /**
@@ -136,12 +144,16 @@ async function compositionProblem(composition: Composition): Promise<string | nu
 
 async function audit(
   actorId: string,
-  action: string,
+  action: AuditAction,
   targetId: string,
-  metadata: Prisma.InputJsonValue,
+  metadata: Prisma.InputJsonObject,
 ): Promise<void> {
-  await prisma.auditLog.create({
-    data: { actorId, action, targetType: "Tournament", targetId, metadata },
+  await auditLogRepository.record({
+    actorId,
+    action,
+    targetType: "Tournament",
+    targetId,
+    metadata,
   });
 }
 
@@ -170,7 +182,7 @@ export async function createTournamentAction(
     classIds: composition.data.classIds,
     challenges: composition.data.challenges,
   });
-  await audit(admin.id, "tournament.create", created.id, {
+  await audit(admin.id, AUDIT_ACTION.tournament.create, created.id, {
     title: details.data.title,
     classes: composition.data.classIds.length,
     challenges: composition.data.challenges.length,
@@ -186,7 +198,7 @@ export async function createTournamentAction(
     composition.data.classIds,
   );
   revalidatePath("/tournaments");
-  redirect(`/tournaments/${created.id}`);
+  redirect(withSavedNotice(`/tournaments/${created.id}`, "created"));
 }
 
 export async function updateTournamentAction(
@@ -258,7 +270,7 @@ export async function updateTournamentAction(
     });
   }
 
-  await audit(admin.id, "tournament.update", id, { phase, title: details.data.title });
+  await audit(admin.id, AUDIT_ACTION.tournament.update, id, { phase, title: details.data.title });
   revalidatePath("/tournaments");
   revalidatePath(`/tournaments/${id}`);
   return { ok: true };
@@ -271,9 +283,9 @@ export async function deleteTournamentAction(id: string): Promise<TournamentForm
   if (!deleted) {
     return { error: "Un tournoi commencé ne se supprime pas : ses scores restent. Arrête-le." };
   }
-  await audit(admin.id, "tournament.delete", id, {});
+  await audit(admin.id, AUDIT_ACTION.tournament.delete, id, {});
   revalidatePath("/tournaments");
-  redirect("/tournaments");
+  redirect(withSavedNotice("/tournaments", "deleted"));
 }
 
 export async function endTournamentNowAction(id: string): Promise<TournamentFormState> {
@@ -281,8 +293,91 @@ export async function endTournamentNowAction(id: string): Promise<TournamentForm
   if (!idSchema.safeParse(id).success) return { error: "Tournoi introuvable." };
   const ended = await tournamentRepository.endNow(id, new Date());
   if (!ended) return { error: "Ce tournoi n'est pas en cours." };
-  await audit(admin.id, "tournament.end", id, {});
+  await audit(admin.id, AUDIT_ACTION.tournament.end, id, {});
   revalidatePath("/tournaments");
   revalidatePath(`/tournaments/${id}`);
+  return { ok: true };
+}
+
+// ─── Flags ──────────────────────────────────────────────────────────────────
+
+export interface SolveActionState {
+  ok?: boolean;
+  error?: string;
+}
+
+const disqualifySchema = z.object({
+  tournamentId: z.guid(),
+  solveId: z.guid(),
+  /**
+   * Required: the player reads it in their data export, and a flag taken back
+   * with no reason is one nobody can answer.
+   */
+  reason: z
+    .string()
+    .trim()
+    .min(5, "Explique le motif : au moins 5 caractères.")
+    .max(300, "Le motif tient en 300 caractères au plus."),
+});
+
+const requalifySchema = z.object({ tournamentId: z.guid(), solveId: z.guid() });
+
+const SOLVE_GONE = "Ce flag n'existe plus dans ce tournoi.";
+
+/** The pages that count the flag: its list, the tournament's standings, the list of tournaments. */
+function revalidateSolves(tournamentId: string): void {
+  revalidatePath("/tournaments");
+  revalidatePath(`/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}/flags`);
+}
+
+/**
+ * Takes a flag back: it stays recorded so the player cannot score it again,
+ * and it leaves every scoreboard, on the site and in the app. The repository
+ * writes it and its audit row in one transaction, only on a flag that still
+ * counts: a second click, or a second administrator, changes nothing.
+ */
+export async function disqualifySolveAction(
+  _prev: SolveActionState,
+  formData: FormData,
+): Promise<SolveActionState> {
+  const admin = await requireAdminAction();
+  const parsed = disqualifySchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+  const { tournamentId } = parsed.data;
+
+  const result = await tournamentRepository.disqualifySolve({
+    tournamentId,
+    solveId: parsed.data.solveId,
+    actorId: admin.id,
+    reason: parsed.data.reason,
+    now: new Date(),
+  });
+  revalidateSolves(tournamentId);
+  if (!result.ok) {
+    return { error: result.reason === "NOT_FOUND" ? SOLVE_GONE : "Ce flag est déjà disqualifié." };
+  }
+  return { ok: true };
+}
+
+/** Puts a disqualified flag back, for a disqualification made in error. Traced too. */
+export async function requalifySolveAction(
+  _prev: SolveActionState,
+  formData: FormData,
+): Promise<SolveActionState> {
+  const admin = await requireAdminAction();
+  const parsed = requalifySchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: "Paramètres invalides." };
+  const { tournamentId } = parsed.data;
+
+  const result = await tournamentRepository.requalifySolve({
+    tournamentId,
+    solveId: parsed.data.solveId,
+    actorId: admin.id,
+  });
+  revalidateSolves(tournamentId);
+  if (!result.ok) {
+    return { error: result.reason === "NOT_FOUND" ? SOLVE_GONE : "Ce flag compte déjà." };
+  }
   return { ok: true };
 }

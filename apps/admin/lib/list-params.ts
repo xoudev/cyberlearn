@@ -6,16 +6,20 @@ import type {
   ConsoleCertificateQuery,
   ConsoleCertificateSort,
   ConsoleCertificateStatus,
+  ConsoleContentQuery,
+  ConsolePage,
   ConsoleLessonFolder,
   ConsoleLessonOrigin,
   ConsoleLessonQuery,
   ConsoleLessonSort,
   ConsoleUserQuery,
   ConsoleUserSort,
+  ContentSurface,
   Difficulty,
   SortDir,
   UserRole,
 } from "@cyberlearn/db";
+import { CONTENT_REPORT_SURFACE_KEYS } from "@cyberlearn/lib/moderation/report-reasons";
 import { sortValue } from "./grid-href";
 import {
   dayParam,
@@ -33,8 +37,8 @@ import {
 
 /**
  * The filters of the console's server-side lists (accounts, audit log,
- * lessons, certificates): read from the URL, written back into its links, and
- * turned into the repository's query.
+ * lessons, certificates, published content, reports): read from the URL, written back
+ * into its links, and turned into the repository's query.
  *
  * Each list has a parse, which never fails, and a search, which is the
  * opposite: the parameters a link to the same list carries, with the defaults
@@ -137,6 +141,8 @@ export interface AuditListParams {
   from: string | undefined;
   /** Last day shown, included. */
   to: string | undefined;
+  /** The scheduled jobs' runs shown too (`?crons=1`): left out by default, nobody did them. */
+  crons: boolean;
   dir: SortDir;
   page: number;
 }
@@ -148,9 +154,23 @@ export function parseAuditListParams(raw: RawParams): AuditListParams {
     action: valid(actionSchema, first(raw, "action")),
     from: dayParam(raw, "from"),
     to: dayParam(raw, "to"),
+    crons: first(raw, "crons") === "1",
     dir: sortParam(raw, ["date"])?.dir ?? "desc",
     page: pageParam(raw),
   };
+}
+
+/**
+ * Whether the list shows the jobs' runs: when asked, and when the filter
+ * itself names them (a "cron." action, the "Cron" target), which would
+ * otherwise match nothing.
+ */
+export function showsCronRuns(params: AuditListParams): boolean {
+  return (
+    params.crons ||
+    params.action?.startsWith("cron.") === true ||
+    params.target.toLowerCase() === "cron"
+  );
 }
 
 /**
@@ -174,6 +194,7 @@ export function auditFilterOf(params: AuditListParams): AuditFilter {
     action: params.action,
     from: params.from !== undefined ? parisDayStart(params.from) : undefined,
     until: params.to !== undefined ? parisDayEnd(params.to) : undefined,
+    hideCronRuns: !showsCronRuns(params),
   };
 }
 
@@ -193,6 +214,7 @@ export function auditListSearch(params: AuditListParams): Record<string, string>
   if (params.action !== undefined) out.action = params.action;
   if (params.from !== undefined) out.from = params.from;
   if (params.to !== undefined) out.to = params.to;
+  if (params.crons) out.crons = "1";
   if (params.dir === "asc") out.sort = sortValue("date", "asc");
   if (params.page > 1) out.page = String(params.page);
   return out;
@@ -229,6 +251,7 @@ export const LESSON_SORT_KEYS = [
   "category",
   "difficulty",
   "xp",
+  "rating",
   "status",
 ] as const satisfies readonly ConsoleLessonSort[];
 
@@ -367,4 +390,73 @@ export function certificateQueryOf(params: CertificateListParams): ConsoleCertif
     page: params.page,
     pageSize: CERTIFICATES_PAGE_SIZE,
   };
+}
+
+// ─── Published content (moderation) ─────────────────────────────────────────
+
+export const CONTENT_PAGE_SIZE = 25;
+
+/** The list shows one surface at a time: five tables, five shapes of row. */
+export const DEFAULT_CONTENT_SURFACE: ContentSurface = "FORUM_POST";
+
+export const CONTENT_STATE_VALUES = ["visible", "hidden"] as const;
+
+export type ContentState = (typeof CONTENT_STATE_VALUES)[number];
+
+export interface ContentListParams {
+  surface: ContentSurface;
+  state: ContentState | undefined;
+  q: string;
+  /** An account's id: only the contents it wrote, which a search on its name cannot promise. */
+  author: string | undefined;
+  page: number;
+}
+
+export function parseContentListParams(raw: RawParams): ContentListParams {
+  return {
+    surface: oneOf(raw, "surface", CONTENT_REPORT_SURFACE_KEYS) ?? DEFAULT_CONTENT_SURFACE,
+    state: oneOf(raw, "state", CONTENT_STATE_VALUES),
+    q: searchParam(raw),
+    author: valid(z.guid(), first(raw, "author")),
+    page: pageParam(raw),
+  };
+}
+
+export function contentListSearch(params: ContentListParams): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (params.surface !== DEFAULT_CONTENT_SURFACE) out.surface = params.surface;
+  if (params.state !== undefined) out.state = params.state;
+  if (params.q !== "") out.q = params.q;
+  if (params.author !== undefined) out.author = params.author;
+  if (params.page > 1) out.page = String(params.page);
+  return out;
+}
+
+export function contentQueryOf(params: ContentListParams): ConsoleContentQuery {
+  return {
+    surface: params.surface,
+    hidden: params.state === undefined ? undefined : params.state === "hidden",
+    q: params.q,
+    authorId: params.author,
+    page: params.page,
+    pageSize: CONTENT_PAGE_SIZE,
+  };
+}
+
+// ─── Content reports (moderation) ───────────────────────────────────────────
+
+/** A card per reported content, with every report on it: fewer than rows. */
+export const REPORTS_PAGE_SIZE = 20;
+
+/** A page and nothing else: the queue has one order, the most reported first. */
+export interface ReportListParams {
+  page: number;
+}
+
+export function parseReportListParams(raw: RawParams): ReportListParams {
+  return { page: pageParam(raw) };
+}
+
+export function reportQueryOf(params: ReportListParams): ConsolePage {
+  return { page: params.page, pageSize: REPORTS_PAGE_SIZE };
 }

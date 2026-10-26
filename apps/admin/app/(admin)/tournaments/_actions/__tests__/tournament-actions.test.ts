@@ -4,12 +4,14 @@ const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn<() => Promise<{ id: string; email: undefined; role: "ADMIN" }>>(),
   classCount: vi.fn<(args: unknown) => Promise<number>>(),
   challengeFindMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  record: vi.fn<(entry: Record<string, unknown>) => Promise<void>>(),
   create: vi.fn<(input: Record<string, unknown>) => Promise<{ id: string }>>(),
   update: vi.fn<(id: string, input: Record<string, unknown>) => Promise<void>>(),
   findForConsole: vi.fn<(id: string) => Promise<unknown>>(),
   deleteUpcoming: vi.fn<(id: string, now: Date) => Promise<boolean>>(),
   endNow: vi.fn<(id: string, now: Date) => Promise<boolean>>(),
+  disqualifySolve: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
+  requalifySolve: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   announceTournament: vi.fn<(tournament: unknown, classIds: string[]) => Promise<void>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   redirect: vi.fn<(url: string) => never>(),
@@ -21,14 +23,16 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: {
     class: { count: m.classCount },
     challenge: { findMany: m.challengeFindMany },
-    auditLog: { create: m.auditCreate },
   },
+  auditLogRepository: { record: m.record },
   tournamentRepository: {
     create: m.create,
     update: m.update,
     findForConsole: m.findForConsole,
     deleteUpcoming: m.deleteUpcoming,
     endNow: m.endNow,
+    disqualifySolve: m.disqualifySolve,
+    requalifySolve: m.requalifySolve,
   },
 }));
 vi.mock("@/lib/tournament-notice", () => ({ announceTournament: m.announceTournament }));
@@ -38,7 +42,9 @@ vi.mock("next/navigation", () => ({ redirect: m.redirect }));
 const {
   createTournamentAction,
   deleteTournamentAction,
+  disqualifySolveAction,
   endTournamentNowAction,
+  requalifySolveAction,
   updateTournamentAction,
 } = await import("../tournament-actions");
 
@@ -108,7 +114,7 @@ afterEach(() => {
 describe("createTournamentAction", () => {
   it("saves the window in Paris time, tells the classes, and opens the tournament", async () => {
     await expect(createTournamentAction({}, form(VALID))).rejects.toThrow(
-      `NEXT_REDIRECT:/tournaments/${T}`,
+      `NEXT_REDIRECT:/tournaments/${T}?saved=created`,
     );
     expect(m.create).toHaveBeenCalledWith({
       title: "CTF de la Toussaint",
@@ -120,7 +126,7 @@ describe("createTournamentAction", () => {
       classIds: [CLASS_A, CLASS_B],
       challenges: [{ challengeId: C1, points: 200 }],
     });
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({
+    expect(m.record.mock.calls[0]?.[0]).toMatchObject({
       actorId: "admin-1",
       action: "tournament.create",
       targetType: "Tournament",
@@ -236,8 +242,10 @@ describe("deleting and ending", () => {
       error: "Un tournoi commencé ne se supprime pas : ses scores restent. Arrête-le.",
     });
     m.deleteUpcoming.mockResolvedValueOnce(true);
-    await expect(deleteTournamentAction(T)).rejects.toThrow("NEXT_REDIRECT:/tournaments");
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({ action: "tournament.delete" });
+    await expect(deleteTournamentAction(T)).rejects.toThrow(
+      "NEXT_REDIRECT:/tournaments?saved=deleted",
+    );
+    expect(m.record.mock.calls[0]?.[0]).toMatchObject({ action: "tournament.delete" });
   });
 
   it("ends a running tournament, and says when there is none to end", async () => {
@@ -253,5 +261,88 @@ describe("deleting and ending", () => {
     await expect(endTournamentNowAction(T)).rejects.toThrow("NEXT_REDIRECT:/login");
     expect(m.create).not.toHaveBeenCalled();
     expect(m.endNow).not.toHaveBeenCalled();
+  });
+});
+
+describe("taking a flag back", () => {
+  const SOLVE = "99999999-9999-4999-8999-999999999999";
+  const REASON = "Flag partagé avec une autre équipe.";
+
+  it("disqualifies a flag with its reason, as the signed-in admin, and redraws its pages", async () => {
+    m.disqualifySolve.mockResolvedValueOnce({ ok: true });
+    const state = await disqualifySolveAction(
+      {},
+      form({ intent: "disqualify", tournamentId: T, solveId: SOLVE, reason: `  ${REASON}  ` }),
+    );
+    expect(state).toEqual({ ok: true });
+    expect(m.disqualifySolve).toHaveBeenCalledWith({
+      tournamentId: T,
+      solveId: SOLVE,
+      actorId: "admin-1",
+      reason: REASON,
+      now: new Date("2026-10-10T08:00:00Z"),
+    });
+    expect(m.revalidatePath.mock.calls.map((c) => c[0])).toEqual([
+      "/tournaments",
+      `/tournaments/${T}`,
+      `/tournaments/${T}/flags`,
+    ]);
+  });
+
+  it("refuses a reason too short or too long, and ids that do not read, writing nothing", async () => {
+    expect(
+      await disqualifySolveAction({}, form({ tournamentId: T, solveId: SOLVE, reason: "non" })),
+    ).toEqual({ error: "Explique le motif : au moins 5 caractères." });
+    expect(
+      await disqualifySolveAction(
+        {},
+        form({ tournamentId: T, solveId: SOLVE, reason: "x".repeat(301) }),
+      ),
+    ).toEqual({ error: "Le motif tient en 300 caractères au plus." });
+    expect(
+      (await disqualifySolveAction({}, form({ tournamentId: T, solveId: "x", reason: REASON })))
+        .error,
+    ).toBeDefined();
+    expect(m.disqualifySolve).not.toHaveBeenCalled();
+  });
+
+  it("says why nothing changed: a flag already taken back, or one that is gone", async () => {
+    const valid = form({ tournamentId: T, solveId: SOLVE, reason: REASON });
+    m.disqualifySolve.mockResolvedValueOnce({ ok: false, reason: "ALREADY_DISQUALIFIED" });
+    expect(await disqualifySolveAction({}, valid)).toEqual({
+      error: "Ce flag est déjà disqualifié.",
+    });
+    m.disqualifySolve.mockResolvedValueOnce({ ok: false, reason: "NOT_FOUND" });
+    expect(await disqualifySolveAction({}, valid)).toEqual({
+      error: "Ce flag n'existe plus dans ce tournoi.",
+    });
+  });
+
+  it("puts a disqualified flag back, and says when it already counts", async () => {
+    const valid = form({ intent: "requalify", tournamentId: T, solveId: SOLVE });
+    m.requalifySolve.mockResolvedValueOnce({ ok: true });
+    expect(await requalifySolveAction({}, valid)).toEqual({ ok: true });
+    expect(m.requalifySolve).toHaveBeenCalledWith({
+      tournamentId: T,
+      solveId: SOLVE,
+      actorId: "admin-1",
+    });
+    m.requalifySolve.mockResolvedValueOnce({ ok: false, reason: "NOT_DISQUALIFIED" });
+    expect(await requalifySolveAction({}, valid)).toEqual({ error: "Ce flag compte déjà." });
+    expect(await requalifySolveAction({}, form({ tournamentId: T }))).toEqual({
+      error: "Paramètres invalides.",
+    });
+  });
+
+  it("checks the caller is an admin before reading the form", async () => {
+    m.requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT:/login"));
+    await expect(
+      disqualifySolveAction({}, form({ tournamentId: T, solveId: SOLVE, reason: REASON })),
+    ).rejects.toThrow("NEXT_REDIRECT:/login");
+    await expect(
+      requalifySolveAction({}, form({ tournamentId: T, solveId: SOLVE })),
+    ).rejects.toThrow("NEXT_REDIRECT:/login");
+    expect(m.disqualifySolve).not.toHaveBeenCalled();
+    expect(m.requalifySolve).not.toHaveBeenCalled();
   });
 });

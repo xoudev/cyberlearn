@@ -3,6 +3,7 @@
 import { RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { flawLines, parseFindTheFlaw } from "@cyberlearn/types";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * <FindTheFlaw>: a piece of code, a vulnerable line to click, then the name of
@@ -84,7 +85,7 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.16em",
             color: accent,
           }}
@@ -111,13 +112,15 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
           : "Ligne trouvée. Quelle est cette faille ?"}
       </p>
 
+      {/* The code between two rules, across the lab: a band, not a second
+          card inside the lab's card. */}
       <ol
-        className="card card--sunken"
         aria-label={`Code ${flaw.language}`}
         style={{
           listStyle: "none",
-          margin: "12px 16px",
-          padding: "8px 0",
+          margin: "12px 0",
+          padding: "8px 1px",
+          borderBlock: "1px solid var(--color-border-subtle)",
           overflowX: "auto",
         }}
       >

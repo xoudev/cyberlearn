@@ -1,16 +1,20 @@
-import { prisma } from "@cyberlearn/db";
+import { buildExportPayload, prisma } from "@cyberlearn/db";
 import { errorMessage } from "@cyberlearn/lib/logger";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { checkDataExport, releaseDataExport } from "@/lib/rate-limit";
-import { buildExportPayload } from "@/lib/rgpd/build-export";
 import { pseudonymize } from "@/lib/pseudonymize";
 import { requestLogger } from "@/lib/request-logger";
+
+/** Where the export's certificate links point: this site. */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 
 /**
  * The account holder's data, as a JSON download (RGPD art. 20).
  *
  * It does not look at bans: portability is a right a banned account keeps, and
- * /banned offers this download for that reason.
+ * /banned offers this download for that reason. The file is built in
+ * @cyberlearn/db, where the console builds the same one for a request made to
+ * the team.
  */
 export async function GET(request: Request): Promise<Response> {
   // 1. Auth - getUser() validates the JWT server-side
@@ -50,7 +54,7 @@ export async function GET(request: Request): Promise<Response> {
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
   let payload: Awaited<ReturnType<typeof buildExportPayload>>;
   try {
-    payload = await buildExportPayload(user.id);
+    payload = await buildExportPayload(user.id, { siteUrl: SITE_URL });
     await prisma.auditLog.create({
       data: {
         actorId: user.id,

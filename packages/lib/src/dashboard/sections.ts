@@ -17,7 +17,7 @@
  * decision worth testing on its own.
  */
 
-export type DashboardSectionKey = "paths" | "resume" | "reviews" | "progress";
+export type DashboardSectionKey = "paths" | "play" | "resume" | "recall" | "friends" | "progress";
 
 export interface DashboardSection {
   key: DashboardSectionKey;
@@ -28,17 +28,39 @@ export interface DashboardSection {
 export interface DashboardSectionInput {
   /** A lesson left half-finished, worth offering to resume. */
   hasResume: boolean;
-  /** How many revisions are due right now. */
-  dueReviews: number;
+  /**
+   * The day's recall is offered: spaced repetition is on. The section says
+   * to do, done or nothing today, and keeps its place from one day to the
+   * next; it never counts what waits, so it takes no number.
+   */
+  hasRecall: boolean;
+  /**
+   * A duel invitation waiting on the reader, or a tournament under way
+   * (your-move.ts): what will not wait long, right under the parcours.
+   */
+  hasPlay?: boolean;
+  /**
+   * Whether the reader has a friend. "Tes amis" is their recent activity,
+   * and with nobody to follow it would be an empty box; with friends who
+   * have been quiet it still offers a duel. Absent reads as no friend.
+   */
+  hasFriends?: boolean;
 }
 
-/** The order, once and for all. Parcours first is the whole point. */
-const ORDER: DashboardSectionKey[] = ["paths", "resume", "reviews", "progress"];
+/**
+ * The order, once and for all. Parcours first is the whole point. What will
+ * not wait comes right under them. The friends come after what is the
+ * reader's to do and before their own record, where the site's dashboard
+ * draws them.
+ */
+const ORDER: DashboardSectionKey[] = ["paths", "play", "resume", "recall", "friends", "progress"];
 
 export function planSections(input: DashboardSectionInput): DashboardSection[] {
   const shown = ORDER.filter((key) => {
+    if (key === "play") return input.hasPlay === true;
     if (key === "resume") return input.hasResume;
-    if (key === "reviews") return input.dueReviews > 0;
+    if (key === "recall") return input.hasRecall;
+    if (key === "friends") return input.hasFriends === true;
     // The parcours and the progress band always have something to say: one
     // offers what to do next, the other is the reader's own record.
     return true;

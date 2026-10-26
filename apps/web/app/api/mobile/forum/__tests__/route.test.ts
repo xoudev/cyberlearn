@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
     vi.fn<(category: string, slug: string, viewerId: string, page: number) => Promise<unknown>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
   profilesOpenTo: vi.fn<(viewerId: string, ids: readonly string[]) => Promise<Set<string>>>(),
+  friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
   isForumAdmin: vi.fn<(userId: string) => Promise<boolean>>(),
   createForumTopic: vi.fn<(userId: string, input: unknown) => Promise<unknown>>(),
   replyInForum: vi.fn<(userId: string, input: unknown) => Promise<unknown>>(),
@@ -28,6 +29,7 @@ vi.mock("@cyberlearn/db", () => ({
     findTopic: m.findTopic,
   },
   userRepository: { profilesOpenTo: m.profilesOpenTo },
+  friendshipRepository: { friendIds: m.friendIds },
 }));
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
 vi.mock("@/lib/forum/forum-service", () => ({
@@ -83,6 +85,7 @@ beforeEach(() => {
   m.userFromBearer.mockResolvedValue(ME);
   m.isForumAdmin.mockResolvedValue(false);
   m.profilesOpenTo.mockResolvedValue(new Set());
+  m.friendIds.mockResolvedValue(new Set());
 });
 
 describe("every forum route", () => {
@@ -145,7 +148,19 @@ describe("GET /api/mobile/forum", () => {
       name: "Sam",
       level: 4,
       role: "LEARNER",
+      isFriend: false,
     });
+  });
+
+  it("marks the authors who are the reader's friends", async () => {
+    m.listCategories.mockResolvedValue([]);
+    m.listRecentTopics.mockResolvedValue([SUMMARY]);
+    m.friendIds.mockResolvedValue(new Set(["user-2"]));
+    const body = (await (await FRONT(get(""))).json()) as {
+      recent: { author: { isFriend: boolean } }[];
+    };
+    expect(m.friendIds).toHaveBeenCalledWith("user-1");
+    expect(body.recent[0]?.author.isFriend).toBe(true);
   });
 });
 
@@ -182,6 +197,7 @@ describe("GET /api/mobile/forum/topic", () => {
         createdAt: new Date("2026-09-20T08:00:00.000Z"),
         editedAt: null,
         isHidden: false,
+        removal: null,
         author: AUTHOR,
       },
       {
@@ -190,6 +206,7 @@ describe("GET /api/mobile/forum/topic", () => {
         createdAt: new Date("2026-09-21T08:00:00.000Z"),
         editedAt: null,
         isHidden: true,
+        removal: "HELD",
         author: { ...AUTHOR, id: "user-1", avatarUrl: "__glyph:skull" },
       },
     ],

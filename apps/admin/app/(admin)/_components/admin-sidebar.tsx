@@ -4,26 +4,26 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BastionLogo } from "@cyberlearn/ui";
+import { CHROME_BOTTOM } from "@/lib/chrome";
+import {
+  activeSectionHref,
+  CONSOLE_MAIN_SECTIONS,
+  CONSOLE_SYSTEM_SECTIONS,
+  type ConsoleCountKey,
+  type ConsoleNavIcon,
+  type ConsoleSection,
+} from "@/lib/console-nav";
 import { signOut } from "../_actions/signout";
 import { useAdminMobileSidebar } from "./admin-shell-client";
-
-interface SidebarCounts {
-  lessons: number;
-  paths: number;
-  badges: number;
-  challenges: number;
-  users: number;
-  tickets: number;
-}
 
 interface AdminSidebarProps {
   initials: string;
   handle: string;
   email: string;
-  counts: SidebarCounts;
+  counts: Record<ConsoleCountKey, number>;
 }
 
-function NavIcon({ name }: { name: string }): React.ReactElement | null {
+function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null {
   const s: React.SVGProps<SVGSVGElement> = {
     width: 15,
     height: 15,
@@ -105,11 +105,26 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
           <path d="M6 5 V12 M10 5 V12" strokeDasharray="1.5 1.5" />
         </svg>
       );
+    case "megaphone":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M2.5 6.5 V9.5 H5 L11.5 13 V3 L5 6.5 Z" />
+          <path d="M5 9.5 L6 13.5 H7.5 L7 10.5" />
+          <path d="M13.5 6.5 V9.5" />
+        </svg>
+      );
     case "shield":
       return (
         <svg viewBox="0 0 16 16" {...s}>
           <path d="M8 1.5 L13.5 3.5 V8 C13.5 11 11 13.5 8 14.5 C5 13.5 2.5 11 2.5 8 V3.5 Z" />
           <path d="M5.8 8 L7.4 9.6 L10.4 6.4" />
+        </svg>
+      );
+    case "alert":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M8 1.8 L14.6 13.8 H1.4 Z" />
+          <path d="M8 6 V9.6 M8 11.6 V11.7" />
         </svg>
       );
     case "flask":
@@ -124,6 +139,21 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
         <svg viewBox="0 0 16 16" {...s}>
           <rect x="2.5" y="2" width="11" height="12" />
           <path d="M5 5 H11 M5 8 H11 M5 11 H8.5" />
+        </svg>
+      );
+    case "layers":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M8 2 L14 5 L8 8 L2 5 Z" />
+          <path d="M2 8 L8 11 L14 8" />
+          <path d="M2 11 L8 14 L14 11" />
+        </svg>
+      );
+    case "clock":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <circle cx="8" cy="8" r="6" />
+          <path d="M8 4.5 V8 L10.5 9.5" />
         </svg>
       );
     case "cog":
@@ -173,34 +203,19 @@ export function AdminSidebar({
   const pathname = usePathname();
   const { open, mobile, close } = useAdminMobileSidebar();
 
-  const mainItems = [
-    { label: "Aperçu", href: "/dashboard", icon: "dash", count: null as number | null },
-    { label: "Leçons", href: "/lessons", icon: "book", count: counts.lessons },
-    { label: "Parcours", href: "/paths", icon: "route", count: counts.paths },
-    { label: "Badges", href: "/badges", icon: "badge", count: counts.badges },
-    { label: "Classes", href: "/classes", icon: "users" },
-    { label: "Challenges", href: "/challenges", icon: "target", count: counts.challenges },
-    { label: "Tournois", href: "/tournaments", icon: "flag" },
-    { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users },
-    { label: "Certificats", href: "/certificates", icon: "certificate" },
-    { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
-    { label: "Modération", href: "/moderation", icon: "shield" },
-  ];
+  // The entry the page sits under, the most specific when two match:
+  // /moderation/reports is under Signalements, not under Modération too.
+  const activeHref = activeSectionHref(pathname, [
+    ...CONSOLE_MAIN_SECTIONS,
+    ...CONSOLE_SYSTEM_SECTIONS,
+  ]);
 
-  const sysItems = [
-    { label: "Banc d'essai", href: "/lab", icon: "flask" },
-    { label: "Audit log", href: "/audit", icon: "log" },
-    { label: "Paramètres", href: "/settings", icon: "cog" },
-  ];
-
-  const renderItem = (item: {
-    label: string;
-    href: string;
-    icon: string;
-    count?: number | null;
-  }): React.ReactElement => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-    const isAlert = item.href === "/tickets" && (item.count ?? 0) > 0;
+  // The sections are the quick search's too (lib/console-nav.ts): one list, so
+  // a section added here cannot be missing from the search again.
+  const renderItem = (item: ConsoleSection): React.ReactElement => {
+    const count = item.count !== undefined ? counts[item.count] : null;
+    const isActive = item.href === activeHref;
+    const isAlert = item.href === "/tickets" && (count ?? 0) > 0;
     return (
       <Link
         key={item.href}
@@ -214,9 +229,9 @@ export function AdminSidebar({
           <NavIcon name={item.icon} />
         </span>
         <span style={{ flex: 1 }}>{item.label}</span>
-        {item.count !== null && item.count !== undefined && (
+        {count !== null && (
           <span className="a-side-count" data-alert={isAlert}>
-            {item.count}
+            {count}
           </span>
         )}
       </Link>
@@ -232,7 +247,7 @@ export function AdminSidebar({
       className={`admin-sidebar-fixed${open ? " sidebar-mobile-open" : ""}`}
       style={{
         position: "fixed",
-        top: 56,
+        top: CHROME_BOTTOM,
         left: 0,
         bottom: 0,
         width: 240,
@@ -264,18 +279,22 @@ export function AdminSidebar({
       <div className="a-sidebar-scroll">
         <div style={{ padding: "20px 0 0" }}>
           <SectionLabel text="Gestion" />
-          <nav style={{ display: "grid", gap: 1 }}>{mainItems.map(renderItem)}</nav>
+          <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_MAIN_SECTIONS.map(renderItem)}</nav>
         </div>
 
         <div style={{ padding: "22px 0 0" }}>
           <SectionLabel text="Système" />
-          <nav style={{ display: "grid", gap: 1 }}>{sysItems.map(renderItem)}</nav>
+          <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_SYSTEM_SECTIONS.map(renderItem)}</nav>
         </div>
       </div>
 
       {/* Identity + sign out */}
       <div className="a-sidebar-account">
-        <div
+        <Link
+          href="/account"
+          onClick={close}
+          aria-label={`Mon compte : ${handle}`}
+          aria-current={pathname === "/account" ? "page" : undefined}
           style={{
             display: "grid",
             gridTemplateColumns: "30px minmax(0, 1fr) auto",
@@ -283,8 +302,10 @@ export function AdminSidebar({
             alignItems: "center",
             padding: "10px 11px",
             background: "var(--a-surface)",
-            border: "1px solid var(--a-border)",
+            border: `1px solid ${pathname === "/account" ? "var(--a-accent)" : "var(--a-border)"}`,
             marginBottom: 10,
+            color: "inherit",
+            textDecoration: "none",
           }}
         >
           <span
@@ -343,7 +364,7 @@ export function AdminSidebar({
           >
             Admin
           </span>
-        </div>
+        </Link>
 
         <form action={signOut}>
           <button

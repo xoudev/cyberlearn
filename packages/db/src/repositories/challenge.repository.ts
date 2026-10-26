@@ -280,4 +280,26 @@ export const challengeRepository = {
     });
     return first ? { displayName: first.user.displayName } : null;
   },
+
+  /** Every challenge the account started, for its GDPR export (rgpd/build-export.ts). */
+  async exportProgressFor(userId: string) {
+    return prisma.userChallengeProgress.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        attempts: true,
+        startedAt: true,
+        completedAt: true,
+        challenge: { select: { title: true, slug: true } },
+      },
+    });
+  },
+
+  /** Every hint the account revealed, for its GDPR export (rgpd/build-export.ts). */
+  async exportHintRevealsFor(userId: string) {
+    return prisma.challengeHintReveal.findMany({
+      where: { userId },
+      select: { hintId: true, revealedAt: true },
+    });
+  },
 };

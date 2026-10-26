@@ -8,14 +8,24 @@ import { Screen } from "@/components/screen";
 import { ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
 import { acknowledgeBanApi, appealBanApi, SITE_URL } from "@/lib/api";
-import { APPEAL_MAX_LENGTH, appealProblem, banDurationLabel } from "@/lib/ban";
+import { APPEAL_MAX_LENGTH, appealPanelOf, appealProblem, banDurationLabel } from "@/lib/ban";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { useActiveBan } from "@/lib/use-active-ban";
+import { useBanAppeal } from "@/lib/use-ban-appeal";
+
+/** The day of the team's answer. */
+const REPLY_DAY = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
 /**
  * Where a banned account lands, and the only screen it can open: the site's
- * /banned. The reason, when it was decided, how long is left, and the appeal.
+ * /banned. The reason, when it was decided, how long is left, and the appeal,
+ * with the team's answer once there is one: the appeal's ticket is closed to
+ * its author while the ban stands, so this screen is where the answer is read.
  * The root layout sends people here while a ban is in force and back home once
  * it ends or is lifted.
  */
@@ -30,6 +40,11 @@ export default function Banned(): React.JSX.Element {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const {
+    data: standing,
+    isError: standingFailed,
+    refetch: readStanding,
+  } = useBanAppeal(userId, sent || ban?.appealed === true);
 
   // The whole screen is the notice: having shown it counts as seen, which the
   // site records when its notice is closed.
@@ -74,7 +89,13 @@ export default function Banned(): React.JSX.Element {
     setSent(true);
     setAppealOpen(false);
     void queryClient.invalidateQueries({ queryKey: ["ban", userId] });
+    void queryClient.invalidateQueries({ queryKey: ["ban-appeal", userId] });
   };
+
+  // Only an appeal sent a moment ago from here may be taken for received before
+  // the server has been read: one examined and refused must never read as
+  // "transmis" because the read is loading or has failed.
+  const panel = appealPanelOf({ standing, failed: standingFailed, sentHere: sent });
 
   return (
     <Screen>
@@ -105,15 +126,61 @@ export default function Banned(): React.JSX.Element {
         </Card>
 
         {appealed ? (
-          <Card style={{ gap: 6 }}>
-            <Text variant="micro" style={{ color: colors.success }}>
-              Appel transmis
-            </Text>
-            <Text variant="bodySm" style={{ color: colors.textSecondary }}>
-              Ton appel a été transmis à l&apos;équipe de modération. La réponse arrivera par e-mail
-              : elle contient la décision, pas seulement un avis de passage.
-            </Text>
-          </Card>
+          panel.kind === "view" ? (
+            <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
+              {/* An appeal examined and refused is not a success to be shown in green. */}
+              <Text
+                variant="micro"
+                style={{
+                  color: panel.view.stage === "DECIDED" ? colors.textMuted : colors.success,
+                }}
+              >
+                {panel.view.title}
+              </Text>
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                {panel.view.text}
+              </Text>
+              {panel.view.reply !== null ? (
+                <View
+                  style={{
+                    gap: 4,
+                    marginTop: 6,
+                    paddingLeft: 10,
+                    borderLeftWidth: 2,
+                    borderLeftColor: colors.borderDefault,
+                  }}
+                >
+                  <Text variant="micro">
+                    Réponse de l&apos;équipe ·{" "}
+                    {REPLY_DAY.format(new Date(panel.view.reply.createdAt))}
+                  </Text>
+                  <Text variant="body" style={{ color: colors.textPrimary }}>
+                    {panel.view.reply.body}
+                  </Text>
+                </View>
+              ) : null}
+            </Card>
+          ) : (
+            // The standing is not read yet, or could not be: say so rather than
+            // "transmis", which would be wrong for an appeal already refused.
+            <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
+              <Text variant="micro" style={{ color: colors.textMuted }}>
+                {panel.title}
+              </Text>
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                {panel.text}
+              </Text>
+              {panel.canRetry ? (
+                <View style={{ alignSelf: "flex-start", marginTop: 6 }}>
+                  <ActionChip
+                    label="Réessayer"
+                    tone="neutral"
+                    onPress={() => void readStanding()}
+                  />
+                </View>
+              ) : null}
+            </Card>
+          )
         ) : appealOpen ? (
           <View style={{ gap: 10 }}>
             <Text variant="micro">Ton message</Text>

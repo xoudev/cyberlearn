@@ -69,18 +69,10 @@ export async function AppShell({
           <a href="#contenu" className="skip-link">
             Aller au contenu
           </a>
-          <Suspense
-            fallback={
-              <div
-                style={{
-                  width: 240,
-                  background: "var(--color-bg-base)",
-                  borderRight: "1px solid var(--color-border-subtle)",
-                  flexShrink: 0,
-                }}
-              />
-            }
-          >
+          {/* The placeholder holds the sidebar's column only where the sidebar is
+            one (.sidebar-fallback, globals.css): on a phone it is a drawer and
+            holds no room, so the page keeps the whole width while it streams. */}
+          <Suspense fallback={<div className="sidebar-fallback" />}>
             <AppSidebar />
           </Suspense>
 
@@ -108,7 +100,7 @@ export async function AppShell({
             <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-x-clip">
               {children}
             </main>
-            <Footer />
+            <Footer signedIn />
           </div>
         </SidebarProvider>
         <QueryDialogHost />

@@ -36,7 +36,7 @@ describe("other error boundaries", () => {
       "/dashboard",
     );
     expect(screen.getByRole("link", { name: "Signaler le problème" }).getAttribute("href")).toBe(
-      "/contact?ref=a%26b",
+      "/support?request=1",
     );
   });
   it("brings a complete French document and a background when the root layout failed", () => {

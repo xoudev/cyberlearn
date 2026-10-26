@@ -6,11 +6,18 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import styles from "../banned.module.css";
 import { ModalShell } from "@cyberlearn/ui";
+import { appealView, type AppealView } from "@cyberlearn/lib/tickets/appeal";
 import {
   acknowledgeBanAction,
   appealBanAction,
   type AppealState,
 } from "../_actions/appeal-actions";
+
+/** The day of the team's answer; the zone is fixed so server and browser agree. */
+const REPLY_DATE = new Intl.DateTimeFormat("fr-FR", {
+  dateStyle: "long",
+  timeZone: "Europe/Paris",
+});
 
 /**
  * The notice, and the appeal under it.
@@ -19,18 +26,25 @@ import {
  * reads it as the site being broken. It has the two buttons the decision needs:
  * close it, or answer it. Closing is recorded, so it is shown once rather than
  * every time they open a page - the page behind it still says everything.
+ *
+ * Once an appeal is filed, the page says where it stands and shows the team's
+ * last answer. It is the only place the answer can be read in the product: the
+ * ticket's own page is behind the ban gate, which sends the account back here.
  */
 export function BanNotice({
   reason,
   endsLabel,
   alreadyAcknowledged,
   alreadyAppealed,
+  appeal,
 }: {
   reason: string;
   /** Already in French: "Ce bannissement est définitif." or "Il reste 3 jours." */
   endsLabel: string;
   alreadyAcknowledged: boolean;
   alreadyAppealed: boolean;
+  /** Where the appeal stands, once there is one to read. */
+  appeal: AppealView | null;
 }): React.JSX.Element {
   const router = useRouter();
   const [open, setOpen] = useState(!alreadyAcknowledged);
@@ -39,6 +53,8 @@ export function BanNotice({
   const [state, formAction, pending] = useActionState<AppealState, FormData>(appealBanAction, {});
 
   const sent = state.ok === true || alreadyAppealed;
+  // An appeal sent a moment ago has no ticket read yet: it is just received.
+  const standing = appeal ?? appealView({ status: "OPEN", reply: null });
 
   function close(thenOpenAppeal: boolean): void {
     setOpen(false);
@@ -95,10 +111,18 @@ export function BanNotice({
       </ModalShell>
 
       {sent ? (
-        <p className={styles.sent} role="status">
-          Ton appel a été transmis à l&apos;équipe de modération. La réponse arrivera par e-mail :
-          elle contient la décision, pas seulement un avis de passage.
-        </p>
+        <div className={styles.sent} data-stage={standing.stage} role="status">
+          <p className={styles.sentTitle}>{standing.title}</p>
+          <p className={styles.sentText}>{standing.text}</p>
+          {standing.reply !== null && (
+            <blockquote className={styles.reply}>
+              <span className={styles.replyMeta}>
+                Réponse de l&apos;équipe · {REPLY_DATE.format(new Date(standing.reply.createdAt))}
+              </span>
+              {standing.reply.body}
+            </blockquote>
+          )}
+        </div>
       ) : appealOpen ? (
         <form action={formAction}>
           <label className={styles.field}>

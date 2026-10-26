@@ -11,7 +11,7 @@ Chaque leçon est un fichier `.mdx` avec un frontmatter YAML + un corps en MDX (
 content/lessons/f2-linux/02033-linux-surveiller-direct.mdx
 ```
 
-Un fichier = une leçon, rangé dans le dossier de son parcours et nommé par le numéro de son refCode (`02033` pour `CL-LSN-02033-V01`) suivi de son slug. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible.
+Un fichier = une leçon, rangé dans le dossier de son parcours et nommé par le numéro de son refCode (`02033` pour `CL-LSN-02033-V01`) suivi de son slug. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible : un refCode déjà en base s'y met à jour, une fois les différences montrées et confirmées.
 
 ---
 
@@ -190,6 +190,54 @@ l'une sous l'autre, rien d'enregistré), dans un cadre à droite de l'éditeur.
 Un brouillon qui ne s'affiche pas est refusé avec la section et la ligne en
 cause, avant toute sauvegarde. L'aperçu vit une demi-heure après sa dernière
 mise à jour ; le bouton « Rapide » redonne l'ancienne approximation.
+
+Chaque problème trouvé, par l'aperçu pendant la frappe ou par la sauvegarde,
+porte sa ligne et sa colonne dans la leçon entière, comptées à partir de 1
+comme dans l'éditeur : il est souligné dans la vue code et listé au-dessus de
+l'éditeur (« À CORRIGER »), et le bouton `L12:5` d'une ligne de la liste y
+mène, depuis la vue blocs aussi. Tous les problèmes sont rendus d'un coup, pas
+seulement le premier : une section qui ne s'affiche pas, puis les exercices
+mal configurés, les quiz sans identifiant, les chaînes qui perdraient une
+barre oblique inverse. Le message sous le champ cite le premier, avec sa
+ligne et sa colonne, et compte les autres.
+
+L'enregistrement, dans la console comme dans l'éditeur des professeurs, et
+l'import appliquent aussi les règles que la CI vérifiait seule sur `content/`
+(`packages/lib/src/mdx/authoring.ts`) : une note de rédaction restée seule
+sur sa ligne (« OK 03 écrit »), un tiret cadratin (dans le texte comme dans
+le titre et la description, qui sont publiés avec lui : le frontmatter d'un
+fichier importé est lu aussi), un `<Diagram>` que le markdown réécrirait avant
+Mermaid. L'aperçu les montre sans bloquer le rendu ; la sauvegarde les
+refuse. Seul l'analyseur de Mermaid reste à la CI (`content:diagrams`, voir
+5.10) : la console ne dépend pas de Mermaid.
+
+Dans la console, une leçon s'ouvre dans son **studio** (`/lessons/<id>`) :
+sa fiche dans un rail à gauche, l'éditeur et l'aperçu du site à droite, sur
+toute la largeur de la fenêtre. Ce qui est tapé n'atteint pas la leçon : il
+part dans son brouillon (`lesson_drafts`) après chaque pause de deux
+secondes, ou tout de suite avec ⌘S (Ctrl+S), et la barre du studio dit où il
+en est. Les apprenants, sur le site comme dans l'app, lisent la version
+publiée jusqu'à « Publier les changements », qui refuse ce que la sauvegarde
+refusait, puis recopie le brouillon dans la leçon et garde la version
+précédente. La liste des versions, sous la fiche, remet n'importe laquelle
+dans le brouillon, à publier comme une modification. Le séparateur entre
+l'éditeur et l'aperçu se déplace (double-clic : largeur par défaut), et
+l'aperçu se cadre à la largeur d'un téléphone avec « MOBILE ». Le statut de la
+leçon, lui, s'applique tout de suite, à la version publiée. Une leçon de
+classe n'a ni brouillon ni versions : l'éditeur du professeur enregistre dans
+la leçon, avec le même ⌘S et la même alerte avant de quitter une page
+modifiée.
+
+L'import d'un fichier (« Mettre à jour » sur `/lessons/import`, ou une leçon
+créée) et la synchronisation avec le dépôt (`/lessons/sync`) publient par la
+même fonction que le studio (`lessonVersionRepository.publish`) : chaque
+écriture crée une version, marquée « Import » ou « Synchronisation » dans la
+liste du studio, et une seule ligne du journal d'audit. Une mise à jour est
+refusée si la leçon a changé depuis que ses différences ont été affichées. Un
+brouillon ouvert dans le studio n'est jamais touché : les différences le
+signalent avant de confirmer, et le studio, à sa prochaine ouverture, dit que
+la leçon a changé depuis le début du brouillon ; sa publication demande avant
+de remplacer ce que le fichier a écrit.
 
 L'éditeur s'ouvre en **blocs** : la leçon découpée en titres, en passages de
 Markdown et en composants, chacun sous forme de champs (ton et texte d'un
@@ -449,7 +497,7 @@ main:
 | `scenario` | string | - | Scénario prédéfini (voir liste ci-dessous) |
 | `commands` | `Record<string, string>` | - | Commandes personnalisées supplémentaires |
 | `title` | string | - | Titre affiché dans la barre du terminal |
-| `height` | number | `320` | Hauteur en pixels |
+| `height` | number | - | Hauteur de l'écran en pixels. Sans `height`, l'écran grandit avec la largeur de son bloc, de 320 à 480 px ; un `height` écrit fixe la hauteur, même dans un bloc large. N'en écris un que si l'exercice demande une hauteur précise |
 | `expectedCommands` | `string[]` | - | Commandes que l'étudiant doit taper pour valider l'exercice |
 | `hints` | `string[]` | - | Indices affichés sous le terminal |
 | `onComplete` | `() => void` | - | Callback déclenché quand toutes les `expectedCommands` ont été tapées |
@@ -617,7 +665,7 @@ tourne sur nos serveurs.
 | `expectedCommands` | Commandes demandées, cochées quand l'élève les tape (espaces normalisés). Une commande rappelée avec les flèches ne compte pas : il faut la retaper |
 | `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "link" \| "absent", contains?, mode?, target?, links? }`. `contains` : un texte que le fichier doit contenir ; `mode` : les permissions en octal, comme chmod les écrit (`"640"`, `"4755"`) ; `target` : la cible d'un lien symbolique, telle qu'écrite par `ln -s` ; `links` : le nombre de liens physiques (`2` après `ln`). Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement, de liens ou de permissions |
 | `hints` | Indices affichés sous le terminal |
-| `height` | Hauteur en pixels, de 200 à 900 (défaut 380) |
+| `height` | Hauteur de l'écran en pixels, de 200 à 900. Sans `height`, l'écran grandit avec la largeur de son bloc, de 380 à 560 px ; un `height` écrit fixe la hauteur, même dans un bloc large. N'en écris un que si l'exercice demande une hauteur précise |
 | `timeLimitMinutes` | Exercice chronométré, de 1 à 180 minutes, comme l'épreuve pratique d'un parcours. Le compte à rebours démarre quand la machine est prête, s'arrête dès que tout est fait, et garde le score atteint à la fin du temps ; l'élève peut ensuite finir, hors délai. Redémarrer la machine relance le chronomètre |
 
 À savoir en écrivant :
@@ -1704,9 +1752,15 @@ compilation d'une leçon, ou pire, supprime du contenu sans prévenir.
 | Un vrai retour à la ligne dans une valeur de `commands` de `SimulatedTerminal` | La leçon ne compile plus | `\n` dans la chaîne |
 | Des entités HTML (`&quot;`) dans un attribut | Pas toujours décodées selon le lecteur (site, app) | Des apostrophes |
 
-Le test `packages/lib/src/mdx/content.test.ts` compile chaque leçon, et
-`pnpm --filter @cyberlearn/web content:diagrams` vérifie que chaque schéma
-traverse MDX intact et que Mermaid sait le lire : lance-les avant de pousser.
+Le test `packages/lib/src/mdx/content.test.ts` passe chaque leçon au contrôle
+de l'enregistrement, et `pnpm --filter @cyberlearn/web content:diagrams`
+vérifie que chaque schéma traverse MDX intact et que Mermaid sait le lire :
+lance-les avant de pousser. `pnpm --filter @cyberlearn/admin content:check`
+fait passer chaque fichier de `content/lessons` par le code de l'import
+(frontmatter, injection, rendu, règles du catalogue), chaque problème à sa
+ligne dans le fichier, puis vérifie les 300 mots, le quiz et l'unicité du
+`refCode` ; `--fix` met les guillemets du frontmatter, réécrit les
+`<CodePlayground>` et retire la note de rédaction de fin de leçon.
 
 ## 6. Règles de contenu
 

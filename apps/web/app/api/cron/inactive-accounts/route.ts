@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { failureCounts, trackCronRun } from "@/lib/cron-run";
 import { runInactiveAccounts } from "@/lib/rgpd/inactive-accounts";
 
 // Vercel Cron (see vercel.json), daily: erases the accounts inactive for 24
@@ -17,7 +18,15 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const summary = await runInactiveAccounts(new Date());
+    // An account that could not be erased or warned leaves the others to go
+    // through, and the run failed all the same.
+    const summary = await trackCronRun("inactive-accounts", () => runInactiveAccounts(new Date()), {
+      failure: (r) =>
+        failureCounts([
+          [r.erasureFailures, "effacement en échec", "effacements en échec"],
+          [r.noticeFailures, "avis non envoyé", "avis non envoyés"],
+        ]),
+    });
     logger.info({ scope: "rgpd", ...summary }, "inactive accounts run done");
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {

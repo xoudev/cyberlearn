@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avatarLabel, examWait } from "../user-record";
+import { avatarLabel, examWait, userExportFilename } from "../user-record";
 
 describe("avatarLabel", () => {
   it.each([
@@ -59,5 +59,21 @@ describe("examWait", () => {
       state: "waived",
       at: hoursAgo(1),
     });
+  });
+});
+
+describe("userExportFilename", () => {
+  const USER = "11111111-1111-4111-8111-111111111111";
+
+  it("names the file after the account and the day", () => {
+    expect(userExportFilename(USER, new Date("2026-10-17T12:00:00Z"))).toBe(
+      `cyberlearn-export-${USER}-2026-10-17.json`,
+    );
+  });
+
+  it("counts the day in Paris, not in UTC", () => {
+    expect(userExportFilename(USER, new Date("2026-10-17T22:30:00Z"))).toBe(
+      `cyberlearn-export-${USER}-2026-10-18.json`,
+    );
   });
 });

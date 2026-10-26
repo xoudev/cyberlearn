@@ -1,17 +1,11 @@
 import React from "react";
 import Link from "next/link";
-import { ProgressionHeading } from "@/components/progression-heading";
 import { BastionLogo } from "@/components/bastion-logo";
 import "@/components/progression-workspace.css";
 
 export function ChallengesWip(): React.ReactElement {
   return (
-    <div className="page-container learning-catalogue learning-workspace progression-workspace">
-      <ProgressionHeading
-        eyebrow="Pratiquer / Les prochains exercices"
-        title="Les défis"
-        description="CTF, puzzles et labs : la pratique se prépare."
-      />
+    <div className="progression-workspace">
       <section className="progression-empty">
         <BastionLogo size={64} />
         <div>

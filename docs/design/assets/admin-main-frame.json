@@ -1,0 +1,50 @@
+[
+  {
+    "admin": [
+      "ADMIN"
+    ],
+    "bar": 56,
+    "bottom": "80px",
+    "client": 305,
+    "gutter": "16px",
+    "scroll": 305,
+    "top": "24px",
+    "width": 320
+  },
+  {
+    "admin": [
+      "Console d’administration"
+    ],
+    "bar": 56,
+    "bottom": "96px",
+    "client": 753,
+    "gutter": "28px",
+    "scroll": 753,
+    "top": "28px",
+    "width": 768
+  },
+  {
+    "admin": [
+      "Console d’administration"
+    ],
+    "bar": 56,
+    "bottom": "110px",
+    "client": 1265,
+    "gutter": "36px",
+    "scroll": 1265,
+    "top": "32px",
+    "width": 1280
+  },
+  {
+    "admin": [
+      "Console d’administration"
+    ],
+    "bar": 56,
+    "bottom": "110px",
+    "client": 1585,
+    "gutter": "36px",
+    "scroll": 1585,
+    "top": "32px",
+    "width": 1600
+  }
+]

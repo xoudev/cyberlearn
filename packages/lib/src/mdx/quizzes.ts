@@ -1,6 +1,7 @@
 import { createProcessor } from "@mdx-js/mdx";
 import remarkGfm from "remark-gfm";
-import { attributeValue, type MdNode } from "./attributes.js";
+import { attributeValue, type MdNode, type PlacedProblem, startOfNode } from "./attributes.js";
+import { splitMdxSections } from "./split-sections.js";
 
 /**
  * The quizzes of a lesson, read from its MDX without running any of it.
@@ -31,6 +32,9 @@ export interface RawQuiz {
   options: unknown;
   correct: unknown;
   explanation: unknown;
+  /** Where its `<Quiz` starts in the MDX read, both from 1. */
+  line: number;
+  column: number;
 }
 
 function stripFrontmatter(mdx: string): string {
@@ -41,7 +45,10 @@ const processor = createProcessor({ remarkPlugins: [remarkGfm] });
 
 /** Every <Quiz> of a piece of MDX, in order, as written. Throws if it does not parse. */
 export function readQuizElements(mdx: string): RawQuiz[] {
-  const tree = processor.parse(stripFrontmatter(mdx)) as unknown as MdNode;
+  const body = stripFrontmatter(mdx);
+  // The lines the frontmatter took, so a quiz's line is the one in `mdx`.
+  const skipped = mdx.slice(0, mdx.length - body.length).split("\n").length - 1;
+  const tree = processor.parse(body) as unknown as MdNode;
   const found: RawQuiz[] = [];
   const visit = (node: unknown): void => {
     if (typeof node !== "object" || node === null) return;
@@ -61,6 +68,8 @@ export function readQuizElements(mdx: string): RawQuiz[] {
         options: attrs.options ?? attrs.choices,
         correct: attrs.correct,
         explanation: attrs.explanation,
+        line: (startOfNode(n)?.line ?? 1) + skipped,
+        column: startOfNode(n)?.column ?? 1,
       });
     }
     for (const child of n.children ?? []) visit(child);
@@ -99,6 +108,21 @@ export function extractLessonQuizzes(mdx: string): LessonQuiz[] {
 }
 
 /**
+ * The section of a lesson each of its quizzes is in, from 0, as the lesson
+ * page cuts it (splitMdxSections, one section a step), by quiz id. A section
+ * that does not parse lists none. "Revoir ce passage" opens the lesson there.
+ */
+export function quizSections(mdx: string): Map<string, number> {
+  const sections = new Map<string, number>();
+  for (const [index, section] of splitMdxSections(mdx).entries()) {
+    for (const quiz of extractLessonQuizzes(section)) {
+      if (!sections.has(quiz.id)) sections.set(quiz.id, index);
+    }
+  }
+  return sections;
+}
+
+/**
  * What makes a piece of MDX's quizzes unscorable, in French, or null.
  *
  * An answer is stored under the quiz's id, so a quiz without one cannot be
@@ -106,39 +130,51 @@ export function extractLessonQuizzes(mdx: string): LessonQuiz[] {
  * `seen` set for every section of a lesson: ids are unique per lesson.
  */
 export function quizProblem(mdx: string, seen = new Set<string>()): string | null {
+  return quizProblems(mdx, seen)[0]?.message ?? null;
+}
+
+/** Every unscorable quiz of a piece of MDX, each at its tag: what the editor marks. */
+export function quizProblems(mdx: string, seen = new Set<string>()): PlacedProblem[] {
   let raw: RawQuiz[];
   try {
     raw = readQuizElements(mdx);
   } catch {
     // Not parsing is checkLessonMdx's to report, with the section.
-    return null;
+    return [];
   }
+  const problems: PlacedProblem[] = [];
   for (const q of raw) {
-    const label =
-      typeof q.question === "string" && q.question !== "" ? `« ${q.question} »` : "sans question";
-    if (typeof q.id !== "string" || q.id.trim() === "") {
-      return `Le quiz ${label} n'a pas d'identifiant : ajoute-lui un id="…" propre à cette leçon.`;
-    }
-    if (seen.has(q.id)) {
-      return `Deux quiz portent l'identifiant « ${q.id} ». La réponse d'un élève est enregistrée sous cet identifiant : chaque quiz d'une leçon a le sien.`;
-    }
-    seen.add(q.id);
-    const options = q.options;
-    if (
-      !Array.isArray(options) ||
-      options.length < 2 ||
-      !options.every((o) => typeof o === "string")
-    ) {
-      return `Le quiz « ${q.id} » doit avoir au moins deux options écrites en texte : options={["…", "…"]}.`;
-    }
-    if (
-      typeof q.correct !== "number" ||
-      !Number.isInteger(q.correct) ||
-      q.correct < 0 ||
-      q.correct >= options.length
-    ) {
-      return `Le quiz « ${q.id} » : correct doit être le numéro d'une de ses options, de 0 à ${String(options.length - 1)}.`;
-    }
+    const message = problemOf(q, seen);
+    if (message !== null) problems.push({ message, line: q.line, column: q.column });
+  }
+  return problems;
+}
+
+function problemOf(q: RawQuiz, seen: Set<string>): string | null {
+  const label =
+    typeof q.question === "string" && q.question !== "" ? `« ${q.question} »` : "sans question";
+  if (typeof q.id !== "string" || q.id.trim() === "") {
+    return `Le quiz ${label} n'a pas d'identifiant : ajoute-lui un id="…" propre à cette leçon.`;
+  }
+  if (seen.has(q.id)) {
+    return `Deux quiz portent l'identifiant « ${q.id} ». La réponse d'un élève est enregistrée sous cet identifiant : chaque quiz d'une leçon a le sien.`;
+  }
+  seen.add(q.id);
+  const options = q.options;
+  if (
+    !Array.isArray(options) ||
+    options.length < 2 ||
+    !options.every((o) => typeof o === "string")
+  ) {
+    return `Le quiz « ${q.id} » doit avoir au moins deux options écrites en texte : options={["…", "…"]}.`;
+  }
+  if (
+    typeof q.correct !== "number" ||
+    !Number.isInteger(q.correct) ||
+    q.correct < 0 ||
+    q.correct >= options.length
+  ) {
+    return `Le quiz « ${q.id} » : correct doit être le numéro d'une de ses options, de 0 à ${String(options.length - 1)}.`;
   }
   return null;
 }

@@ -1,9 +1,12 @@
 import React, { Suspense } from "react";
-import Link from "next/link";
+import type { Metadata } from "next";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { LevelRing } from "./_components/level-ring";
 import { MissionCard, type MissionCardProps } from "./_components/mission-card";
-import { ReviewsDue } from "./_components/reviews-due";
+import { DailyRecallCard } from "./_components/daily-recall-card";
+import { DuelInvites } from "./_components/duel-invites";
+import { FriendsActivity } from "./_components/friends-activity";
+import { LiveTournaments } from "./_components/live-tournaments";
 import { Standing } from "./_components/standing";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel, msUntilWeekReset } from "@cyberlearn/lib";
@@ -12,24 +15,31 @@ import { rankFeaturedPaths } from "@cyberlearn/lib/dashboard/featured-paths";
 import { currentLessonId, moduleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
+import { runningTournaments } from "@cyberlearn/lib/dashboard/your-move";
 import { fmtWeekReset } from "@cyberlearn/lib/gamification/weekly-quests";
 import {
-  CATALOGUE_PATH,
+  dashboardRepository,
   leaderboardRepository,
-  PUBLISHED_PATH_LESSON,
   lessonRepository,
-  pathsVisibleTo,
-  prisma,
-  reviewRepository,
+  placementRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { dailyRecallState } from "@/lib/revisions/daily-recall";
+import { RappelButton } from "@/components/rappel/rappel-button";
 import { savedLearningAnswers } from "@/lib/paths/suggestions";
+import { friendsActivityFor } from "@/lib/friends/friends-activity";
+import { listDuelInvitationsFor } from "@/lib/social/duels";
+import { listTournamentsFor } from "@/lib/tournaments/tournaments";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 import "./dashboard.css";
 import { brandTypeface } from "@/components/brand-typeface";
+
+// The tab said the site's generic title: the dashboard was the one page of the
+// signed-in site that named nothing.
+export const metadata: Metadata = { title: "Tableau de bord" };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -45,10 +55,12 @@ export default function DashboardPage(): React.ReactElement {
  * The dashboard answers one question: what do I do now?
  *
  * So it has one strong card, the mission, with the module it sits in drawn
- * beside it; under it the revisions due and the week; and at the bottom, in
- * one line, where the reader stands. The level is a ring in the header, the
- * streak a flame beside the greeting. Nothing is numbered, nothing pretends
- * to be a terminal.
+ * beside it; under it what will not wait, when there is any (a duel a friend
+ * sent, a tournament under way); then the day's recall and the week; and at
+ * the bottom, in one line, where the reader stands; between the two, for a
+ * reader with friends, what they did lately. The level is a ring in the
+ * header, the streak a flame beside the greeting. Nothing is numbered,
+ * nothing pretends to be a terminal.
  */
 async function DashboardContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
@@ -59,106 +71,48 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
   const [
     dbUser,
-    inProgressRows,
-    reviewSession,
-    completedTotal,
-    completedThisMonth,
-    badgeRows,
-    badgeTotal,
-    badgesThisMonth,
+    resume,
+    recallState,
+    completed,
+    badges,
     certificateCount,
     certifiablePaths,
     userRank,
     allPaths,
     placementResult,
-    recentLessons,
+    recentCategories,
     wantsRevisions,
     learningAnswers,
+    friends,
+    duelInvites,
+    tournaments,
   ] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: { displayName: true, xpTotal: true, streakDays: true, longestStreak: true },
-    }),
-    prisma.userLessonProgress.findMany({
-      where: { userId: authUser.id, status: "IN_PROGRESS" },
-      include: {
-        lesson: {
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            description: true,
-            category: true,
-            estimatedMinutes: true,
-            xpReward: true,
-          },
-        },
-      },
-      orderBy: { lastAccessedAt: "desc" },
-      take: 1,
-    }),
-    // The day's session, as the page and the sidebar count it: five at most,
-    // of the lessons still published.
-    reviewRepository.findSession(authUser.id, now),
-    prisma.userLessonProgress.count({ where: { userId: authUser.id, status: "COMPLETED" } }),
-    prisma.userLessonProgress.count({
-      where: { userId: authUser.id, status: "COMPLETED", completedAt: { gte: monthStart } },
-    }),
-    prisma.userBadge.findMany({
-      where: { userId: authUser.id },
-      include: { badge: { select: { name: true, rarity: true, iconUrl: true } } },
-      orderBy: { earnedAt: "desc" },
-      take: 3,
-    }),
-    prisma.userBadge.count({ where: { userId: authUser.id } }),
-    prisma.userBadge.count({ where: { userId: authUser.id, earnedAt: { gte: monthStart } } }),
-    prisma.certificate.count({ where: { userId: authUser.id, revokedAt: null } }),
-    // The denominator is the catalogue, because that is what issues
-    // certificates: checkAndIssueCertificates walks the catalogue paths a
-    // finished lesson belongs to. A class's own path is not one of them.
-    prisma.path.count({ where: CATALOGUE_PATH }),
+    dashboardRepository.findHeader(authUser.id),
+    dashboardRepository.findLessonInProgress(authUser.id),
+    // The day's recall: to do, done, or nothing to ask, as the window will
+    // find it (drawn here on the day's first visit with a card due). Never a
+    // count.
+    dailyRecallState(authUser.id, now),
+    dashboardRepository.countCompletedLessons(authUser.id, monthStart),
+    dashboardRepository.badgeSummary(authUser.id, monthStart),
+    dashboardRepository.countCertificates(authUser.id),
+    dashboardRepository.countCertifiablePaths(),
     leaderboardRepository.findUserRank(authUser.id),
-    // Not { status: "PUBLISHED" }. A path a teacher builds for their class is
-    // published - the class has to be able to open it - so that filter
-    // recommended one class's private work to the whole site. pathsVisibleTo is
-    // the rule the catalogue and the slug lookup read: the catalogue, plus the
-    // paths built for the classes this reader is in or teaches.
-    prisma.path.findMany({
-      where: pathsVisibleTo(authUser.id),
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        category: true,
-        difficulty: true,
-        estimatedHours: true,
-        _count: {
-          select: {
-            lessons: { where: PUBLISHED_PATH_LESSON },
-            progress: { where: { status: "COMPLETED" } },
-          },
-        },
-        progress: { where: { userId: authUser.id }, select: { status: true }, take: 1 },
-      },
-    }),
-    prisma.userPlacementResult.findUnique({
-      where: { userId: authUser.id },
-      select: { devScore: true, cybersecScore: true, networkScore: true },
-    }),
-    prisma.userLessonProgress.findMany({
-      where: { userId: authUser.id, status: "COMPLETED" },
-      select: { lesson: { select: { category: true } } },
-      orderBy: { completedAt: "desc" },
-      take: 20,
-    }),
+    dashboardRepository.listPathsToRank(authUser.id),
+    placementRepository.findScoresFor(authUser.id),
+    dashboardRepository.recentCompletedCategories(authUser.id),
     revisionsEnabled(authUser.id),
     // What they said they came for at sign-up, step 3.
     savedLearningAnswers(authUser.id),
+    // "Tes amis": the friends' recent moments, nothing for a reader without one.
+    friendsActivityFor(authUser.id),
+    // What will not wait: the invitations lapse after a day, a tournament
+    // closes at its hour.
+    listDuelInvitationsFor(authUser.id, now),
+    listTournamentsFor(authUser.id, now),
   ]);
+  const liveTournaments = runningTournaments(tournaments);
 
-  const dueReviews = reviewSession.rows.slice(0, 3);
-  const dueTotal = reviewSession.rows.length;
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
   const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
   const firstName = (dbUser?.displayName ?? "Opérateur").split(" ")[0] ?? "Opérateur";
@@ -176,59 +130,22 @@ async function DashboardContent(): Promise<React.ReactElement> {
             NETWORK: placementResult.networkScore,
           }
         : null,
-      recentCategories: recentLessons.map((row) => row.lesson.category),
+      recentCategories,
       goals: learningAnswers.goals ?? [],
     },
   );
 
   // Its lessons and modules, to draw the module the reader is in; and which
   // of those lessons are done. Only for the one path that leads.
-  const leadDetail = lead
-    ? await prisma.path.findUnique({
-        where: { id: lead.id },
-        select: {
-          modules: {
-            orderBy: { position: "asc" },
-            select: { id: true, position: true, title: true },
-          },
-          lessons: {
-            orderBy: { position: "asc" },
-            // The path page's missions: the mission card must not send the
-            // reader to a draft or an archived lesson, which is a 404.
-            where: PUBLISHED_PATH_LESSON,
-            select: {
-              moduleId: true,
-              lesson: {
-                select: {
-                  id: true,
-                  slug: true,
-                  title: true,
-                  description: true,
-                  estimatedMinutes: true,
-                  xpReward: true,
-                },
-              },
-            },
-          },
-        },
-      })
-    : null;
+  const leadDetail = lead ? await dashboardRepository.findLeadPath(lead.id) : null;
   const leadLessonIds = leadDetail?.lessons.map((pl) => pl.lesson.id) ?? [];
   // And which the placement test waived: the mission passes over them, as
   // "Commencer" on the path's page does. (An empty list costs no query.)
   const [completedInLead, waivedInLead] = await Promise.all([
-    leadLessonIds.length > 0
-      ? prisma.userLessonProgress
-          .findMany({
-            where: { userId: authUser.id, status: "COMPLETED", lessonId: { in: leadLessonIds } },
-            select: { lessonId: true },
-          })
-          .then((rows) => new Set(rows.map((row) => row.lessonId)))
-      : new Set<string>(),
+    dashboardRepository.completedLessonIds(authUser.id, leadLessonIds).then((ids) => new Set(ids)),
     lessonRepository.findWaivedLessonIds(authUser.id, leadLessonIds).then((ids) => new Set(ids)),
   ]);
 
-  const resume = inProgressRows[0]?.lesson ?? null;
   const mission = planMission({
     lead: lead && leadDetail ? { ...lead, ...leadDetail } : null,
     completedInLead,
@@ -251,14 +168,11 @@ async function DashboardContent(): Promise<React.ReactElement> {
       </span>,
     );
   }
-  if (wantsRevisions && dueTotal > 0) {
+  if (wantsRevisions && recallState === "todo") {
     heroNotes.push(
-      <Link key="reviews" href="/revisions">
-        <b>
-          {dueTotal} révision{dueTotal > 1 ? "s" : ""}
-        </b>{" "}
-        {dueTotal > 1 ? "t'attendent" : "t'attend"}
-      </Link>,
+      <RappelButton key="recall" className="dash-hero-link">
+        <b>Ton rappel du jour</b> t&apos;attend
+      </RappelButton>,
     );
   }
   if (heroNotes.length === 0) {
@@ -266,12 +180,12 @@ async function DashboardContent(): Promise<React.ReactElement> {
   }
 
   const stats = dashboardStats({
-    completedThisMonth,
-    completedTotal,
+    completedThisMonth: completed.thisMonth,
+    completedTotal: completed.total,
     streakDays,
     longestStreak: dbUser?.longestStreak ?? 0,
-    badgesThisMonth,
-    badgeTotal,
+    badgesThisMonth: badges.thisMonth,
+    badgeTotal: badges.total,
     certificateCount,
     certifiablePaths,
   });
@@ -312,6 +226,16 @@ async function DashboardContent(): Promise<React.ReactElement> {
         </section>
 
         <MissionCard {...mission} />
+        {(duelInvites.length > 0 || liveTournaments.length > 0) && (
+          <div
+            className={`dash-cols${duelInvites.length > 0 && liveTournaments.length > 0 ? "" : " dash-cols--single"}`}
+          >
+            {duelInvites.length > 0 && <DuelInvites duels={duelInvites} />}
+            {liveTournaments.length > 0 && (
+              <LiveTournaments tournaments={liveTournaments} nowMs={now.getTime()} />
+            )}
+          </div>
+        )}
 
         <div className="learning-grid">
           <div className="learning-primary">
@@ -329,10 +253,11 @@ async function DashboardContent(): Promise<React.ReactElement> {
           </div>
 
           <aside className="learning-aside" aria-label="Révisions et progression">
-            {wantsRevisions && <ReviewsDue rows={dueReviews} dueTotal={dueTotal} now={now} />}
-            <Standing stats={stats} badges={badgeRows} badgeTotal={badgeTotal} />
+            {wantsRevisions && <DailyRecallCard state={recallState} />}
+            <Standing stats={stats} badges={badges.recent} badgeTotal={badges.total} />
           </aside>
         </div>
+        {friends.hasFriends && <FriendsActivity items={friends.items} now={now.getTime()} />}
       </div>
     </div>
   );

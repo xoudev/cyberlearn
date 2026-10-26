@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
 import { useAdminConfirmation } from "../../../../_components/admin-confirmation";
+import { notifyResult } from "@/lib/notify";
 import {
   createQuestionAction,
   deleteQuestionAction,
@@ -39,7 +40,6 @@ interface Props {
 // ── Shared admin tokens (aligned with the Lessons / Badges CRUD pages) ──────────
 const BORDER = "var(--a-border-2)";
 const DANGER = "var(--a-danger)";
-const TURQ = "var(--a-accent)";
 const BLUE = "var(--a-accent)";
 
 const LABEL_STYLE: React.CSSProperties = {
@@ -137,7 +137,7 @@ const smallGhostBtnStyle: React.CSSProperties = {
 const errorStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: 10,
-  color: DANGER,
+  color: "var(--a-danger)",
   margin: "8px 0 0",
 };
 
@@ -224,7 +224,13 @@ function SettingsForm({
         questionsToDraw,
         isActive,
       });
-      if (!res.ok) setError(res.error ?? "Échec.");
+      // The error stays under the settings it is about; the success, which
+      // used to say nothing, is a toast.
+      const ok = notifyResult(res, {
+        success: quiz ? "Réglages du quiz enregistrés." : "Quiz créé.",
+        error: false,
+      });
+      if (!ok) setError(res.error ?? "Échec.");
       else router.refresh();
     });
   }
@@ -273,7 +279,7 @@ function SettingsForm({
           onChange={(e) => {
             setIsActive(e.target.checked);
           }}
-          style={{ accentColor: TURQ, width: 16, height: 16 }}
+          style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
         />
         <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
           Quiz actif (requis pour obtenir le certificat)
@@ -391,7 +397,8 @@ function QuestionRow({
     setError(null);
     start(async () => {
       const res = await deleteQuestionAction({ questionId: question.id, pathId: path.id });
-      if (!res.ok) setError(res.error ?? "Échec.");
+      const ok = notifyResult(res, { success: "Question supprimée.", error: false });
+      if (!ok) setError(res.error ?? "Échec.");
       else router.refresh();
     });
   }
@@ -463,7 +470,10 @@ function QuestionRow({
         }}
       >
         {question.options.map((o) => (
-          <li key={o.id} style={{ color: o.id === question.correctOptionId ? TURQ : undefined }}>
+          <li
+            key={o.id}
+            style={{ color: o.id === question.correctOptionId ? "var(--a-accent)" : undefined }}
+          >
             {o.id === question.correctOptionId ? "✓ " : ""}
             <b>{o.id}</b> : {o.text}
           </li>
@@ -519,7 +529,11 @@ function QuestionForm({
       const res = question
         ? await updateQuestionAction({ questionId: question.id, pathId: path.id, ...payload })
         : await createQuestionAction({ quizId, pathId: path.id, ...payload });
-      if (!res.ok) {
+      const ok = notifyResult(res, {
+        success: question ? "Question mise à jour." : "Question ajoutée.",
+        error: false,
+      });
+      if (!ok) {
         setError(res.error ?? "Échec.");
         return;
       }
@@ -529,7 +543,7 @@ function QuestionForm({
   }
 
   return (
-    <div style={{ ...CARD_STYLE, borderLeftColor: TURQ }}>
+    <div style={{ ...CARD_STYLE, borderLeftColor: "var(--a-accent)" }}>
       <p style={SECTION_EYEBROW}>{question ? "Éditer la question" : "Nouvelle question"}</p>
 
       <Field label="Question">
@@ -554,7 +568,7 @@ function QuestionForm({
                 setCorrectOptionId(o.id);
               }}
               title="Bonne réponse"
-              style={{ accentColor: TURQ, width: 16, height: 16, flexShrink: 0 }}
+              style={{ accentColor: "var(--a-accent)", width: 16, height: 16, flexShrink: 0 }}
             />
             <input
               style={{ ...INPUT_STYLE, width: 70, flexShrink: 0 }}
@@ -618,7 +632,7 @@ function QuestionForm({
             onChange={(e) => {
               setIsActive(e.target.checked);
             }}
-            style={{ accentColor: TURQ, width: 16, height: 16 }}
+            style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
           />
           <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
             Active

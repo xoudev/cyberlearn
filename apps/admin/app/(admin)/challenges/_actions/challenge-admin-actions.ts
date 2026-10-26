@@ -3,9 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, JSON_NULL_IN_DB, tournamentRepository } from "@cyberlearn/db";
+import { auditLogRepository, prisma, JSON_NULL_IN_DB, tournamentRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { changedFields } from "@/lib/audit-diff";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { type ChallengeMachine, parseChallengeMachine } from "@cyberlearn/types";
 
 // ── Shared form state ──────────────────────────────────────────────────────────
@@ -164,15 +166,16 @@ export async function createChallengeAction(
         },
         select: { id: true },
       });
-      await tx.auditLog.create({
-        data: {
+      await auditLogRepository.record(
+        {
           actorId: admin.id,
-          action: "challenge.create",
+          action: AUDIT_ACTION.challenge.create,
           targetType: TARGET,
           targetId: created.id,
           metadata: { refCode: rest.refCode, title: rest.title, type: rest.type },
         },
-      });
+        tx,
+      );
       return created.id;
     });
   } catch (err) {
@@ -183,7 +186,7 @@ export async function createChallengeAction(
   }
 
   revalidatePath("/challenges");
-  redirect(`/challenges/${createdId}/edit`);
+  redirect(withSavedNotice(`/challenges/${createdId}/edit`, "created"));
 }
 
 // ── Update ─────────────────────────────────────────────────────────────────────
@@ -229,15 +232,16 @@ export async function updateChallengeAction(
         where: { id },
         data: { ...fields, machine: fields.machine ?? JSON_NULL_IN_DB },
       });
-      await tx.auditLog.create({
-        data: {
+      await auditLogRepository.record(
+        {
           actorId: admin.id,
-          action: "challenge.update",
+          action: AUDIT_ACTION.challenge.update,
           targetType: TARGET,
           targetId: id,
           metadata: { changed: changedFields(before, fields) },
         },
-      });
+        tx,
+      );
       return "updated" as const;
     });
     if (outcome === "missing") return { error: "Ce challenge n'existe plus." };
@@ -264,15 +268,16 @@ export async function setChallengeActiveAction(
 
   await prisma.$transaction(async (tx) => {
     await tx.challenge.update({ where: { id }, data: { isActive } });
-    await tx.auditLog.create({
-      data: {
+    await auditLogRepository.record(
+      {
         actorId: admin.id,
-        action: "challenge.active.update",
+        action: AUDIT_ACTION.challenge.activeUpdate,
         targetType: TARGET,
         targetId: id,
         metadata: { isActive },
       },
-    });
+      tx,
+    );
   });
   revalidatePath("/challenges");
   return {};
@@ -307,18 +312,19 @@ export async function deleteChallengeAction(id: string): Promise<{ error?: strin
   // nothing to whoever reads the log.
   await prisma.$transaction(async (tx) => {
     await tx.challenge.delete({ where: { id } });
-    await tx.auditLog.create({
-      data: {
+    await auditLogRepository.record(
+      {
         actorId: admin.id,
-        action: "challenge.delete",
+        action: AUDIT_ACTION.challenge.delete,
         targetType: TARGET,
         targetId: id,
         metadata: { refCode: existing.refCode, title: existing.title },
       },
-    });
+      tx,
+    );
   });
   revalidatePath("/challenges");
-  redirect("/challenges");
+  redirect(withSavedNotice("/challenges", "deleted"));
 }
 
 // ── Hint CRUD ─────────────────────────────────────────────────────────────────
@@ -350,15 +356,16 @@ export async function createHintAction(
         data: { challengeId, ...validated.data },
         select: { id: true },
       });
-      await tx.auditLog.create({
-        data: {
+      await auditLogRepository.record(
+        {
           actorId: admin.id,
-          action: "challenge.hint.create",
+          action: AUDIT_ACTION.challenge.hintCreate,
           targetType: TARGET,
           targetId: challengeId,
           metadata: { hintId: hint.id, xpCost: validated.data.xpCost },
         },
-      });
+        tx,
+      );
     });
   } catch {
     return { error: "Erreur lors de la création de l'indice." };
@@ -392,15 +399,16 @@ export async function updateHintAction(
         data: validated.data,
         select: { challengeId: true },
       });
-      await tx.auditLog.create({
-        data: {
+      await auditLogRepository.record(
+        {
           actorId: admin.id,
-          action: "challenge.hint.update",
+          action: AUDIT_ACTION.challenge.hintUpdate,
           targetType: TARGET,
           targetId: hint.challengeId,
           metadata: { hintId, xpCost: validated.data.xpCost },
         },
-      });
+        tx,
+      );
     });
   } catch {
     return { error: "Erreur lors de la mise à jour de l'indice." };
@@ -420,15 +428,16 @@ export async function deleteHintAction(hintId: string): Promise<{ error?: string
         where: { id: hintId },
         select: { challengeId: true },
       });
-      await tx.auditLog.create({
-        data: {
+      await auditLogRepository.record(
+        {
           actorId: admin.id,
-          action: "challenge.hint.delete",
+          action: AUDIT_ACTION.challenge.hintDelete,
           targetType: TARGET,
           targetId: hint.challengeId,
           metadata: { hintId },
         },
-      });
+        tx,
+      );
     });
   } catch {
     return { error: "Erreur lors de la suppression de l'indice." };

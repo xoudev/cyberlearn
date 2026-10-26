@@ -1,6 +1,9 @@
 import React from "react";
 import Link from "next/link";
-import { FileDown } from "lucide-react";
+import { FileDown, RotateCcw } from "lucide-react";
+import { MODULE_REVIEW_ACTION, MODULE_REVIEW_HINT } from "@cyberlearn/lib/revisions/recall-copy";
+import { RappelButton } from "@/components/rappel/rappel-button";
+import { moduleRappelValue } from "@/components/rappel/rappel-query";
 import { moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
 import type { LockState } from "@cyberlearn/lib/paths/unlock";
 import { difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
@@ -98,6 +101,16 @@ export function PathCurriculum({
                 >
                   <FileDown size={16} strokeWidth={1.75} aria-hidden="true" /> Fiche PDF
                 </a>
+                {completed > 0 && (
+                  <RappelButton
+                    value={moduleRappelValue(pathSlug, module.number)}
+                    className="path-module__download"
+                    title={MODULE_REVIEW_HINT}
+                  >
+                    <RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" />{" "}
+                    {MODULE_REVIEW_ACTION}
+                  </RappelButton>
+                )}
               </div>
             </header>
             <ol

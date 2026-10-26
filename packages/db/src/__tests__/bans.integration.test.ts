@@ -58,6 +58,8 @@ describe("bans (integration, real DB)", () => {
     if (!configured) return;
     await prisma.userBan.deleteMany({ where: { userId: { in: USER_IDS } } });
     await prisma.contactTicket.deleteMany({ where: { userId: { in: USER_IDS } } });
+    // A lift can write its journal line, which would outlive its actor.
+    await prisma.auditLog.deleteMany({ where: { actorId: admin } });
   });
 
   afterAll(async () => {
@@ -145,6 +147,74 @@ describe("bans (integration, real DB)", () => {
   it("says plainly when there was nothing to lift", async () => {
     if (!configured) return;
     expect(await banRepository.lift({ userId: member, liftedById: admin, now: NOW })).toBe(false);
+  });
+
+  it("lifts the ban it is told to and never a newer one", async () => {
+    if (!configured) return;
+    // An appeal page drawn on ban A, which was lifted since, and ban B issued:
+    // « Lever » on the stale page must not let somebody out of B.
+    const first = await ban();
+    const banA = first.ok ? first.ban.id : "";
+    await banRepository.lift({ userId: member, liftedById: admin, now: NOW });
+    const second = await ban();
+    const banB = second.ok ? second.ban.id : "";
+    expect(banB).not.toBe("");
+
+    expect(
+      await banRepository.lift({ userId: member, banId: banA, liftedById: admin, now: NOW }),
+    ).toBe(false);
+    const stillOn = await prisma.userBan.findUniqueOrThrow({ where: { id: banB } });
+    expect(stillOn.liftedAt).toBeNull();
+    expect((await banRepository.findActive(member, NOW))?.id).toBe(banB);
+
+    expect(
+      await banRepository.lift({ userId: member, banId: banB, liftedById: admin, now: NOW }),
+    ).toBe(true);
+    expect(await banRepository.findActive(member, NOW)).toBeNull();
+  });
+
+  it("refuses a ban id that belongs to another account", async () => {
+    if (!configured) return;
+    const issued = await ban();
+    const banId = issued.ok ? issued.ban.id : "";
+
+    expect(await banRepository.lift({ userId: other, banId, liftedById: admin, now: NOW })).toBe(
+      false,
+    );
+    expect(await banRepository.findActive(member, NOW)).not.toBeNull();
+  });
+
+  it("writes the journal line with the lift, and none for a lift refused", async () => {
+    if (!configured) return;
+    const issued = await ban();
+    const banId = issued.ok ? issued.ban.id : "";
+    const auditMetadata = { reason: null, ticketId: null, banId };
+
+    expect(
+      await banRepository.lift({
+        userId: member,
+        banId,
+        liftedById: admin,
+        auditMetadata,
+        now: NOW,
+      }),
+    ).toBe(true);
+    // Already lifted: nothing to lift, so nothing to write down.
+    expect(
+      await banRepository.lift({
+        userId: member,
+        banId,
+        liftedById: admin,
+        auditMetadata,
+        now: NOW,
+      }),
+    ).toBe(false);
+
+    const rows = await prisma.auditLog.findMany({
+      where: { actorId: admin, action: "admin.user.ban_lifted" },
+      select: { targetType: true, targetId: true, metadata: true },
+    });
+    expect(rows).toEqual([{ targetType: "User", targetId: member, metadata: auditMetadata }]);
   });
 
   it("lets a ban be issued again once the last one is over", async () => {

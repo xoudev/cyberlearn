@@ -31,8 +31,19 @@ export {
   useOtpAutoSubmit,
   type OtpCodeInputProps,
 } from "./components/otp-code-input.js";
+export {
+  MultiSelect,
+  type MultiSelectOption,
+  type MultiSelectProps,
+} from "./components/multi-select.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { SideDrawer, type SideDrawerProps } from "./components/side-drawer.js";
+export {
+  Skeleton,
+  SkeletonCard,
+  SkeletonText,
+  type SkeletonProps,
+} from "./components/skeleton.js";
 export { cn } from "./lib/utils.js";
 export { BastionLogo, BASTION_MARK_PATHS } from "./components/bastion-logo.js";
 export { ACCENT, AMBER, BORDER, DANGER, MONO, MONO_STYLE, MUTED, RED } from "./lib/palette.js";

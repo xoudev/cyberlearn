@@ -165,7 +165,10 @@ describe("issueCertificate - gate + idempotence guards", () => {
     // A click in the bell used to download the file itself, and the app had
     // no screen to open for an API address.
     expect(m.notify).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "CERTIFICATE_ISSUED", actionUrl: "/certificates" }),
+      expect.objectContaining({
+        type: "CERTIFICATE_ISSUED",
+        actionUrl: "/profile?tab=certificats",
+      }),
     );
     expect(m.notify).toHaveBeenCalledWith(
       expect.objectContaining({ type: "PATH_COMPLETED", actionUrl: "/paths/path" }),

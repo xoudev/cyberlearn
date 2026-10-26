@@ -8,7 +8,11 @@ import { prisma } from "../prisma.js";
  * this reads and writes rows.
  */
 
-const PLAYER = { select: { id: true, displayName: true, username: true } } as const;
+// The stored avatar comes along so the service can sign it (resolveAvatarSrcMany):
+// an uploaded one is a key in a private bucket, never sent as it is.
+const PLAYER = {
+  select: { id: true, displayName: true, username: true, avatarUrl: true },
+} as const;
 
 const DUEL = {
   id: true,
@@ -48,8 +52,16 @@ export interface DuelResults {
 /** Overdue open duels settled per read: more than a reader could leave behind in a day. */
 const OVERDUE_BATCH = 50;
 
+/** Invitations listed at most: more than a day's worth, since one lapses after a day. */
+const INVITATIONS_LISTED = 10;
+
 function playedBy(userId: string): Prisma.DuelWhereInput {
   return { OR: [{ challengerId: userId }, { opponentId: userId }] };
+}
+
+/** An invitation sent to the reader, still waiting on their answer. */
+function invitationsTo(userId: string, now: Date): Prisma.DuelWhereInput {
+  return { opponentId: userId, status: "PENDING", expiresAt: { gt: now } };
 }
 
 export const duelRepository = {
@@ -69,6 +81,37 @@ export const duelRepository = {
       },
       select: { id: true },
     });
+  },
+
+  /**
+   * The reader's duels still open, in either direction: who they cannot
+   * challenge again until it is over. Not capped like listFor, whose twenty
+   * most recent could leave an older open duel out.
+   */
+  async listOpenFor(userId: string) {
+    return prisma.duel.findMany({
+      where: { status: { in: OPEN }, OR: [{ challengerId: userId }, { opponentId: userId }] },
+      orderBy: { createdAt: "desc" },
+      select: DUEL,
+    });
+  },
+
+  /**
+   * Whom the reader has a duel open with, in either direction, and nothing
+   * else: what the friends panel needs to grey "Défier". A duel whose time is
+   * over is left out, as settling it would leave it: it stays PENDING or
+   * ACTIVE in the table until somebody reads it (the service's settle), and a
+   * friend should not stay greyed for a duel that has in fact lapsed. The
+   * (challengerId, status) and (opponentId, status) indexes serve both sides.
+   */
+  async openOpponentsOf(userId: string, now: Date = new Date()): Promise<Set<string>> {
+    const rows = await prisma.duel.findMany({
+      where: { ...playedBy(userId), status: { in: OPEN }, expiresAt: { gt: now } },
+      select: { challengerId: true, opponentId: true },
+    });
+    return new Set(
+      rows.map((row) => (row.challengerId === userId ? row.opponentId : row.challengerId)),
+    );
   },
 
   async create(input: {
@@ -98,6 +141,28 @@ export const duelRepository = {
   ): Promise<boolean> {
     const { count } = await prisma.duel.updateMany({ where: { id, status: from }, data });
     return count === 1;
+  },
+
+  /**
+   * How many invitations wait on the reader's answer: the number beside
+   * "Duels" in the site's sidebar. One past its time is not counted, as
+   * recordFor leaves it out: it lapses when read.
+   */
+  async countInvitations(userId: string, now: Date): Promise<number> {
+    return prisma.duel.count({ where: invitationsTo(userId, now) });
+  },
+
+  /**
+   * The invitations waiting on the reader's answer, the one lapsing first
+   * first: the dashboard's "Défis reçus".
+   */
+  async listInvitationsFor(userId: string, now: Date, take = INVITATIONS_LISTED) {
+    return prisma.duel.findMany({
+      where: invitationsTo(userId, now),
+      orderBy: { expiresAt: "asc" },
+      take,
+      select: DUEL,
+    });
   },
 
   /** The reader's duels: the open ones, then the last ones settled. */
@@ -206,5 +271,27 @@ export const duelRepository = {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return false;
       throw err;
     }
+  },
+
+  /**
+   * Every duel the account sent or received, for its GDPR export
+   * (rgpd/build-export.ts). Only its own answers: the other player's are theirs.
+   */
+  async exportFor(userId: string) {
+    return prisma.duel.findMany({
+      where: { OR: [{ challengerId: userId }, { opponentId: userId }] },
+      select: {
+        challengerId: true,
+        status: true,
+        winnerId: true,
+        createdAt: true,
+        finishedAt: true,
+        path: { select: { title: true } },
+        answers: {
+          where: { userId },
+          select: { index: true, selected: true, correct: true, answeredAt: true },
+        },
+      },
+    });
   },
 };

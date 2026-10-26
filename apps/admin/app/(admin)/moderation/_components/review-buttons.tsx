@@ -3,9 +3,20 @@
 import React, { useState, useTransition } from "react";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
+import { toast } from "sonner";
 import { resolveModerationAction } from "../_actions/moderation-actions";
 import { useReportOutcome } from "./review-outcomes";
 import { useAdminConfirmation } from "../../_components/admin-confirmation";
+
+/**
+ * What a decision that went exactly as asked did, for its toast. The sanction
+ * is not named: the action only says something when one did not apply as
+ * asked, and an author it cannot find is not banned either.
+ */
+function decisionNotice(outcome: "UPHELD" | "OVERTURNED", actionable: boolean): string {
+  if (outcome === "OVERTURNED") return actionable ? "Contenu rétabli." : "Faux positif enregistré.";
+  return actionable ? "Contenu supprimé." : "Décision enregistrée.";
+}
 
 /**
  * Two decisions, and a sanction that rides along with one of them.
@@ -57,7 +68,11 @@ export function ReviewButtons({
   const decide = (outcome: "UPHELD" | "OVERTURNED", chosen?: string): void => {
     start(async () => {
       const result = await resolveModerationAction(eventId, outcome, chosen);
+      // A decision with something to say is said above the queue, where it
+      // stays. One that went exactly as asked used to say nothing at all: the
+      // row simply left. A toast says it was recorded.
       if (result.message !== undefined) report(about, result.message);
+      else if (result.ok) toast.success(decisionNotice(outcome, actionable));
     });
   };
 

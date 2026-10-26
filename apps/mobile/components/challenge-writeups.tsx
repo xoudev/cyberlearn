@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Alert, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { ActionChip, GradientButton } from "@/components/buttons";
+import { ReportContentChip } from "@/components/content-report";
+import { FriendMark } from "@/components/friends";
 import { NoteMarkdown } from "@/components/note-markdown";
 import { Card, Text } from "@/components/ui";
 import { deleteWriteupApi, fetchWriteupsApi, publishWriteupApi } from "@/lib/api";
@@ -12,7 +14,7 @@ import { solutionsLabel, type OwnWriteup, type WriteupView } from "@/lib/challen
  * The site's write-ups section, in the app: the count only until the
  * challenge is solved (a solution is the answer), then the reader's own
  * solution to write, replace or remove, and the others' to read, in the same
- * Markdown as the forum.
+ * Markdown as the forum, and to report to the team.
  */
 export function ChallengeWriteups({ challengeId }: { challengeId: string }): React.JSX.Element {
   const { data, isLoading, error } = useQuery({
@@ -63,9 +65,12 @@ function OtherWriteup({ writeup }: { writeup: WriteupView }): React.JSX.Element 
   return (
     <Card style={{ gap: 8 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-        <Text variant="micro" style={{ color: colors.textSecondary }}>
-          {writeup.author?.name ?? "Compte supprimé"}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
+          <Text variant="micro" style={{ color: colors.textSecondary }}>
+            {writeup.author?.name ?? "Compte supprimé"}
+          </Text>
+          {writeup.author?.isFriend === true ? <FriendMark size={11} /> : null}
+        </View>
         <Text variant="micro">
           {new Date(writeup.updatedAt).toLocaleDateString("fr-FR", {
             day: "numeric",
@@ -75,6 +80,10 @@ function OtherWriteup({ writeup }: { writeup: WriteupView }): React.JSX.Element 
         </Text>
       </View>
       <NoteMarkdown markdown={writeup.content} />
+      {/* The others' only: the reader's own is in the editor. */}
+      <View style={{ alignSelf: "flex-start" }}>
+        <ReportContentChip surface="CHALLENGE_WRITEUP" contentId={writeup.id} />
+      </View>
     </Card>
   );
 }
@@ -87,6 +96,8 @@ function OwnEditor({
   own: OwnWriteup | null;
 }): React.JSX.Element {
   const queryClient = useQueryClient();
+  // Hidden by a moderator: not to be published again, only removed.
+  const moderated = own?.hiddenByModeration === true;
   const [content, setContent] = useState(own?.content ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "held" | "error"; text: string } | null>(
@@ -155,9 +166,18 @@ function OwnEditor({
   return (
     <Card style={{ gap: 8 }}>
       <Text variant="micro" style={{ color: colors.textMuted }}>
-        {own !== null ? "TA SOLUTION (PUBLIÉE)" : "TA SOLUTION"}
+        {moderated
+          ? "TA SOLUTION (MASQUÉE)"
+          : own !== null
+            ? "TA SOLUTION (PUBLIÉE)"
+            : "TA SOLUTION"}
       </Text>
-      {own?.isHidden === true && message === null ? (
+      {moderated && message === null ? (
+        <Text variant="bodySm" style={{ color: colors.danger }}>
+          Ta solution a été masquée par la modération : personne d&apos;autre ne la voit, et tu ne
+          peux pas la republier. Tu peux la retirer.
+        </Text>
+      ) : own?.isHidden === true && message === null ? (
         <Text variant="bodySm" style={{ color: colors.warning }}>
           Ta solution attend une relecture : personne d&apos;autre ne la voit encore.
         </Text>
@@ -173,7 +193,7 @@ function OwnEditor({
         placeholder="Explique ta démarche : par où tu as commencé, ce qui a coincé, la commande ou le code qui a marché."
         placeholderTextColor={colors.textDisabled}
         accessibilityLabel="Ta solution"
-        editable={!busy}
+        editable={!busy && !moderated}
         style={{
           minHeight: 140,
           padding: 12,
@@ -194,7 +214,7 @@ function OwnEditor({
       <GradientButton
         label={own !== null ? "Mettre à jour" : "Publier ma solution"}
         loading={busy}
-        disabled={content.trim() === ""}
+        disabled={moderated || content.trim() === ""}
         onPress={() => void publish()}
       />
       {own !== null ? (

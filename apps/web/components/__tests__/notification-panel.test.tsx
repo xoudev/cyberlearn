@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NotificationItem } from "@cyberlearn/db";
 
@@ -9,8 +9,13 @@ const m = vi.hoisted(() => ({
   markNotificationReadAction: vi.fn<(id: string) => Promise<{ success: boolean }>>(),
   markAllNotificationsReadAction: vi.fn(),
 }));
+const friends = vi.hoisted(() => ({
+  acceptFriendRequestAction: vi.fn<(id: string) => Promise<{ ok: boolean; error?: string }>>(),
+  declineFriendRequestAction: vi.fn<(id: string) => Promise<{ ok: boolean; error?: string }>>(),
+}));
 
 vi.mock("@/app/(app)/_actions/notification-actions", () => m);
+vi.mock("@/app/(app)/_actions/friend-actions", () => friends);
 vi.mock("@cyberlearn/db/supabase/client", () => {
   const channel = {
     on: () => channel,
@@ -46,6 +51,7 @@ vi.mock("next/link", () => ({
 }));
 
 const { NotificationPanel } = await import("../notification-panel");
+const { announceRead, onReadElsewhere } = await import("@/lib/notifications/read-sync");
 
 /**
  * The bell's rows: a notice that leads somewhere is a link the keyboard
@@ -215,6 +221,130 @@ describe("NotificationPanel rows", () => {
   });
 });
 
+describe("NotificationPanel and the history page", () => {
+  it("takes off the badge what the history page marked read", () => {
+    render(<NotificationPanel initialUnreadCount={3} userId="me" />);
+    act(() => {
+      announceRead({ source: "history", ids: ["11111111-1111-4111-8111-111111111111"] });
+    });
+    expect(screen.getByRole("button", { name: "2 notifications non lues" })).toBeTruthy();
+    act(() => {
+      announceRead({ source: "history", all: true });
+    });
+    expect(screen.getByRole("button", { name: "Notifications" })).toBeTruthy();
+  });
+
+  it("reads in its open list the rows the history page marked read", async () => {
+    await openPanel();
+    act(() => {
+      announceRead({ source: "history", ids: ["22222222-2222-4222-8222-222222222222"] });
+    });
+    // Read, with nowhere to go: no longer a button that marks it read.
+    expect(screen.queryByRole("button", { name: /Maintenance ce soir/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "1 notifications non lues" })).toBeTruthy();
+  });
+
+  it("tells the history page what it marked read", async () => {
+    const history = vi.fn();
+    const stop = onReadElsewhere("history", history);
+    try {
+      await openPanel();
+      fireEvent.click(screen.getByRole("button", { name: /Maintenance ce soir/ }));
+      await vi.waitFor(() => {
+        expect(history).toHaveBeenCalledWith({
+          source: "panel",
+          ids: ["22222222-2222-4222-8222-222222222222"],
+        });
+      });
+    } finally {
+      stop();
+    }
+  });
+});
+
+describe("NotificationPanel friend requests", () => {
+  const SAM = "44444444-4444-4444-8444-444444444444";
+  const REQUEST_ID = "55555555-5555-4555-8555-555555555555";
+
+  function withRequest(waitingSenders: string[], metadata: unknown = { fromUserId: SAM }): void {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      waitingSenders,
+      notifications: [
+        notice({
+          id: REQUEST_ID,
+          type: "FRIEND_REQUEST",
+          title: "Demande d'ami",
+          body: "Sam souhaite t'ajouter.",
+          actionUrl: "/u/sam",
+          metadata: metadata as NotificationItem["metadata"],
+        }),
+      ],
+    });
+  }
+
+  async function openWith(): Promise<void> {
+    render(<NotificationPanel initialUnreadCount={1} userId="me" />);
+    fireEvent.click(screen.getByRole("button", { name: "1 notifications non lues" }));
+    await screen.findByText("Demande d'ami");
+  }
+
+  beforeEach(() => {
+    friends.acceptFriendRequestAction.mockResolvedValue({ ok: true });
+    friends.declineFriendRequestAction.mockResolvedValue({ ok: true });
+  });
+
+  it("answers a request from its notice, beside the link rather than inside it", async () => {
+    withRequest([SAM]);
+    await openWith();
+    const group = screen.getByRole("group", { name: "Répondre à la demande d'ami" });
+    expect(group.closest("a")).toBeNull();
+    expect(screen.getByRole("link", { name: /Demande d'ami/ }).getAttribute("href")).toBe("/u/sam");
+
+    fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
+    expect(friends.acceptFriendRequestAction).toHaveBeenCalledWith(SAM);
+    expect((await screen.findByRole("status")).textContent).toBe("Vous êtes amis.");
+    expect(m.markNotificationReadAction).toHaveBeenCalledWith(REQUEST_ID);
+    expect(screen.queryByRole("button", { name: "Refuser" })).toBeNull();
+  });
+
+  it("refuses only the request: the decline that leaves a friendship alone", async () => {
+    withRequest([SAM]);
+    await openWith();
+    fireEvent.click(screen.getByRole("button", { name: "Refuser" }));
+    expect(friends.declineFriendRequestAction).toHaveBeenCalledWith(SAM);
+    expect((await screen.findByRole("status")).textContent).toBe("Demande refusée.");
+  });
+
+  it("says a request answered elsewhere is no longer waiting, and drops the buttons", async () => {
+    friends.acceptFriendRequestAction.mockResolvedValue({
+      ok: false,
+      error: "Cette demande n'est plus en attente.",
+    });
+    withRequest([SAM]);
+    await openWith();
+    fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
+    expect((await screen.findByRole("status")).textContent).toBe(
+      "Cette demande n'est plus en attente.",
+    );
+    expect(screen.queryByRole("button", { name: "Accepter" })).toBeNull();
+  });
+
+  it("offers no answer once the request no longer waits, nor on an older notice", async () => {
+    withRequest([]);
+    await openWith();
+    expect(screen.queryByRole("group", { name: "Répondre à la demande d'ami" })).toBeNull();
+    cleanup();
+
+    // From before the sender was written down: it keeps its link, nothing more.
+    withRequest([SAM], null);
+    await openWith();
+    expect(screen.queryByRole("group", { name: "Répondre à la demande d'ami" })).toBeNull();
+    expect(screen.getByRole("link", { name: /Demande d'ami/ })).toBeTruthy();
+  });
+});
+
 describe("NotificationPanel failures", () => {
   it("says a failed load in the panel, instead of throwing to the site's error screen", async () => {
     m.getNotificationsAction.mockRejectedValueOnce(new Error("db down"));
@@ -246,5 +376,21 @@ describe("NotificationPanel failures", () => {
       expect(m.markNotificationReadAction).toHaveBeenCalled();
     });
     expect(screen.getByRole("button", { name: /Maintenance ce soir/ })).toBeTruthy();
+  });
+});
+
+describe("NotificationPanel on a phone", () => {
+  it("draws the panel from a class, so the phone's rule can move it", async () => {
+    await openPanel();
+    const panel = document.querySelector<HTMLElement>(".notif-panel");
+    expect(panel).not.toBeNull();
+    // An inline position or width would win over the media query that makes
+    // the panel span the window below 768px (globals.css), and at 375px the
+    // panel ran off the screen by 91px.
+    for (const property of ["position", "top", "right", "left", "width", "max-width"]) {
+      expect(panel?.style.getPropertyValue(property), property).toBe("");
+    }
+    // The panel is the one holding the notices.
+    expect(panel?.textContent).toContain("Révision recommandée");
   });
 });

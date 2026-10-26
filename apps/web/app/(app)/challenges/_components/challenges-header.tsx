@@ -1,0 +1,46 @@
+import React from "react";
+import Link from "next/link";
+import {
+  CHALLENGES_TABS,
+  challengesTabHref,
+  type ChallengesTab,
+} from "@cyberlearn/lib/challenges/tabs";
+import { ProgressionHeading } from "@/components/progression-heading";
+
+const LABELS: Record<ChallengesTab, string> = {
+  defis: "Défis",
+  tournois: "Tournois",
+};
+
+/**
+ * The top of the challenges section, above either tab: the breadcrumb, the
+ * title, and the two tabs, the catalogue and the tournaments.
+ *
+ * The tabs are links, drawn on the tab row's classes: each tab is read on the
+ * server (the tournaments only for theirs), and its address names it
+ * (`/challenges?tab=tournois`).
+ */
+export function ChallengesHeader({ tab }: { tab: ChallengesTab }): React.ReactElement {
+  return (
+    <>
+      <ProgressionHeading
+        eyebrow="Pratiquer / Mettre ses réflexes à l’épreuve"
+        title="Les défis"
+        description="Un exercice à résoudre ou un tournoi à rejoindre."
+      />
+      <nav className="tabs dfx-tabs" aria-label="Sections des défis">
+        {CHALLENGES_TABS.map((key) => (
+          <Link
+            key={key}
+            href={challengesTabHref(key)}
+            className="tabs__tab"
+            data-active={key === tab}
+            aria-current={key === tab ? "page" : undefined}
+          >
+            {LABELS[key]}
+          </Link>
+        ))}
+      </nav>
+    </>
+  );
+}

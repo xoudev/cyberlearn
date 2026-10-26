@@ -12,45 +12,18 @@ import {
 import { ProgressionHeading } from "@/components/progression-heading";
 import { BastionLogo } from "@/components/bastion-logo";
 import { EmptyState } from "@/components/empty-state";
-import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelSummary } from "@/lib/social/duels";
+import { ChallengeButton } from "./challenge-button";
+import { DuelAvatar, DuelName } from "./duel-face";
 import { dayOf, plural, whenOf } from "./duel-words";
-import { NewDuelForm } from "./new-duel-form";
-import { RespondButtons } from "./respond-buttons";
+import { InvitationCard } from "./invitation-card";
 import "./duels.css";
 
 /**
- * An invitation, as the duel it would start: the friend's monogram, who
- * challenges the reader on which path, when the offer lapses, and the answer.
- */
-function InvitationCard({ duel }: { duel: DuelSummary }): React.ReactElement {
-  return (
-    <li className="dl-invites__item">
-      <article className="dl-invite">
-        <p className="dl-invite__eyebrow">Défi reçu</p>
-        <span className="dl-mono dl-mono--lg" aria-hidden="true">
-          {initialsOf(duel.other.name)}
-        </span>
-        <div>
-          <p className="dl-invite__text">
-            <strong>{duel.other.name}</strong> te défie sur «&nbsp;{duel.pathTitle}&nbsp;»
-          </p>
-          <p className="dl-invite__meta">
-            {duel.questionCount} {plural(duel.questionCount, "question")} · expire{" "}
-            <time dateTime={duel.expiresAt}>{whenOf(duel.expiresAt)}</time>
-          </p>
-        </div>
-        <div className="dl-invite__actions">
-          <RespondButtons duelId={duel.id} />
-        </div>
-      </article>
-    </li>
-  );
-}
-
-/**
  * One of the reader's duels: the path and its outcome in a word, both
- * players face to face with their scores, the small print, and the way in.
+ * players face to face with their pictures and scores (the other's name
+ * opens their profile when it would open for the reader), the small print,
+ * and the way in.
  */
 function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
   const outcome = outcomeOf(duel);
@@ -68,9 +41,7 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
       </div>
       <div className="dl-card__vs">
         <div className="dl-card__side">
-          <span className="dl-mono dl-mono--sm" data-me="true" aria-hidden="true">
-            {initialsOf(duel.reader.name)}
-          </span>
+          <DuelAvatar player={duel.reader} size="sm" me />
           <span className="dl-card__name">Toi</span>
         </div>
         {wasPlayed(outcome) ? (
@@ -88,12 +59,9 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
           </p>
         )}
         <div className="dl-card__side dl-card__side--other">
-          <span className="dl-mono dl-mono--sm" aria-hidden="true">
-            {initialsOf(duel.other.name)}
-          </span>
-          <span className="dl-card__name" title={duel.other.name}>
-            {duel.other.name}
-          </span>
+          <DuelAvatar player={duel.other} size="sm" />
+          {/* Its own link, beside the card's way in rather than inside it. */}
+          <DuelName player={duel.other} className="dl-card__name" title={duel.other.name} />
         </div>
       </div>
       <p className="dl-card__meta">{duelSmallPrint(duel, { when: whenOf, day: dayOf })}</p>
@@ -108,30 +76,24 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
 
 /**
  * Quiz duels between friends: the reader's record, the rules in three facts,
- * the invitations waiting for an answer, a panel to challenge a friend on a
- * path, and every duel going on or settled. A duel opens on its own page.
- * Drawn from what the page read (page.tsx), so it renders without a request.
+ * the invitations waiting for an answer, the way to challenge a friend (the
+ * "Défier" window, challenge-dialog.tsx), and every duel going on or settled.
+ * A duel opens on its own page. Drawn from what the page read (page.tsx), so
+ * it renders without a request.
  */
 export function DuelsBoard({
   duels,
   record: counts,
-  friends,
-  paths,
-  initialFriend,
-  readerName,
+  friendCount,
 }: {
   duels: DuelSummary[];
   /** The record over every duel, counted on the server: the list stops at twenty. */
   record: DuelRecordCounts;
-  friends: { id: string; name: string }[];
-  paths: { id: string; title: string }[];
-  /** The friend named in ?ami=, preselected in the form. */
-  initialFriend: string | null;
-  readerName: string;
+  /** How many friends the reader has: none, and the panel says how to make one. */
+  friendCount: number;
 }): React.ReactElement {
   const invitations = duels.filter((d) => d.status === "PENDING" && !d.readerIsChallenger);
   const others = duels.filter((d) => !invitations.includes(d));
-  const friendCount = friends.length;
   const record = duelRecordLines(counts);
 
   return (
@@ -228,12 +190,7 @@ export function DuelsBoard({
               message="Un duel se joue entre amis : ajoute quelqu'un depuis son profil, ou accepte une demande dans le panneau Amis en haut de page, puis reviens ici."
             />
           ) : (
-            <NewDuelForm
-              friends={friends}
-              paths={paths}
-              initialFriend={initialFriend}
-              readerInitials={initialsOf(readerName)}
-            />
+            <ChallengeButton className="btn btn--accent">Défier un ami</ChallengeButton>
           )}
         </div>
         <aside className="dl-launch__aside">
@@ -262,7 +219,7 @@ export function DuelsBoard({
           {others.length === 0 ? (
             <EmptyState
               title="Aucun duel pour l'instant"
-              message="Choisis un ami et un parcours ci-dessus : ton duel s'affichera ici."
+              message="Défie un ami ci-dessus : ton duel s'affichera ici."
             />
           ) : (
             <ul className="dl-grid">

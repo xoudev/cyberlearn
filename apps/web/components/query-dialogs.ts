@@ -3,8 +3,10 @@ import type React from "react";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import { SettingsFromAddress } from "@/app/(app)/_settings/_components/SettingsDrawer";
 import { SETTINGS_QUERY } from "@/app/(app)/_settings/_components/sections";
+import { DUEL_QUERY } from "@/app/(app)/duels/_components/duel-query";
 import { NEW_REQUEST_QUERY } from "@/app/(app)/support/_components/new-request-query";
 import { NEWS_QUERY } from "./changelog/news-query";
+import { RAPPEL_QUERY } from "./rappel/rappel-query";
 
 /**
  * The windows any page of the signed-in site opens from its address, by the
@@ -29,4 +31,10 @@ export const QUERY_DIALOGS: Readonly<Record<string, React.ComponentType<QueryDia
   [NEWS_QUERY]: lazy(() => import("./changelog/news-drawer")),
   // A help request, filed without leaving the site for the public contact page.
   [NEW_REQUEST_QUERY]: lazy(() => import("@/app/(app)/support/_components/new-request-dialog")),
+  // Challenge a friend to a duel, from /duels, a finished duel's rematch or a
+  // friend's profile (/duels?ami=<id> lands on it).
+  [DUEL_QUERY]: lazy(() => import("@/app/(app)/duels/_components/challenge-dialog")),
+  // The day's recall (the sidebar's Révisions, the dashboard, the reminder),
+  // or a module's review (the path page).
+  [RAPPEL_QUERY]: lazy(() => import("./rappel/rappel-dialog")),
 };

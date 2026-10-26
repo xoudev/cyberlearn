@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, quizReportRepository } from "@cyberlearn/db";
+import { auditLogRepository, quizReportRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { requireAdminAction } from "@/lib/auth";
 
 const schema = z.object({
@@ -24,14 +25,12 @@ export async function resolveQuizReportsAction(formData: FormData): Promise<void
 
   const { lessonId, quizId } = parsed.data;
   const count = await quizReportRepository.resolveQuiz(lessonId, quizId);
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "quiz.report.resolve",
-      targetType: "lesson",
-      targetId: lessonId,
-      metadata: { quizId, count },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.quiz.reportResolve,
+    targetType: "lesson",
+    targetId: lessonId,
+    metadata: { quizId, count },
   });
   revalidatePath("/lessons/reports");
   revalidatePath("/lessons");

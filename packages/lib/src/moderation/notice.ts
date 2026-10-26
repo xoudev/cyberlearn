@@ -11,8 +11,12 @@
  * the opposite of what it is for.
  */
 
-/** The points at which somebody is told. */
-export type ModerationStage = "held" | "restored" | "removed" | "refused";
+/**
+ * The points at which somebody is told. "hidden" is a moderator taking down
+ * something that was up, from the console: the screen had let it through, or
+ * somebody reported it.
+ */
+export type ModerationStage = "held" | "hidden" | "restored" | "removed" | "refused";
 
 /**
  * How each surface is referred to, in the possessive.
@@ -27,6 +31,7 @@ const SURFACE_NOUN: Record<string, string> = {
   "forum.topic": "ton sujet",
   "forum.post": "ton message",
   "challenge.writeup": "ta solution",
+  "class.resource": "ta ressource",
   "note.share": "ta note",
 };
 
@@ -64,6 +69,12 @@ export interface ModerationNoticeInput {
 export function moderationNotice(input: ModerationNoticeInput): ModerationNotice {
   const noun = surfaceNoun(input.surface);
   const Noun = noun.charAt(0).toUpperCase() + noun.slice(1);
+  // The sentences agree with the noun: "ton message a été supprimé", "ta
+  // question a été supprimée". Every feminine noun here is a "ta ...".
+  const fem = noun.startsWith("ta ");
+  const e = fem ? "e" : "";
+  const it = fem ? "la" : "le";
+  const It = fem ? "Elle" : "Il";
 
   // Sharing a note publishes nothing, so there is no held state and no
   // restoring: the share simply did not happen, and the note is still the
@@ -71,32 +82,43 @@ export function moderationNotice(input: ModerationNoticeInput): ModerationNotice
   // would promise a publication that is never coming.
   if (input.stage === "refused") {
     return {
-      title: `${Noun} n'a pas été partagée`,
-      body: `La modération automatique a signalé ${noun}, donc le partage n'a pas eu lieu. ${Noun} est toujours là, telle que tu l'as écrite : tu peux la modifier et la repartager.`,
+      title: `${Noun} n'a pas été partagé${e}`,
+      body: `La modération automatique a signalé ${noun}, donc le partage n'a pas eu lieu. ${Noun} est toujours là, tel${fem ? "le" : ""} que tu l'as écrit${e} : tu peux ${it} modifier et ${it} repartager.`,
     };
   }
 
   if (input.stage === "held") {
     return {
       title: `${Noun} est en attente de validation`,
-      body: `La modération automatique a signalé ${noun}. Personne d'autre ne la voit pour l'instant : un modérateur va la relire.`,
+      body: `La modération automatique a signalé ${noun}. Personne d'autre ne ${it} voit pour l'instant : un modérateur va ${it} relire.`,
+    };
+  }
+
+  // Worded without an agreement on the noun: "ton message" and "ta question"
+  // take the same sentence. Not a verdict either: it is out of sight and can
+  // come back, so nothing claims a rule was broken. Nor does it promise a line
+  // in the moderation record, which lists what the screen flagged.
+  if (input.stage === "hidden") {
+    return {
+      title: `${Noun} n'est plus visible`,
+      body: `Après relecture, un modérateur a masqué ${noun} : les autres n'y ont plus accès. Si tu penses que c'est une erreur, écris à l'équipe depuis la page Aide.`,
     };
   }
 
   if (input.stage === "restored") {
     return {
       title: `${Noun} est de nouveau visible`,
-      body: `Un modérateur a examiné ${noun} : c'était une fausse alerte. Elle est revenue à sa place, sans rien perdre.`,
+      body: `Un modérateur a examiné ${noun} : c'était une fausse alerte. ${It} est revenu${e} à sa place, sans rien perdre.`,
     };
   }
 
   const sanction = input.sanctionLabel;
   return {
-    title: `${Noun} a été supprimée`,
+    title: `${Noun} a été supprimé${e}`,
     body:
       sanction === null || sanction === undefined || sanction === ""
-        ? `Un modérateur a examiné ${noun} et confirmé qu'elle enfreint les règles de la plateforme. Elle a été supprimée.`
-        : `Un modérateur a examiné ${noun} et confirmé qu'elle enfreint les règles de la plateforme. Elle a été supprimée, et une sanction a été appliquée : ${sanction}.`,
+        ? `Un modérateur a examiné ${noun} et confirmé qu'${fem ? "elle" : "il"} enfreint les règles de la plateforme. ${It} a été supprimé${e}.`
+        : `Un modérateur a examiné ${noun} et confirmé qu'${fem ? "elle" : "il"} enfreint les règles de la plateforme. ${It} a été supprimé${e}, et une sanction a été appliquée : ${sanction}.`,
   };
 }
 

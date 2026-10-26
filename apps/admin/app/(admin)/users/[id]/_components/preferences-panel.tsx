@@ -2,6 +2,7 @@ import React from "react";
 import type { ConsoleProfile } from "@cyberlearn/db";
 import { GOAL_CHOICES, LEVEL_CHOICES } from "@cyberlearn/lib/paths/suggest";
 import { Card, Tag } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 
 const VISIBILITY_LABEL: Record<string, string> = {
   PUBLIC: "Public, sous son pseudo",
@@ -32,7 +33,7 @@ export function PreferencesPanel({
 }): React.ReactElement {
   if (preferences === null) {
     return (
-      <Card title="Préférences" pad>
+      <Card title={USER_CARDS.preferences} pad>
         <p className="a-field-hint">
           Aucune préférence enregistrée : elles se créent à la fin de la première étape de
           l&apos;inscription. Les valeurs par défaut s&apos;appliquent, dont un classement anonyme.
@@ -80,7 +81,7 @@ export function PreferencesPanel({
   ];
 
   return (
-    <Card title="Préférences">
+    <Card title={USER_CARDS.preferences}>
       {rows.map((row) => (
         <div key={row.label} className="a-defrow">
           <span className="a-defrow-label">{row.label}</span>

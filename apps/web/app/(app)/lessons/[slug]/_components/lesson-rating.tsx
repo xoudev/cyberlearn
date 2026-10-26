@@ -66,8 +66,17 @@ export function LessonRating({
   function handleSubmit() {
     if (!selected || !isCompleted) return;
     setError(null);
+    // A call that fails inside a transition goes to the nearest error boundary,
+    // the site's own, and takes the lesson with it. It is said under the
+    // stars instead, and the comment typed stays.
     startTransition(async () => {
-      const res = await submit(selected, feedback || undefined);
+      let res: RateLessonResult;
+      try {
+        res = await submit(selected, feedback || undefined);
+      } catch {
+        setError("Note non envoyée, réessaie.");
+        return;
+      }
       if (!res.success) {
         setError(res.error ?? "Erreur lors de l'envoi.");
         return;

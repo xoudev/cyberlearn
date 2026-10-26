@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { friendsActivityReplySchema } from "@cyberlearn/types";
 
 const m = vi.hoisted(() => ({
   userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
@@ -8,6 +9,9 @@ const m = vi.hoisted(() => ({
   requestFriendship: vi.fn<(u: string, other: unknown) => Promise<unknown>>(),
   acceptFriendship: vi.fn<(u: string, other: unknown) => Promise<unknown>>(),
   removeFriendship: vi.fn<(u: string, other: unknown) => Promise<unknown>>(),
+  declineFriendship: vi.fn<(u: string, other: unknown) => Promise<unknown>>(),
+  requestFriendshipByHandle: vi.fn<(u: string, username: unknown) => Promise<unknown>>(),
+  friendsActivityFor: vi.fn<(u: string, limit: number) => Promise<unknown>>(),
   mobileProfileView: vi.fn<(viewer: string, username: unknown) => Promise<unknown>>(),
 }));
 
@@ -17,7 +21,16 @@ vi.mock("@/lib/friends/friends-service", () => ({
   requestFriendship: m.requestFriendship,
   acceptFriendship: m.acceptFriendship,
   removeFriendship: m.removeFriendship,
+  declineFriendship: m.declineFriendship,
+  requestFriendshipByHandle: m.requestFriendshipByHandle,
 }));
+vi.mock("@/lib/friends/friends-activity", async () => {
+  const { z } = await import("zod");
+  return {
+    friendsActivityFor: m.friendsActivityFor,
+    activityLimitSchema: z.coerce.number().int().min(1).max(20).default(6),
+  };
+});
 vi.mock("@/lib/friends/mobile-view", () => ({ toMobileFriendLists: m.toMobileFriendLists }));
 vi.mock("@/lib/profile/mobile-profile", () => ({ mobileProfileView: m.mobileProfileView }));
 
@@ -25,6 +38,8 @@ const { GET: LISTS } = await import("../route");
 const { POST: REQUEST } = await import("../request/route");
 const { POST: ACCEPT } = await import("../accept/route");
 const { POST: REMOVE } = await import("../remove/route");
+const { POST: DECLINE } = await import("../decline/route");
+const { GET: ACTIVITY } = await import("../activity/route");
 const { GET: PROFILE } = await import("../../profile/route");
 
 const THEM = "1c0b9a8d-7e6f-4b5a-8c3d-2e1f0a9b8c7d";
@@ -47,6 +62,8 @@ describe("every friends and profile route", () => {
     ["request", () => REQUEST(post("friends/request", "{}"))],
     ["accept", () => ACCEPT(post("friends/accept", "{}"))],
     ["remove", () => REMOVE(post("friends/remove", "{}"))],
+    ["decline", () => DECLINE(post("friends/decline", "{}"))],
+    ["activity", () => ACTIVITY(get("friends/activity"))],
     ["profile", () => PROFILE(get("profile?username=alex"))],
   ])("refuses a caller the gate turns away (%s): no token, or banned", async (_n, call) => {
     m.userFromBearer.mockResolvedValue(null);
@@ -55,6 +72,8 @@ describe("every friends and profile route", () => {
     expect(m.requestFriendship).not.toHaveBeenCalled();
     expect(m.acceptFriendship).not.toHaveBeenCalled();
     expect(m.removeFriendship).not.toHaveBeenCalled();
+    expect(m.declineFriendship).not.toHaveBeenCalled();
+    expect(m.friendsActivityFor).not.toHaveBeenCalled();
     expect(m.mobileProfileView).not.toHaveBeenCalled();
   });
 });
@@ -80,6 +99,7 @@ describe("the three writes", () => {
     ["request", REQUEST, m.requestFriendship],
     ["accept", ACCEPT, m.acceptFriendship],
     ["remove", REMOVE, m.removeFriendship],
+    ["decline", DECLINE, m.declineFriendship],
   ] as const)("%s: passes the caller and the other id to the service", async (name, route, fn) => {
     fn.mockResolvedValue({ ok: true });
     const res = await route(post(`friends/${name}`, JSON.stringify({ userId: THEM })));
@@ -104,10 +124,78 @@ describe("the three writes", () => {
     expect(m.requestFriendship).toHaveBeenCalledWith("user-1", null);
   });
 
+  it("asks by handle from a line of the leaderboard, and by id as always", async () => {
+    m.requestFriendshipByHandle.mockResolvedValue({ ok: true, becameFriends: false });
+    const res = await REQUEST(post("friends/request", JSON.stringify({ username: "alex" })));
+    expect(res.status).toBe(200);
+    expect(m.requestFriendshipByHandle).toHaveBeenCalledWith("user-1", "alex");
+    expect(m.requestFriendship).not.toHaveBeenCalled();
+
+    // An id wins over a handle: the body an app has always sent.
+    m.requestFriendship.mockResolvedValue({ ok: true });
+    await REQUEST(post("friends/request", JSON.stringify({ userId: THEM, username: "alex" })));
+    expect(m.requestFriendship).toHaveBeenCalledWith("user-1", THEM);
+    expect(m.requestFriendshipByHandle).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes no handle where only an id makes sense", async () => {
+    m.acceptFriendship.mockResolvedValue({ ok: false, error: "Compte introuvable." });
+    await ACCEPT(post("friends/accept", JSON.stringify({ username: "alex" })));
+    expect(m.acceptFriendship).toHaveBeenCalledWith("user-1", null);
+    expect(m.requestFriendshipByHandle).not.toHaveBeenCalled();
+  });
+
   it("refuses a body that is not JSON", async () => {
     const res = await ACCEPT(post("friends/accept", "not json"));
     expect(res.status).toBe(400);
     expect(m.acceptFriendship).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/mobile/friends/activity", () => {
+  it("reads the caller's friends' recent moments, six unless asked", async () => {
+    m.friendsActivityFor.mockResolvedValue({ hasFriends: true, items: [] });
+    const res = await ACTIVITY(get("friends/activity"));
+    expect(res.status).toBe(200);
+    expect(m.friendsActivityFor).toHaveBeenCalledWith("user-1", 6);
+    expect(await res.json()).toEqual({ ok: true, hasFriends: true, items: [] });
+
+    await ACTIVITY(get("friends/activity?limit=3"));
+    expect(m.friendsActivityFor).toHaveBeenLastCalledWith("user-1", 3);
+  });
+
+  it("refuses a limit out of bounds", async () => {
+    const res = await ACTIVITY(get("friends/activity?limit=500"));
+    expect(res.status).toBe(400);
+    expect(m.friendsActivityFor).not.toHaveBeenCalled();
+  });
+
+  it("parses its replies as the app does", async () => {
+    m.friendsActivityFor.mockResolvedValue({
+      hasFriends: true,
+      items: [
+        {
+          key: "lesson:alex:tcp-handshake",
+          kind: "lesson",
+          at: "2026-10-21T08:30:00.000Z",
+          title: "La poignée de main TCP",
+          friend: {
+            id: THEM,
+            name: "Alex",
+            username: "alex",
+            avatarSrc: null,
+            profileOpen: true,
+            duelOpen: false,
+          },
+        },
+      ],
+    });
+    const reply: unknown = await (await ACTIVITY(get("friends/activity"))).json();
+    expect(friendsActivityReplySchema.safeParse(reply).success).toBe(true);
+
+    m.userFromBearer.mockResolvedValue(null);
+    const refusal: unknown = await (await ACTIVITY(get("friends/activity"))).json();
+    expect(friendsActivityReplySchema.safeParse(refusal).success).toBe(true);
   });
 });
 

@@ -22,6 +22,27 @@ export interface DuelPlayer {
   id: string;
   name: string;
   username: string | null;
+  /**
+   * Their picture, ready to draw (signed by the server, as on the site).
+   * Absent from a server older than it: the initials are drawn.
+   */
+  avatarSrc?: string | null;
+  /**
+   * Their profile on the site, when it would open for the reader; null on
+   * the reader's own side and for a private profile closed to them, absent
+   * from a server older than it (no link).
+   */
+  profileHref?: string | null;
+}
+
+/**
+ * The handle a duel player's name opens in the app's profile screen, or null
+ * when the server offered no profile (closed to the reader, the reader's own
+ * side, or a server from before the links).
+ */
+export function duelProfileTarget(player: DuelPlayer): string | null {
+  if (player.profileHref == null || player.username === null) return null;
+  return player.username;
 }
 
 export interface DuelScore {
@@ -58,6 +79,22 @@ export interface DuelView extends DuelSummary {
   readerAnswers: DuelAnswerView[];
 }
 
+/**
+ * The site's DuelFriend (apps/web/lib/social/duels.ts): a friend with their
+ * avatar, their handle and their level, as the site's "Défier" window shows
+ * them; one already in a duel with the reader comes with that duel, and
+ * cannot be picked.
+ */
+export interface DuelFriend {
+  id: string;
+  name: string;
+  username: string | null;
+  /** Signed by the site when uploaded, a glyph marker, or null. */
+  avatarSrc: string | null;
+  level: number;
+  openDuelId: string | null;
+}
+
 export interface DuelBoard {
   duels: DuelSummary[];
   /**
@@ -65,7 +102,7 @@ export interface DuelBoard {
    * from before it, which only sent the duels listed.
    */
   record?: DuelRecordCounts;
-  friends: { id: string; name: string }[];
+  friends: DuelFriend[];
   paths: { id: string; title: string }[];
 }
 

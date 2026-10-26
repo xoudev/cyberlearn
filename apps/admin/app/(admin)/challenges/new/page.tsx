@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
 import { Card, PageHeader } from "../../_components/admin-ui";
+import { NEW_CHALLENGE_HEADER } from "../_components/challenge-columns";
 import { NewChallengeForm } from "./_components/new-challenge-form";
 import type { ChallengeOption } from "./_components/new-challenge-form";
 
@@ -25,10 +26,7 @@ export default async function NewChallengePage(): Promise<React.ReactElement> {
 
   return (
     <main className="a-page">
-      <PageHeader
-        crumbs={[{ label: "Gamification" }, { label: "Challenges", href: "/challenges" }]}
-        title="Nouveau challenge"
-      />
+      <PageHeader crumbs={NEW_CHALLENGE_HEADER.crumbs} title={NEW_CHALLENGE_HEADER.title} />
       <Card pad>
         <NewChallengeForm prerequisites={prerequisites} />
       </Card>

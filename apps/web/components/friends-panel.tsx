@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   acceptFriendRequestAction,
   getFriendsAction,
@@ -14,8 +15,15 @@ import { AvatarView } from "@/components/avatar-view";
 import { ConfirmButton } from "@/components/confirm-button";
 import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
+import { DUEL_QUERY } from "@/app/(app)/duels/_components/duel-query";
+import { useQueryDialog } from "@/hooks/use-query-dialog";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 import {
+  CHALLENGE_LABEL,
+  challengeFriendName,
+  DUEL_OPEN_LABEL,
+  HANDLE_FORMAT_ERROR,
+  handleFrom,
   UNFRIEND_DETAIL,
   UNFRIEND_PROMPT,
   unfriendQuestion,
@@ -32,7 +40,13 @@ import {
  * waiting on you, and a panel that opens where you already are.
  *
  * The lists are read when the panel opens, not on every page load. The only
- * thing every page pays for is the count.
+ * thing every page pays for is the count. They come whole, however long: the
+ * panel scrolls under its sticky head.
+ *
+ * It is also where somebody is found (a handle typed, their profile opened)
+ * and where a friend is challenged: "Défier" opens the "Défier" window over
+ * the page, that friend already picked, and waits, greyed, while a duel
+ * between the two is still open.
  */
 
 const EMPTY: FriendLists = { incoming: [], friends: [], outgoing: [] };
@@ -47,11 +61,14 @@ function Row({
   kind,
   onDone,
   onClose,
+  onChallenge,
 }: {
   edge: FriendEntry;
   kind: RowKind;
   onDone: (personId: string, outcome: RowOutcome) => void;
   onClose: () => void;
+  /** Opens the "Défier" window with this friend picked. */
+  onChallenge: (personId: string) => void;
 }): React.JSX.Element {
   const [pending, start] = useTransition();
   const [asking, setAsking] = useState(false);
@@ -107,6 +124,26 @@ function Row({
       </span>
 
       <span className="fp-actions">
+        {/* Hidden while the row asks whether to unfriend: the answers need
+            the room, and challenging somebody one is about to drop is not
+            the question. A duel already open greys it rather than hiding
+            it, so the row still says why there is nothing to do. */}
+        {kind === "friends" && !asking && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            aria-label={challengeFriendName(name, edge.duelOpen)}
+            {...(edge.duelOpen
+              ? { "aria-disabled": true, title: DUEL_OPEN_LABEL }
+              : { "aria-haspopup": "dialog" as const })}
+            disabled={pending}
+            onClick={() => {
+              if (!edge.duelOpen) onChallenge(person.id);
+            }}
+          >
+            {edge.duelOpen ? DUEL_OPEN_LABEL : CHALLENGE_LABEL}
+          </button>
+        )}
         {kind === "incoming" && (
           <button
             type="button"
@@ -151,6 +188,70 @@ function Row({
   );
 }
 
+/**
+ * Opens somebody's profile by their handle: the panel's way to find a person,
+ * the app's friends screen's too (same reading, `handleFrom`, same words).
+ * A handle that cannot be one is said under the field rather than sent off to
+ * a 404.
+ */
+function FindSomebody({ onOpen }: { onOpen: () => void }): React.JSX.Element {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const fieldId = useId();
+  const errorId = useId();
+
+  return (
+    <form
+      className="fp-find"
+      role="search"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const handle = handleFrom(value);
+        if (handle === null) {
+          setError(HANDLE_FORMAT_ERROR);
+          return;
+        }
+        setError(null);
+        setValue("");
+        onOpen();
+        router.push(`/u/${handle}`);
+      }}
+    >
+      <label htmlFor={fieldId} className="fp-section fp-find-label">
+        Ouvrir un profil
+      </label>
+      <div className="fp-find-row">
+        <input
+          id={fieldId}
+          className="fp-find-input"
+          type="text"
+          value={value}
+          placeholder="@pseudo"
+          maxLength={40}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          aria-invalid={error !== null}
+          {...(error !== null ? { "aria-describedby": errorId } : {})}
+          onChange={(event) => {
+            setValue(event.target.value);
+            setError(null);
+          }}
+        />
+        <button type="submit" className="btn btn--ghost btn--sm">
+          Ouvrir
+        </button>
+      </div>
+      {error !== null && (
+        <span id={errorId} className="fp-error" role="alert">
+          {error}
+        </span>
+      )}
+    </form>
+  );
+}
+
 export function FriendsPanel({
   initialRequestCount,
 }: {
@@ -162,6 +263,24 @@ export function FriendsPanel({
   const [waiting, setWaiting] = useState(initialRequestCount);
   const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // The count comes from the server, which re-reads it on every refresh of the
+  // layout; the state above is only its first value. Answering a request from
+  // a notification refreshed the layout without this panel hearing of it: the
+  // badge stayed up for the whole visit, and a list already loaded still held
+  // the request, whose "Accepter" then answered "déjà traitée".
+  //
+  // A new count the panel did not cause itself - its own answers have already
+  // lowered `waiting` by the time the refresh arrives - means the lists it
+  // holds are out of date: they are read again, at once if it is open.
+  const [seenCount, setSeenCount] = useState(initialRequestCount);
+  if (initialRequestCount !== seenCount) {
+    setSeenCount(initialRequestCount);
+    if (initialRequestCount !== waiting) {
+      setWaiting(initialRequestCount);
+      setLoaded(false);
+    }
+  }
 
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -199,30 +318,53 @@ export function FriendsPanel({
    * the server until it reopens, so the lists are corrected here rather than
    * re-fetched behind a spinner.
    */
-  const settle = useCallback((personId: string, outcome: RowOutcome, wasWaiting: boolean) => {
-    setLists((prev) => {
-      const moved = prev.incoming.find((edge) => edge.person.id === personId);
-      return {
-        incoming: prev.incoming.filter((edge) => edge.person.id !== personId),
-        outgoing: prev.outgoing.filter((edge) => edge.person.id !== personId),
-        friends:
-          outcome === "accepted" && moved
-            ? [moved, ...prev.friends]
-            : prev.friends.filter((edge) => edge.person.id !== personId),
-      };
-    });
-    // Outside the updater on purpose: React may run an updater twice, and a
-    // counter decremented from inside one would go down twice.
-    //
-    // Both answers clear a waiting request - accepting and refusing alike -
-    // which is why this follows the list the row was in rather than what was
-    // done to it. Unfriending somebody is not one fewer person waiting.
-    if (wasWaiting) setWaiting((count) => Math.max(0, count - 1));
-  }, []);
+  const incoming = lists.incoming;
+  const settle = useCallback(
+    (personId: string, outcome: RowOutcome, wasWaiting: boolean) => {
+      setLists((prev) => {
+        const moved = prev.incoming.find((edge) => edge.person.id === personId);
+        return {
+          incoming: prev.incoming.filter((edge) => edge.person.id !== personId),
+          outgoing: prev.outgoing.filter((edge) => edge.person.id !== personId),
+          friends:
+            outcome === "accepted" && moved
+              ? [moved, ...prev.friends]
+              : prev.friends.filter((edge) => edge.person.id !== personId),
+        };
+      });
+      // Outside the updater on purpose: React may run an updater twice.
+      //
+      // Both answers clear a waiting request - accepting and refusing alike -
+      // which is why this follows the list the row was in rather than what was
+      // done to it. Unfriending somebody is not one fewer person waiting.
+      //
+      // The count is what is left in the list, not the last count minus one:
+      // the layout's refresh, which carries the new count down from the
+      // server, can reach this panel before or after this call, and each of
+      // them lowering a number would take it down twice.
+      if (wasWaiting) {
+        setWaiting(incoming.filter((edge) => edge.person.id !== personId).length);
+      }
+    },
+    [incoming],
+  );
 
   const close = useCallback(() => {
     setOpen(false);
   }, []);
+
+  // The window draws over the page, so the panel gets out of its way. A duel
+  // made there greys that friend's "Défier", which only the server knows of:
+  // the next opening reads the lists again instead of the ones held here.
+  const duelWindow = useQueryDialog(DUEL_QUERY);
+  const challenge = useCallback(
+    (personId: string) => {
+      setOpen(false);
+      setLoaded(false);
+      duelWindow.open(personId);
+    },
+    [duelWindow],
+  );
 
   const hasWaiting = waiting > 0;
   const sections: { kind: RowKind; label: string; edges: FriendEntry[] }[] = [
@@ -256,6 +398,8 @@ export function FriendsPanel({
             {hasWaiting && <span className="fp-head-count">{waiting} en attente</span>}
           </div>
 
+          <FindSomebody onOpen={close} />
+
           {!loaded && isPending && <p className="fp-note">Chargement…</p>}
 
           {!loaded && !isPending && failed && (
@@ -269,7 +413,8 @@ export function FriendsPanel({
 
           {empty && (
             <p className="fp-note">
-              Pas encore d&apos;amis. Ouvre le profil de quelqu&apos;un pour l&apos;ajouter.
+              Personne pour l&apos;instant. Tape le @pseudo de quelqu&apos;un ci-dessus, ou ajoute
+              un camarade depuis ta classe ou le classement.
             </p>
           )}
 
@@ -286,6 +431,7 @@ export function FriendsPanel({
                       edge={edge}
                       kind={section.kind}
                       onClose={close}
+                      onChallenge={challenge}
                       onDone={(personId, outcome) => {
                         settle(personId, outcome, section.kind === "incoming");
                       }}

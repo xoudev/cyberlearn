@@ -3,6 +3,7 @@ import { StandaloneFrame } from "@/components/standalone-frame";
 import { ExportDataButton } from "@/app/(app)/_settings/data/_components/ExportDataButton";
 import { BanNotice } from "./ban-notice";
 import styles from "../banned.module.css";
+import type { AppealView } from "@cyberlearn/lib/tickets/appeal";
 
 const PRIVACY_CONTACT = "privacy@cyberlearn.fr";
 
@@ -12,12 +13,14 @@ export function BannedContent({
   issuedOn,
   alreadyAcknowledged,
   alreadyAppealed,
+  appeal,
 }: {
   reason: string;
   endsLabel: string;
   issuedOn: string;
   alreadyAcknowledged: boolean;
   alreadyAppealed: boolean;
+  appeal: AppealView | null;
 }): React.JSX.Element {
   return (
     <StandaloneFrame danger titleId="banned-title">
@@ -49,6 +52,7 @@ export function BannedContent({
         endsLabel={endsLabel}
         alreadyAcknowledged={alreadyAcknowledged}
         alreadyAppealed={alreadyAppealed}
+        appeal={appeal}
       />
 
       {/* A ban closes the site, not the rights over what it holds (RGPD art.

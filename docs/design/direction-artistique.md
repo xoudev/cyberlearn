@@ -452,3 +452,5 @@ Les confirmations sensibles nomment l’administration, l’action et la cible. 
 Le lien vers le site apprenant ouvre explicitement un nouvel onglet. Le logo de la sidebar mène au dashboard admin. Les permissions, la MFA obligatoire, les règles métier et les API ne sont pas redéfinies par le design.
 
 Voir [les 42 pages, les preuves et les limites de vérification](admin-redesign-review.md) et [les deux jalons Git](admin-redesign-progress.md).
+
+L’intégration du 26 octobre porte cette couverture à 54 modèles : le studio et les nouvelles fonctions de gestion de `main` réutilisent le même cadre. La recherche étendue s’ouvre sous la barre sur téléphone pour garder ADMIN visible ; les toasts et les nouvelles confirmations suivent les alias de la console. Le séparateur et les aperçus du studio gardent leurs fonctions. [Détail de l’intégration et preuves](main-integration-review.md).

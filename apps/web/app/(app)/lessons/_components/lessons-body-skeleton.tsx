@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 
 /** Reserve the masthead, domain choices and lesson cards while the catalogue streams. */
 export function LessonsBodySkeleton(): React.ReactElement {

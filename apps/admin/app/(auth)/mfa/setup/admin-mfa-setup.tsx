@@ -136,7 +136,11 @@ export function AdminMfaSetup({
           Garde ton téléphone à portée de main : un QR code va s’afficher, à scanner avec ton
           application d’authentification.
         </p>
-        {error ? <p className="a-form-error">{error}</p> : null}
+        {error ? (
+          <p className="a-form-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         <button
           className="a-btn a-btn--primary"
           type="button"
@@ -196,7 +200,12 @@ export function AdminMfaSetup({
         labelClassName="a-label"
         inputClassName="a-input a-input--code"
       />
-      {error ? <p className="a-form-error">{error}</p> : null}
+      {/* Announced by itself: the code leaves on the sixth digit, with no click. */}
+      {error ? (
+        <p className="a-form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
       <button className="a-btn a-btn--primary" type="submit" disabled={pending}>
         {pending ? "Activation…" : "Activer et continuer"}
       </button>

@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { dayKey } from "@cyberlearn/lib/gamification/day";
 import {
   answerCard,
   dayStart,
@@ -11,7 +12,6 @@ import {
   type ReviewDrawRef,
 } from "@cyberlearn/lib/revisions/cards";
 import { prisma } from "../prisma.js";
-import { LIVE_REVIEW_FILTER } from "./review.repository.js";
 
 /**
  * Review cards and the day's review sessions: one lesson quiz question asked
@@ -27,6 +27,12 @@ import { LIVE_REVIEW_FILTER } from "./review.repository.js";
 
 /** The global client or a transaction's: both have the models. */
 type Db = Prisma.TransactionClient;
+
+/**
+ * Only a lesson still published comes back to review: an archived lesson's
+ * cards wait, hidden, for it to be published again.
+ */
+export const LIVE_REVIEW_FILTER = { lesson: { status: "PUBLISHED" } } as const;
 
 /** How many due cards a draw looks at: the most overdue, enough for six from three lessons and more. */
 const DUE_WINDOW = 200;
@@ -53,12 +59,29 @@ export interface DueCardRow {
   lesson: { slug: string; title: string };
 }
 
+/** A card due, by the question it asks. */
+export interface DueQuestionRow {
+  userId: string;
+  lessonId: string;
+  quizId: string;
+}
+
 /**
  * The cards the thirty-day rule retires on the day of `now` (isStale):
  * answered right at least once and more than CARD_STALE_DAYS overdue.
  */
 function staleWhere(now: Date): Prisma.ReviewCardWhereInput {
   return { everCorrect: true, dueAt: { lt: staleBefore(now) } };
+}
+
+const REVIEW_LESSON = { id: true, slug: true, title: true, contentMdx: true } as const;
+
+/** A lesson as a review question is read from it. */
+export interface ReviewLessonRow {
+  id: string;
+  slug: string;
+  title: string;
+  contentMdx: string;
 }
 
 const SESSION = {
@@ -224,11 +247,16 @@ export const reviewCardRepository = {
    * Stores a day's draw and returns the day's session: this one, or the one
    * a second tab or a replayed request stored first. The unique index on
    * (user, day) is what makes it one.
+   *
+   * `completedAt` stores it handed in already: a day with cards due and no
+   * question to ask, stored empty so that every later read says so. Its XP
+   * is never claimed (claimSessionXp is the caller's, after a hand-in).
    */
   async createSession(
     userId: string,
     day: string,
     draw: readonly ReviewDrawRef[],
+    completedAt: Date | null = null,
   ): Promise<ReviewSessionRow> {
     await prisma.reviewSession.createMany({
       data: [
@@ -237,6 +265,7 @@ export const reviewCardRepository = {
           day: dayStart(day),
           // SAFETY: ReviewDrawRef is plain data (strings and a number array), valid JSON.
           draw: draw as unknown as Prisma.InputJsonValue,
+          ...(completedAt === null ? {} : { completedAt }),
         },
       ],
       skipDuplicates: true,
@@ -277,5 +306,169 @@ export const reviewCardRepository = {
       data: { xpCredited: true },
     });
     return count === 1;
+  },
+
+  /**
+   * Records one answer of the learner's session, once: the shown option
+   * picked for the drawn question `index`. False, and nothing written, when
+   * that question has an answer already, the session was handed in, or it is
+   * not the learner's. One conditional statement, so two tabs answering the
+   * same question at once record one answer, and two answering different
+   * questions record both.
+   */
+  async answerInSession(
+    userId: string,
+    id: string,
+    index: number,
+    selected: number,
+    db: Db = prisma,
+  ): Promise<boolean> {
+    const key = String(index);
+    const count = await db.$executeRaw`
+      UPDATE "review_sessions"
+      SET "answers" = jsonb_set("answers", ARRAY[${key}::text], to_jsonb(${selected}::int), true)
+      WHERE "id" = ${id}::uuid
+        AND "userId" = ${userId}::uuid
+        AND "completedAt" IS NULL
+        AND ("answers" -> ${key}::text) IS NULL`;
+    return count === 1;
+  },
+
+  /** Whether the learner has a card due on the day of `now`, as findDue reads them. */
+  async hasDue(userId: string, now: Date): Promise<boolean> {
+    const card = await prisma.reviewCard.findFirst({
+      where: {
+        userId,
+        retiredAt: null,
+        dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
+        ...LIVE_REVIEW_FILTER,
+      },
+      select: { id: true },
+    });
+    return card !== null;
+  },
+
+  /**
+   * The cards due on the day of `now` of these learners, as findDue reads
+   * them, each learner's in the order a session takes them: which question
+   * each card asks, for the caller to tell whether its lesson still has it.
+   */
+  async findDueQuestions(userIds: readonly string[], now: Date): Promise<DueQuestionRow[]> {
+    if (userIds.length === 0) return [];
+    return prisma.reviewCard.findMany({
+      where: {
+        userId: { in: [...new Set(userIds)] },
+        retiredAt: null,
+        dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
+        ...LIVE_REVIEW_FILTER,
+      },
+      orderBy: [{ userId: "asc" }, { dueAt: "asc" }, { box: "asc" }],
+      select: { userId: true, lessonId: true, quizId: true },
+    });
+  },
+
+  /**
+   * Who to remind on the day of `now`: the learners with a card due, as
+   * findDue reads them, who keep the feature and its reminder on (no
+   * preferences row keeps both defaults), and whose session of the day is not
+   * handed in yet. Whether a card due has a question to ask is the caller's
+   * to read off its lesson (findDueQuestions).
+   */
+  async findReminders(now: Date): Promise<string[]> {
+    const rows = await prisma.reviewCard.findMany({
+      where: {
+        retiredAt: null,
+        dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
+        ...LIVE_REVIEW_FILTER,
+        user: {
+          // Two switches, and both have to be on: spacedRepetition turns the
+          // feature off, reviewReminders only this reminder.
+          OR: [
+            { preferences: { is: null } },
+            { preferences: { is: { spacedRepetition: true, reviewReminders: true } } },
+          ],
+          reviewSessions: {
+            none: { day: dayStart(dayKey(now)), completedAt: { not: null } },
+          },
+        },
+      },
+      distinct: ["userId"],
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId);
+  },
+
+  /**
+   * The lessons still published among these, with what a review question is
+   * read from: its quizzes (contentMdx), and its slug and title to name it
+   * and lead back to it.
+   */
+  async findLessons(lessonIds: readonly string[]): Promise<ReviewLessonRow[]> {
+    if (lessonIds.length === 0) return [];
+    return prisma.lesson.findMany({
+      where: { id: { in: [...new Set(lessonIds)] }, status: "PUBLISHED" },
+      select: REVIEW_LESSON,
+    });
+  },
+
+  /**
+   * The lessons among these that the learner finished and that are still
+   * published: what "Réviser ce module" asks about.
+   */
+  async findCompletedLessons(
+    userId: string,
+    lessonIds: readonly string[],
+  ): Promise<ReviewLessonRow[]> {
+    if (lessonIds.length === 0) return [];
+    return prisma.lesson.findMany({
+      where: {
+        id: { in: [...new Set(lessonIds)] },
+        status: "PUBLISHED",
+        progress: { some: { userId, status: "COMPLETED" } },
+      },
+      select: REVIEW_LESSON,
+    });
+  },
+
+  /**
+   * Every card of the learner, retired ones and those of an archived lesson
+   * included, and every session it played, oldest first: its GDPR export
+   * (rgpd/build-export.ts). The sessions come as stored; the export reads
+   * their draw and answers itself.
+   */
+  async exportFor(userId: string) {
+    const [cards, sessions] = await Promise.all([
+      prisma.reviewCard.findMany({
+        where: { userId },
+        select: {
+          quizId: true,
+          box: true,
+          dueAt: true,
+          lapses: true,
+          everCorrect: true,
+          lastAnsweredAt: true,
+          retiredAt: true,
+          createdAt: true,
+          lesson: { select: { title: true, slug: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.reviewSession.findMany({
+        where: { userId },
+        select: {
+          day: true,
+          draw: true,
+          answers: true,
+          completedAt: true,
+          xpCredited: true,
+          createdAt: true,
+        },
+        orderBy: { day: "asc" },
+      }),
+    ]);
+    return { cards, sessions };
   },
 };

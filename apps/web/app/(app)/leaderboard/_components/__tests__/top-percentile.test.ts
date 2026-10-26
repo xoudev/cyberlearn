@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { topPercentile } from "../LeaderboardClient";
+import { describe, expect, it, vi } from "vitest";
+
+// The rows' "Ajouter" imports the friendship actions, whose session check
+// reads the environment; nothing here calls them.
+vi.mock("@/app/(app)/_actions/friend-actions", () => ({
+  sendFriendRequestAction: vi.fn(),
+  sendFriendRequestByHandleAction: vi.fn(),
+}));
+
+const { topPercentile } = await import("../LeaderboardClient");
 
 describe("topPercentile", () => {
   it("no longer rounds a strong rank down to zero", () => {

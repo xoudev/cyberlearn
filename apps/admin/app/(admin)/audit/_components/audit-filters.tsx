@@ -5,16 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Select } from "@cyberlearn/ui";
 import { gridHref } from "@/lib/grid-href";
+import { AUDIT_FILTER_LABELS } from "./columns";
 
 /**
- * The audit log's filters: who, on what, which action, between which days.
+ * The audit log's filters: who, on what, which action, between which days,
+ * and whether the scheduled jobs' runs, hidden by default, are shown too.
  *
  * A GET form, so the filter is the URL: it can be linked to (an account's
  * page opens its own trail this way) and the export reads the same one. With
  * scripts, the submit goes through the router and leaves out the empty fields.
  */
 
-const FIELDS = ["actor", "target", "action", "from", "to"] as const;
+const FIELDS = ["actor", "target", "action", "from", "to", "crons"] as const;
 
 export function AuditFilters({
   params,
@@ -22,7 +24,7 @@ export function AuditFilters({
 }: {
   /** The filters the server understood, as the URL carries them. */
   params: Readonly<Record<string, string>>;
-  /** Every action the log holds. */
+  /** Every action the console writes, and every other the log holds. */
   actions: readonly string[];
 }): React.ReactElement {
   const router = useRouter();
@@ -54,7 +56,7 @@ export function AuditFilters({
       }}
     >
       <label className="a-filter">
-        Acteur
+        {AUDIT_FILTER_LABELS.actor}
         <input
           name="actor"
           className="a-input a-input--sm"
@@ -64,7 +66,7 @@ export function AuditFilters({
         />
       </label>
       <label className="a-filter">
-        Cible
+        {AUDIT_FILTER_LABELS.target}
         <input
           name="target"
           className="a-input a-input--sm"
@@ -74,7 +76,7 @@ export function AuditFilters({
         />
       </label>
       <div className="a-filter">
-        <span id={actionLabel}>Action</span>
+        <span id={actionLabel}>{AUDIT_FILTER_LABELS.action}</span>
         <Select
           name="action"
           block={false}
@@ -88,7 +90,7 @@ export function AuditFilters({
         />
       </div>
       <label className="a-filter">
-        Du
+        {AUDIT_FILTER_LABELS.from}
         <input
           type="date"
           name="from"
@@ -97,13 +99,20 @@ export function AuditFilters({
         />
       </label>
       <label className="a-filter">
-        Au
+        {AUDIT_FILTER_LABELS.to}
         <input
           type="date"
           name="to"
           className="a-input a-input--sm"
           defaultValue={params.to ?? ""}
         />
+      </label>
+      <label className="a-filter">
+        {AUDIT_FILTER_LABELS.crons}
+        <span className="a-filter-check">
+          <input type="checkbox" name="crons" value="1" defaultChecked={params.crons === "1"} />
+          Afficher leurs passages
+        </span>
       </label>
       {params.sort !== undefined && <input type="hidden" name="sort" value={params.sort} />}
       <div className="a-filter-actions">

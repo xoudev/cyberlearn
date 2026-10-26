@@ -2,6 +2,7 @@
 @import "@cyberlearn/ui/tokens.css";
 @import "@cyberlearn/ui/layout.css";
 @import "@cyberlearn/ui/dialogs.css";
+@import "@cyberlearn/ui/skeleton.css";
 @import "../components/secondary-surfaces.css";
 
 /* The page vocabulary: the names the page stylesheets and the CSS modules
@@ -206,7 +207,11 @@ aside[data-state="collapsed"] .sidebar-nav-item {
     position: fixed;
     top: 0;
     left: 0;
+    /* The dynamic viewport: on iOS Safari 100vh is the height with the browser
+       bars folded away, so with the toolbar showing the foot of the drawer (the
+       account block, the only way to sign out) sat beneath it. */
     height: 100vh;
+    height: 100dvh;
     z-index: 49;
     width: 280px !important;
     min-width: 280px !important;
@@ -231,6 +236,25 @@ aside[data-state="collapsed"] .sidebar-nav-item {
 @media (prefers-reduced-motion: reduce) {
   .sidebar-wrapper {
     transition: none;
+  }
+}
+
+/* What stands in the sidebar's place while it streams in (components/app-shell.tsx).
+   It holds the column's width from the breakpoint where the sidebar is a column
+   in the flow (the drawer media query above ends at 1023px, MOBILE_BREAKPOINT in
+   hooks/use-mobile.ts) and nothing below it: there the sidebar is a drawer out
+   of the flow, and a fixed 240px here left the page 135px of a 375px phone,
+   which Chrome mobile answered by widening the layout window. */
+.sidebar-fallback {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .sidebar-fallback {
+    display: block;
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--color-bg-base);
+    border-right: 1px solid var(--color-border-subtle);
   }
 }
 
@@ -906,9 +930,9 @@ aside[data-state="collapsed"] .sidebar-nav-item {
 
 /* The lesson's typography is for the prose an author writes, and stops at a
    component's edge. MDX puts each block of prose (p, ul, h2...) and each
-   component's root straight under the article (SectionPane and LessonSection
-   add no element), so `article.lesson-content > p` is a paragraph of the
-   lesson and a lab's own <p> is not. These rules used to match every element
+   component's block (.lesson-block, below) straight under the article
+   (SectionPane and LessonSection add no element), so `article.lesson-content
+   > p` is a paragraph of the lesson and a lab's own <p> is not. These rules used to match every element
    of the article with !important, which beat the components' inline styles:
    a lab's 14px line came out at 16px with an 18px margin, its lists grew "›"
    markers, the quiz question shrank to 16px.
@@ -934,6 +958,82 @@ article.lesson-content {
 article.lesson-content > :is(p, ul, ol, h1, h2, h3, h4, h5, h6, blockquote, table, hr, dl) {
   max-width: 720px;
   margin-inline: 0;
+}
+
+/* ─── A component's block (lesson-mdx-components.ts, lesson-block.ts) ──────
+   Each component of a lesson comes in a block, a size container: inside it a
+   component lays itself out by the width it is given (`@container
+   lesson-block`, `cqi`), not by the screen's, which could mean 1150px of
+   article or half of that with the notes docked. The block sits in the
+   prose's measure or wide, as the registry says (`width`,
+   @cyberlearn/lib/mdx-components); wide stops at 1200px, what the article
+   reaches in focus mode.
+
+   A container is its own formatting context: a component's margins no longer
+   met the paragraphs' around it but added up to them, 18px under a paragraph
+   and 24px over a Callout making 42px. So the block spaces itself among the
+   prose, its margins collapsing with the paragraphs' as the component's used
+   to, and the component's own top and bottom margins are set aside. They are
+   inline styles, which only !important reaches; nothing else of the
+   component is touched. */
+.lesson-block {
+  container: lesson-block / inline-size;
+  min-width: 0;
+  margin-block: 28px;
+  margin-inline: auto;
+}
+.lesson-block > * {
+  margin-block: 0 !important;
+}
+.lesson-block[data-width="prose"] {
+  max-width: 720px;
+}
+.lesson-block[data-width="wide"] {
+  max-width: 1200px;
+}
+.lesson-block:is([data-component="Callout"], [data-component="ExternalLink"]) {
+  margin-block: 24px;
+}
+/* A question opens with room above it, as it did, and the section goes on
+   right under it. */
+.lesson-block:is([data-component="Quiz"], [data-component="QuizGroup"]) {
+  margin-block: 56px 0;
+}
+
+/* What a screen measures grows with its block: a 380px terminal was a
+   letterbox in a 1150px block, and an editor showed ten lines of code in a box
+   five times as wide. Never shorter than it was, so a phone keeps what it
+   had. Outside a lesson (a challenge's machine) a screen keeps its fixed
+   height. An author's `height` prop, written inline, wins in both. */
+.linux-terminal__screen {
+  height: 380px;
+}
+.sim-terminal__screen {
+  height: 320px;
+}
+.code-playground__editor {
+  height: 220px;
+}
+.python-challenge__editor {
+  height: 240px;
+}
+.php-lab__preview {
+  height: 220px;
+}
+.lesson-block .linux-terminal__screen {
+  height: clamp(380px, 42cqi, 560px);
+}
+.lesson-block .sim-terminal__screen {
+  height: clamp(320px, 36cqi, 480px);
+}
+.lesson-block .code-playground__editor {
+  height: clamp(220px, 30cqi, 420px);
+}
+.lesson-block .python-challenge__editor {
+  height: clamp(240px, 32cqi, 440px);
+}
+.lesson-block .php-lab__preview {
+  height: clamp(220px, 32cqi, 400px);
 }
 
 article.lesson-content > p {
@@ -978,8 +1078,11 @@ article.lesson-content > p {
 }
 
 /* Glossary words (rehypeGlossary, @cyberlearn/lib/glossary): dotted, so they
-   do not read as links, with the definition shown on hover and on focus. No
-   script: a tap focuses the word, which shows it too. */
+   do not read as links, with the definition shown on hover and on focus. A tap
+   focuses the word, which shows it too. Showing is this sheet's alone; a small
+   script (glossary-tip-fit.tsx) only moves a definition sideways, with
+   --glossary-shift, when it would be cut at the edge of the page: it starts at
+   its word and spreads to the right, and <main> clips what leaves it. */
 .glossary-term {
   position: relative;
   text-decoration: underline dotted var(--cosmetic-accent);
@@ -994,7 +1097,7 @@ article.lesson-content > p {
   display: none;
   position: absolute;
   z-index: 30;
-  left: 0;
+  left: var(--glossary-shift, 0px);
   top: calc(100% + 6px);
   width: max-content;
   max-width: min(320px, 80vw);
@@ -1344,6 +1447,16 @@ article.lesson-content > blockquote p code {
     color 150ms ease,
     background-color 150ms ease,
     border-color 150ms ease;
+}
+/* An entry that opens a window rather than a page (sidebar-nav.tsx,
+   DialogNavItem): a button, drawn as the links are. */
+button.sidebar-nav-item {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
 .sidebar-nav-item:hover {
   color: var(--color-text-primary);
@@ -2081,6 +2194,31 @@ button.notif-row:hover {
   outline: 2px solid var(--cosmetic-accent);
   outline-offset: -2px;
 }
+/* A friend request answered from its notice: the row, then its two buttons
+   under the text (past the 32px mark and its gap), one rule under both. */
+.notif-item {
+  border-bottom: 1px solid #1a1640;
+}
+.notif-item > .notif-row {
+  border-bottom: 0;
+}
+.notif-answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 18px 14px 62px;
+}
+.notif-answer--said {
+  font: 11px var(--font-mono);
+  color: var(--color-text-muted);
+}
+.notif-answer-error {
+  flex-basis: 100%;
+  font: 11px var(--font-mono);
+  color: var(--color-danger);
+}
 
 /* A challenge's hints, each a button (hints-panel.tsx). */
 .hint-row:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -2094,6 +2232,10 @@ button.notif-row:hover {
 
 /* Footer/nav text links */
 .footer-link {
+  /* A finger's height: the landing's footer links were 10px-tall text. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   transition: color 180ms ease;
 }
 .footer-link:hover {
@@ -2140,25 +2282,6 @@ button.notif-row:hover {
   .navbar-header {
     gap: 24px;
     padding: 0 28px;
-  }
-}
-
-/* Review row: flex on mobile → 5-col grid on desktop */
-.review-row-layout {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 14px 16px;
-}
-@media (min-width: 768px) {
-  .review-row-layout {
-    display: grid;
-    grid-template-columns: 64px 1fr auto auto auto;
-    align-items: center;
-    flex-wrap: unset;
-    gap: 20px;
-    padding: 18px 24px;
   }
 }
 
@@ -2224,7 +2347,8 @@ button.notif-row:hover {
   color: var(--color-text-primary);
   font-weight: 700;
 }
-.dash-hero-sub a {
+.dash-hero-sub a,
+.dash-hero-sub .dash-hero-link {
   color: inherit;
   text-decoration: none;
   border-bottom: 1px solid var(--color-border-default);
@@ -2232,7 +2356,18 @@ button.notif-row:hover {
     color 150ms ease,
     border-color 150ms ease;
 }
-.dash-hero-sub a:hover {
+/* The day's recall opens a window: a button, read as the links beside it. */
+.dash-hero-sub .dash-hero-link {
+  padding: 0;
+  font: inherit;
+  background: none;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  cursor: pointer;
+}
+.dash-hero-sub a:hover,
+.dash-hero-sub .dash-hero-link:hover {
   color: var(--color-text-primary);
   border-color: var(--cosmetic-accent);
 }
@@ -2818,7 +2953,7 @@ a.dash-panel-badge:hover {
   display: flex;
   flex-direction: column;
 }
-.dash-rev {
+.dash-live-item {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
@@ -2829,8 +2964,11 @@ a.dash-panel-badge:hover {
   text-decoration: none;
   transition: opacity 150ms ease;
 }
-.dash-rev-list > li:first-child .dash-rev {
-  border-top: 0;
+.dash-live-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .dash-rev:hover .dash-rev-title {
   color: var(--cosmetic-accent);
@@ -2868,7 +3006,7 @@ a.dash-panel-badge:hover {
   text-overflow: ellipsis;
   transition: color 150ms ease;
 }
-.dash-rev-title small {
+.dash-friend-when {
   display: block;
   margin-top: 3px;
   font-size: 12px;
@@ -2902,8 +3040,9 @@ a.dash-panel-badge:hover {
   color: var(--color-text-muted);
   white-space: nowrap;
 }
-.dash-rev-note,
-.dash-rev-empty {
+
+/* The day's recall: where it stands and the button that opens it, no count. */
+.dash-rev-note {
   margin: 4px 0 0;
   font-size: 12.5px;
   line-height: 1.5;
@@ -3488,7 +3627,10 @@ a.dash-panel-badge:hover {
 .landing-nav-download {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  /* A finger's height, whatever the label's. */
+  min-height: 44px;
   padding: 11px 16px;
   color: var(--color-brand-turquoise);
   font-family: var(--font-mono);
@@ -3518,6 +3660,7 @@ a.dash-panel-badge:hover {
 /* Keep the app link reachable on phones - show the icon only to save space. */
 @media (max-width: 699px) {
   .landing-nav-download {
+    min-width: 44px;
     padding: 11px;
   }
 
@@ -3526,29 +3669,54 @@ a.dash-panel-badge:hover {
   }
 }
 
-/* "Connexion" link - hide on phones, show from sm (480px) up */
+/* "Connexion" link. The only way to sign in from a public page, so it is on
+   every width: a learner whose session expired opens the site on a phone. As
+   the bar narrows, what gives way is the rest of it: the padding of the link
+   itself (--nav-signin-x, read by the inline padding in public-navbar.tsx),
+   then the app link, then the brand's name beside its logo. */
 .landing-nav-signin {
   display: inline-flex;
+  --nav-signin-x: 20px;
+}
+@media (max-width: 599px) {
+  .landing-nav-actions {
+    gap: 8px;
+  }
+  .landing-nav-signin {
+    --nav-signin-x: 12px;
+  }
 }
 @media (max-width: 479px) {
-  .landing-nav-signin {
+  .landing-nav-download {
     display: none;
+  }
+}
+@media (max-width: 439px) {
+  .landing-nav-wordmark {
+    display: none;
+  }
+}
+@media (max-width: 339px) {
+  .landing-nav-signin {
+    --nav-signin-x: 8px;
   }
 }
 
-/* CTA button text variants */
+/* CTA button text variants: the long one only where the bar has the room for it
+   beside "Connexion" and the app link (it was 480px, which overflowed up to
+   540px). */
 .landing-cta-long {
-  display: inline;
-}
-.landing-cta-short {
   display: none;
 }
-@media (max-width: 479px) {
+.landing-cta-short {
+  display: inline;
+}
+@media (min-width: 640px) {
   .landing-cta-long {
-    display: none;
+    display: inline;
   }
   .landing-cta-short {
-    display: inline;
+    display: none;
   }
 }
 
@@ -3664,6 +3832,74 @@ a.dash-panel-badge:hover {
     padding: 44px 32px 120px;
   }
 }
+/* The panel of the onboarding screens drawn by hand (identity, avatar, the
+   placement test): the same square padding as OnboardingShell's panel, which
+   leaves 237px of a 375px phone to the content when it keeps the desktop's. */
+.onboarding-card {
+  padding: 26px 18px 22px;
+}
+@media (min-width: 640px) {
+  .onboarding-card {
+    padding: 32px 36px 28px;
+  }
+}
+/* The figures of the placement test (questions, duration, XP...): four columns
+   where they fit, two by two below, as their labels cannot be broken and four
+   of them ask for 320px or more. Their borders are drawn here, as they depend
+   on the number of columns. */
+.onboarding-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.onboarding-stats > * {
+  padding: 16px 14px;
+  min-width: 0;
+}
+.onboarding-stats > :nth-child(odd) {
+  border-right: 1px solid var(--color-border-default);
+}
+.onboarding-stats > :nth-child(n + 3) {
+  border-top: 1px solid var(--color-border-default);
+}
+@media (min-width: 640px) {
+  .onboarding-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .onboarding-stats > * {
+    border-right: 1px solid var(--color-border-default);
+  }
+  .onboarding-stats > :nth-child(n + 3) {
+    border-top: 0;
+  }
+  .onboarding-stats > :last-child {
+    border-right: 0;
+  }
+}
+/* The buttons that close an onboarding screen: side by side while they fit,
+   one under the other below that. */
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.onboarding-actions > .btn {
+  flex: 1 1 auto;
+}
+/* A button's label is on one line (.btn is nowrap), and "Passer → Accéder au
+   dashboard" or "Accéder au tableau de bord →" is wider than a phone's panel:
+   below 640px the label breaks, and the button grows with it. */
+@media (max-width: 639px) {
+  .onboarding-card .btn,
+  .onboarding-actions > .btn {
+    height: auto;
+    min-height: 50px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.4;
+  }
+}
 /* The top bar of the onboarding pages drawn by hand: below 768px it has no
    room for the step's labels and "Se déconnecter" together, and the button
    was pushed off the right edge. The labels are decoration; the way out is
@@ -3674,6 +3910,14 @@ a.dash-panel-badge:hover {
   }
   .onboarding-bar__signout {
     margin-left: auto;
+    position: relative;
+  }
+  /* The button is 32px tall in a 44px bar and stays so; its target reaches
+     the edges of the bar (44px), past its own border. */
+  .onboarding-bar__signout::after {
+    content: "";
+    position: absolute;
+    inset: -6px -4px;
   }
 }
 
@@ -3788,8 +4032,9 @@ a.dash-panel-badge:hover {
 /* One centred column (lessons/[slug]/page.tsx): a compact header, the lesson's
    toolbar stuck under the navbar, the article, then the next lesson, the
    rating and the questions. In the article, the prose keeps a reading measure
-   (article.lesson-content > p and its kin, above) and a component keeps the
-   article's width. The plan and the notes are drawers opened from the
+   (article.lesson-content > p and its kin, above) and a component sits in its
+   block, in that measure or wide (.lesson-block). The plan and the notes are
+   drawers opened from the
    toolbar. The editor's preview (app/preview) draws on the same classes. */
 .lesson-page {
   /* width:100% + min-width:0 pin the column to the content area. Without them
@@ -3828,16 +4073,8 @@ html:has(.lesson-toolbar) {
   max-width: 960px;
   margin: 0 auto 28px;
 }
-/* The breadcrumb ends on the lesson's slug, which can be long: it wraps
-   rather than pushing the page sideways on a phone. */
 .lesson-head .pg-crumb {
-  flex-wrap: wrap;
-  row-gap: 4px;
-  max-width: 100%;
   margin-bottom: 20px;
-}
-.lesson-head .pg-crumb__leaf {
-  overflow-wrap: anywhere;
 }
 .lesson-head__title {
   margin: 0 0 12px;
@@ -4047,6 +4284,16 @@ html:has(.lesson-toolbar) {
     display: block;
   }
 }
+/* Under a thumb the bar's buttons are 44px targets: at 34px, "Suivante" and
+   "Plan" sat 6px from "Précédente" and "Notes", and a touch a little off
+   opened the wrong drawer or went back a section. The bar is 48px
+   (LESSON_TOOLBAR_HEIGHT) and holds them as it is: nothing around it moves. */
+@media (pointer: coarse) {
+  .lesson-toolbar .btn {
+    height: 44px;
+    min-width: 44px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .lesson-toolbar__bar > span {
     transition: none;
@@ -4168,6 +4415,40 @@ main:has(.lesson-notes--wide.side-drawer--docked) {
 .lesson-notes .side-drawer__foot {
   flex-wrap: wrap;
   row-gap: 6px;
+}
+/* The formatting buttons and "Agrandir" (note-drawer.tsx). The sizes are here,
+   not inline, so that a touch screen can give them the 44px a thumb needs;
+   the close button of the same drawer follows. */
+.lesson-notes__tool {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+}
+.lesson-notes__expand {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .lesson-notes__tool,
+  .lesson-notes__expand,
+  .lesson-notes .side-drawer__close {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* ─── The bar under the lesson (next-bar.tsx) ──────────────────────────────
@@ -4445,8 +4726,12 @@ a:hover > .lesson-author-card {
 
 .pg-crumb {
   display: inline-flex;
+  /* It ends on a slug or a title, which can be long: it goes on to a second
+     line rather than running off a phone, or being cut by the page's clip. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
+  max-width: 100%;
   margin-bottom: 26px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -4466,10 +4751,12 @@ a:hover > .lesson-author-card {
 .pg-crumb__leaf {
   color: var(--color-text-primary);
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .pg-crumb__link {
   color: inherit;
   text-decoration: none;
+  overflow-wrap: anywhere;
   transition: color 150ms ease;
 }
 .pg-crumb__link:hover {
@@ -4696,6 +4983,18 @@ a:hover > .lesson-author-card {
 }
 .cls-person__name a:hover {
   color: var(--color-brand-turquoise);
+}
+/* The name and, beside it, "Ajouter" (components/add-friend-chip.tsx). The name
+   alone is clipped to one line with an ellipsis; the button is outside that
+   clip, which would otherwise cut the touch area it grows on a phone. */
+.cls-person__who {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.cls-person__who > .add-friend-sent,
+.cls-person__who > .add-friend-mark {
+  flex: none;
 }
 .cls-person__meta {
   font-family: var(--font-mono);
@@ -5931,6 +6230,18 @@ a.cls-res__title:hover {
     display: none;
   }
 }
+/* On a phone, the bar is the sidebar's button, the actions (this chip, the
+   news, the friends, the bell, the settings, the avatar) and three gaps, and
+   at 375px it is 22px wider than the screen with the word "Wrapped" in the
+   chip: the whole page scrolled sideways for as long as the window is open
+   (December to mid-January). The icon says it, as the news chip's does
+   (.news-chip__label): the button keeps its name for a screen reader
+   (aria-label, wrapped-chip.tsx). */
+@media (max-width: 420px) {
+  .wr-chip__label {
+    display: none;
+  }
+}
 /* Until it has been opened once this edition. Two seconds of breathing, not a
    blink: it has a month to be noticed and nothing to interrupt. */
 .wr-chip--fresh {
@@ -5969,6 +6280,39 @@ a.cls-res__title:hover {
     0 8px 40px rgba(0, 0, 0, 0.6),
     0 0 0 1px var(--color-border-default);
   z-index: 1000;
+}
+
+/* The bell's panel (components/notification-panel.tsx), the friends' panel's
+   twin and a little wider. */
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  overflow-y: auto;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--color-border-default);
+  z-index: 1000;
+}
+
+/* On a phone they hung from their button, 340 and 360px wide, and the button
+   sits well to the right of the window's left edge: at 375px the panel ran off
+   the screen by 117 and 91px, the title and the search field cut off. Below
+   768px they span the window instead, 8px from either edge and 8px under the
+   bar (NAVBAR_PANEL_TOP in lib/chrome.ts), their height and their scrolling
+   unchanged. The navbar's backdrop filter makes it the box a fixed child is
+   placed in, which is the window's width all the same. */
+@media (max-width: 767px) {
+  .fp-panel,
+  .notif-panel {
+    position: fixed;
+    top: 64px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
 }
 
 .fp-head {
@@ -6030,10 +6374,16 @@ a.cls-res__title:hover {
   padding: 0;
 }
 
+/* The actions go under the name when the row cannot give the name 64px beside
+   them: a friend in a duel has "Duel en cours" and "Retirer" (about 210px) in a
+   panel whose rows are 302px wide inside their padding, and the name was left
+   46px, "Jord...". The other rows (Défier and Retirer, Accepter and Refuser)
+   keep their actions on the line, as they did. */
 .fp-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   padding: 9px 18px;
   border-bottom: 1px solid #1a1640;
 }
@@ -6061,7 +6411,7 @@ a.cls-res__title:hover {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 64px;
 }
 
 .fp-name {
@@ -6089,6 +6439,7 @@ a.fp-name:hover {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .fp-error {
@@ -6096,8 +6447,260 @@ a.fp-name:hover {
   color: #ff6b7a;
 }
 
+/* "Ajouter" beside a classmate or a public line of the leaderboard
+   (components/add-friend-chip.tsx): small enough to sit in the name's line. */
+.add-friend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.add-friend-btn {
+  padding: 2px 7px;
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+  cursor: pointer;
+}
+.add-friend-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cosmetic-accent) 10%, transparent);
+}
+.add-friend-btn:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 2px;
+}
+.add-friend-btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* The button is about 17px tall and 60px wide, a target a fingertip misses:
+   on the leaderboard it sits on a card whose whole surface is the link to a
+   profile, so a touch beside it opened the profile instead of sending the
+   request. On a touch screen its hit area grows to about 45px tall through a
+   pseudo-element, which belongs to the button, so the look and the layout do
+   not move. It stops 6px short of the name on either side (the 8px margin). */
+@media (pointer: coarse) {
+  .add-friend-btn {
+    position: relative;
+  }
+  .add-friend-btn::before {
+    content: "";
+    position: absolute;
+    inset: -14px -6px;
+  }
+}
+.add-friend-sent {
+  margin-left: 8px;
+  font: 9.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+.add-friend-mark {
+  margin-left: 6px;
+}
+.add-friend-error {
+  font: 10.5px var(--font-mono);
+  color: #ff6b7a;
+  white-space: normal;
+}
+
+/* Opening somebody's profile by their handle, at the top of the panel. */
+.fp-find {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 18px 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.fp-find-label {
+  padding-left: 0;
+  padding-right: 0;
+}
+.fp-find-row {
+  display: flex;
+  gap: 6px;
+}
+.fp-find-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font: 12px var(--font-mono);
+  color: var(--color-text-primary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+}
+.fp-find-input:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: -1px;
+}
+.fp-find-input[aria-invalid="true"] {
+  border-color: #ff6b7a;
+}
+
 /* On a profile the controls stand alone rather than in a dense row, so they
    get the size a page button wants. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The "Défier" window ((app)/duels/_components/challenge-dialog.tsx)
+   Registered, so it opens over any page: its rules live here rather than in
+   duels.css, which only the duels pages load. Each friend is a card picked
+   like a radio button; one already in a duel with the reader is a card
+   without a choice, dashed, with the way to that duel.
+   ══════════════════════════════════════════════════════════════════════════ */
+.dlc {
+  --dlc-ink: color-mix(in srgb, var(--cosmetic-accent) 58%, var(--color-text-primary));
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+.dark .dlc {
+  --dlc-ink: var(--cosmetic-accent);
+}
+.dlc .empty-state {
+  padding: 40px 24px;
+}
+.dlc-friends {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.dlc-friends legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+.dlc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dlc-card {
+  position: relative;
+  min-width: 0;
+}
+/* The radio stays in the page for the keyboard and the screen reader; the
+   card is its label. */
+.dlc-card__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.dlc-card__box {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 12px;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) ease,
+    background var(--dur-fast) ease;
+}
+.dlc-card__box:hover {
+  border-color: var(--color-text-muted);
+}
+.dlc-card__input:checked + .dlc-card__box {
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-sunken));
+  border-color: var(--dlc-ink);
+}
+.dlc-card__input:focus-visible + .dlc-card__box {
+  outline: 2px solid var(--dlc-ink);
+  outline-offset: 2px;
+}
+.dlc-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font: 700 13px var(--font-sans);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  object-fit: cover;
+}
+.dlc-card__who {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.dlc-card__name {
+  overflow: hidden;
+  font: 600 14px var(--font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-primary);
+}
+.dlc-card__meta {
+  overflow: hidden;
+  font: 10.5px var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-muted);
+}
+/* The pick's mark: an empty square, filled once the card is chosen. */
+.dlc-card__tick {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-border-default);
+}
+.dlc-card__input:checked + .dlc-card__box .dlc-card__tick {
+  background: var(--dlc-ink);
+  border-color: var(--dlc-ink);
+  box-shadow: inset 0 0 0 3px var(--color-bg-sunken);
+}
+.dlc-card[data-busy="true"] .dlc-card__box {
+  border-style: dashed;
+  cursor: default;
+}
+.dlc-card[data-busy="true"] .dlc-card__box:hover {
+  border-color: var(--color-border-default);
+}
+.dlc-card[data-busy="true"] .dlc-card__avatar {
+  opacity: 0.6;
+}
+.dlc-card__busy {
+  grid-column: 2 / -1;
+  font: 10.5px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.dlc-card__link {
+  color: var(--dlc-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dlc-card--loading {
+  height: 66px;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-subtle);
+}
+.dlc-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.dlc .cls-field .dlc-note {
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dlc-card__box {
+    transition: none;
+  }
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Toasts

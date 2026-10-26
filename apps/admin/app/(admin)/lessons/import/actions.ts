@@ -4,17 +4,21 @@ import crypto from "node:crypto";
 import matter from "gray-matter";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/auth";
-import { prisma, type Prisma } from "@cyberlearn/db";
-import type { ImportValidationResult } from "@cyberlearn/types";
+import { auditLogRepository, lessonFileRepository, type Prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
+import type { ImportValidationError, ImportValidationResult } from "@cyberlearn/types";
 import {
   validateMdxContent,
   importValidatedLesson,
   orderBatchByPrerequisites,
 } from "@/lib/services/lesson-import.service";
+import { applyLessonContentUpdate } from "@/lib/services/lesson-update.service";
 
 export type ImportActionResult =
   | { status: "success"; lessonId: string; warnings: string[] }
   | { status: "validation_error"; result: ImportValidationResult }
+  /** The refCode is in the database now: the result shows what an update would change. */
+  | { status: "exists"; result: ImportValidationResult }
   | { status: "rate_limited" }
   | { status: "forbidden" };
 
@@ -33,6 +37,7 @@ export interface BatchValidateItem {
 export type BatchFileOutcome =
   | { name: string; status: "success"; lessonId: string; warnings: string[] }
   | { name: string; status: "validation_error"; result: ImportValidationResult }
+  | { name: string; status: "exists"; result: ImportValidationResult }
   | { name: string; status: "skipped"; reason: string };
 
 export type BatchImportResult =
@@ -53,16 +58,11 @@ const BATCH_MAX_TOTAL_BYTES = 4 * 1024 * 1024;
 
 async function importsRemaining(adminId: string): Promise<number> {
   const since = new Date(Date.now() - RATE_WINDOW_MS);
-  // Only SUCCESSFUL imports consume budget: counting refusals or rejections
-  // would let a failing batch (or the refusal write itself) burn the hourly
-  // budget and self-extend the lockout.
-  const count = await prisma.auditLog.count({
-    where: {
-      actorId: adminId,
-      action: "lesson.import.success",
-      createdAt: { gte: since },
-    },
-  });
+  // Only SUCCESSFUL writes consume budget, a new lesson or one updated from
+  // its file: counting refusals or rejections would let a failing batch (or
+  // the refusal write itself) burn the hourly budget and self-extend the
+  // lockout.
+  const count = await lessonFileRepository.countImportsSince(adminId, since);
   return Math.max(0, RATE_MAX - count);
 }
 
@@ -146,21 +146,19 @@ function intraBatchDuplicateErrors(
   return errors;
 }
 
+/** A refused or rejected upload: nothing was written but this row. */
 async function writeAuditLog(
   actorId: string,
-  action: string,
-  targetId: string | undefined,
+  action: typeof AUDIT_ACTION.lesson.importRateLimited | typeof AUDIT_ACTION.lesson.importRejected,
   // Prisma's JSON input type: what the column takes, checked where it is built.
   metadata: Prisma.InputJsonObject,
 ): Promise<void> {
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action,
-      targetType: "lesson",
-      targetId: targetId ?? null,
-      metadata: metadata,
-    },
+  await auditLogRepository.record({
+    actorId,
+    action,
+    targetType: "lesson",
+    targetId: null,
+    metadata,
   });
 }
 
@@ -184,7 +182,7 @@ async function importLessonAction(fileContent: string): Promise<ImportActionResu
   // Rate limiting
   const allowed = (await importsRemaining(admin.id)) > 0;
   if (!allowed) {
-    await writeAuditLog(admin.id, "lesson.import.rate_limited", undefined, {});
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRateLimited, {});
     return { status: "rate_limited" };
   }
 
@@ -193,7 +191,7 @@ async function importLessonAction(fileContent: string): Promise<ImportActionResu
   const contentHash = crypto.createHash("sha256").update(fileContent).digest("hex");
 
   if (!validationResult.valid || !validationResult.metadata || !validationResult.body) {
-    await writeAuditLog(admin.id, "lesson.import.rejected", undefined, {
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRejected, {
       contentHash,
       errorCount: validationResult.errors.length,
       firstError: validationResult.errors[0]?.message ?? "unknown",
@@ -201,17 +199,18 @@ async function importLessonAction(fileContent: string): Promise<ImportActionResu
     return { status: "validation_error", result: validationResult };
   }
 
-  // Import
-  const { lessonId, refCode } = await importValidatedLesson(
+  // Imported in the meantime (another tab, the sync page): never a second
+  // lesson, the differences to update it instead.
+  if (validationResult.update) return { status: "exists", result: validationResult };
+
+  // Import: the lesson, its first version and its `lesson.import.success`
+  // audit row, in one transaction.
+  const { lessonId } = await importValidatedLesson(
     validationResult.metadata,
     validationResult.body,
     admin.id,
+    { refCode: validationResult.metadata.refCode, contentHash },
   );
-
-  await writeAuditLog(admin.id, "lesson.import.success", lessonId, {
-    refCode,
-    contentHash,
-  });
 
   return { status: "success", lessonId, warnings: validationResult.warnings };
 }
@@ -322,7 +321,7 @@ export async function importLessonBatchAction(files: BatchFileInput[]): Promise<
 
   const remaining = await importsRemaining(admin.id);
   if (parsed.data.length > remaining) {
-    await writeAuditLog(admin.id, "lesson.import.rate_limited", undefined, {
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRateLimited, {
       requested: parsed.data.length,
       remaining,
     });
@@ -389,6 +388,8 @@ export async function importLessonBatchAction(files: BatchFileInput[]): Promise<
       });
     } else if (single.status === "validation_error") {
       outcomes.push({ name, status: "validation_error", result: single.result });
+    } else if (single.status === "exists") {
+      outcomes.push({ name, status: "exists", result: single.result });
     } else {
       // Concurrent budget consumption (another tab) tripped the per-file
       // check mid-batch: stop importing, report the rest untouched.
@@ -405,4 +406,76 @@ export async function importLessonBatchAction(files: BatchFileInput[]): Promise<
   const orderIndex = new Map(parsed.data.map((f, i) => [f.name, i]));
   outcomes.sort((a, b) => (orderIndex.get(a.name) ?? 0) - (orderIndex.get(b.name) ?? 0));
   return { status: "done", outcomes };
+}
+
+// ── Update of an existing lesson ───────────────────────────────────────────────
+
+const updateInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  content: fileContentSchema,
+  hash: z.string().regex(/^[a-f0-9]{64}$/, "Empreinte invalide"),
+});
+
+export type ImportUpdateResult =
+  /**
+   * `version`: the lesson's version after the write. `draftKept`: a studio
+   * draft was open on the lesson; it stays, and the studio says the lesson
+   * moved under it.
+   */
+  | { status: "success"; lessonId: string; version: number; draftKept: boolean }
+  | {
+      status: "refused";
+      reason: "not_found" | "stale" | "invalid" | "prerequisite" | "unavailable";
+      message: string;
+      errors: ImportValidationError[];
+    }
+  | { status: "rate_limited" }
+  | { status: "invalid_input"; message: string };
+
+/**
+ * Writes a file over the lesson that holds its refCode, once the admin has
+ * seen the differences and confirmed. `hash` is the fingerprint of the lesson
+ * as the validation showed it: a lesson that changed since is not written
+ * over, and the admin validates again to see what it is now. Published as a
+ * new version of the lesson (IMPORT), logged `lesson.import.update`, and
+ * counted in the same hourly budget as imports.
+ */
+export async function updateLessonFromImportAction(input: {
+  name: string;
+  content: string;
+  hash: string;
+}): Promise<ImportUpdateResult> {
+  const admin = await requireAdminAction();
+
+  const parsed = updateInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "invalid_input",
+      message: parsed.error.issues[0]?.message ?? "Demande invalide",
+    };
+  }
+
+  if ((await importsRemaining(admin.id)) <= 0) {
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRateLimited, { update: true });
+    return { status: "rate_limited" };
+  }
+
+  const result = await applyLessonContentUpdate(parsed.data.content, parsed.data.hash, admin.id, {
+    kind: "import",
+    file: parsed.data.name,
+  });
+  if (!result.ok) {
+    return {
+      status: "refused",
+      reason: result.reason,
+      message: result.message,
+      errors: result.errors ?? [],
+    };
+  }
+  return {
+    status: "success",
+    lessonId: result.lessonId,
+    version: result.version,
+    draftKept: result.draftKept,
+  };
 }

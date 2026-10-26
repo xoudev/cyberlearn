@@ -33,7 +33,7 @@ beforeEach(() => {
 describe("refreshLessonPreviewAction (teacher)", () => {
   it("refreshes the teacher's preview and answers an address on this site", async () => {
     const result = await refreshLessonPreviewAction({ token: TOKEN, contentMdx: DRAFT });
-    expect(result).toEqual({ ok: true, token: TOKEN, url: `/preview/${TOKEN}` });
+    expect(result).toEqual({ ok: true, token: TOKEN, url: `/preview/${TOKEN}`, problems: [] });
     expect(refresh).toHaveBeenCalledWith("u1", TOKEN, DRAFT, expect.any(Date));
   });
 
@@ -68,6 +68,23 @@ describe("refreshLessonPreviewAction (teacher)", () => {
       contentMdx: '<Quiz id="q" question="?" options={["a", "b"]} correct={True} />',
     });
     expect(result.ok).toBe(false);
+    // The editor marks it under `True`.
+    expect(result.problems?.map(({ line, column }) => ({ line, column }))).toEqual([
+      { line: 1, column: 57 },
+    ]);
     expect(issue).not.toHaveBeenCalled();
+  });
+
+  it("shows a draft that renders but breaks a rule, with the problems to mark", async () => {
+    const result = await refreshLessonPreviewAction({
+      token: TOKEN,
+      contentMdx: `${DRAFT}\nUn mot \u2014 un autre.\n`,
+    });
+    expect(result).toMatchObject({ ok: true, token: TOKEN });
+    const [problem, ...rest] = result.problems ?? [];
+    expect(rest).toEqual([]);
+    expect({ line: problem?.line, column: problem?.column }).toEqual({ line: 5, column: 8 });
+    expect(problem?.message).toContain("Tiret cadratin");
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

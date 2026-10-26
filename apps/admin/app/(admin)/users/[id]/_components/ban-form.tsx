@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
 import { banUserAction, liftBanAction, type BanUserState } from "../../../_actions/user-actions";
-import { Card, Tag } from "../../../_components/admin-ui";
+import { Card, Tag, type Tone } from "../../../_components/admin-ui";
+import { LiftReasonField } from "../../../_components/lift-reason-field";
 
 /**
  * Banning somebody, and letting them back in.
@@ -32,8 +34,11 @@ export function BanForm({
     endsLabel: string;
     issuedOn: string;
     issuedBy: string | null;
-    /** The ticket contesting this ban, when one was opened. */
-    appealTicketId: string | null;
+    /**
+     * The ticket contesting this ban, when one was filed, and what to say of
+     * it: open, or answered (the ban stays in force when the appeal is refused).
+     */
+    appeal: { ticketId: string; label: string; tone: Tone } | null;
   } | null;
   history: { id: string; reason: string; issuedOn: string; outcome: string }[];
 }): React.ReactElement {
@@ -45,6 +50,19 @@ export function BanForm({
     liftBanAction,
     {},
   );
+
+  // Each success swaps this card for the other one, and that swap was its only
+  // sign. A toast says it; the errors stay under the form that sent them. A
+  // ban whose e-mail did not leave says so in the card instead, which stays.
+  // The ids keep an effect run twice from showing it twice.
+  useEffect(() => {
+    if (banState.ok === true && banState.emailFailed !== true) {
+      toast.success("Compte banni.", { id: "ban-issued" });
+    }
+  }, [banState]);
+  useEffect(() => {
+    if (liftState.ok === true) toast.success("Bannissement levé.", { id: "ban-lifted" });
+  }, [liftState]);
 
   return (
     <Card title={active ? "Bannissement en cours" : "Bannissement"} pad>
@@ -75,11 +93,11 @@ export function BanForm({
           </div>
           <div className="a-defrow">
             <span className="a-defrow-label">Appel</span>
-            {active.appealTicketId !== null ? (
+            {active.appeal !== null ? (
               // The appeal is read and answered on its ticket: one click there,
               // and the ticket links back here to lift the ban.
-              <Link href={`/tickets/${active.appealTicketId}`} className="a-row-link">
-                <Tag tone="warning">Un appel est ouvert · lire</Tag>
+              <Link href={`/tickets/${active.appeal.ticketId}`} className="a-row-link">
+                <Tag tone={active.appeal.tone}>{active.appeal.label}</Tag>
               </Link>
             ) : (
               <span className="mono a-field-hint">Aucun</span>
@@ -97,17 +115,7 @@ export function BanForm({
             style={{ marginTop: 16 }}
           >
             <input type="hidden" name="userId" value={userId} />
-            <label className="a-field">
-              <span className="a-label">
-                Motif de la levée<span className="a-label-optional"> · optionnel</span>
-              </span>
-              <input
-                name="reason"
-                maxLength={500}
-                className="a-input"
-                placeholder="Appel accepté : faux positif"
-              />
-            </label>
+            <LiftReasonField />
             <button type="submit" disabled={liftPending} className="a-btn a-btn--ghost">
               {liftPending ? "Levée…" : "Lever le bannissement"}
             </button>

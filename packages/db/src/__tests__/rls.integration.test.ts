@@ -16,6 +16,8 @@ import { randomUUID } from "node:crypto";
 const TEST_USER_A_EMAIL = "rls-test-a@test.cyberlearn.internal";
 const TEST_USER_B_EMAIL = "rls-test-b@test.cyberlearn.internal";
 const TEST_PASSWORD = "TestPassword123!";
+/** The content User B reports; kept on account erasure, so removed by this id. */
+const CONTENT_REPORT_TARGET = randomUUID();
 
 describe("RLS policies (integration)", () => {
   // All vars initialized in beforeAll after setupFiles has loaded env
@@ -31,6 +33,7 @@ describe("RLS policies (integration)", () => {
   let draftLessonId: string;
   let createdDraftLessonId: string; // Created by test setup, cleaned up in afterAll
   let quizId: string; // Created by test setup (with a question + a User B attempt)
+  let quizPathId: string;
 
   beforeAll(async () => {
     supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
@@ -150,13 +153,26 @@ describe("RLS policies (integration)", () => {
       throw new Error(`Failed to insert progress: ${progressInsertError.message}`);
 
     // ── Quiz fixtures (created via service_role; clients must NOT write these) ──
-    const { data: anyPath } = await adminClient.from("paths").select("id").limit(1).single();
-    if (!anyPath) throw new Error("No paths - run seed first");
+    // A seeded path can already have its unique exam: the fixture owns its path.
+    quizPathId = randomUUID();
+    const { error: pathError } = await adminClient.from("paths").insert({
+      id: quizPathId,
+      refCode: `CL-PATH-RLS-${quizPathId}`,
+      slug: `rls-quiz-${quizPathId}`,
+      title: "RLS quiz fixture",
+      description: "Isolated path for the quiz access checks",
+      category: "CYBERSEC",
+      difficulty: "BEGINNER",
+      estimatedHours: 1,
+      status: "PUBLISHED",
+      updatedAt: now,
+    });
+    if (pathError) throw new Error(`Failed to insert quiz path: ${pathError.message}`);
 
     quizId = randomUUID();
     const { error: quizErr } = await adminClient.from("quiz").insert({
       id: quizId,
-      pathId: anyPath.id,
+      pathId: quizPathId,
       questionsToDraw: 5,
       updatedAt: new Date().toISOString(),
     });
@@ -198,16 +214,6 @@ describe("RLS policies (integration)", () => {
     });
     if (lqaErr) throw new Error(`Failed to insert lesson_quiz_answer: ${lqaErr.message}`);
 
-    // A review of User B's, due in a week: the date a client would want to
-    // move back, to grade it again for XP.
-    const { error: rsErr } = await adminClient.from("review_schedules").insert({
-      id: randomUUID(),
-      userId: userBId,
-      lessonId: publishedLessonId,
-      nextReviewAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
-    });
-    if (rsErr) throw new Error(`Failed to insert review_schedule: ${rsErr.message}`);
-
     // User B's report on a quiz, with a comment written for the team.
     const { error: qrErr } = await adminClient.from("quiz_reports").insert({
       id: randomUUID(),
@@ -220,6 +226,19 @@ describe("RLS policies (integration)", () => {
     });
     if (qrErr) throw new Error(`Failed to insert quiz_report: ${qrErr.message}`);
 
+    // User B's report on a forum message, with a comment written for the team.
+    // contentId points nowhere: the column has no foreign key.
+    const { error: crErr } = await adminClient.from("content_reports").insert({
+      id: randomUUID(),
+      surface: "FORUM_POST",
+      contentId: CONTENT_REPORT_TARGET,
+      reporterId: userBId,
+      reason: "HATE",
+      comment: "Insultes envers un membre.",
+      updatedAt: new Date().toISOString(),
+    });
+    if (crErr) throw new Error(`Failed to insert content_report: ${crErr.message}`);
+
     configured = true;
   });
 
@@ -227,11 +246,13 @@ describe("RLS policies (integration)", () => {
     if (!configured) return;
     // Kept on account erasure (userId set null), so removed by quiz id.
     await adminClient.from("quiz_reports").delete().like("quizId", "rls-report-%");
+    await adminClient.from("content_reports").delete().eq("contentId", CONTENT_REPORT_TARGET);
     await adminClient.from("user_lesson_progress").delete().in("userId", [userAId, userBId]);
     if (quizId) {
       // Cascades to quiz_questions + quiz_attempts.
       await adminClient.from("quiz").delete().eq("id", quizId);
     }
+    if (quizPathId) await adminClient.from("paths").delete().eq("id", quizPathId);
     if (createdDraftLessonId) {
       await adminClient.from("lessons").delete().eq("id", createdDraftLessonId);
     }
@@ -572,43 +593,37 @@ describe("RLS policies (integration)", () => {
     });
   });
 
-  describe("tables the server writes (reviews, waivers, placement, path progress)", () => {
-    // Written only by the server, where grading, placement and completion are
-    // decided. The baseline let a client write its own rows: move a review
-    // back to farm XP, waive any prerequisite, forge a placement or a path.
-    async function bReviewDate(): Promise<string | undefined> {
-      const { data } = await adminClient
-        .from("review_schedules")
-        .select("nextReviewAt")
-        .eq("userId", userBId)
-        .eq("lessonId", publishedLessonId);
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- the untyped Supabase client returns any rows; the cast types them, and dropping it trips no-unsafe-return.
-      return (data as { nextReviewAt: string }[] | null)?.[0]?.nextReviewAt;
-    }
+  describe("the retired SM-2 queue (review_schedules)", () => {
+    // The app builds installed before the review cards read the queue
+    // themselves, through the Data API, with these columns (lib/revisions.ts
+    // in those builds, the first of them without easeFactor). The name is an
+    // empty view now (20261018120000_retire_review_schedules), and the table
+    // behind the old queue is gone (20261023120000_drop_review_schedules_legacy):
+    // they must get an empty queue, not an error screen.
+    const OLD_APP_COLUMNS = [
+      "id,nextReviewAt,lesson:lessons(id,slug,title,category,difficulty,xpReward)",
+      "id,nextReviewAt,easeFactor,lesson:lessons(id,slug,title,category,difficulty,xpReward)",
+    ];
 
-    it("user B can read their own reviews", async () => {
+    it.each(OLD_APP_COLUMNS)("an installed app reads an empty queue: %s", async (columns) => {
       if (!configured) return;
       const clientB = await signInAs(TEST_USER_B_EMAIL);
       const { data, error } = await clientB
         .from("review_schedules")
-        .select("lessonId")
-        .eq("userId", userBId);
+        .select(columns)
+        .eq("userId", userBId)
+        .order("nextReviewAt", { ascending: true });
       expect(error).toBeNull();
-      expect(data).toEqual([{ lessonId: publishedLessonId }]);
+      expect(data).toEqual([]);
     });
 
-    it("a client cannot move a review back to grade it again", async () => {
+    it("anon reads nothing of the queue", async () => {
       if (!configured) return;
-      const before = await bReviewDate();
-      const clientB = await signInAs(TEST_USER_B_EMAIL);
-      await clientB
-        .from("review_schedules")
-        .update({ nextReviewAt: new Date(Date.now() - 86_400_000).toISOString() })
-        .eq("userId", userBId);
-      expect(await bReviewDate()).toBe(before);
+      const { data } = await anonClient.from("review_schedules").select("id");
+      expect(data ?? []).toEqual([]);
     });
 
-    it("a client cannot schedule a review of its own", async () => {
+    it("a client cannot write to the queue's view", async () => {
       if (!configured) return;
       const clientA = await signInAs(TEST_USER_A_EMAIL);
       const { error } = await clientA.from("review_schedules").insert({
@@ -619,6 +634,22 @@ describe("RLS policies (integration)", () => {
       });
       expect(error).not.toBeNull();
     });
+
+    it("the old queue's table is gone, for the server as for a client", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      for (const client of [adminClient, clientB]) {
+        const { data, error } = await client.from("review_schedules_legacy").select("id");
+        expect(error).not.toBeNull();
+        expect(data).toBeNull();
+      }
+    });
+  });
+
+  describe("tables the server writes (waivers, placement, path progress)", () => {
+    // Written only by the server, where placement and completion are
+    // decided. The baseline let a client write its own rows: waive any
+    // prerequisite, forge a placement or a path.
 
     it("a client cannot waive a lesson's prerequisites", async () => {
       if (!configured) return;
@@ -711,6 +742,67 @@ describe("RLS policies (integration)", () => {
         .eq("quizId", "rls-report-q");
       await clientB.from("quiz_reports").delete().eq("quizId", "rls-report-q");
       expect(await bReport()).toEqual({ reason: "AMBIGUOUS", status: "OPEN" });
+    });
+  });
+
+  describe("content_reports", () => {
+    // Written by the server, which checks the reporter can see the content
+    // and did not write it. A client reads its own reports and nothing else:
+    // who reported something is not its author's to know, and the comment is
+    // for the team.
+    async function bContentReport(): Promise<{ reason: string; status: string } | undefined> {
+      const { data } = await adminClient
+        .from("content_reports")
+        .select("reason, status")
+        .eq("contentId", CONTENT_REPORT_TARGET);
+      return data?.[0];
+    }
+
+    it("user B can read their own reports", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data, error } = await clientB
+        .from("content_reports")
+        .select("surface, reason")
+        .eq("reporterId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([{ surface: "FORUM_POST", reason: "HATE" }]);
+    });
+
+    it("user A cannot read user B's reports or comments", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("content_reports")
+        .select("*")
+        .eq("contentId", CONTENT_REPORT_TARGET);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("a client cannot file a report without the server's checks", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("content_reports").insert({
+        id: randomUUID(),
+        surface: "LESSON_ANSWER",
+        contentId: randomUUID(),
+        reporterId: userAId,
+        reason: "SPAM",
+        updatedAt: new Date().toISOString(),
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot change or erase a report", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("content_reports")
+        .update({ status: "DISMISSED" })
+        .eq("contentId", CONTENT_REPORT_TARGET);
+      await clientB.from("content_reports").delete().eq("contentId", CONTENT_REPORT_TARGET);
+      expect(await bContentReport()).toEqual({ reason: "HATE", status: "OPEN" });
     });
   });
 

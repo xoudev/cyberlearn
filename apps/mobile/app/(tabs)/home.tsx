@@ -4,49 +4,63 @@ import { wrappedWindow } from "@cyberlearn/lib/gamification/wrapped-window";
 import { nextRankName, rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { planSections, sectionNumber } from "@cyberlearn/lib/dashboard/sections";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
+import { receivedInvitations, runningTournaments } from "@cyberlearn/lib/dashboard/your-move";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
-import { ActionChip, GradientButton, IconButton } from "@/components/buttons";
+import { ActionChip, GradientButton, IconButton, TEXT_LINK_TARGET } from "@/components/buttons";
 import { BellIcon, ChevronRight, SearchIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { ModuleRouteRow } from "@/components/module-route";
+import { FriendsActivityCard } from "@/components/friends";
 import { BadgeIcon } from "@/components/media";
-import { RevisionsCard } from "@/components/revisions-card";
+import { RecallCard } from "@/components/recall-card";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { WeeklyQuests } from "@/components/weekly-quests";
+import { YourMove } from "@/components/your-move";
 import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
+import { fetchDuelsApi, fetchTournamentsApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, RARITY_COLOR } from "@/lib/db";
+import { fetchFriendsActivityApi } from "@/lib/api";
 import { firstName, leadAction, pathsTitle, type HomePath, type LeadProgress } from "@/lib/home";
 import type { ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import {
+  useDailyRecall,
   useDashboard,
   useQuests,
-  useRevisions,
   useUnreadCount,
   type DashboardData,
 } from "@/lib/queries";
-import { splitReviews } from "@/lib/revisions";
+import { recallCardState } from "@/lib/rappel";
 import { useSession } from "@/lib/session";
+import { RECALL_STATE_LABEL, type RecallState } from "@cyberlearn/lib/revisions/recall-copy";
 
 /**
  * The home tab: the site's dashboard, rebuilt around the paths (PR #233). The
- * paths lead; a half-finished lesson and due revisions follow only when there
- * are some; the reader's own record closes. The sections are numbered as on
- * the site, and the numbering closes up behind a section that has nothing to
- * say (@cyberlearn/lib/dashboard/sections).
+ * paths lead; what will not wait follows when there is any (a duel a friend
+ * sent, a tournament under way), then a half-finished lesson when there is
+ * one, then the day's recall while spaced repetition is on; then, for a
+ * reader with friends, what they did lately ("Tes amis", as on the site's
+ * dashboard); the reader's own record closes. The sections are numbered as
+ * on the site, and the numbering closes up behind a section that has nothing
+ * to say
+ * (@cyberlearn/lib/dashboard/sections).
  */
 export default function Accueil(): React.JSX.Element {
   const { session } = useSession();
   const userId = session?.user.id;
   const { data, isLoading, error, refetch } = useDashboard(userId);
-  const { data: revisions } = useRevisions(userId);
+  // Drawn on the server on the day's first look, as the site's dashboard
+  // draws it: its state is the one the Révisions screen will open on.
+  const recall = useDailyRecall(userId);
+  const queryClient = useQueryClient();
 
   if (isLoading || !data) {
     return (
@@ -60,12 +74,21 @@ export default function Accueil(): React.JSX.Element {
     );
   }
 
-  const dueReviews =
-    revisions?.enabled === true ? splitReviews(revisions.items, new Date()).due.length : 0;
-
   return (
-    <Screen onRefresh={() => refetch()}>
-      <HomeBody data={data} userId={userId} dueReviews={dueReviews} />
+    <Screen
+      onRefresh={() =>
+        Promise.all([
+          refetch(),
+          recall.refetch(),
+          // What will not wait (HomeBody): pulled again with the rest.
+          queryClient.invalidateQueries({ queryKey: ["duels"] }),
+          queryClient.invalidateQueries({ queryKey: ["tournaments"] }),
+          // "Tes amis" (HomeBody) too.
+          queryClient.invalidateQueries({ queryKey: ["friends-activity"] }),
+        ])
+      }
+    >
+      <HomeBody data={data} userId={userId} recallState={recallCardState(recall.data)} />
     </Screen>
   );
 }
@@ -73,24 +96,59 @@ export default function Accueil(): React.JSX.Element {
 function HomeBody({
   data,
   userId,
-  dueReviews,
+  recallState,
 }: {
   data: DashboardData;
   userId: string | undefined;
-  dueReviews: number;
+  /** To do, done or nothing today; null with spaced repetition off. Never a count. */
+  recallState: RecallState | null;
 }): React.JSX.Element {
   const router = useRouter();
   const { theme } = useCosmetics();
   const weekKey = useMemo(() => isoWeekKey(new Date()), []);
   const { data: quests } = useQuests(userId, weekKey);
   const { data: unread } = useUnreadCount(userId);
+  // "Tes amis": nothing drawn until it arrives, nor for a reader without a
+  // friend, nor when it fails (the rest of the tab does not wait on it).
+  const { data: friendsActivity } = useQuery({
+    queryKey: ["friends-activity", userId],
+    queryFn: fetchFriendsActivityApi,
+    enabled: Boolean(userId),
+  });
+  const hasFriends = friendsActivity?.hasFriends === true;
   const xpAnchor = useTourAnchor("home-xp");
   const streakAnchor = useTourAnchor("home-streak");
   const bellAnchor = useTourAnchor("home-bell");
 
+  // What will not wait, as the site's dashboard shows it: the duels a friend
+  // sent, still waiting on an answer, and the tournaments under way. Same
+  // queries as the Duels and Tournaments screens.
+  const { data: duelBoard } = useQuery({
+    queryKey: ["duels"],
+    queryFn: fetchDuelsApi,
+    staleTime: 60_000,
+  });
+  const { data: tournamentList } = useQuery({
+    queryKey: ["tournaments"],
+    queryFn: fetchTournamentsApi,
+    staleTime: 60_000,
+  });
+  const invitations =
+    duelBoard === undefined ? [] : receivedInvitations(duelBoard.duels, new Date());
+  const liveTournaments =
+    tournamentList === undefined ? [] : runningTournaments(tournamentList.tournaments);
+
   const { me, level, rank, badges, resume, paths, stats } = data;
   const tier = computeTier(level.level);
-  const sections = planSections({ hasResume: resume !== null, dueReviews });
+  const sections = planSections({
+    hasResume: resume !== null,
+    hasRecall: recallState !== null,
+    hasPlay: invitations.length > 0 || liveTournaments.length > 0,
+    hasFriends,
+  });
+  const openRecall = (): void => {
+    router.push("/revisions");
+  };
   const xpToNext = Math.max(level.needed - level.current, 0);
   const fr = (value: number): string => value.toLocaleString("fr-FR");
   const wrapped = wrappedWindow(new Date());
@@ -187,6 +245,28 @@ function HomeBody({
             <Text variant="micro">{me.streakDays > 1 ? "jours" : "jour"}</Text>
           </View>
         </View>
+        {/* The site's greeting says it too, while the day's recall is to do. */}
+        {recallState === "todo" ? (
+          <PressableScale
+            onPress={openRecall}
+            accessibilityLabel="Ton rappel du jour t'attend"
+            style={{
+              ...TEXT_LINK_TARGET,
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Text variant="body">
+              <Text style={{ color: theme.accent, fontFamily: `${fonts.sans}_700Bold` }}>
+                Ton rappel du jour
+              </Text>{" "}
+              t&apos;attend
+            </Text>
+            <ChevronRight color={theme.accent} size={14} />
+          </PressableScale>
+        ) : null}
       </View>
 
       {/* Level + XP: the rank reached, the level, how far into it, what is left */}
@@ -262,7 +342,18 @@ function HomeBody({
         )}
       </Rise>
 
-      {/* 02 · En cours: the half-finished lesson, when there is one */}
+      {/* 02 · À toi de jouer: a duel received, a tournament under way */}
+      {invitations.length > 0 || liveTournaments.length > 0 ? (
+        <Rise index={2}>
+          <SectionLabel
+            eyebrow={`${sectionNumber(sections, "play") ?? "02"} · à toi de jouer`}
+            title="Ça n'attend pas."
+          />
+          <YourMove invitations={invitations} tournaments={liveTournaments} />
+        </Rise>
+      ) : null}
+
+      {/* En cours: the half-finished lesson, when there is one */}
       {resume ? (
         <Rise index={2}>
           <SectionLabel
@@ -301,19 +392,40 @@ function HomeBody({
         </Rise>
       ) : null}
 
-      {/* 03 · À réviser: only when something is actually due */}
-      {dueReviews > 0 ? (
+      {/* 03 · Révisions: the day's recall, to do, done or nothing today. It
+          keeps its place from one day to the next, as on the site, and leaves
+          only with spaced repetition switched off. */}
+      {recallState !== null ? (
         <Rise index={3}>
           <SectionLabel
-            eyebrow={`${sectionNumber(sections, "reviews") ?? "03"} · à réviser`}
-            title={`${String(dueReviews)} leçon${dueReviews > 1 ? "s" : ""} demande${dueReviews > 1 ? "nt" : ""} ton attention.`}
+            eyebrow={`${sectionNumber(sections, "recall") ?? "03"} · révisions`}
+            title="Rappel du jour"
+            right={
+              <Text
+                variant="micro"
+                style={{ color: recallState === "todo" ? theme.accent : colors.textMuted }}
+              >
+                {RECALL_STATE_LABEL[recallState]}
+              </Text>
+            }
           />
-          <RevisionsCard userId={userId} />
+          <RecallCard state={recallState} onOpen={openRecall} />
+        </Rise>
+      ) : null}
+
+      {/* Tes amis: their recent moments, for a reader with friends */}
+      {friendsActivity !== undefined && hasFriends ? (
+        <Rise index={4}>
+          <SectionLabel
+            eyebrow={`${sectionNumber(sections, "friends") ?? "04"} · amis`}
+            title="Tes amis."
+          />
+          <FriendsActivityCard items={friendsActivity.items} />
         </Rise>
       ) : null}
 
       {/* 04 · Progression: the reader's own record */}
-      <Rise index={4}>
+      <Rise index={5}>
         <SectionLabel
           eyebrow={`${sectionNumber(sections, "progress") ?? "04"} · progression`}
           title="Où tu en es."

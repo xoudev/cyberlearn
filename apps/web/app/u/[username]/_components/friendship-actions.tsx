@@ -168,7 +168,7 @@ export function FriendshipActions({
         ))
       )}
       {canChallenge(state) && (
-        <Link href={`/duels?ami=${targetId}`} className="btn btn--ghost btn--sm">
+        <Link href={`/duels?duel=${targetId}`} className="btn btn--ghost btn--sm">
           Défier en duel
         </Link>
       )}

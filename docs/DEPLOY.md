@@ -151,7 +151,8 @@ WHERE schemaname = 'public' AND NOT rowsecurity
   AND tablename NOT IN ('_prisma_migrations');
 -- attendu : 0 ligne
 
--- 2. Compte de policies (>= 56, la baseline)
+-- 2. Compte de policies (>= 55 : les 56 de la baseline, moins celle de
+--    review_schedules_legacy, supprimée avec sa table)
 SELECT count(*) FROM pg_policies WHERE schemaname = 'public';
 ```
 
@@ -218,6 +219,58 @@ Un quatrième, `/api/cron/keep-alive`, est appelé depuis l'extérieur toutes le
 [docs/infra/keep-alive.md](infra/keep-alive.md).
 
 Tous lisent `Authorization: Bearer $CRON_SECRET`.
+
+---
+
+## Scripts lancés à la main
+
+Certains scripts de `packages/db` ne partent ni sur un merge ni par un cron :
+on les lance à la main, depuis un poste qui a la `DATABASE_URL` de la
+production. Ils sont en mode d'essai par défaut (ils comptent et n'écrivent
+rien), n'écrivent qu'avec `--apply`, et une deuxième passe lancée aussitôt
+après ne change rien.
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `db:backfill-badge-xp` | Crédite l'XP des badges gagnés avant que les badges en rapportent |
+| `db:backfill-daily-streaks` | Reconstruit les jours d'activité et la plus longue série depuis les leçons terminées |
+
+### Ancienne file de révisions (SM-2) : convertie, puis supprimée
+
+La conversion de l'ancienne file de révisions en cartes du rappel du jour a été
+faite en production avant cette version. La table qui la gardait,
+`review_schedules_legacy`, est supprimée (migration
+`20261023120000_drop_review_schedules_legacy`), et avec elle le script
+`db:backfill-review-cards` et la section `reviewSchedules` de l'export RGPD
+(version 1.2 du fichier : les cartes y restent dans `reviewCards`). Les règles de
+la conversion ne vivent plus que dans l'historique git
+(`packages/db/src/backfill-review-cards.ts`, avant sa suppression).
+
+**Fenêtre du déploiement : les deux exports RGPD échouent quelques minutes.**
+La migration part avant le nouveau code (voir « Ce qui part tout seul sur un
+merge »), et pendant ce temps le déploiement précédent lit encore
+`review_schedules_legacy` pour la section `reviewSchedules` de l'export. La
+table n'existe plus : la lecture échoue, et avec elle `/api/me/export` du site
+et l'export de la console (`/users/[id]/export`), en erreur 500 jusqu'à ce que
+le nouveau code serve. Rien ne se perd : l'export ne fait que lire, et le
+quota du jour est rendu à l'apprenant quand la construction échoue. On relance
+l'export une fois le déploiement Vercel passé. Ce déploiement n'écrit nulle part
+dans la table, et la suppression d'un compte passe par les clés étrangères :
+aucune autre route n'est touchée. À la différence des écritures de fin de leçon,
+que la vue absorbe, cette lecture n'est pas protégée ; la protéger aurait
+demandé de livrer le retrait de la lecture et la suppression de la table dans
+deux versions.
+
+Pour les versions de l'app installées avant les cartes, qui lisaient la file
+elles-mêmes, `review_schedules` reste une vue vide, bâtie sur `review_cards` :
+la suppression de la table n'y change rien. **La retirer est une décision à
+part**, à prendre quand plus aucune version installée de l'app d'avant les
+cartes n'est supportée (`docs/MOBILE_PARITY.md`) : la migration qui la
+supprimera devra aussi supprimer la fonction `private.review_schedules_drop_write()`,
+que `DROP VIEW` laisse en place avec son déclencheur parti. La vue accepte
+encore, sans rien en garder, les écritures d'un déploiement d'avant les cartes
+(la migration part quelques minutes avant le nouveau code, voir « Ce qui part
+tout seul sur un merge »).
 
 ---
 

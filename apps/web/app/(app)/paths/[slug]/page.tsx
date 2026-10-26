@@ -19,6 +19,7 @@ import {
 import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { BossNode } from "./_components/boss-node";
 import { BriefCertificate } from "./_components/brief-certificate";
+import { MockExamDialog } from "./_components/mock-exam-dialog";
 import { PathRating } from "./_components/path-rating";
 import { PathCurriculum } from "./_components/path-curriculum";
 import { Crumb } from "@/components/crumb";
@@ -276,6 +277,7 @@ export default async function PathDetailPage({
             states={nodeStates}
             resumeSlug={resumeSlug}
           />
+          <MockExamDialog slug={path.slug} pathTitle={path.title} />
           {showBoss && (
             <BossNode
               pathSlug={path.slug}

@@ -2,6 +2,13 @@
 
 import { headers } from "next/headers";
 import { getRequestUser } from "@/lib/auth";
+import {
+  isTicketFormTheme,
+  TICKET_MESSAGE_MAX,
+  TICKET_SUBJECT_MAX,
+} from "@cyberlearn/lib/tickets/tickets";
+import { needsMfaStep } from "@/lib/auth/password-flow";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fileTicket, type TicketField } from "@/lib/tickets/requester";
 
 // Behavioural anti-spam. The IP rate limit alone doesn't stop distributed
@@ -12,11 +19,59 @@ import { fileTicket, type TicketField } from "@/lib/tickets/requester";
 const HONEYPOT_FIELD = "website";
 const TIMESTAMP_FIELD = "loaded_at";
 const MIN_FILL_MS = 2500;
+/** The longest address there is (RFC 5321): what the e-mail field can ever hold. */
+const EMAIL_MAX = 254;
+
+/** What the form held when it was sent. */
+export interface ContactFormValues {
+  email: string;
+  /** A theme of the form, or "" for none: nothing else is handed back. */
+  theme: string;
+  subject: string;
+  message: string;
+}
 
 export interface ContactFormState {
   success?: boolean;
   error?: string;
   fieldErrors?: Partial<Record<TicketField, string>>;
+  /**
+   * The fields as they were typed, handed back with every refusal. React
+   * empties an uncontrolled form once its action has run: without these, a
+   * refused message - a mistyped address, or the shared-IP rate limit, which
+   * is no fault of the visitor - cost everything that had been written.
+   */
+  values?: ContactFormValues;
+}
+
+/** The theme that was chosen, if it is one the form offers. */
+function chosenTheme(formData: FormData): string {
+  const value = formData.get("theme");
+  return typeof value === "string" && isTicketFormTheme(value) ? value : "";
+}
+
+/** A field as it was typed, never longer than the form lets it be. */
+function typed(formData: FormData, name: string, max: number): string {
+  const value = formData.get(name);
+  return typeof value === "string" ? value.slice(0, max) : "";
+}
+
+/**
+ * Whether the session behind this request has gone through its second factor,
+ * or has none to go through.
+ *
+ * The middleware lets a session that still owes its code open this form (the
+ * way for somebody who lost the phone to reach the team), so the form can no
+ * longer count on the gate to have checked. A session that has only typed the
+ * password has not proved it is the account's owner: its request is filed as a
+ * visitor's, answered at the address typed in the form like any other, and not
+ * attached to the account - where the team would read it as the owner's word.
+ * The level is read from the token, with no network call; an unreadable one
+ * counts as owed (needsMfaStep), like everywhere else.
+ */
+async function hasProvedSecondFactor(): Promise<boolean> {
+  const supabase = await getSupabaseServerClient();
+  return !needsMfaStep(await supabase.auth.mfa.getAuthenticatorAssuranceLevel());
 }
 
 export async function submitContactAction(
@@ -39,11 +94,12 @@ export async function submitContactAction(
   const rawIp = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   // Get logged-in user if any (contact is also available to guests)
   const authUser = await getRequestUser();
+  const userId = authUser !== null && (await hasProvedSecondFactor()) ? authUser.id : null;
 
   // Validation, the rate limit (before any future captcha, so an attacker
   // cannot burn its quota for free) and the write: shared with the app.
   const result = await fileTicket({
-    userId: authUser?.id ?? null,
+    userId,
     ip: rawIp,
     fields: {
       subject: formData.get("subject"),
@@ -53,9 +109,15 @@ export async function submitContactAction(
     },
   });
   if (!result.ok) {
+    const values: ContactFormValues = {
+      email: typed(formData, "email", EMAIL_MAX),
+      theme: chosenTheme(formData),
+      subject: typed(formData, "subject", TICKET_SUBJECT_MAX),
+      message: typed(formData, "message", TICKET_MESSAGE_MAX),
+    };
     return result.fieldErrors
-      ? { error: result.error, fieldErrors: result.fieldErrors }
-      : { error: result.error };
+      ? { error: result.error, fieldErrors: result.fieldErrors, values }
+      : { error: result.error, values };
   }
 
   return { success: true };

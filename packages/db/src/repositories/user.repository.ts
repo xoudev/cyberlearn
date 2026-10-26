@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma, UserRole } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
-import { classRepository } from "./class.repository.js";
+import { activeBanFilter } from "./ban.repository.js";
+import { classRepository, LIVE_CLASS_FILTER } from "./class.repository.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 import { friendshipRepository } from "./friendship.repository.js";
 
@@ -13,7 +15,18 @@ export type ChangeRoleResult =
   | { ok: false; reason: "NOT_FOUND" | "LAST_ADMIN" };
 
 /** The audit action every role change writes, read back by heldAdminRoleSince. */
-const ROLE_UPDATE_ACTION = "user.role.update";
+const ROLE_UPDATE_ACTION = AUDIT_ACTION.user.roleUpdate;
+
+const CONSOLE_TARGET = {
+  id: true,
+  email: true,
+  displayName: true,
+  username: true,
+  role: true,
+} as const satisfies Prisma.UserSelect;
+
+/** An account as the console's gestures on it read it first (findConsoleTarget). */
+export type ConsoleTarget = Prisma.UserGetPayload<{ select: typeof CONSOLE_TARGET }>;
 
 /** The columns the console's account list sorts by. */
 export type ConsoleUserSort =
@@ -74,6 +87,7 @@ const CONSOLE_PROFILE = {
   xpTotal: true,
   streakDays: true,
   longestStreak: true,
+  streakFreezes: true,
   createdAt: true,
   lastActiveAt: true,
   preferences: {
@@ -109,6 +123,20 @@ const CONSOLE_PROFILE = {
 
 export type ConsoleProfile = Prisma.UserGetPayload<{ select: typeof CONSOLE_PROFILE }>;
 
+const OWN_ACCOUNT = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  role: true,
+  createdAt: true,
+  lastActiveAt: true,
+  _count: { select: { auditLogs: true } },
+} as const satisfies Prisma.UserSelect;
+
+/** The administrator's own account, for the console's « Mon compte ». */
+export type OwnConsoleAccount = Prisma.UserGetPayload<{ select: typeof OWN_ACCOUNT }>;
+
 /** The profile fields the console edits, and the avatar it can only clear. */
 export type ConsoleProfileField = "displayName" | "username" | "bio" | "avatar";
 
@@ -128,9 +156,9 @@ export type ConsoleProfileReset =
 
 /** The audit actions of the console's gestures on a profile and its sessions. */
 export const CONSOLE_PROFILE_ACTION = {
-  update: "admin.user.profile.update",
-  reset: "admin.user.profile.reset",
-  sessionsRevoked: "admin.user.sessions.revoked",
+  update: AUDIT_ACTION.user.profileUpdate,
+  reset: AUDIT_ACTION.user.profileReset,
+  sessionsRevoked: AUDIT_ACTION.user.sessionsRevoked,
 } as const;
 
 /** Tries before a generated handle is given up on: each one is new. */
@@ -148,6 +176,17 @@ export function generatedUsername(): string {
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
+
+/** What the console's quick search shows of an account: enough to tell two apart. */
+const CONSOLE_USER_HIT = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  role: true,
+} as const satisfies Prisma.UserSelect;
+
+export type ConsoleUserHit = Prisma.UserGetPayload<{ select: typeof CONSOLE_USER_HIT }>;
 
 /**
  * The order of each sortable column. The id comes last everywhere: rows that
@@ -206,6 +245,50 @@ export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.
     });
   }
   return { AND: terms };
+}
+
+/**
+ * Who a console announcement goes to: every account, the accounts of some
+ * roles, or the members of some classes.
+ */
+export type AnnouncementAudience =
+  | { kind: "ALL" }
+  | { kind: "ROLES"; roles: readonly UserRole[] }
+  | { kind: "CLASSES"; classIds: readonly string[] };
+
+/**
+ * The accounts an audience reaches, as a filter: the count shown before the
+ * send and the list it goes to are read through the same one, so the number
+ * confirmed is the number sent.
+ *
+ * A banned account is left out: it cannot sign in to read the message, and it
+ * would find it waiting the day the ban ends, out of date. A deleted account
+ * needs no clause, its row is gone with it. A class reaches its members while
+ * it is live (LIVE_CLASS_FILTER), like a tournament announcement; its
+ * teachers are not members, and are reached by their role.
+ */
+export function announcementAudienceWhere(
+  audience: AnnouncementAudience,
+  now: Date,
+): Prisma.UserWhereInput {
+  const notBanned: Prisma.UserWhereInput = { bans: { none: activeBanFilter(now) } };
+  switch (audience.kind) {
+    case "ALL":
+      return notBanned;
+    case "ROLES":
+      return { AND: [notBanned, { role: { in: [...audience.roles] } }] };
+    case "CLASSES":
+      return {
+        AND: [
+          notBanned,
+          {
+            classMemberships: {
+              some: { classId: { in: [...audience.classIds] }, class: LIVE_CLASS_FILTER },
+            },
+          },
+        ],
+      };
+  }
 }
 
 const WEEK_MS = 7 * 86_400_000;
@@ -335,6 +418,18 @@ export const userRepository = {
    * that is still empty and nothing more. It used to be written at every
    * sign-in, over whatever the learner had picked at sign-up or uploaded since:
    * their choice lasted until the next time they signed in.
+   *
+   * A sign-in moves lastActiveAt, the clock of the inactivity notice, unless a
+   * streak is running. The same column is the streak's last active day (the
+   * lesson, the daily recall and the challenges read it as such), and a
+   * sign-in is not an activity of the streak. Written at the sign-in, it made
+   * the day count before anything was done: the lesson finished afterwards
+   * found the day already taken and left the streak where it was, and the
+   * nightly check kept alive a streak nobody had worked on. A running streak
+   * is recent by construction (the nightly check breaks one that has gone two
+   * days without activity), so the notice, which waits for two years, loses
+   * nothing by it. A streak that is broken, or that never started, leaves the
+   * column to the sign-in as it always did.
    */
   async upsertFromAuth(input: {
     id: string;
@@ -342,15 +437,25 @@ export const userRepository = {
     displayName: string;
     avatarUrl: string | null;
   }) {
-    const { avatarUrl: storedAvatar, ...profile } = await prisma.user.upsert({
+    const {
+      avatarUrl: storedAvatar,
+      streakDays,
+      ...profile
+    } = await prisma.user.upsert({
       where: { id: input.id },
       create: input,
-      update: {
-        email: input.email,
-        lastActiveAt: new Date(),
-      },
-      select: { username: true, role: true, avatarUrl: true },
+      update: { email: input.email },
+      select: { username: true, role: true, avatarUrl: true, streakDays: true },
     });
+
+    // Guarded in the statement: a lesson that starts a streak between the read
+    // above and this write wins, and the day stays the lesson's.
+    if (streakDays === 0) {
+      await prisma.user.updateMany({
+        where: { id: input.id, streakDays: 0 },
+        data: { lastActiveAt: new Date() },
+      });
+    }
 
     // Only when there is something to fill, which is rare once a profile
     // exists, and guarded in the statement so a choice made in between stands.
@@ -383,6 +488,64 @@ export const userRepository = {
     return prisma.user.findUnique({ where: { email }, select: { role: true } });
   },
 
+  /**
+   * The account a console gesture acts on: the address its notice goes to,
+   * the name it greets, the handle or address the form asks to type back, and
+   * the role the guards check. Null when there is no such account.
+   */
+  async findConsoleTarget(userId: string): Promise<ConsoleTarget | null> {
+    return prisma.user.findUnique({ where: { id: userId }, select: CONSOLE_TARGET });
+  },
+
+  /** The account's address, or null when there is no such account. */
+  async findEmailById(userId: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    return user?.email ?? null;
+  },
+
+  /**
+   * What the sign-up steps read of the account: the handle (null until step 1
+   * is done), the name shown, the bio and the avatar. Null when there is no
+   * such account.
+   */
+  async findOnboardingProfile(userId: string) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, displayName: true, bio: true, avatarUrl: true },
+    });
+  },
+
+  /** The id of the account that holds this handle, or null when it is free. */
+  async findIdByUsername(username: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+    return user?.id ?? null;
+  },
+
+  /**
+   * Step 1 of the sign-up: the handle, the name shown and the bio, with the
+   * preferences row every account needs from then on, in one transaction.
+   * Throws the unique-constraint error (P2002) when somebody took the handle
+   * since it was checked; the caller says so.
+   */
+  async saveOnboardingProfile(
+    userId: string,
+    profile: { username: string; displayName: string; bio: string | null },
+  ): Promise<void> {
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: userId }, data: profile }),
+      prisma.userPreferences.upsert({
+        where: { userId },
+        create: { userId },
+        update: {},
+      }),
+    ]);
+  },
+
+  /** Step 2 of the sign-up: the avatar the account picked. */
+  async setAvatarUrl(userId: string, avatarUrl: string): Promise<void> {
+    await prisma.user.update({ where: { id: userId }, data: { avatarUrl } });
+  },
+
   /** Minimal user data needed for XP + streak computation on lesson completion. */
   async findForGamification(userId: string) {
     return prisma.user.findUnique({
@@ -398,9 +561,17 @@ export const userRepository = {
     });
   },
 
-  /** Full profile data for authenticated user's own profile page. */
+  /**
+   * Full profile data for authenticated user's own profile page.
+   *
+   * `lessonProgress` is the twenty latest lessons, for the Activité list;
+   * `counts.lessons` is how many were completed. The page printed the list's
+   * length, so a learner past twenty lessons read "20" on their own profile
+   * and the real figure on /u/<them> and in the app (same count as
+   * `findPublicProfile`).
+   */
   async findProfile(userId: string) {
-    return prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         preferences: true,
@@ -418,8 +589,12 @@ export const userRepository = {
           orderBy: { completedAt: "desc" },
           take: 20,
         },
+        _count: { select: { lessonProgress: { where: { status: "COMPLETED" } } } },
       },
     });
+    if (!user) return null;
+    const { _count: count, ...profile } = user;
+    return { ...profile, counts: { lessons: count.lessonProgress } };
   },
 
   /**
@@ -647,6 +822,22 @@ export const userRepository = {
     );
   },
 
+  /**
+   * The few accounts the console's quick search offers for a term: the same
+   * match as the list's search box, the most recently active first, since the
+   * account someone is looking for is usually one that just did something.
+   * An empty term matches nothing rather than everyone.
+   */
+  async searchForConsole(q: string, take: number): Promise<ConsoleUserHit[]> {
+    if (q.trim().replace(/^@/u, "") === "") return [];
+    return prisma.user.findMany({
+      where: consoleUserWhere(q, undefined),
+      orderBy: [{ lastActiveAt: "desc" }, { id: "asc" }],
+      take,
+      select: CONSOLE_USER_HIT,
+    });
+  },
+
   /** The figures above the account list, over every account whatever the filter. */
   async consoleCounts(now: Date): Promise<{ total: number; admins: number; activeWeek: number }> {
     const [total, admins, activeWeek] = await Promise.all([
@@ -657,6 +848,15 @@ export const userRepository = {
     return { total, admins, activeWeek };
   },
 
+  /** The administrators, by name: who a ticket can be given to. */
+  async listAdmins() {
+    return prisma.user.findMany({
+      where: { role: "ADMIN" },
+      orderBy: { displayName: "asc" },
+      select: { id: true, username: true, displayName: true },
+    });
+  },
+
   /**
    * One account for its page in the console: identity, counters, settings,
    * placement test and classes, in one read. The page used to query Prisma
@@ -664,6 +864,14 @@ export const userRepository = {
    */
   async findConsoleProfile(userId: string): Promise<ConsoleProfile | null> {
     return prisma.user.findUnique({ where: { id: userId }, select: CONSOLE_PROFILE });
+  },
+
+  /**
+   * The signed-in administrator's own account: who the console knows them
+   * as, and how many entries of the audit log they wrote.
+   */
+  async findOwnConsoleAccount(userId: string): Promise<OwnConsoleAccount | null> {
+    return prisma.user.findUnique({ where: { id: userId }, select: OWN_ACCOUNT });
   },
 
   /**
@@ -860,5 +1068,39 @@ export const userRepository = {
       select: { id: true },
     });
     return new Set(rows.map((row) => row.id));
+  },
+
+  /** How many accounts an announcement would reach: the figure asked to be confirmed. */
+  async countForAudience(audience: AnnouncementAudience, now: Date = new Date()): Promise<number> {
+    return prisma.user.count({ where: announcementAudienceWhere(audience, now) });
+  },
+
+  /** The accounts an announcement goes to, each once. */
+  async idsForAudience(audience: AnnouncementAudience, now: Date = new Date()): Promise<string[]> {
+    const rows = await prisma.user.findMany({
+      where: announcementAudienceWhere(audience, now),
+      orderBy: { id: "asc" },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+
+  /** The account's own columns, for its GDPR export (rgpd/build-export.ts); null once it is gone. */
+  async exportProfileFor(userId: string) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        bio: true,
+        xpTotal: true,
+        level: true,
+        streakDays: true,
+        lastActiveAt: true,
+        createdAt: true,
+      },
+    });
   },
 };

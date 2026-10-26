@@ -51,7 +51,7 @@ const COPY: Record<
     done: "Mise à jour faite",
     all: (count) => `Tout mettre à jour (${count})`,
     confirm: (count) =>
-      `${String(count)} leçon${count > 1 ? "s seront réécrites" : " sera réécrite"} avec le contenu du dépôt. Les modifications faites dans l'éditeur sur ces leçons seront remplacées.`,
+      `${String(count)} leçon${count > 1 ? "s seront réécrites" : " sera réécrite"} avec le contenu du dépôt. Les modifications faites dans l'éditeur sur ${count > 1 ? "ces leçons" : "cette leçon"} seront remplacées.`,
     progress: "Mise à jour",
   },
   import: {
@@ -69,7 +69,7 @@ const COPY: Record<
     done: "Synchronisé",
     all: (count) => `Synchroniser les parcours (${count})`,
     confirm: (count) =>
-      `${String(count)} parcours ${count > 1 ? "seront écrits" : "sera écrit"} depuis content/paths : titre, modules et ordre des leçons déjà importées. Un nouveau parcours arrive en brouillon ; un parcours existant garde son statut.`,
+      `${String(count)} parcours ${count > 1 ? "seront écrits" : "sera écrit"} depuis content/paths : titre, modules et ordre des leçons déjà importées, comme le détaille « Ce qui sera écrit » sous chaque parcours déjà en base. Un nouveau parcours arrive en brouillon ; un parcours existant garde son statut.`,
     progress: "Synchronisation",
   },
   quiz: {
@@ -78,7 +78,7 @@ const COPY: Record<
     done: "Synchronisé",
     all: (count) => `Synchroniser les examens (${count})`,
     confirm: (count) =>
-      `${String(count)} examen${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/quizzes : seuil, nombre de questions tirées et pool de questions. Une question retirée du fichier est désactivée, jamais supprimée : les tentatives en cours et passées restent valides.`,
+      `${String(count)} examen${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/quizzes : seuil, nombre de questions tirées et pool de questions, comme le détaille « Ce qui sera écrit » sous chaque examen déjà en base. Une question retirée du fichier est désactivée, jamais supprimée : les tentatives en cours et passées restent valides.`,
     progress: "Synchronisation",
   },
   challenge: {
@@ -87,7 +87,7 @@ const COPY: Record<
     done: "Synchronisé",
     all: (count) => `Synchroniser les défis (${count})`,
     confirm: (count) =>
-      `${String(count)} défi${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/challenges, dans l'ordre des fichiers : énoncé, machine et indices. Un nouveau défi arrive désactivé ; un défi existant garde son état et la progression de ses élèves.`,
+      `${String(count)} défi${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/challenges, dans l'ordre des fichiers : énoncé, machine et indices, comme le détaille « Ce qui sera écrit » sous chaque défi déjà en base. Un nouveau défi arrive désactivé ; un défi existant garde son état et la progression de ses élèves.`,
     progress: "Synchronisation",
   },
 };
@@ -135,6 +135,10 @@ function Failures({ failures }: { failures: Failure[] }): React.ReactElement | n
   );
 }
 
+/**
+ * One item, written after an explicit confirmation: the differences are on
+ * the card above, and a click alone never writes over the database.
+ */
 export function RunOneButton({
   kind,
   target,
@@ -143,11 +147,11 @@ export function RunOneButton({
   target: SyncTarget;
 }): React.ReactElement {
   const router = useRouter();
-  const [state, setState] = useState<"idle" | "running" | "done">("idle");
+  const [state, setState] = useState<"idle" | "confirm" | "running" | "done">("idle");
   const [failure, setFailure] = useState<Failure | null>(null);
   const copy = COPY[kind];
 
-  const onClick = async (): Promise<void> => {
+  const start = async (): Promise<void> => {
     setState("running");
     setFailure(null);
     const result = await run(kind, target);
@@ -162,14 +166,40 @@ export function RunOneButton({
 
   return (
     <div>
-      <button
-        type="button"
-        className="a-btn a-btn--primary a-btn--sm"
-        disabled={state !== "idle"}
-        onClick={() => void onClick()}
-      >
-        {state === "running" ? copy.running : state === "done" ? copy.done : copy.one}
-      </button>
+      {state === "confirm" ? (
+        <div className="a-sync-confirm">
+          <p>{copy.confirm(1)}</p>
+          <div className="a-head-actions">
+            <button
+              type="button"
+              className="a-btn a-btn--primary a-btn--sm"
+              onClick={() => void start()}
+            >
+              Confirmer
+            </button>
+            <button
+              type="button"
+              className="a-btn a-btn--ghost a-btn--sm"
+              onClick={() => {
+                setState("idle");
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="a-btn a-btn--primary a-btn--sm"
+          disabled={state !== "idle"}
+          onClick={() => {
+            setState("confirm");
+          }}
+        >
+          {state === "running" ? copy.running : state === "done" ? copy.done : copy.one}
+        </button>
+      )}
       <Failures failures={failure ? [failure] : []} />
     </div>
   );

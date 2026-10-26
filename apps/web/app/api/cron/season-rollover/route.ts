@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { rolloverDueSeasons } from "@/lib/league/rollover";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { trackCronRun } from "@/lib/cron-run";
 
 // Vercel Cron (see vercel.json): closes any ACTIVE season past its end and opens
 // the next, promoting/relegating each pod. Idempotent - safe to run repeatedly,
@@ -15,18 +16,20 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   const now = new Date();
-  const results = await rolloverDueSeasons(now);
-  const finalized = results.filter((r) => r.finalized);
-
-  return NextResponse.json({
-    ok: true,
-    seasonsFinalized: finalized.length,
-    details: finalized.map((r) => ({
-      season: r.seasonIndex,
-      members: r.members,
-      promoted: r.promoted,
-      relegated: r.relegated,
-      next: r.nextSeasonIndex,
-    })),
+  // The run is recorded with its count; the details stay in the response.
+  const report = await trackCronRun("season-rollover", async () => {
+    const finalized = (await rolloverDueSeasons(now)).filter((r) => r.finalized);
+    return {
+      seasonsFinalized: finalized.length,
+      details: finalized.map((r) => ({
+        season: r.seasonIndex,
+        members: r.members,
+        promoted: r.promoted,
+        relegated: r.relegated,
+        next: r.nextSeasonIndex,
+      })),
+    };
   });
+
+  return NextResponse.json({ ok: true, ...report });
 }

@@ -6,7 +6,7 @@ import { VerificationFrame } from "./_components/verification-frame";
 
 export const metadata: Metadata = {
   title: "Vérifier un certificat",
-  description: "Vérifiez l’authenticité d’un certificat Cyber Learn.",
+  description: "Vérifie l’authenticité d’un certificat Cyber Learn.",
   ...pageAddress("/verify"),
 };
 

@@ -1,43 +1,63 @@
 import { NextResponse } from "next/server";
-import { prisma, notificationRepository, reviewRepository } from "@cyberlearn/db";
+import { prisma, notificationRepository, reviewCardRepository } from "@cyberlearn/db";
 
 import { errorMessage } from "@cyberlearn/lib/logger";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { failureCounts, trackCronRun } from "@/lib/cron-run";
+import { learnersWithRecall } from "@/lib/revisions/daily-recall";
+
+/** Reading the lessons of the cards due, once each, takes a while. */
+export const maxDuration = 60;
+
+/** Where the reminder leads: the day's recall, in its window over the dashboard. */
+const REMINDER_URL = "/dashboard?rappel=1";
 
 // Vercel Cron: runs daily at 08:00 UTC (see vercel.json crons config).
-// Sends REVIEW_REMINDER notifications to users with lessons due today.
+// Sends a REVIEW_REMINDER notification to each reader whose day's recall has
+// a question to ask.
 export async function GET(request: Request): Promise<NextResponse> {
   // Fail closed, in constant time: see lib/cron-auth.ts.
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = new Date();
-  const endOfDay = new Date(now);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  // A reminder that could not be written leaves the others to go out, and the run failed all the same.
+  const summary = await trackCronRun("review-reminders", () => sendReminders(new Date()), {
+    failure: (r) => failureCounts([[r.failed, "rappel non envoyé", "rappels non envoyés"]]),
+  });
+  return NextResponse.json({ ok: true, ...summary });
+}
+
+interface ReminderSummary {
+  sent: number;
+  failed: number;
+  skipped: number;
+}
+
+async function sendReminders(now: Date): Promise<ReminderSummary> {
   const startOfDay = new Date(now);
   startOfDay.setUTCHours(0, 0, 0, 0);
 
-  // One reminder per reader due by the end of today, among those who want
-  // it (the feature and its reminder both on; no preferences row keeps both
-  // defaults). The count is the session's, five at most: the queue's would
-  // announce sixty lessons to somebody the day asks five of.
-  const reminders = await reviewRepository.findReminders(endOfDay);
+  // One reminder per reader with a review card due today, among those who
+  // want it (the feature and its reminder both on; no preferences row keeps
+  // both defaults), and not to somebody whose recall is already done. Only
+  // where the day's recall has a question to ask, as its draw would find: a
+  // card whose lesson yields no quiz now stays due and asks nothing. It says
+  // no number: how many questions wait is not what brings anyone back.
+  const userIds = await learnersWithRecall(await reviewCardRepository.findReminders(now), now);
 
-  if (reminders.length === 0) {
-    return NextResponse.json({ ok: true, sent: 0 });
-  }
+  if (userIds.length === 0) return { sent: 0, failed: 0, skipped: 0 };
 
-  // A schedule stays due until the lesson is actually reviewed, so a user who
-  // ignores a reminder was being notified again every single day. One reminder
-  // per user per day is enough.
+  // A card stays due until it is answered, so a reader who ignores a
+  // reminder would be notified again every day. One reminder per user per
+  // day is enough.
   const alreadyNotified = new Set(
     (
       await prisma.notification.findMany({
         where: {
-          userId: { in: reminders.map((r) => r.userId) },
+          userId: { in: userIds },
           type: "REVIEW_REMINDER",
           createdAt: { gte: startOfDay },
         },
@@ -49,26 +69,20 @@ export async function GET(request: Request): Promise<NextResponse> {
   let sent = 0;
   let failed = 0;
   let skipped = 0;
-  for (const { userId, count, firstTitle } of reminders) {
+  for (const userId of userIds) {
     if (alreadyNotified.has(userId)) {
       skipped++;
       continue;
     }
-    const body =
-      count === 1
-        ? `Il est temps de revoir "${firstTitle}".`
-        : `Tu as ${String(count)} leçons à réviser aujourd'hui.`;
 
     // Isolate failures: a single bad user must not stop every later reminder.
     try {
       await notificationRepository.create({
         userId,
         type: "REVIEW_REMINDER",
-        title: count === 1 ? "Révision recommandée" : `${String(count)} révisions à faire`,
-        body,
-        // The reviews themselves, not the catalogue they were taken from.
-        actionUrl: "/revisions",
-        metadata: { count },
+        title: "Ton rappel du jour est prêt",
+        body: "Quelques questions de tes leçons, deux minutes : celles que tu as ratées reviennent avant que tu les oublies.",
+        actionUrl: REMINDER_URL,
       });
       sent++;
     } catch (error) {
@@ -81,5 +95,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed, skipped });
+  return { sent, failed, skipped };
 }

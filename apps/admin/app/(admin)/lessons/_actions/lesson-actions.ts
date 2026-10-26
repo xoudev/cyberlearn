@@ -3,13 +3,21 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
-import type { ContentStatus } from "@cyberlearn/db";
+import { auditLogRepository, lessonRepository, pathRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
-import { nextLessonRefCode } from "@/lib/next-ref-code";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { lessonRefCodeFor, nextLessonRefCode, nextPathLessonNumber } from "@/lib/next-ref-code";
+import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
+import {
+  asTyped,
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
+import { readLessonLinks } from "./lesson-links";
 
 const createLessonSchema = z.object({
   refCode: lessonRefCodeSchema,
@@ -18,17 +26,28 @@ const createLessonSchema = z.object({
     .regex(LESSON_SLUG, LESSON_SLUG_HINT)
     .min(LESSON_LIMITS.slugMin)
     .max(LESSON_LIMITS.slugMax),
-  title: z.string().trim().min(LESSON_LIMITS.titleMin).max(LESSON_LIMITS.titleMax),
+  title: z
+    .string()
+    .trim()
+    .min(LESSON_LIMITS.titleMin)
+    .max(LESSON_LIMITS.titleMax)
+    .refine(holdsNoEmDash, emDashInField("Le titre")),
   description: z
     .string()
     .trim()
     .min(LESSON_LIMITS.descriptionMin)
-    .max(LESSON_LIMITS.descriptionMax),
+    .max(LESSON_LIMITS.descriptionMax)
+    .refine(holdsNoEmDash, emDashInField("La description")),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
   xpReward: z.coerce.number().int().nonnegative().max(LESSON_LIMITS.xpMax),
-  contentMdx: z.string().trim().min(10),
+  // Trimmed, which is what is checked and stored, and as typed, which is
+  // where the editor marks what the check found (asTyped).
+  contentMdx: z
+    .string()
+    .transform((typed) => ({ typed, text: typed.trim() }))
+    .pipe(z.object({ typed: z.string(), text: z.string().min(10) })),
   coverImageUrl: z
     .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
     .optional()
@@ -39,6 +58,11 @@ const createLessonSchema = z.object({
 export interface CreateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
+  /**
+   * What the content check found, each at its line, for the editor to mark:
+   * empty once it passed, absent when the form stopped before it.
+   */
+  problems?: LessonEditorProblem[];
 }
 
 export async function createLessonAction(
@@ -58,49 +82,77 @@ export async function createLessonAction(
     return { error: "Formulaire invalide.", fieldErrors };
   }
 
-  // Refused before it reaches the database: see checkLessonMdx.
-  const render = await checkLessonMdx(parsed.data.contentMdx);
+  const { coverImageUrl, publishNow, contentMdx, ...data } = parsed.data;
+
+  // Refused before it reaches the database: see checkLessonMdx and authoring.ts.
+  const render = asTyped(await checkLessonForSave(contentMdx.text), contentMdx.typed);
   if (!render.ok) {
     return {
-      error: "Le contenu ne s'affiche pas.",
+      error:
+        render.kind === undefined ? "Le contenu ne s'affiche pas." : "Le contenu est à corriger.",
       fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+      problems: editorProblemsOf(render),
     };
   }
+  // From here the content passed: a refusal says so with an empty list, which
+  // takes down what the editor marked from an earlier save.
 
-  const { coverImageUrl, publishNow, ...data } = parsed.data;
+  const links = readLessonLinks(formData);
+  if (!links.ok) {
+    return { error: links.error, fieldErrors: { [links.field]: links.error }, problems: [] };
+  }
+  const { pathIds, prerequisiteIds } = links.links;
 
+  // The console creates catalogue lessons, so only catalogue paths and
+  // prerequisites: a class's would promise the lesson to people who cannot
+  // open it, or close it to everyone outside that class.
+  const [paths, prerequisites] = await Promise.all([
+    pathRepository.findCatalogueRefCodes(pathIds),
+    lessonRepository.findCatalogueIds(prerequisiteIds),
+  ]);
+  if (paths.length !== pathIds.length) {
+    const error = "Un des parcours choisis n'existe plus.";
+    return { error, fieldErrors: { pathIds: error }, problems: [] };
+  }
+  if (prerequisites.length !== prerequisiteIds.length) {
+    const error = "Une des leçons choisies comme prérequis n'existe plus.";
+    return { error, fieldErrors: { prerequisiteIds: error }, problems: [] };
+  }
+  const pathRefCode = new Map(paths.map((path) => [path.id, path.refCode]));
+
+  let createdId: string;
   try {
-    const lesson = await prisma.lesson.create({
-      data: {
+    // The lesson, its paths, its prerequisites and its `lesson.create` row,
+    // in one transaction.
+    createdId = await lessonRepository.createFromConsole({
+      fields: {
         ...data,
+        contentMdx: contentMdx.text,
         coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
-        authorId: admin.id,
-        status: publishNow ? "PUBLISHED" : "DRAFT",
-        publishedAt: publishNow ? new Date() : null,
       },
-    });
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.create",
-        targetType: "Lesson",
-        targetId: lesson.id,
-        metadata: { title: lesson.title, status: lesson.status },
-      },
+      publish: publishNow === true,
+      actorId: admin.id,
+      paths: pathIds.map((id) => ({ id, refCode: pathRefCode.get(id) ?? id })),
+      prerequisiteIds,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode")) {
-      return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
+      return {
+        error: "Ce refCode existe déjà.",
+        fieldErrors: { refCode: "Déjà utilisé" },
+        problems: [],
+      };
     }
     if (msg.includes("Unique constraint") && msg.includes("slug")) {
-      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
+      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" }, problems: [] };
     }
-    return { error: "Erreur lors de la création." };
+    return { error: "Erreur lors de la création.", problems: [] };
   }
 
-  redirect("/lessons");
+  // Into its studio: a lesson is created to be written, and the list said
+  // nothing of where it had gone.
+  redirect(withSavedNotice(`/lessons/${createdId}`, "created"));
 }
 
 // ── Next refCode ──────────────────────────────────────────────────────────────
@@ -108,15 +160,31 @@ export async function createLessonAction(
 /**
  * Proposes a refCode for the new-lesson form. Every lesson code is read, not
  * just the last one in string order: see nextLessonRefCode for why.
+ *
+ * With the first path chosen for the lesson, the code is that path's: its PP,
+ * and the rank the lesson will take at the end of it, recaps not counted
+ * (nextPathLessonNumber, lessonRefCodeFor). Without one, or for a path that
+ * gives no PP, the next code of the catalogue.
  */
-export async function getNextRefCodeAction(): Promise<{ nextRefCode: string }> {
+export async function getNextRefCodeAction(
+  pathId?: string | null,
+): Promise<{ nextRefCode: string }> {
   await requireAdminAction();
 
-  const lessons = await prisma.lesson.findMany({
-    where: { refCode: { startsWith: "CL-LSN-" } },
-    select: { refCode: true },
-  });
-  return { nextRefCode: nextLessonRefCode(lessons.map((lesson) => lesson.refCode)) };
+  const path = z.guid().safeParse(pathId);
+  const [taken, firstPath] = await Promise.all([
+    lessonRepository.findLessonRefCodes(),
+    path.success ? pathRepository.findLessonRefCodes(path.data) : Promise.resolve(null),
+  ]);
+  // Appended at the end: every lesson of the path comes before it.
+  const fromPath = firstPath
+    ? lessonRefCodeFor(
+        firstPath.refCode,
+        nextPathLessonNumber(firstPath.refCode, firstPath.lessonRefCodes),
+        taken,
+      )
+    : null;
+  return { nextRefCode: fromPath ?? nextLessonRefCode(taken) };
 }
 
 // ── Update status ─────────────────────────────────────────────────────────────
@@ -132,28 +200,17 @@ export async function updateLessonStatusAction(
 
   const [admin, lesson] = await Promise.all([
     requireAdminAction(),
-    prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: { id: true, status: true },
-    }),
+    lessonRepository.findStatus(lessonId),
   ]);
   if (!lesson) return { error: "Leçon introuvable." };
 
-  const updateData: { status: ContentStatus; publishedAt?: Date } = { status };
-  if (status === "PUBLISHED") updateData.publishedAt = new Date();
-
-  await prisma.$transaction([
-    prisma.lesson.update({ where: { id: lessonId }, data: updateData }),
-    prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.status",
-        targetType: "Lesson",
-        targetId: lessonId,
-        metadata: { from: lesson.status, to: status },
-      },
-    }),
-  ]);
+  // The status and its `lesson.status` row, in one transaction.
+  await lessonRepository.changeStatus({
+    lessonId,
+    from: lesson.status,
+    to: status,
+    actorId: admin.id,
+  });
 
   revalidatePath("/lessons");
   revalidatePath("/lessons/archives");
@@ -185,28 +242,15 @@ export async function bulkUpdateLessonStatusAction(
 
   const admin = await requireAdminAction();
 
-  const updateData: { status: ContentStatus; publishedAt?: Date } = { status: parsed.data.status };
-  if (parsed.data.status === "PUBLISHED") updateData.publishedAt = new Date();
-
-  const [result] = await prisma.$transaction([
-    prisma.lesson.updateMany({
-      where: { id: { in: parsed.data.lessonIds } },
-      data: updateData,
-    }),
-    prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.status.bulk",
-        targetType: "Lesson",
-        targetId: parsed.data.lessonIds[0] ?? null,
-        metadata: { to: parsed.data.status, count: parsed.data.lessonIds.length },
-      },
-    }),
-  ]);
+  const count = await lessonRepository.changeStatuses({
+    lessonIds: parsed.data.lessonIds,
+    to: parsed.data.status,
+    actorId: admin.id,
+  });
 
   revalidatePath("/lessons");
   revalidatePath("/lessons/archives");
-  return { count: result.count };
+  return { count };
 }
 
 // ── Delete ──────────────────────────────────────────────────────────────────────
@@ -231,35 +275,25 @@ export async function deleteLessonAction(
 
   const { lessonId } = parsed.data;
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      _count: { select: { pathLessons: true } },
-    },
-  });
+  const lesson = await lessonRepository.findForDeletion(lessonId);
 
   if (!lesson) return { error: "Leçon introuvable." };
   if (lesson.status === "PUBLISHED") {
     return { error: "Impossible de supprimer une leçon publiée. Archivez-la d'abord." };
   }
-  if (lesson._count.pathLessons > 0) {
+  if (lesson.pathCount > 0) {
     return { error: "Suppression bloquée : cette leçon appartient à un ou plusieurs parcours." };
   }
 
   try {
-    await prisma.lesson.delete({ where: { id: lessonId } });
+    await lessonRepository.delete(lessonId);
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.delete",
-        targetType: "Lesson",
-        targetId: lessonId,
-        metadata: { title: lesson.title, status: lesson.status },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.lesson.delete,
+      targetType: "Lesson",
+      targetId: lessonId,
+      metadata: { title: lesson.title, status: lesson.status },
     });
   } catch {
     return { error: "Une erreur est survenue lors de la suppression." };

@@ -2,6 +2,7 @@ import React from "react";
 import { PostQuestionForm, PostAnswerForm, AcceptAnswerButton, UpvoteButton } from "./qa-forms";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 import { FriendMark } from "@/components/friend-mark";
+import { ReportContentButton } from "@/components/report-content-dialog";
 
 interface Answer {
   id: string;
@@ -227,12 +228,17 @@ function QuestionCard({
           {question.content}
         </p>
 
+        {/* Wraps like the answers' row below: at 375 px the name, the date, the
+            count and "Signaler" no longer fit on one line, and the card
+            (overflow hidden) cut the button off instead. */}
         <div
           className="lesson-question__meta"
           style={{
             display: "flex",
             alignItems: "center",
+            flexWrap: "wrap",
             gap: 12,
+            rowGap: 8,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             color: "var(--color-text-muted)",
@@ -245,6 +251,11 @@ function QuestionCard({
           <span>
             {question._count.answers} réponse{question._count.answers > 1 ? "s" : ""}
           </span>
+          {!isAuthor && (
+            <span style={{ marginLeft: "auto" }}>
+              <ReportContentButton surface="LESSON_QUESTION" contentId={question.id} />
+            </span>
+          )}
         </div>
       </div>
 
@@ -257,6 +268,7 @@ function QuestionCard({
               answer={answer}
               lessonSlug={lessonSlug}
               isQuestionAuthor={isAuthor}
+              isMine={answer.user?.id === currentUserId}
               isLast={i === question.answers.length - 1}
               friendIds={friendIds}
             />
@@ -281,12 +293,15 @@ function AnswerRow({
   answer,
   lessonSlug,
   isQuestionAuthor,
+  isMine,
   isLast,
   friendIds,
 }: {
   answer: Answer;
   lessonSlug: string;
   isQuestionAuthor: boolean;
+  /** The reader wrote it: nothing to report. */
+  isMine: boolean;
   isLast: boolean;
   friendIds: ReadonlySet<string>;
 }) {
@@ -347,6 +362,7 @@ function AnswerRow({
         </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <UpvoteButton answerId={answer.id} lessonSlug={lessonSlug} upvotes={answer.upvotes} />
+          {!isMine && <ReportContentButton surface="LESSON_ANSWER" contentId={answer.id} />}
           {isQuestionAuthor && (
             <AcceptAnswerButton
               answerId={answer.id}

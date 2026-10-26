@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { noteReportRepository, prisma } from "@cyberlearn/db";
+import { auditLogRepository, noteReportRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { requireAdminAction } from "@/lib/auth";
 
 const schema = z.object({
@@ -29,14 +30,13 @@ export async function resolveNoteReportsAction(formData: FormData): Promise<void
 
   const { noteId, outcome } = parsed.data;
   const { reports, sharesRemoved } = await noteReportRepository.resolveNote(noteId, outcome);
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: outcome === "UNSHARED" ? "note.report.unshare" : "note.report.dismiss",
-      targetType: "note",
-      targetId: noteId,
-      metadata: { reports, sharesRemoved },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action:
+      outcome === "UNSHARED" ? AUDIT_ACTION.noteReport.unshare : AUDIT_ACTION.noteReport.dismiss,
+    targetType: "note",
+    targetId: noteId,
+    metadata: { reports, sharesRemoved },
   });
   revalidatePath("/moderation/notes");
   revalidatePath("/moderation");

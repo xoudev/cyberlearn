@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { banRepository, prisma } from "@cyberlearn/db";
+import { banRepository, ticketRepository, userRepository } from "@cyberlearn/db";
+import { appealView, type AppealView } from "@cyberlearn/lib/tickets/appeal";
 import { checkContactForm } from "@/lib/rate-limit";
+import { tooManyRequests } from "@/lib/rate-limit-copy";
 
 /**
  * What somebody can still do while they are banned: close the notice, and
@@ -25,6 +27,42 @@ export async function acknowledgeBan(userId: string): Promise<{ ok: boolean }> {
 
   await banRepository.acknowledge(ban.id, userId);
   return { ok: true };
+}
+
+/**
+ * Where the appeal against the ban in force stands, or null when there is none
+ * to show: no appeal filed, or the ticket is gone (retention purges old ones).
+ *
+ * An appeal's author is shut out of the pages that show a ticket - the ban
+ * gate sends them to /banned - so the team's answer is read here, from the
+ * ticket's status and its last staff message, rather than left to an e-mail
+ * alone. Scoped to the account asking.
+ */
+export async function appealStanding(input: {
+  userId: string;
+  /** The ban's `appealTicketId`. */
+  appealTicketId: string | null;
+}): Promise<AppealView | null> {
+  if (input.appealTicketId === null) return null;
+  const appeal = await ticketRepository.findAppealFor(input.appealTicketId, input.userId);
+  if (appeal === null) return null;
+  return appealView({
+    status: appeal.status,
+    reply:
+      appeal.reply === null
+        ? null
+        : { body: appeal.reply.body, createdAt: appeal.reply.createdAt.toISOString() },
+  });
+}
+
+/**
+ * The same for the app, which does not hold the ban row: it reads the ban in
+ * force first. Null for an account with no ban, which has nothing to appeal.
+ */
+export async function currentAppeal(userId: string): Promise<AppealView | null> {
+  const ban = await banRepository.findActive(userId);
+  if (!ban) return null;
+  return appealStanding({ userId, appealTicketId: ban.appealTicketId });
 }
 
 const appealSchema = z.object({
@@ -66,35 +104,26 @@ export async function appealBan(input: {
   // can still reach, so it is the one that would be used.
   const limit = await checkContactForm(input.ip);
   if (!limit.success) {
-    return {
-      error: `Trop de demandes. Réessaie dans ${String(limit.retryAfterSeconds)} secondes.`,
-    };
+    return { error: tooManyRequests(limit.retryAfterSeconds) };
   }
 
-  const profile = await prisma.user.findUnique({
-    where: { id: input.userId },
-    select: { email: true },
-  });
+  const profileEmail = await userRepository.findEmailById(input.userId);
 
-  const ticket = await prisma.contactTicket.create({
-    data: {
-      userId: input.userId,
-      email: profile?.email ?? input.fallbackEmail ?? null,
-      subject: "Appel d'une décision de bannissement",
-      theme: "BAN_APPEAL",
-      // The decision being contested travels with the appeal: whoever picks it
-      // up should not have to go and look up why the person was banned.
-      message: `Motif du bannissement : ${ban.reason}\n\n---\n\n${parsed.data.message}`,
-      status: "OPEN",
-    },
-    select: { id: true },
+  const ticket = await ticketRepository.create({
+    userId: input.userId,
+    email: profileEmail ?? input.fallbackEmail,
+    subject: "Appel d'une décision de bannissement",
+    theme: "BAN_APPEAL",
+    // The decision being contested travels with the appeal: whoever picks it
+    // up should not have to go and look up why the person was banned.
+    message: `Motif du bannissement : ${ban.reason}\n\n---\n\n${parsed.data.message}`,
   });
 
   const attached = await banRepository.attachAppeal(ban.id, input.userId, ticket.id);
   if (!attached) {
     // Two submissions at once: the first one won. The second ticket would be a
     // duplicate of a conversation that is already open.
-    await prisma.contactTicket.deleteMany({ where: { id: ticket.id } });
+    await ticketRepository.deleteById(ticket.id);
     return { error: "Un appel est déjà ouvert pour cette décision." };
   }
 

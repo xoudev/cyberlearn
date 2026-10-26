@@ -5,6 +5,7 @@ import {
   cooldownEndsAt,
   isExpired,
 } from "@cyberlearn/lib/quiz/quiz";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 
 /** An account's latest attempt at one path's exam, as the console shows it. */
@@ -38,7 +39,7 @@ export type WaiveCooldownResult =
   | { ok: false; reason: "NO_EXAM" | "NO_COOLDOWN" };
 
 /** The audit action of a wait lifted from the console. */
-export const EXAM_COOLDOWN_WAIVED_ACTION = "admin.user.exam_cooldown.waived";
+export const EXAM_COOLDOWN_WAIVED_ACTION = AUDIT_ACTION.user.examCooldownWaived;
 
 /** The questions an attempt drew, read defensively from its own JSON. */
 function drawnQuestionIds(answers: unknown): string[] {
@@ -369,5 +370,20 @@ export const quizRepository = {
 
   deleteQuestion(id: string) {
     return prisma.quizQuestion.delete({ where: { id } });
+  },
+
+  /** Every exam the account sat, with its answers, for its GDPR export (rgpd/build-export.ts). */
+  async exportAttemptsFor(userId: string) {
+    return prisma.quizAttempt.findMany({
+      where: { userId },
+      select: {
+        score: true,
+        passed: true,
+        answers: true,
+        startedAt: true,
+        submittedAt: true,
+        quiz: { select: { path: { select: { title: true } } } },
+      },
+    });
   },
 };

@@ -182,7 +182,15 @@ export interface WriteupView {
   id: string;
   content: string;
   /** Null for an erased account: the solution stays, without its author. */
-  author: { name: string; username: string | null } | null;
+  author: {
+    name: string;
+    username: string | null;
+    /**
+     * One of the reader's friends: a write-up is always signed, so the mark
+     * hides nothing. Absent from a server older than the marks.
+     */
+    isFriend?: boolean;
+  } | null;
   updatedAt: string;
 }
 
@@ -190,6 +198,12 @@ export interface WriteupView {
 export interface OwnWriteup {
   content: string;
   isHidden: boolean;
+  /**
+   * Hidden by a moderator rather than waiting for one: publishing again does
+   * not bring it back, only removing it is left. Absent from a server older
+   * than the field, which reads as false.
+   */
+  hiddenByModeration?: boolean;
   updatedAt: string;
 }
 

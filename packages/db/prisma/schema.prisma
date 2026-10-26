@@ -42,6 +42,10 @@ model User {
   streakDays    Int      @default(0)
   longestStreak Int      @default(0) // Record streak (all-time best)
   streakFreezes Int      @default(1) // Freeze tokens in reserve (auto-cover one missed day)
+  /// The streak's last active day, and the inactivity clock. A lesson, a daily
+  /// recall, a challenge, the nightly freeze and a console correction move it.
+  /// A sign-in moves it only while no streak is running (upsertFromAuth): it
+  /// is not an activity of the streak.
   lastActiveAt  DateTime @default(now())
   /// When the account was told it would be erased for inactivity: 24 months
   /// without signing in or learning, 30 days' notice (rgpd/inactive-accounts).
@@ -58,7 +62,6 @@ model User {
   badges            UserBadge[]
   certificates      Certificate[]
   notifications     Notification[]
-  reviewSchedules   ReviewSchedule[]
   reviewCards       ReviewCard[]
   reviewSessions    ReviewSession[]
   contactTickets    ContactTicket[]
@@ -73,7 +76,8 @@ model User {
   duelsReceived     Duel[]                  @relation("DuelOpponent")
   duelAnswers       DuelAnswer[]
   tournamentsMade   Tournament[]            @relation("TournamentCreator")
-  tournamentSolves  TournamentSolve[]
+  tournamentSolves  TournamentSolve[]       @relation("TournamentSolvePlayer")
+  disqualifications TournamentSolve[]       @relation("TournamentSolveDisqualifier")
   auditLogs         AuditLog[]              @relation("ActorLogs")
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
@@ -82,6 +86,8 @@ model User {
   hintReveals       ChallengeHintReveal[]
   deletionTokens    AccountDeletionToken[]
   lessonPreviews    LessonPreview[]
+  lessonDrafts      LessonDraft[]           @relation("LessonDraftEditor")
+  lessonVersions    LessonVersion[]         @relation("LessonVersionPublisher")
   quizAttempts      QuizAttempt[]
   activityDays      UserActivityDay[]
   questProgress     UserQuestProgress[]
@@ -100,11 +106,15 @@ model User {
   classResources    ClassResource[]         @relation("ClassResourceAuthor")
   notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
   noteReports       NoteReport[]            @relation("NoteReporter")
+  contentReports    ContentReport[]         @relation("ContentReporter")
+  contentReportsResolved ContentReport[]    @relation("ContentReportResolver")
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
   authoredLessons   Lesson[]                @relation("LessonAuthor")
   authoredPaths     Path[]                  @relation("PathAuthor")
   ticketMessages    TicketMessage[]         @relation("TicketMessageAuthor")
+  ticketNotes       TicketNote[]            @relation("TicketNoteAuthor")
+  assignedTickets   ContactTicket[]         @relation("TicketAssignee")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
   friendshipsA      Friendship[]            @relation("FriendshipUserA")
@@ -336,6 +346,9 @@ model ClassResource {
   /// Withheld from a student until they have finished the assigned lesson.
   /// Meaningless without an assignment, and ignored when there is none.
   afterCompletion Boolean   @default(false)
+  /// Taken down by the moderation: out of the students' sight, still listed
+  /// for its teacher with the reason it is not shown.
+  isHidden        Boolean   @default(false)
   createdById     String?   @db.Uuid
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -522,7 +535,6 @@ model Lesson {
   exerciseCompletions ExerciseCompletion[]
   quizAnswers      LessonQuizAnswer[]
   quizReports      QuizReport[]
-  reviewSchedules  ReviewSchedule[]
   reviewCards      ReviewCard[]
   ratings          Rating[]
   questions        LessonQuestion[]
@@ -532,6 +544,8 @@ model Lesson {
   notes            Note[]
   classAssignments ClassAssignment[]
   classLinks       LessonClass[]
+  draft            LessonDraft?
+  versions         LessonVersion[]
 
   @@index([category, difficulty, status])
   @@index([slug])
@@ -1479,6 +1493,73 @@ model ModerationEvent {
   @@map("moderation_events")
 }
 
+/// What a learner can report: everything one person publishes to others,
+/// one value per table.
+enum ContentReportSurface {
+  FORUM_POST
+  LESSON_QUESTION
+  LESSON_ANSWER
+  CHALLENGE_WRITEUP
+  CLASS_RESOURCE
+}
+
+/// The same reasons as a reported note: the forms word them the same way.
+enum ContentReportReason {
+  HATE
+  SEXUAL
+  SPAM
+  PERSONAL_DATA
+  OTHER
+}
+
+/// What the team did with a report. HIDDEN and DELETED say what happened to
+/// the content; DISMISSED, that it was read and left as it was.
+enum ContentReportStatus {
+  OPEN
+  HIDDEN
+  DELETED
+  DISMISSED
+}
+
+/// A learner telling the team that something published on the platform is not
+/// acceptable: a forum message, a question or an answer under a lesson, a
+/// challenge solution, a class resource.
+///
+/// Not a ModerationEvent, for the reason NoteReport is not: those are attached
+/// to the author and count towards the flags that restrict an account, and a
+/// report is somebody's claim, not a verdict.
+///
+/// contentId points into the table its surface names, with no foreign key: one
+/// column cannot reference five tables. Destroying content from the console
+/// closes its open reports in the same transaction. One report per reporter
+/// and content; reporting again updates it and reopens it.
+model ContentReport {
+  id           String               @id @default(uuid()) @db.Uuid
+  surface      ContentReportSurface
+  contentId    String               @db.Uuid
+  /// Null once the reporter's account is erased: the report stays.
+  reporterId   String?              @db.Uuid
+  reason       ContentReportReason
+  comment      String?              @db.VarChar(500)
+  status       ContentReportStatus  @default(OPEN)
+  resolvedAt   DateTime?
+  resolvedById String?              @db.Uuid
+  /// When the reporter last filed it: written by them alone, when they report
+  /// and when they report again. The hourly limit counts on it, not on
+  /// updatedAt, which moves when the console closes the report.
+  reportedAt   DateTime             @default(now())
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  reporter   User? @relation("ContentReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("ContentReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, surface, contentId])
+  @@index([status])
+  @@index([surface, contentId])
+  @@map("content_reports")
+}
+
 /// Where a friendship stands.
 ///
 /// Two states, not three. A declined request is deleted rather than kept as a
@@ -1607,25 +1688,6 @@ model Notification {
   @@map("notifications")
 }
 
-// SM-2 simplified: ease factor + interval + repetitions
-model ReviewSchedule {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @db.Uuid
-  lessonId       String   @db.Uuid
-  easeFactor     Float    @default(2.5)
-  intervalDays   Int      @default(1)
-  repetitions    Int      @default(0)
-  nextReviewAt   DateTime
-  lastReviewedAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@index([nextReviewAt])
-  @@map("review_schedules")
-}
-
 /// One lesson quiz question a learner is asked again: a card in a Leitner box.
 /// Completing a lesson enqueues the questions answered wrong there and at most
 /// one answered right; a right answer moves the card up a box, a wrong one
@@ -1728,15 +1790,46 @@ model ContactTicket {
   userAgent    String?      @db.VarChar(500)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  /// The administrator who has taken the ticket in hand. Console only: no read
+  /// made for the requester's page or the app selects it, and the Data API has
+  /// no grant on this table at all.
+  assigneeId   String?      @db.Uuid
 
   user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignee  User?           @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   messages  TicketMessage[]
+  notes     TicketNote[]
   /// Set when this ticket is somebody contesting a ban.
   appealFor UserBan?        @relation("BanAppeal")
 
   @@index([status])
   @@index([userId])
+  @@index([assigneeId])
   @@map("contact_tickets")
+}
+
+/// A note the team leaves on a ticket, for itself.
+///
+/// A table of its own rather than a TicketMessage flagged internal: the
+/// requester's reads select the thread, and one forgotten filter on a shared
+/// table would put the team's notes about somebody in front of that person.
+/// Kept apart, a note is never in the thread to be filtered out.
+///
+/// Erased with its ticket, by cascade, when retention purges it - and sooner
+/// when the requester's account is erased: deleteAccount deletes the notes on
+/// their tickets, which outlive the account anonymised.
+model TicketNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @db.Uuid
+  authorId  String?  @db.Uuid // null once that account is erased
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket ContactTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User?         @relation("TicketNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_notes")
 }
 
 /// One turn in the conversation on a ticket.
@@ -1835,6 +1928,88 @@ model LessonPreview {
   @@map("lesson_previews")
 }
 
+// The console's work on a lesson before it reaches anyone: the lesson studio
+// saves here as the administrator types, and "Publier les changements" copies
+// it into the lesson. One per lesson, shared by every administrator who opens
+// it, so the write is conditional on updatedAt: a second tab cannot overwrite
+// what the first saved. Never read by the site or the app, which read
+// lessons.contentMdx and so only ever see what was published.
+//
+// baseVersion and baseContentHash say what the draft was started from: the
+// lesson's version, and a fingerprint of its published fields, as the studio
+// loaded them and its first save sends them (not as they are by then). A
+// publish whose lesson no longer matches that fingerprint (a sync, another
+// administrator's publish) would replace changes the draft never saw, and
+// asks first. A status change moves the lesson's updatedAt without touching
+// its content, which is why the fingerprint is of the content.
+model LessonDraft {
+  lessonId         String     @id @db.Uuid
+  refCode          String
+  slug             String
+  title            String     @db.VarChar(200)
+  description      String     @db.VarChar(500)
+  category         Category
+  difficulty       Difficulty
+  estimatedMinutes Int
+  xpReward         Int
+  contentMdx       String     @db.Text
+  coverImageUrl    String?
+  baseVersion      Int
+  baseContentHash  String     @db.VarChar(64)
+  /// Null once that account is erased: the draft is the lesson's, not theirs.
+  updatedById      String?    @db.Uuid
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  updatedBy User?  @relation("LessonDraftEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+  @@map("lesson_drafts")
+}
+
+/// Where a version of a lesson came from.
+enum LessonVersionSource {
+  /// What the lesson held before its first recorded version: kept on the
+  /// first publish, so that state can be restored too.
+  BASELINE
+  CONSOLE
+  IMPORT
+  SYNC
+}
+
+// What a lesson held at each publish, numbered as lessons.version. Written by
+// lessonVersionRepository.publish, the one function a publish goes through
+// (the studio's, and the import's and the sync's as they move onto it); read
+// by the studio's version list, which restores one into the draft.
+// Server-only, like the draft.
+model LessonVersion {
+  id               String              @id @default(uuid()) @db.Uuid
+  lessonId         String              @db.Uuid
+  version          Int
+  source           LessonVersionSource
+  refCode          String
+  slug             String
+  title            String              @db.VarChar(200)
+  description      String              @db.VarChar(500)
+  category         Category
+  difficulty       Difficulty
+  estimatedMinutes Int
+  xpReward         Int
+  contentMdx       String              @db.Text
+  coverImageUrl    String?
+  /// Null for a baseline, and once that account is erased.
+  publishedById    String?             @db.Uuid
+  publishedAt      DateTime            @default(now())
+
+  lesson      Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  publishedBy User?  @relation("LessonVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@unique([lessonId, version])
+  @@index([publishedById])
+  @@map("lesson_versions")
+}
+
 // ============================================================
 // XP LEDGER (append-only; powers period-bucketed XP / Wrapped)
 // ============================================================
@@ -1846,6 +2021,9 @@ enum XpSource {
   CHALLENGE
   REVIEW
   EXERCISE
+  /// A correction made by hand from the console: XP added, or taken back
+  /// (a negative amount). Its reason is in the audit log.
+  ADJUSTMENT
 }
 
 // One row per XP credit, written inside creditXp's transaction. Append-only and
@@ -1953,16 +2131,20 @@ model ForumTopic {
 }
 
 model ForumPost {
-  id        String    @id @default(uuid()) @db.Uuid
-  topicId   String    @db.Uuid
-  authorId  String?   @db.Uuid // null after RGPD anonymization
-  content   String    @db.Text
-  isHidden  Boolean   @default(false)
+  id                 String    @id @default(uuid()) @db.Uuid
+  topicId            String    @db.Uuid
+  authorId           String?   @db.Uuid // null after RGPD anonymization
+  content            String    @db.Text
+  isHidden           Boolean   @default(false)
+  /// Hidden by the moderation (the console, or an administrator on someone
+  /// else's message), not by its author: only such a message may be shown
+  /// again from the console. An author's own withdrawal is final.
+  hiddenByModeration Boolean   @default(false)
   /// Set on every edit after the first save, so a thread cannot be rewritten
   /// under a reader without any trace.
-  editedAt  DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  editedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   topic  ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
   author User?      @relation("ForumPostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
@@ -2004,14 +2186,17 @@ model ExerciseCompletion {
 /// version replaces the old one. Screened like every text a person publishes
 /// to another: what the screen flags is written hidden and goes to the queue.
 model ChallengeWriteup {
-  id          String   @id @default(uuid()) @db.Uuid
-  challengeId String   @db.Uuid
+  id                 String   @id @default(uuid()) @db.Uuid
+  challengeId        String   @db.Uuid
   /// Null after RGPD anonymization: the solution stays, its author does not.
-  userId      String?  @db.Uuid
-  content     String   @db.Text
-  isHidden    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  userId             String?  @db.Uuid
+  content            String   @db.Text
+  isHidden           Boolean  @default(false)
+  /// Hidden by the console, not held by the screen: publishing again never
+  /// brings such a solution back, only the console does.
+  hiddenByModeration Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -2178,14 +2363,22 @@ model TournamentSolve {
   classId      String   @db.Uuid
   points       Int
   solvedAt     DateTime @default(now())
+  /// Set when the console takes the flag back. The row stays: the player
+  /// cannot submit the same flag again, and it scores for nobody.
+  disqualifiedAt     DateTime?
+  /// The administrator who took it back. Never granted to the clients.
+  disqualifiedById   String?   @db.Uuid
+  disqualifiedReason String?   @db.VarChar(300)
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  challenge  Challenge  @relation(fields: [challengeId], references: [id], onDelete: Restrict)
-  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tournament     Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  challenge      Challenge  @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+  user           User?      @relation("TournamentSolvePlayer", fields: [userId], references: [id], onDelete: SetNull)
+  disqualifiedBy User?      @relation("TournamentSolveDisqualifier", fields: [disqualifiedById], references: [id], onDelete: SetNull)
+  class          Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, challengeId, userId])
   @@index([tournamentId, solvedAt])
   @@index([userId])
+  @@index([disqualifiedById])
   @@map("tournament_solves")
 }

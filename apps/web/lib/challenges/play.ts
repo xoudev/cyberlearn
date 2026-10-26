@@ -125,7 +125,7 @@ export async function revealHintFor(
 
   const hintLimit = await checkHintReveal(userId);
   if (!hintLimit.success) {
-    return { error: "Trop d'indices révélés. Réessayez plus tard." };
+    return { error: "Trop d'indices révélés. Réessaie plus tard." };
   }
 
   const hint = await prisma.challengeHint.findUnique({

@@ -1,12 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/** GET /api/cron/review-reminders: one reminder a day, pointing at the reviews. */
+/** GET /api/cron/review-reminders: one reminder a day, opening the day's recall. */
 
 const m = vi.hoisted(() => ({
   isAuthorizedCron: vi.fn<(r: Request) => boolean>(),
-  findReminders: vi.fn(),
+  findReminders: vi.fn<(now: Date) => Promise<string[]>>(),
+  learnersWithRecall: vi.fn<(userIds: readonly string[], now: Date) => Promise<string[]>>(),
   findMany: vi.fn(),
-  create: vi.fn(),
+  create:
+    vi.fn<
+      (notice: {
+        userId: string;
+        type: string;
+        title: string;
+        body: string;
+        actionUrl: string;
+      }) => Promise<unknown>
+    >(),
   logError: vi.fn(),
 }));
 
@@ -14,11 +24,16 @@ vi.mock("@/lib/cron-auth", () => ({ isAuthorizedCron: m.isAuthorizedCron }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: { notification: { findMany: m.findMany } },
   notificationRepository: { create: m.create },
-  reviewRepository: { findReminders: m.findReminders },
+  reviewCardRepository: { findReminders: m.findReminders },
 }));
 vi.mock("@cyberlearn/lib/logger", () => ({
   errorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
 }));
+// The run's record is lib/cron-run's own test; here the job runs as it is.
+vi.mock("@/lib/cron-run", () => ({
+  trackCronRun: (_job: string, run: () => Promise<unknown>) => run(),
+}));
+vi.mock("@/lib/revisions/daily-recall", () => ({ learnersWithRecall: m.learnersWithRecall }));
 vi.mock("@/lib/request-logger", () => ({
   requestLogger: () => Promise.resolve({ error: m.logError }),
 }));
@@ -32,6 +47,7 @@ beforeEach(() => {
   m.isAuthorizedCron.mockReturnValue(true);
   m.findMany.mockResolvedValue([]);
   m.create.mockResolvedValue({});
+  m.learnersWithRecall.mockImplementation((userIds) => Promise.resolve([...userIds]));
 });
 
 describe("GET /api/cron/review-reminders", () => {
@@ -42,29 +58,63 @@ describe("GET /api/cron/review-reminders", () => {
     expect(m.findReminders).not.toHaveBeenCalled();
   });
 
-  it("sends the reader to the reviews, not to the lessons catalogue", async () => {
-    m.findReminders.mockResolvedValue([
-      { userId: "u1", count: 1, firstTitle: "Le modèle OSI" },
-      { userId: "u2", count: 3, firstTitle: "Les sockets" },
-    ]);
+  it("reads the readers to remind off the review cards", async () => {
+    m.findReminders.mockResolvedValue([]);
+    const res = await GET(request());
+    expect(await res.json()).toEqual({ ok: true, sent: 0, failed: 0, skipped: 0 });
+    expect(m.findReminders).toHaveBeenCalledWith(expect.any(Date));
+  });
+
+  it("opens the day's recall over the dashboard, and says no number", async () => {
+    m.findReminders.mockResolvedValue(["u1", "u2"]);
 
     const res = await GET(request());
 
     expect(await res.json()).toEqual({ ok: true, sent: 2, failed: 0, skipped: 0 });
+    expect(m.create).toHaveBeenCalledTimes(2);
     for (const [notice] of m.create.mock.calls) {
       expect(notice).toEqual(
-        expect.objectContaining({ type: "REVIEW_REMINDER", actionUrl: "/revisions" }),
+        expect.objectContaining({
+          type: "REVIEW_REMINDER",
+          title: "Ton rappel du jour est prêt",
+          actionUrl: "/dashboard?rappel=1",
+        }),
       );
+      expect(`${notice.title} ${notice.body}`).not.toMatch(/\d/u);
+      expect(notice.body).not.toMatch(/leçons à réviser/u);
     }
   });
 
+  it("reminds nobody whose day's recall has no question to ask", async () => {
+    // u2's only card due is in a lesson that yields no quiz now.
+    m.findReminders.mockResolvedValue(["u1", "u2"]);
+    m.learnersWithRecall.mockResolvedValue(["u1"]);
+
+    const res = await GET(request());
+
+    expect(m.learnersWithRecall).toHaveBeenCalledWith(["u1", "u2"], expect.any(Date));
+    expect(await res.json()).toEqual({ ok: true, sent: 1, failed: 0, skipped: 0 });
+    expect(m.create).toHaveBeenCalledTimes(1);
+    expect(m.create.mock.calls[0]?.[0]).toMatchObject({ userId: "u1" });
+  });
+
   it("skips somebody already reminded today", async () => {
-    m.findReminders.mockResolvedValue([{ userId: "u1", count: 2, firstTitle: "TCP" }]);
+    m.findReminders.mockResolvedValue(["u1"]);
     m.findMany.mockResolvedValue([{ userId: "u1" }]);
 
     const res = await GET(request());
 
     expect(await res.json()).toEqual({ ok: true, sent: 0, failed: 0, skipped: 1 });
     expect(m.create).not.toHaveBeenCalled();
+  });
+
+  it("goes on past a reminder that fails, and counts it", async () => {
+    m.findReminders.mockResolvedValue(["u1", "u2"]);
+    m.create.mockRejectedValueOnce(new Error("boom"));
+
+    const res = await GET(request());
+
+    expect(await res.json()).toEqual({ ok: true, sent: 1, failed: 1, skipped: 0 });
+    expect(m.logError).toHaveBeenCalledTimes(1);
   });
 });

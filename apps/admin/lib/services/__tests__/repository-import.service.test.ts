@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   pathFindMany: vi.fn(),
   lessonUpdateMany: vi.fn(),
   pathUpdateMany: vi.fn(),
-  auditCreate: vi.fn(),
+  auditRecord: vi.fn(),
   validateMdxContent: vi.fn(),
   importValidatedLesson: vi.fn(),
   syncPath: vi.fn(),
@@ -18,13 +18,19 @@ const m = vi.hoisted(() => ({
   pathFindUnique: vi.fn(),
 }));
 
+/** The transaction's client: the publication and its audit row are written through it. */
+const tx = {
+  lesson: { updateMany: m.lessonUpdateMany },
+  path: { updateMany: m.pathUpdateMany },
+};
+
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
-    lesson: { findMany: m.lessonFindMany, updateMany: m.lessonUpdateMany },
-    path: { findMany: m.pathFindMany, findUnique: m.pathFindUnique, updateMany: m.pathUpdateMany },
-    auditLog: { create: m.auditCreate },
-    $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
+    lesson: { findMany: m.lessonFindMany },
+    path: { findMany: m.pathFindMany, findUnique: m.pathFindUnique },
+    $transaction: (fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
   },
+  auditLogRepository: { record: m.auditRecord },
 }));
 
 vi.mock("@cyberlearn/db/catalogue", async (importOriginal) => ({
@@ -60,7 +66,7 @@ function write(rel: string, content: string): void {
 beforeEach(() => {
   vi.clearAllMocks();
   root = mkdtempSync(path.join(tmpdir(), "cl-repo-import-"));
-  m.auditCreate.mockResolvedValue({});
+  m.auditRecord.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -118,7 +124,7 @@ describe("importLessonFromRepository", () => {
       ],
     });
     expect(m.importValidatedLesson).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 
   it("says when a missing prerequisite is a file the import refuses, and why", async () => {
@@ -191,19 +197,40 @@ describe("importLessonFromRepository", () => {
 
     expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
     expect(m.validateMdxContent).toHaveBeenCalledWith(LESSON);
-    expect(m.importValidatedLesson).toHaveBeenCalledWith(METADATA, "Corps de la leçon.", "admin-1");
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: {
-        actorId: "admin-1",
-        action: "lesson.import.success",
-        targetId: "lesson-1",
-        metadata: {
-          refCode: "CL-LSN-01008-V01",
-          source: "repository",
-          file: "f1/01008-le-bit.mdx",
-        },
+    // Where it came from goes into the import's own audit row, written with
+    // the lesson and its first version: none is written beside it.
+    expect(m.importValidatedLesson).toHaveBeenCalledWith(
+      METADATA,
+      "Corps de la leçon.",
+      "admin-1",
+      {
+        refCode: "CL-LSN-01008-V01",
+        contentHash: expect.stringMatching(/^[a-f0-9]{64}$/) as unknown,
+        source: "repository",
+        file: "f1/01008-le-bit.mdx",
       },
+    );
+    expect(m.auditRecord).not.toHaveBeenCalled();
+  });
+
+  it("never creates a second lesson for a refCode the database got since the page was drawn", async () => {
+    write("lessons/f1/01008-le-bit.mdx", LESSON);
+    m.validateMdxContent.mockResolvedValue({
+      valid: true,
+      errors: [],
+      warnings: [],
+      metadata: METADATA,
+      body: "Corps",
+      update: { lessonId: "lesson-1" },
     });
+    const result = await importLessonFromRepository(
+      "CL-LSN-01008-V01",
+      "admin-1",
+      path.join(root, "lessons"),
+    );
+    expect(result).toMatchObject({ ok: false, reason: "conflict" });
+    expect(m.importValidatedLesson).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 
   it("reports a lesson another tab has just imported instead of failing", async () => {
@@ -224,7 +251,7 @@ describe("importLessonFromRepository", () => {
       path.join(root, "lessons"),
     );
     expect(result).toMatchObject({ ok: false, reason: "conflict" });
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 });
 
@@ -341,6 +368,71 @@ describe("pathSyncOverview", () => {
     m.pathFindMany.mockResolvedValue([syncedRow([{ refCode: "CL-LSN-03001-V01", module: 1 }])]);
     const [state] = (await pathSyncOverview(path.join(root, "paths"))).paths;
     expect(state?.upToDate).toBe(false);
+    expect(state?.changes).toEqual([
+      { kind: "changed", label: "Module 1", before: "Les bases", after: "Les fondations" },
+    ]);
+  });
+
+  it("says what a sync would overwrite: fields, modules, where each lesson lands", async () => {
+    write(
+      "paths/reseaux.json",
+      manifest({
+        estimatedHours: 80,
+        modules: [
+          { title: "Les bases", lessons: ["CL-LSN-03002-V01", "CL-LSN-03001-V01"] },
+          { title: "L'adressage", lessons: ["CL-LSN-03003-V01"] },
+          // Not imported yet: nothing to place until it is.
+          { title: "Le routage", lessons: ["CL-LSN-03004-V01"] },
+        ],
+      }),
+    );
+    m.lessonFindMany.mockResolvedValue([
+      { refCode: "CL-LSN-03001-V01" },
+      { refCode: "CL-LSN-03002-V01" },
+      { refCode: "CL-LSN-03003-V01" },
+      { refCode: "CL-LSN-03099-V01" },
+    ]);
+    m.pathFindMany.mockResolvedValue([
+      syncedRow([
+        { refCode: "CL-LSN-03001-V01", module: 1 },
+        { refCode: "CL-LSN-03099-V01", module: 1 },
+        { refCode: "CL-LSN-03002-V01", module: 1 },
+      ]),
+    ]);
+    const [state] = (await pathSyncOverview(path.join(root, "paths"))).paths;
+    expect(state?.upToDate).toBe(false);
+    expect(state?.changes).toEqual([
+      { kind: "changed", label: "Durée (h)", before: "70", after: "80" },
+      { kind: "added", label: "Module 3", value: "Le routage" },
+      {
+        kind: "changed",
+        label: "CL-LSN-03002-V01",
+        before: "position 3 · module 1",
+        after: "position 1 · module 1",
+      },
+      {
+        kind: "changed",
+        label: "CL-LSN-03001-V01",
+        before: "position 1 · module 1",
+        after: "position 2 · module 1",
+      },
+      { kind: "added", label: "CL-LSN-03003-V01", value: "position 3 · module 2" },
+      // Out of the manifest: kept, at the end and out of any module.
+      {
+        kind: "changed",
+        label: "CL-LSN-03099-V01",
+        before: "position 2 · module 1",
+        after: "position 4 · hors module (plus dans le manifeste)",
+      },
+    ]);
+  });
+
+  it("lists nothing for a path already up to date", async () => {
+    write("paths/reseaux.json", manifest());
+    m.lessonFindMany.mockResolvedValue([{ refCode: "CL-LSN-03001-V01" }]);
+    m.pathFindMany.mockResolvedValue([syncedRow([{ refCode: "CL-LSN-03001-V01", module: 1 }])]);
+    const [state] = (await pathSyncOverview(path.join(root, "paths"))).paths;
+    expect(state).toMatchObject({ upToDate: true, changes: [] });
   });
 });
 
@@ -403,8 +495,11 @@ describe("syncPathFromRepository", () => {
         ],
       }),
     );
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: { actorId: "admin-1", action: "path.sync", targetType: "path", targetId: "path-1" },
+    expect(m.auditRecord.mock.calls[0]?.[0]).toMatchObject({
+      actorId: "admin-1",
+      action: "path.sync",
+      targetType: "path",
+      targetId: "path-1",
     });
   });
 });
@@ -509,14 +604,12 @@ describe("syncQuizFromRepository", () => {
       "p-1",
       expect.objectContaining({ passThreshold: 75, questionsToDraw: 1 }),
     );
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: {
-        actorId: "admin-1",
-        action: "quiz.sync",
-        targetType: "quiz",
-        targetId: "q-1",
-        metadata: { slug: "reseaux", retired: 2 },
-      },
+    expect(m.auditRecord.mock.calls[0]?.[0]).toMatchObject({
+      actorId: "admin-1",
+      action: "quiz.sync",
+      targetType: "quiz",
+      targetId: "q-1",
+      metadata: { slug: "reseaux", retired: 2 },
     });
   });
 });
@@ -570,13 +663,17 @@ describe("catalogue publication", () => {
       where: { id: { in: ["p-1"] }, status: "DRAFT" },
       data: { status: "PUBLISHED" },
     });
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: {
+    // In the publication's transaction, so the row lands with it or not at all.
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith(
+      {
         actorId: "admin-1",
         action: "catalogue.publish",
+        targetType: "catalogue",
+        targetId: null,
         metadata: { lessons: ["CL-LSN-03001-V01"], paths: ["CL-PATH-103-V01"] },
       },
-    });
+      tx,
+    );
   });
 
   it("writes nothing when there is nothing to publish", async () => {
@@ -588,6 +685,6 @@ describe("catalogue publication", () => {
       paths: 0,
     });
     expect(m.lessonUpdateMany).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 });

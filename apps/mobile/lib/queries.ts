@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
 import {
   fetchChallengeApi,
   fetchChallengesApi,
+  fetchDailyRecallApi,
   fetchLessonAccessApi,
+  fetchModuleReviewApi,
   fetchLessonLocksApi,
   fetchMyRankApi,
   fetchPathCoversApi,
@@ -31,6 +33,7 @@ import {
   type CertificateStanding,
 } from "@/lib/certificates";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
+import { nextNotificationOffset, notificationRange } from "@/lib/notification-pages";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import {
   countSince,
@@ -46,7 +49,6 @@ import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { inScope, scopeFitsUrl, statusScope, type StatusFilter } from "@/lib/lesson-status";
 import { countMissions, publishedLesson, type LessonLink } from "@/lib/missions";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
-import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
 import {
   GUIDE_PATH_COLUMNS,
   toGuidePaths,
@@ -462,12 +464,12 @@ export function useLessons(userId: string | undefined, filters: LessonFilters) {
   return useQuery({
     queryKey: ["lessons", userId, filters],
     queryFn: async (): Promise<LessonCard[]> => {
-      type ProgressRow = {
+      interface ProgressRow {
         lessonId: string;
         status: ProgressStatus;
         quizCorrect: number | null;
         quizTotal: number | null;
-      };
+      }
       // Read first: the status filter is built from it.
       let progressRows: ProgressRow[] = [];
       if (userId) {
@@ -999,6 +1001,12 @@ export interface NotificationItem {
   actionUrl: string | null;
   readAt: string | null;
   createdAt: string;
+  /**
+   * What the server wrote beside it, read as unknown JSON: a friend request
+   * names its sender there (`fromUserId`), which lets the notice be
+   * answered in place (answerableSender).
+   */
+  metadata?: unknown;
 }
 
 export function useNotifications(userId: string | undefined) {
@@ -1009,11 +1017,50 @@ export function useNotifications(userId: string | undefined) {
     queryFn: async (): Promise<NotificationItem[]> => {
       const { data, error } = await supabase
         .from("notifications")
-        .select("id,type,title,body,actionUrl,readAt,createdAt")
+        .select("id,type,title,body,actionUrl,readAt,createdAt,metadata")
         .eq("userId", userId as string) // gated by `enabled`
         .order("createdAt", { ascending: false })
         .limit(50);
       // A failed read is an error, not an empty inbox: the screen offers a retry.
+      if (error) throw new Error(error.message);
+      // SAFETY: the columns selected above, in NotificationItem's shape.
+      return ((data ?? []) as NotificationItem[]).map((n) => ({
+        ...n,
+        readAt: dbIsoOrNull(n.readAt),
+        createdAt: dbIso(n.createdAt),
+      }));
+    },
+  });
+}
+
+/**
+ * The inbox screen's history: fifty at a time, newest first, with the pages
+ * after it on demand. Keyed under ["notifications", userId] like the list
+ * above, so every invalidation of the inbox reaches it too.
+ */
+export function useNotificationHistory(userId: string | undefined) {
+  return useInfiniteQuery({
+    queryKey: ["notifications", userId, "history"],
+    enabled: Boolean(userId),
+    refetchInterval: 60_000,
+    initialPageParam: 0,
+    // Annotated: both callbacks are contextually typed, and without it the
+    // pages would be inferred before queryFn says what a page holds.
+    getNextPageParam: (_last: NotificationItem[], pages: NotificationItem[][]) =>
+      nextNotificationOffset(pages),
+    queryFn: async ({ pageParam }): Promise<NotificationItem[]> => {
+      const [from, to] = notificationRange(pageParam);
+      const { data, error } = await supabase
+        .from("notifications")
+        // metadata: a friend request names its sender there, for its notice's
+        // "Accepter" and "Refuser" (answerableSender).
+        .select("id,type,title,body,actionUrl,readAt,createdAt,metadata")
+        .eq("userId", userId as string) // gated by `enabled`
+        // The id settles two notices of the same instant, so a page boundary
+        // never shows one twice or skips one.
+        .order("createdAt", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, to);
       if (error) throw new Error(error.message);
       // SAFETY: the columns selected above, in NotificationItem's shape.
       return ((data ?? []) as NotificationItem[]).map((n) => ({
@@ -1139,40 +1186,44 @@ export async function updateLeaderboardVisibility(
   if (error) throw new Error(error.message);
 }
 
-// ── Révisions (SM-2) ──────────────────────────────────────────────────────────
+// ── Rappel du jour et Réviser ce module ───────────────────────────────────────
+// Through the site's route (/api/mobile/review-cards), never read under RLS:
+// the draw, the check of each answer and the XP are the site's service.
 
-export interface RevisionsData {
-  /** UserPreferences.spacedRepetition: an absent row means on, as on the site. */
-  enabled: boolean;
-  items: ReviewItem[];
+/** The day's recall: the Révisions screen and the home tab's card share this query. */
+export function dailyRecallKey(userId: string | undefined): readonly unknown[] {
+  return ["rappel", userId];
 }
 
-export function useRevisions(userId: string | undefined) {
+/**
+ * The day's recall, drawn on the server on its first opening of the day, as
+ * the site's dashboard draws it. Spaced repetition switched off in the
+ * settings comes back as `status: "off"`.
+ *
+ * Read again as the app comes back to the front (lib/app-focus.ts): the card
+ * and the home tab's link say where the recall stands today, and the home tab
+ * stays mounted overnight, so yesterday's "Fait pour aujourd'hui" would
+ * otherwise stay on screen until the reader pulled the page down.
+ */
+export function useDailyRecall(userId: string | undefined) {
   return useQuery({
-    queryKey: ["revisions", userId],
+    queryKey: dailyRecallKey(userId),
     enabled: Boolean(userId),
-    queryFn: async (): Promise<RevisionsData> => {
-      const uid = userId as string; // gated by `enabled`
-      const [prefs, schedules] = await Promise.all([
-        supabase
-          .from("user_preferences")
-          .select("spacedRepetition")
-          .eq("userId", uid)
-          .maybeSingle(),
-        supabase
-          .from("review_schedules")
-          .select(REVIEW_COLUMNS)
-          .eq("userId", uid)
-          .order("nextReviewAt", { ascending: true }),
-      ]);
-      if (schedules.error) throw new Error(schedules.error.message);
-      const pref = prefs.data as { spacedRepetition: boolean } | null;
-      return {
-        enabled: pref?.spacedRepetition !== false,
-        // SAFETY: the columns selected above, in RawReviewRow's shape.
-        items: toReviewItems((schedules.data ?? []) as unknown as RawReviewRow[]),
-      };
-    },
+    refetchOnWindowFocus: true,
+    queryFn: fetchDailyRecallApi,
+  });
+}
+
+/** "Réviser ce module": six questions at most from the module's lessons finished. */
+export function useModuleReview(
+  userId: string | undefined,
+  slug: string | undefined,
+  moduleNumber: number,
+) {
+  return useQuery({
+    queryKey: ["module-review", slug, moduleNumber, userId],
+    enabled: Boolean(userId && slug) && Number.isInteger(moduleNumber) && moduleNumber > 0,
+    queryFn: () => fetchModuleReviewApi(slug as string, moduleNumber), // gated by `enabled`
   });
 }
 

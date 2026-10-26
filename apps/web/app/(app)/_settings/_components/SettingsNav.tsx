@@ -15,13 +15,10 @@ export function SettingsNav({
   const selected = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => {
     const reveal = (): void => {
-      const scroller = navigation.current?.parentElement;
       const button = selected.current;
-      if (!scroller || !button || scroller.scrollWidth <= scroller.clientWidth) return;
-      const bounds = scroller.getBoundingClientRect();
-      const target = button.getBoundingClientRect();
-      if (target.left < bounds.left) scroller.scrollLeft += target.left - bounds.left - 12;
-      else if (target.right > bounds.right) scroller.scrollLeft += target.right - bounds.right + 12;
+      if (button && typeof button.scrollIntoView === "function") {
+        button.scrollIntoView({ inline: "nearest", block: "nearest" });
+      }
     };
     reveal();
     window.addEventListener("resize", reveal);

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
 import { BannedContent } from "./_components/banned-content";
+import { appealStanding } from "@/lib/moderation/ban-appeal";
 
 export const metadata: Metadata = { title: "Compte suspendu" };
 
@@ -13,6 +14,7 @@ export default async function BannedPage(): Promise<React.JSX.Element> {
   if (!user) redirect("/login");
   const ban = await getActiveBan();
   if (!ban) redirect("/dashboard");
+  const appeal = await appealStanding({ userId: user.id, appealTicketId: ban.appealTicketId });
   const endsLabel = banTimeLeft(ban.expiresAt);
   const issuedOn = new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "long",
@@ -26,6 +28,7 @@ export default async function BannedPage(): Promise<React.JSX.Element> {
       issuedOn={issuedOn}
       alreadyAcknowledged={ban.acknowledgedAt !== null}
       alreadyAppealed={ban.appealTicketId !== null}
+      appeal={appeal}
     />
   );
 }

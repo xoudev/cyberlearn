@@ -26,7 +26,10 @@ When a page becomes a window, its address stays alive with a redirect in
 `apps/web/next.config.ts` to the page that hosts the window, with the window's
 parameter (`/settings/:section` goes to `/dashboard?settings=:section`). Make
 the redirect `permanent: false`: a browser must not remember where an address
-of the site goes.
+of the site goes. An old address that differs from the new one by a query
+parameter only (`/duels?ami=<id>`) is translated by its page with
+`redirect()`: a redirect in `next.config.ts` carries the request's query
+along, the parameter it matched on included.
 
 ## Dialog or drawer
 
@@ -80,8 +83,12 @@ The windows of the site today:
 |---|---|---|---|
 | `settings=<section>` | The settings, a drawer (registered) | The navbar's gear, any link to `/settings/...` | `/settings/:section` to `/dashboard?settings=:section` |
 | `news=1` | The release notes, a drawer (registered, `components/changelog/`) | The navbar's Nouveautés | `/changelog` to `/dashboard?news=1` |
-| `request=1` | A new help request, a dialog (registered, `(app)/support/_components/new-request-dialog.tsx`) | "Nouvelle demande" on `/support` and under a finished ticket | none: the public `/contact` stays, for visitors |
+| `request=1` | A new help request, a dialog (registered, `(app)/support/_components/new-request-dialog.tsx`) | "Nouvelle demande" on `/support` and under a finished ticket, "Contact" in the app's footer, "Signaler le problème" on the app's error page (`request=incident-<digest>`: a bug whose subject is `Incident <digest>`, as the public form writes it) and "Être prévenu" on `/download` for a member (`request=android`: a suggestion about the Android app). Any other value opens it empty (`new-request-query.ts`) | none: the public `/contact` stays, for visitors |
+| `rappel=1` | The day's recall, a dialog (registered, `components/rappel/rappel-dialog.tsx`): one question at a time, each answer checked on the server, the verdict, the explanation and "Revoir ce passage", the end with its XP | The sidebar's "Révisions", the dashboard's "Rappel du jour" card, the daily reminder (`/dashboard?rappel=1`) | `/revisions` and `/review` to `/dashboard?rappel=1`: the old lesson-level queue (SM-2) is retired |
+| `rappel=module-<n>-<path>` | "Réviser ce module", the same dialog: six questions of the module's finished lessons, without XP | "Réviser ce module · 2 min" in a module's header on `/paths/<slug>` | none |
 | `compose=1` | A new forum thread, a dialog drawn by its section page (`(app)/forum/_components/new-topic-dialog.tsx`) | "Nouveau sujet" on `/forum/<section>` | `/forum/:category/nouveau` to `/forum/:category?compose=1` |
+| `duel=<friend id>` or `duel=1` | Challenge a friend to a duel, a dialog (registered, `(app)/duels/_components/challenge-dialog.tsx`): the friends as cards, the one asked for picked | "Défier un ami" on `/duels`, "Rejouer" and "Relancer un duel" on a duel (in place), "Défier en duel" on a friend's profile (a link to `/duels?duel=<id>`) | `/duels?ami=<id>` to `/duels?duel=<id>`, by the page (`(app)/duels/page.tsx`) |
+| `mock=1` | A path's mock exam presented, a dialog drawn by the path's page (`(app)/paths/[slug]/_components/mock-exam-dialog.tsx`); "Commencer" leads to the exam's page with `?go=1` | "Examen blanc" on `/paths/<slug>` | `/paths/:slug/mock-exam` without `go` to `/paths/:slug?mock=1`: the exam keeps its page, which only a started exam reaches. A page load only: the exam takes `go` off the address once started, and its server actions (`Next-Action`) and refreshes (`RSC`) go to that address unredirected. The page brought back by Back or Forward, which no redirect sees, sends itself to the window |
 
 The settings drawer is registered under `settings` with a difference: it keeps
 its own state, so its entry hands the request to the drawer and takes the

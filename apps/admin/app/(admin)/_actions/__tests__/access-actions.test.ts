@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn(),
-  findUnique: vi.fn(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  findConsoleTarget: vi.fn(),
+  record: vi.fn<(entry: Record<string, unknown>) => Promise<void>>(),
   revalidatePath: vi.fn(),
   getUserById: vi.fn(),
   updateUserById: vi.fn(),
@@ -18,8 +18,9 @@ const m = vi.hoisted(() => ({
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
-  prisma: { user: { findUnique: m.findUnique }, auditLog: { create: m.auditCreate } },
+  auditLogRepository: { record: m.record },
   userRepository: {
+    findConsoleTarget: m.findConsoleTarget,
     heldAdminRoleSince: m.heldAdminRoleSince,
     revokeAllSessions: m.revokeAllSessions,
   },
@@ -80,7 +81,7 @@ function form(fields: Record<string, string>): FormData {
 
 /** What the action wrote to the audit log, from its only write there. */
 function audited(): Record<string, unknown> | undefined {
-  return m.auditCreate.mock.calls[0]?.[0].data;
+  return m.record.mock.calls[0]?.[0];
 }
 
 function account(id: string, role: "STUDENT" | "TEACHER" | "ADMIN") {
@@ -96,18 +97,18 @@ function account(id: string, role: "STUDENT" | "TEACHER" | "ADMIN") {
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: ADMIN, email: "admin@x.fr", role: "ADMIN" });
-  m.findUnique.mockImplementation(({ where }: { where: { id: string } }) =>
+  m.findConsoleTarget.mockImplementation((id: string) =>
     Promise.resolve(
-      where.id === LEARNER
+      id === LEARNER
         ? account(LEARNER, "STUDENT")
-        : where.id === OTHER_ADMIN
+        : id === OTHER_ADMIN
           ? account(OTHER_ADMIN, "ADMIN")
-          : where.id === ADMIN
+          : id === ADMIN
             ? account(ADMIN, "ADMIN")
             : null,
     ),
   );
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
   m.heldAdminRoleSince.mockResolvedValue(false);
   m.listFactors.mockResolvedValue({
     data: {
@@ -144,7 +145,7 @@ describe("resetMfaAction", () => {
     expect(result.error).toMatch(/ta propre double authentification/u);
     expect(m.listFactors).not.toHaveBeenCalled();
     expect(m.deleteFactor).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("refuses on another administrator and points to the break-glass procedure", async () => {
@@ -187,14 +188,12 @@ describe("resetMfaAction", () => {
     expect(m.deleteFactor).toHaveBeenCalledTimes(2);
     expect(m.deleteFactor).toHaveBeenCalledWith({ id: "f-1", userId: LEARNER });
     expect(m.deleteFactor).toHaveBeenCalledWith({ id: "f-2", userId: LEARNER });
-    expect(m.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorId: ADMIN,
-        action: "admin.user.mfa_reset",
-        targetType: "User",
-        targetId: LEARNER,
-        metadata: { factorsFound: 2, factorsRemoved: 2, complete: true },
-      },
+    expect(m.record).toHaveBeenCalledWith({
+      actorId: ADMIN,
+      action: "admin.user.mfa_reset",
+      targetType: "User",
+      targetId: LEARNER,
+      metadata: { factorsFound: 2, factorsRemoved: 2, complete: true },
     });
     expect(m.sendMfaResetEmail).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -221,7 +220,7 @@ describe("resetMfaAction", () => {
   });
 
   it("reports the reset done when only the audit write fails, and still tells the learner", async () => {
-    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    m.record.mockRejectedValue(new Error("audit_logs unavailable"));
     const result = await resetMfaAction({}, typed(LEARNER));
     expect(result).toMatchObject({ ok: true, auditFailed: true });
     expect(m.sendMfaResetEmail).toHaveBeenCalled();
@@ -241,17 +240,103 @@ describe("resetMfaAction", () => {
     expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
   });
 
+  it("removes the unfinished enrolment before the verified factor, whatever order they are listed in", async () => {
+    m.listFactors.mockResolvedValue({
+      data: {
+        factors: [
+          { id: "f-1", factor_type: "totp", status: "verified" },
+          { id: "f-2", factor_type: "totp", status: "unverified" },
+        ],
+      },
+      error: null,
+    });
+
+    await resetMfaAction({}, typed(LEARNER));
+
+    expect(m.deleteFactor.mock.calls).toEqual([
+      [{ id: "f-2", userId: LEARNER }],
+      [{ id: "f-1", userId: LEARNER }],
+    ]);
+  });
+
+  it("leaves the verified factor in place when the unfinished one cannot be removed, so the retry is still offered", async () => {
+    // The page offers the reset only while a verified factor remains, and the
+    // action refuses it without one: stopping on the verified factor first
+    // would have left only the unfinished one, and no way to finish.
+    m.listFactors.mockResolvedValue({
+      data: {
+        factors: [
+          { id: "f-1", factor_type: "totp", status: "verified" },
+          { id: "f-2", factor_type: "totp", status: "unverified" },
+        ],
+      },
+      error: null,
+    });
+    m.deleteFactor.mockResolvedValueOnce({ data: null, error: new Error("boom") });
+
+    const result = await resetMfaAction({}, typed(LEARNER));
+
+    expect(result.error).toMatch(/Rien n'a été retiré/u);
+    expect(m.deleteFactor).toHaveBeenCalledTimes(1);
+    expect(m.deleteFactor).toHaveBeenCalledWith({ id: "f-2", userId: LEARNER });
+    expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
+  });
+
   it("says so when there is nothing to remove, and writes nothing", async () => {
     m.listFactors.mockResolvedValue({ data: { factors: [] }, error: null });
     const result = await resetMfaAction({}, typed(LEARNER));
     expect(result.error).toMatch(/pas de double authentification/u);
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("still succeeds when the mail does not go out, and says it did not", async () => {
     m.sendMfaResetEmail.mockRejectedValue(new Error("resend down"));
     const result = await resetMfaAction({}, typed(LEARNER));
     expect(result).toMatchObject({ ok: true, emailFailed: true });
+  });
+
+  describe("an activation that was started and never finished", () => {
+    beforeEach(() => {
+      m.listFactors.mockResolvedValue({
+        data: { factors: [{ id: "f-9", factor_type: "totp", status: "unverified" }] },
+        error: null,
+      });
+    });
+
+    it("is not reset: nothing is removed, nothing is logged, and nobody is told", async () => {
+      // The owner never had a second factor. Telling them it was reset, and
+      // that "your authenticator no longer serves CyberLearn", would be false,
+      // and so would the alert that follows it.
+      const result = await resetMfaAction({}, typed(LEARNER));
+
+      expect(result.ok).toBeUndefined();
+      expect(result.error).toMatch(/pas de double authentification active/u);
+      expect(result.error).toMatch(/Rien n'a été retiré/u);
+      expect(m.deleteFactor).not.toHaveBeenCalled();
+      expect(m.record).not.toHaveBeenCalled();
+      expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
+      expect(m.revalidatePath).not.toHaveBeenCalled();
+    });
+
+    it("is removed along with a finished factor, which is what the reset is for", async () => {
+      m.listFactors.mockResolvedValue({
+        data: {
+          factors: [
+            { id: "f-9", factor_type: "totp", status: "unverified" },
+            { id: "f-1", factor_type: "totp", status: "verified" },
+          ],
+        },
+        error: null,
+      });
+
+      const result = await resetMfaAction({}, typed(LEARNER));
+
+      expect(result).toMatchObject({ ok: true });
+      expect(m.deleteFactor).toHaveBeenCalledTimes(2);
+      expect(m.sendMfaResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionsClosed: true }),
+      );
+    });
   });
 });
 
@@ -319,7 +404,7 @@ describe("sendPasswordResetAction", () => {
   });
 
   it("reports the link sent when only the audit write fails", async () => {
-    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    m.record.mockRejectedValue(new Error("audit_logs unavailable"));
     const result = await sendPasswordResetAction({}, form({ userId: LEARNER }));
     expect(result).toMatchObject({ ok: true, auditFailed: true });
     expect(result.notice).toMatch(/envoyé à 2222@exemple\.fr/u);
@@ -329,7 +414,7 @@ describe("sendPasswordResetAction", () => {
     m.resetPasswordForEmail.mockResolvedValue({ data: null, error: { status: 429 } });
     const result = await sendPasswordResetAction({}, form({ userId: LEARNER }));
     expect(result.error).toMatch(/moins d'une minute/u);
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("refuses an id that is not a uuid", async () => {
@@ -351,7 +436,7 @@ describe("address confirmation", () => {
   });
 
   it("reports the mail resent when only the audit write fails", async () => {
-    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    m.record.mockRejectedValue(new Error("audit_logs unavailable"));
     const result = await resendConfirmationAction({}, form({ userId: LEARNER }));
     expect(result).toMatchObject({ ok: true, auditFailed: true });
   });
@@ -379,7 +464,7 @@ describe("address confirmation", () => {
   });
 
   it("reports the address confirmed when only the audit write fails", async () => {
-    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    m.record.mockRejectedValue(new Error("audit_logs unavailable"));
     const result = await confirmEmailAction({}, form({ userId: LEARNER }));
     expect(result).toMatchObject({ ok: true, auditFailed: true });
   });
@@ -423,14 +508,12 @@ describe("a sign-up that never confirmed, and has no profile yet", () => {
       ok: true,
       notice: "E-mail de confirmation renvoyé à pending@exemple.fr.",
     });
-    expect(m.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorId: ADMIN,
-        action: "admin.user.confirmation_resent",
-        targetType: "User",
-        targetId: PENDING,
-        metadata: { pendingSignUp: true },
-      },
+    expect(m.record).toHaveBeenCalledWith({
+      actorId: ADMIN,
+      action: "admin.user.confirmation_resent",
+      targetType: "User",
+      targetId: PENDING,
+      metadata: { pendingSignUp: true },
     });
   });
 
@@ -448,7 +531,7 @@ describe("a sign-up that never confirmed, and has no profile yet", () => {
 
   it("marks nothing as pending for an account that has a profile", async () => {
     await confirmEmailAction({}, form({ userId: LEARNER }));
-    expect(audited()).not.toHaveProperty("metadata");
+    expect(audited()?.metadata).toBeUndefined();
   });
 
   it("says the account is gone when Supabase does not know it either", async () => {
@@ -461,7 +544,7 @@ describe("a sign-up that never confirmed, and has no profile yet", () => {
     );
     expect(m.resend).not.toHaveBeenCalled();
     expect(m.updateUserById).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("still requires an administrator", async () => {

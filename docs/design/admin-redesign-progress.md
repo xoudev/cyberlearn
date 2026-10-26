@@ -39,3 +39,7 @@ Les preuves détaillées du site se trouvent dans `redesign-audit.md` et les rap
 Les quatre nouveaux tests de confirmations couvrent annulation et brouillon, données et bouton d’envoi conservés, Échap et focus, validation native refusée. Les 694 tests admin et 144 tests UI sont inclus dans la suite globale, sans double comptage.
 
 Navigateur : connexion locale et MFA sans dérogation, familles de pages et détails disponibles contrôlés, filtres URL et sélection multiple exercés, confirmations annulées sans mutation. Marges comparées web/admin aux quatre largeurs prévues ; barre mesurée à 56 px. Voir les captures, les mesures et les limites dans le rapport final.
+
+## Intégration des évolutions de main, 26 octobre 2026
+
+Les 40 commits jusqu’à `786e4c3d` sont repris dans `redesign`. Le périmètre passe de 42 à 54 modèles admin avec le studio, les avis, annonces, signalements, référentiels, tâches planifiées, flags et compte personnel. Les nouveautés conservent le chrome Bastion et les marges partagées. Voir [le rapport d’intégration](main-integration-review.md) pour les adaptations, les contrôles et les limites.

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useActionState, useState } from "react";
+import React, { useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import { updatePathAction, type UpdatePathState } from "../actions";
 import { ModalShell, Select } from "@cyberlearn/ui";
@@ -57,6 +57,7 @@ const BASE_INPUT: React.CSSProperties = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// The site's category colours, so a lesson reads the same in both places.
 const CAT_CHIPS: Record<string, { color: string; border: string }> = {
   CYBERSEC: { color: "var(--color-category-cybersec)", border: "var(--a-border-2)" },
   NETWORK: { color: "var(--color-category-network)", border: "var(--a-border-2)" },
@@ -104,7 +105,7 @@ function Label({
       }}
     >
       {children}
-      {req && <span style={{ color: DANGER }}>*</span>}
+      {req && <span style={{ color: "var(--a-danger)" }}>*</span>}
       {hint && (
         <span
           style={{
@@ -128,7 +129,9 @@ function Help({ children }: { children: React.ReactNode }) {
   );
 }
 function FieldErr({ msg }: { msg?: string | undefined }) {
-  return msg ? <span style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>{msg}</span> : null;
+  return msg ? (
+    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)" }}>{msg}</span>
+  ) : null;
 }
 
 // ── Drag-and-drop lesson row ──────────────────────────────────────────────────
@@ -187,7 +190,9 @@ function LessonRow({
         background: isDropTarget || isDragging ? "var(--a-hover)" : "var(--a-surface)",
         outline: isDragging ? `1px solid ${TURQ}` : isDropTarget ? `1px dashed ${TURQ}` : "none",
         outlineOffset: -1,
-        boxShadow: isDragging ? `0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--a-accent)` : "none",
+        boxShadow: isDragging
+          ? "0 12px 32px color-mix(in srgb, var(--a-bg) 50%, transparent)"
+          : "none",
         position: "relative",
         transition: "background 100ms ease",
         cursor: "grab",
@@ -202,8 +207,8 @@ function LessonRow({
             left: 8,
             right: 8,
             height: 2,
-            background: TURQ,
-            boxShadow: `0 0 10px ${TURQ}`,
+            background: "var(--a-accent)",
+            boxShadow: "0 0 10px var(--a-accent)",
           }}
         />
       )}
@@ -297,7 +302,7 @@ function LessonRow({
             padding: "3px 8px",
             border: `1px solid ${cat.border}`,
             color: cat.color,
-            background: "rgba(0,0,0,0.25)",
+            background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
           }}
         >
           {lesson.category === "CYBERSEC"
@@ -372,6 +377,7 @@ function LessonPicker({
   onClose: () => void;
 }) {
   const [q, setQ] = useState("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
   const filtered = available.filter(
     (l) =>
       !selected.includes(l.id) &&
@@ -400,14 +406,19 @@ function LessonPicker({
         onClick={(e) => {
           e.stopPropagation();
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
       >
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${BORDER}` }}>
           <input
+            ref={searchRef}
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
             }}
             placeholder="Rechercher…"
+            aria-label="Rechercher une leçon"
             autoFocus
             style={{ ...BASE_INPUT, padding: "10px 14px" }}
           />
@@ -435,9 +446,12 @@ function LessonPicker({
                 <button
                   key={l.id}
                   type="button"
+                  // The picker stays open: a path is built several lessons at
+                  // a time, and the lesson just added leaves the list. Focus
+                  // goes back to the search, since the button it was on is gone.
                   onClick={() => {
                     onAdd(l);
-                    onClose();
+                    searchRef.current?.focus();
                   }}
                   style={{
                     width: "100%",
@@ -592,7 +606,7 @@ export function EditPathClient({
             borderLeft: `3px solid ${DANGER}`,
             fontFamily: MONO,
             fontSize: 11,
-            color: DANGER,
+            color: "var(--a-danger)",
             marginBottom: 24,
           }}
         >
@@ -622,7 +636,7 @@ export function EditPathClient({
             />
             <Help>
               Format :{" "}
-              <b style={{ color: TURQ }}>
+              <b style={{ color: "var(--a-accent)" }}>
                 CL-PATH-{"{NNN}"}-V{"{NN}"}
               </b>{" "}
               · doit être unique
@@ -653,7 +667,7 @@ export function EditPathClient({
                   fontSize: 13,
                   color: "var(--a-muted)",
                   borderRight: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--a-bg)",
                 }}
               >
                 /
@@ -670,7 +684,7 @@ export function EditPathClient({
               />
             </div>
             <Help>
-              cyberlearn.fr/paths/<b style={{ color: TURQ }}>votre-slug</b>
+              cyberlearn.fr/paths/<b style={{ color: "var(--a-accent)" }}>votre-slug</b>
             </Help>
             <FieldErr msg={state.fieldErrors?.slug} />
           </div>
@@ -822,7 +836,7 @@ export function EditPathClient({
                   letterSpacing: "0.18em",
                   color: "var(--a-muted)",
                   borderLeft: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--a-bg)",
                   textTransform: "uppercase",
                   whiteSpace: "nowrap",
                 }}
@@ -832,7 +846,7 @@ export function EditPathClient({
             </div>
             <Help>
               Calculée auto depuis les leçons :{" "}
-              <b style={{ color: TURQ }}>{(totals.dur / 60).toFixed(1)} h</b>
+              <b style={{ color: "var(--a-accent)" }}>{(totals.dur / 60).toFixed(1)} h</b>
             </Help>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -849,8 +863,8 @@ export function EditPathClient({
               />
             </div>
             <Help>
-              <span style={{ color: TURQ }}>Publié</span> → visible par les apprenants ·{" "}
-              <span style={{ color: "var(--a-danger)" }}>Archivé</span> → caché, supprimable
+              <span style={{ color: "var(--a-accent)" }}>Publié</span> → visible par les apprenants
+              · <span style={{ color: "var(--a-danger)" }}>Archivé</span> → caché, supprimable
             </Help>
             <FieldErr msg={state.fieldErrors?.status} />
           </div>
@@ -947,7 +961,7 @@ export function EditPathClient({
                 padding: 14,
                 background: "transparent",
                 border: 0,
-                borderTop: "1px dashed rgba(255,255,255,0.08)",
+                borderTop: "1px dashed color-mix(in srgb, var(--a-fg) 8%, transparent)",
                 fontFamily: MONO,
                 fontWeight: 700,
                 fontSize: 11,
@@ -1005,7 +1019,7 @@ export function EditPathClient({
                     display: "flex",
                     flexDirection: "column",
                     gap: 3,
-                    borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
+                    borderRight: i < 3 ? "1px solid var(--a-border-2)" : "none",
                   }}
                 >
                   <span
@@ -1041,7 +1055,7 @@ export function EditPathClient({
             alignItems: "center",
             gap: 14,
             paddingTop: 24,
-            borderTop: `1px solid ${BORDER}`,
+            borderTop: "1px solid var(--a-border-2)",
             flexWrap: "wrap",
             justifyContent: "flex-end",
           }}

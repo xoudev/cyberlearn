@@ -24,14 +24,22 @@ export function MfaResetForm({
   userId,
   email,
   displayName,
-  factorCount,
+  verifiedCount,
+  abandonedCount,
   refusal,
 }: {
   userId: string;
   email: string;
   displayName: string;
-  /** TOTP factors on the account, finished or not. */
-  factorCount: number;
+  /**
+   * TOTP factors that ask for a code at sign-in. The reset is offered only
+   * when there is one: it signs the account out everywhere and tells its owner
+   * their second factor was removed, which is false of an enrolment started
+   * and never finished.
+   */
+  verifiedCount: number;
+  /** Enrolments started and never finished: removed with the rest, never alone. */
+  abandonedCount: number;
   /** Why the console will not do it here, already in French, or null. */
   refusal: string | null;
 }): React.ReactElement | null {
@@ -56,8 +64,10 @@ export function MfaResetForm({
     );
   }
 
-  // Nothing to remove, and nothing to report yet.
-  if (factorCount === 0) return null;
+  // Nothing to reset, and nothing to report yet. An abandoned activation alone
+  // is not something to reset: the card above says the account has no second
+  // factor, and the next activation replaces the unfinished one.
+  if (verifiedCount === 0) return null;
 
   if (refusal !== null) {
     return (
@@ -70,11 +80,13 @@ export function MfaResetForm({
   return (
     <Card title="Réinitialiser la double authentification" pad>
       <p className="a-form-notice">
-        Retire {factorCount > 1 ? `les ${String(factorCount)} facteurs` : "le facteur"} TOTP de ce
-        compte, pour une personne qui a perdu le téléphone qui générait ses codes. Elle se connecte
-        ensuite comme d&apos;habitude, sans code, ses sessions ouvertes sont fermées, et un e-mail
-        lui demande de réactiver la double authentification. À faire seulement après avoir vérifié
-        que la demande vient bien d&apos;elle.
+        Retire {verifiedCount > 1 ? `les ${String(verifiedCount)} facteurs` : "le facteur"} TOTP de
+        ce compte
+        {abandonedCount > 0 ? ", avec l'activation commencée et jamais terminée," : ""} pour une
+        personne qui a perdu le téléphone qui générait ses codes. Elle se connecte ensuite comme
+        d&apos;habitude, sans code, ses sessions ouvertes sont fermées, et un e-mail lui demande de
+        réactiver la double authentification. À faire seulement après avoir vérifié que la demande
+        vient bien d&apos;elle.
       </p>
 
       <form action={formAction} className="a-form" style={{ marginTop: 16 }}>

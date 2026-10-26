@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Switch, View, type ViewStyle } from "react-native";
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";
-import { FriendMark } from "@/components/friends";
+import { AddFriendChip, FriendMark } from "@/components/friends";
 import { Avatar } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
@@ -15,7 +15,13 @@ import {
   type LeaderboardEntry,
   type PodEntry,
 } from "@/lib/api";
-import { boardName, friendsBoardNotice, friendsCountLabel, showsFriendMark } from "@/lib/friends";
+import {
+  addableHandle,
+  boardName,
+  friendsBoardNotice,
+  friendsCountLabel,
+  showsFriendMark,
+} from "@/lib/friends";
 import {
   PERIOD_CHIPS,
   emptyBoardLabel,
@@ -492,16 +498,16 @@ function GlobalRow({
   markFriends?: boolean;
 }): React.JSX.Element {
   const top3 = entry.rank <= 3;
+  // "Ajouter", beside the row's link rather than inside it: a button inside
+  // a link is two controls a screen reader hears as one.
+  const handle = markFriends ? addableHandle(entry) : null;
   return (
-    <ProfileLink
-      username={entry.hasPublicProfile ? entry.username : null}
-      name={name}
+    <View
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 11,
+        gap: 8,
+        paddingRight: handle !== null ? 14 : 0,
         borderBottomWidth: 1,
         borderBottomColor: colors.borderSubtle,
         backgroundColor: entry.isCurrentUser ? "rgba(10,255,212,0.07)" : "transparent",
@@ -509,47 +515,69 @@ function GlobalRow({
         borderLeftColor: colors.accent,
       }}
     >
-      <Text
-        variant="mono"
-        style={{ width: 30, fontSize: 12, color: top3 ? colors.warning : colors.textMuted }}
-      >
-        {entry.rank}
-      </Text>
-      <Avatar
-        key={entry.avatarSrc ?? "initials"}
-        avatarUrl={entry.avatarSrc ?? null}
-        displayName={rowAvatarName(entry)}
-        size={30}
-      />
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
-        <Text
-          variant="h3"
-          numberOfLines={1}
-          style={{
-            flexShrink: 1,
-            fontSize: 13.5,
-            color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
-          }}
-        >
-          {entry.isCurrentUser ? `› ${name}` : name}
-        </Text>
-        {markFriends && showsFriendMark(entry) ? <FriendMark /> : null}
-      </View>
-      <Text variant="micro" style={{ color: colors.textMuted }}>
-        NV.{entry.level}
-      </Text>
-      <Text
+      <ProfileLink
+        username={entry.hasPublicProfile ? entry.username : null}
+        name={name}
         style={{
-          fontFamily: `${fonts.mono}_700Bold`,
-          fontSize: 12.5,
-          color: colors.textSecondary,
-          width: 84,
-          textAlign: "right",
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+          paddingLeft: 14,
+          paddingRight: handle !== null ? 0 : 14,
+          paddingVertical: 9,
         }}
       >
-        {entry.xpTotal} XP
-      </Text>
-    </ProfileLink>
+        <Text
+          variant="mono"
+          style={{ width: 30, fontSize: 12, color: top3 ? colors.warning : colors.textMuted }}
+        >
+          {entry.rank}
+        </Text>
+        <Avatar
+          key={entry.avatarSrc ?? "initials"}
+          avatarUrl={entry.avatarSrc ?? null}
+          displayName={rowAvatarName(entry)}
+          size={30}
+        />
+        {/* The name takes the width that is left, with the level and the XP
+            under it: beside the name, and with "Ajouter" after them, they
+            left it about ten pixels on a 375 px screen. */}
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", minWidth: 0 }}>
+            <Text
+              variant="h3"
+              numberOfLines={1}
+              style={{
+                flexShrink: 1,
+                fontSize: 13.5,
+                color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
+              }}
+            >
+              {entry.isCurrentUser ? `› ${name}` : name}
+            </Text>
+            {markFriends && showsFriendMark(entry) ? <FriendMark /> : null}
+          </View>
+          <Text variant="micro" numberOfLines={1} style={{ color: colors.textMuted }}>
+            {`NV.${String(entry.level)} · `}
+            <Text
+              style={{
+                fontFamily: `${fonts.mono}_700Bold`,
+                fontSize: 11.5,
+                letterSpacing: 0,
+                textTransform: "none",
+                color: colors.textSecondary,
+              }}
+            >
+              {entry.xpTotal} XP
+            </Text>
+          </Text>
+        </View>
+      </ProfileLink>
+      {handle !== null && entry.friendship != null ? (
+        <AddFriendChip username={handle} name={name} view={entry.friendship} />
+      ) : null}
+    </View>
   );
 }
 
@@ -614,7 +642,7 @@ function PeriodSwitch({
               onPress={() => onChange(chip.id)}
               style={{
                 flex: 1,
-                minHeight: 36,
+                minHeight: 44,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,

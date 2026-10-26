@@ -1,4 +1,5 @@
 import { type Prisma, LeaderboardVisibility, UserRole } from "@prisma/client";
+import type { FriendshipView } from "@cyberlearn/lib/social/friendship";
 import { prisma } from "../prisma.js";
 import { friendshipRepository } from "./friendship.repository.js";
 import { buildFriendsBoard } from "./leaderboard.friends.js";
@@ -107,17 +108,40 @@ export const leaderboardRepository = {
    * Ranks are continuous over the ranked subset, which is students only.
    */
   async findTopUsers(limit: number, currentUserId: string): Promise<LeaderboardEntry[]> {
-    const [users, friendIds] = await Promise.all([
-      prisma.user.findMany({
-        where: RANKED_USER_FILTER,
-        orderBy: [{ xpTotal: "desc" }, { id: "asc" }],
-        take: limit,
-        select: leaderboardSelect,
-      }),
-      // For the friend mark, which buildLeaderboard sets on public rows only.
-      friendshipRepository.friendIds(currentUserId),
-    ]);
-    return buildLeaderboard(users, currentUserId, friendIds);
+    const users = await prisma.user.findMany({
+      where: RANKED_USER_FILTER,
+      orderBy: [{ xpTotal: "desc" }, { id: "asc" }],
+      take: limit,
+      select: leaderboardSelect,
+    });
+    // For the friend mark and the row's "Ajouter", which buildLeaderboard
+    // sets on public rows only: the reader's relations with the people listed.
+    const relations = await friendshipRepository.viewsOf(
+      currentUserId,
+      users.map((user) => user.id),
+    );
+    return buildLeaderboard(users, currentUserId, relations);
+  },
+
+  /**
+   * The id behind a handle shown on the public board, for a friend request
+   * sent from it: the rows carry no id (leaderboard.visibility.ts), only the
+   * handle of a PUBLIC player. Null for a handle nobody has, or one the board
+   * does not name - anonymous, hidden, not a student, or no XP yet - so the
+   * board's button cannot be used to reach somebody it does not show.
+   */
+  async findPublicPlayerId(username: string): Promise<string | null> {
+    const player = await prisma.user.findFirst({
+      where: {
+        AND: [
+          RANKED_USER_FILTER,
+          { username },
+          { preferences: { is: { leaderboardVisibility: LeaderboardVisibility.PUBLIC } } },
+        ],
+      },
+      select: { id: true },
+    });
+    return player?.id ?? null;
   },
 
   /**
@@ -147,26 +171,24 @@ export const leaderboardRepository = {
    * index is for; the (userId, createdAt) one cannot serve it.
    */
   async findTopUsersSince(start: Date, limit: number, currentUserId: string): Promise<PeriodBoard> {
-    const [sums, friendIds] = await Promise.all([
-      prisma.xpLedger.groupBy({
-        by: ["userId"],
-        where: { createdAt: { gte: start }, user: { is: RANKED_USER_FILTER } },
-        _sum: { amount: true },
-        having: { amount: { _sum: { gt: 0 } } },
-        orderBy: [{ _sum: { amount: "desc" } }, { userId: "asc" }],
-      }),
-      friendshipRepository.friendIds(currentUserId),
-    ]);
+    const sums = await prisma.xpLedger.groupBy({
+      by: ["userId"],
+      where: { createdAt: { gte: start }, user: { is: RANKED_USER_FILTER } },
+      _sum: { amount: true },
+      having: { amount: { _sum: { gt: 0 } } },
+      orderBy: [{ _sum: { amount: "desc" } }, { userId: "asc" }],
+    });
     const xpOf = (row: (typeof sums)[number]): number => row._sum.amount ?? 0;
 
     const top = sums.slice(0, limit);
-    const users =
+    const topIds = top.map((row) => row.userId);
+    const [users, relations] =
       top.length === 0
-        ? []
-        : await prisma.user.findMany({
-            where: { id: { in: top.map((row) => row.userId) } },
-            select: leaderboardSelect,
-          });
+        ? [[], new Map<string, FriendshipView>()]
+        : await Promise.all([
+            prisma.user.findMany({ where: { id: { in: topIds } }, select: leaderboardSelect }),
+            friendshipRepository.viewsOf(currentUserId, topIds),
+          ]);
     const byId = new Map(users.map((user) => [user.id, user]));
     // In the ledger's order, each person carrying the period's XP in place of
     // their total: that is the figure this board ranks by and shows.
@@ -182,7 +204,7 @@ export const leaderboardRepository = {
         : { rank: sums.filter((row) => xpOf(row) > xpOf(mine)).length + 1, xp: xpOf(mine) };
 
     return {
-      entries: buildLeaderboard(rows, currentUserId, friendIds),
+      entries: buildLeaderboard(rows, currentUserId, relations),
       total: sums.length,
       standing,
     };
@@ -261,7 +283,10 @@ export const leaderboardRepository = {
       where: { userId: { in: users.map((u) => u.id) }, createdAt: { gte: since } },
       _sum: { amount: true },
     });
-    const earned = new Map(sums.map((row) => [row.userId, row._sum.amount ?? 0]));
+    // XP taken back from the console is a negative line, counted in the period
+    // it was taken back in, which can then add up below zero. The board says
+    // 0 for that period, as the public one leaves the player off it.
+    const earned = new Map(sums.map((row) => [row.userId, Math.max(0, row._sum.amount ?? 0)]));
     const ranked = users
       .map((user) => ({ ...user, xpTotal: earned.get(user.id) ?? 0 }))
       .sort((a, b) => b.xpTotal - a.xpTotal || byIdAscending(a.id, b.id));

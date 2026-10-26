@@ -12,6 +12,7 @@ import {
 } from "@cyberlearn/lib/story/incident";
 import { parseIncidentStory, type StoryEnding, type StoryVerdict } from "@cyberlearn/types";
 import { ACCENT, AMBER, MONO, RED } from "@cyberlearn/ui";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * <IncidentStory>: an incident told scene by scene, decided by the learner.
@@ -48,7 +49,7 @@ const small: React.CSSProperties = {
 
 const tag: React.CSSProperties = {
   fontFamily: MONO,
-  fontSize: 10,
+  fontSize: LAB_LABEL_SIZE,
   letterSpacing: "0.16em",
   textTransform: "uppercase",
 };
@@ -131,7 +132,7 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
           style={{
             marginLeft: "auto",
             fontFamily: MONO,
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             color: "var(--color-text-muted)",
           }}
         >
@@ -160,7 +161,11 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
               >
                 {step.scene.title ? (
                   <span
-                    style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: LAB_LABEL_SIZE,
+                      color: "var(--color-text-muted)",
+                    }}
                   >
                     {step.scene.title}
                   </span>
@@ -247,7 +252,7 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
                         <span
                           style={{
                             fontFamily: MONO,
-                            fontSize: 11,
+                            fontSize: LAB_LABEL_SIZE,
                             color: "var(--color-text-muted)",
                           }}
                         >

@@ -3,8 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { auditLogRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 
 // ── Per-type criterion data builders ──────────────────────────────────────────
 
@@ -152,14 +154,12 @@ export async function createBadgeAction(
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "badge.create",
-        targetType: "Badge",
-        targetId: badge.id,
-        metadata: { name: badge.name, rarity: badge.rarity },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.badge.create,
+      targetType: "Badge",
+      targetId: badge.id,
+      metadata: { name: badge.name, rarity: badge.rarity },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
@@ -169,7 +169,7 @@ export async function createBadgeAction(
     return { error: "Erreur lors de la création." };
   }
 
-  redirect("/badges");
+  redirect(withSavedNotice("/badges", "created"));
 }
 
 // ── Update ─────────────────────────────────────────────────────────────────────
@@ -224,14 +224,12 @@ export async function updateBadgeAction(
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "badge.update",
-        targetType: "Badge",
-        targetId: id.data,
-        metadata: { name: parsed.data.name },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.badge.update,
+      targetType: "Badge",
+      targetId: id.data,
+      metadata: { name: parsed.data.name },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
@@ -239,7 +237,7 @@ export async function updateBadgeAction(
     return { error: "Erreur lors de la mise à jour." };
   }
 
-  redirect("/badges");
+  redirect(withSavedNotice("/badges"));
 }
 
 // ── Toggle active ──────────────────────────────────────────────────────────────
@@ -259,18 +257,19 @@ export async function toggleBadgeActiveAction(formData: FormData): Promise<void>
   // Logged like every other change to a badge: switching one off stops it
   // being awarded, and the log is where the next person looks for who did.
   const isActive = !badge.isActive;
-  await prisma.$transaction([
-    prisma.badge.update({ where: { id: id.data }, data: { isActive } }),
-    prisma.auditLog.create({
-      data: {
+  await prisma.$transaction(async (tx) => {
+    await tx.badge.update({ where: { id: id.data }, data: { isActive } });
+    await auditLogRepository.record(
+      {
         actorId: admin.id,
-        action: "badge.active.update",
+        action: AUDIT_ACTION.badge.activeUpdate,
         targetType: "Badge",
         targetId: id.data,
         metadata: { isActive },
       },
-    }),
-  ]);
+      tx,
+    );
+  });
   revalidatePath("/badges");
 }
 
@@ -296,23 +295,24 @@ export async function deleteBadgeAction(formData: FormData): Promise<void> {
     return;
   }
 
-  await prisma.$transaction([
-    prisma.badge.delete({ where: { id: id.data } }),
-    prisma.auditLog.create({
-      data: {
+  await prisma.$transaction(async (tx) => {
+    await tx.badge.delete({ where: { id: id.data } });
+    await auditLogRepository.record(
+      {
         actorId: admin.id,
-        action: "badge.delete",
+        action: AUDIT_ACTION.badge.delete,
         targetType: "Badge",
         targetId: id.data,
         metadata: { name: badge.name },
       },
-    }),
-  ]);
+      tx,
+    );
+  });
 
   revalidatePath("/badges");
   // Back to the list: the edit page re-rendered by the revalidation found no
   // badge, called notFound(), and left the administrator on Next's own 404.
-  redirect("/badges");
+  redirect(withSavedNotice("/badges", "deleted"));
 }
 
 // Re-export type alias for backward compat

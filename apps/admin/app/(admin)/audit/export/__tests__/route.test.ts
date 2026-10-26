@@ -4,14 +4,13 @@ const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn(),
   count: vi.fn(),
   exportBatch: vi.fn(),
-  auditCreate: vi.fn(),
+  record: vi.fn(),
   loggerError: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
-  auditLogRepository: { count: m.count, exportBatch: m.exportBatch },
-  prisma: { auditLog: { create: m.auditCreate } },
+  auditLogRepository: { count: m.count, exportBatch: m.exportBatch, record: m.record },
 }));
 vi.mock("@cyberlearn/lib/logger", () => ({
   logger: { error: m.loggerError },
@@ -53,7 +52,7 @@ beforeEach(() => {
   m.requireAdminAction.mockResolvedValue({ id: ADMIN, email: "admin@x.fr", role: "ADMIN" });
   m.count.mockResolvedValue(2);
   m.exportBatch.mockResolvedValue([]);
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
 });
 
 describe("GET /audit/export", () => {
@@ -62,7 +61,7 @@ describe("GET /audit/export", () => {
     await expect(GET(request())).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
     expect(m.count).not.toHaveBeenCalled();
     expect(m.exportBatch).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("sends the redirect of a caller without a session on, untouched", async () => {
@@ -130,23 +129,22 @@ describe("GET /audit/export", () => {
     expect(response.status).toBe(413);
     expect(await response.text()).toMatch(/limité à 50[\s\u202f]000 lignes/u);
     expect(m.exportBatch).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("writes the export itself to the log, without the people it searched for", async () => {
     await GET(request("?actor=amelie%40lycee.fr&action=lesson.create&to=2026-10-07"));
-    expect(m.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorId: ADMIN,
-        action: "admin.audit.export",
-        targetType: "AuditLog",
-        metadata: { rows: 2, action: "lesson.create", to: "2026-10-07" },
-      },
+    expect(m.record).toHaveBeenCalledWith({
+      actorId: ADMIN,
+      action: "admin.audit.export",
+      targetType: "AuditLog",
+      targetId: null,
+      metadata: { rows: 2, action: "lesson.create", to: "2026-10-07" },
     });
   });
 
   it("still exports when that trace cannot be written", async () => {
-    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    m.record.mockRejectedValue(new Error("audit_logs unavailable"));
     const response = await GET(request());
     expect(response.status).toBe(200);
     expect(m.loggerError).toHaveBeenCalled();

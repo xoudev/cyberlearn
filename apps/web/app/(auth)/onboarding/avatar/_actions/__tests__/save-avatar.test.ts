@@ -5,8 +5,8 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: () => Promise.resolve({ auth: { getUser } }),
 }));
 
-const update = vi.fn();
-vi.mock("@cyberlearn/db", () => ({ prisma: { user: { update } } }));
+const setAvatarUrl = vi.fn();
+vi.mock("@cyberlearn/db", () => ({ userRepository: { setAvatarUrl } }));
 
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
@@ -24,7 +24,7 @@ function form(avatarUrl: string): FormData {
 
 beforeEach(() => {
   getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
-  update.mockReset();
+  setAvatarUrl.mockReset();
 });
 
 describe("saveAvatar", () => {
@@ -32,21 +32,18 @@ describe("saveAvatar", () => {
     await expect(saveAvatar({}, form("/avatars/av-3.svg"))).rejects.toThrow(
       "REDIRECT /onboarding/goals",
     );
-    expect(update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { avatarUrl: "/avatars/av-3.svg" },
-    });
+    expect(setAvatarUrl).toHaveBeenCalledWith("user-1", "/avatars/av-3.svg");
   });
 
   it("keeps the photo the profile already has, writing nothing", async () => {
     await expect(saveAvatar({}, form("current"))).rejects.toThrow("REDIRECT /onboarding/goals");
-    expect(update).not.toHaveBeenCalled();
+    expect(setAvatarUrl).not.toHaveBeenCalled();
   });
 
   it("refuses an avatar that is not one of the built-in ones", async () => {
     expect(await saveAvatar({}, form("https://evil.example/a.svg"))).toEqual({
       error: "Avatar invalide.",
     });
-    expect(update).not.toHaveBeenCalled();
+    expect(setAvatarUrl).not.toHaveBeenCalled();
   });
 });

@@ -19,8 +19,8 @@ import { prisma } from "../prisma.js";
  * findMembersVisibleTo read only the class's own flag, so it still served the
  * roster of a class whose whole intake had been put away.
  *
- * Exported because the web sidebar counts the same thing from its own query:
- * the door and the room behind it have to be deciding on the same rule.
+ * Exported for the few pages and console actions that still ask Prisma for a
+ * class themselves; the sidebar's count is hasLiveClass, here.
  */
 export const LIVE_CLASS_FILTER = {
   archivedAt: null,
@@ -306,6 +306,38 @@ export const classRepository = {
         _count: { select: { members: true } },
       },
     });
+  },
+
+  /**
+   * The live classes, by school then name, with what a picker prints beside
+   * each and how many members it has.
+   */
+  async listLiveOptions(): Promise<
+    {
+      id: string;
+      name: string;
+      promotion: string;
+      school: string;
+      members: number;
+    }[]
+  > {
+    const rows = await prisma.class.findMany({
+      where: LIVE_CLASS_FILTER,
+      orderBy: [{ promotion: { establishment: { name: "asc" } } }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        promotion: { select: { name: true, establishment: { select: { name: true } } } },
+        _count: { select: { members: true } },
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      promotion: row.promotion.name,
+      school: row.promotion.establishment.name,
+      members: row._count.members,
+    }));
   },
 
   async findById(classId: string) {
@@ -604,6 +636,27 @@ export const classRepository = {
   },
 
   /**
+   * Whether this account teaches a live class or is in one: what opens the
+   * classes page, and puts "Mes classes" in the site's sidebar.
+   *
+   * The entry follows the classes, not the role: a student put in a class had
+   * nowhere to see their classmates except their own profile, while the page
+   * listing them existed and was closed to them. Archived classes are left out
+   * for the reason the pages leave them out: a count that did not would put
+   * back the door with an empty room behind it. Same LIVE_CLASS_FILTER as
+   * findForTeacher and findForMember, so the door and the room agree.
+   */
+  async hasLiveClass(userId: string): Promise<boolean> {
+    const count = await prisma.class.count({
+      where: {
+        ...LIVE_CLASS_FILTER,
+        OR: [{ teachers: { some: { teacherId: userId } } }, { members: { some: { userId } } }],
+      },
+    });
+    return count > 0;
+  },
+
+  /**
    * Whether this account teaches at least one class, archived or not: what
    * makes somebody an author of lessons on the site (the editor's preview).
    */
@@ -719,6 +772,9 @@ export const classRepository = {
         url: true,
         releasedAt: true,
         afterCompletion: true,
+        // Taken down by the moderation: still the teacher's to read, and
+        // marked as out of the students' sight rather than silently missing.
+        isHidden: true,
         createdAt: true,
         assignment: { select: { lessonId: true, lesson: { select: { title: true } } } },
       },
@@ -740,6 +796,9 @@ export const classRepository = {
     const rows = await prisma.classResource.findMany({
       where: {
         classId: { in: classIds },
+        // A resource the moderation took down is out of the students' sight,
+        // as the policy on the table has it for the Data API.
+        isHidden: false,
         OR: [{ releasedAt: null }, { releasedAt: { lte: new Date() } }],
       },
       orderBy: { createdAt: "desc" },
@@ -1168,5 +1227,32 @@ export const classRepository = {
 
   async removeMember(classId: string, userId: string) {
     await prisma.classMember.deleteMany({ where: { classId, userId } });
+  },
+
+  /**
+   * Every class the account belongs to, oldest first, for its GDPR export
+   * (rgpd/build-export.ts): the class, its intake, its school, and when they
+   * joined. Archived ones are kept (no LIVE_CLASS_FILTER): the row is still
+   * held. Not the teachers, nor the other members, who are other people.
+   *
+   * Not cut: a membership is one row per class, put there by an administrator
+   * or an invitation, so the account's list is a handful.
+   */
+  async exportMembershipsFor(userId: string) {
+    return prisma.classMember.findMany({
+      where: { userId },
+      select: {
+        joinedAt: true,
+        class: {
+          select: {
+            name: true,
+            promotion: {
+              select: { name: true, establishment: { select: { name: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: "asc" },
+    });
   },
 };

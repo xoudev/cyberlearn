@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  addableHandle,
+  answerableSender,
   boardName,
+  FRIENDS_ACTIVITY_FAILED,
   friendsBoardNotice,
   friendsCountLabel,
   handleFrom,
@@ -12,6 +15,7 @@ import {
   profileEyebrow,
   profileRarity,
   profileTarget,
+  readFriendsActivity,
   removeLabel,
   shortDay,
   showsFriendMark,
@@ -84,10 +88,44 @@ describe("the friends board", () => {
     expect(showsFriendMark(named)).toBe(false);
   });
 
+  it("puts a chip beside a public row as the site does: not on the reader, a friend, nor a nameless row", () => {
+    const row = { isCurrentUser: false, username: "alex" };
+    expect(addableHandle({ ...row, friendship: "none" })).toBe("alex");
+    expect(addableHandle({ ...row, friendship: "incoming" })).toBe("alex");
+    // A request on its way keeps the chip, which says it was sent.
+    expect(addableHandle({ ...row, friendship: "outgoing" })).toBe("alex");
+    expect(addableHandle({ ...row, friendship: "friends" })).toBeNull();
+    expect(addableHandle({ ...row, friendship: "none", isCurrentUser: true })).toBeNull();
+    expect(addableHandle({ ...row, friendship: "none", username: null })).toBeNull();
+    // A private row, or a server from before the chip, says nothing.
+    expect(addableHandle({ ...row, friendship: null })).toBeNull();
+    expect(addableHandle(row)).toBeNull();
+  });
+
   it("names everybody: nobody on it is anonymous", () => {
     expect(boardName({ displayName: "Alex", username: "alex" })).toBe("Alex");
     expect(boardName({ displayName: "", username: "alex" })).toBe("@alex");
     expect(boardName({ displayName: null, username: null })).toBe("?");
+  });
+});
+
+describe("answering a request from its notification", () => {
+  const SAM = "22222222-2222-4222-8222-222222222222";
+  const request = { type: "FRIEND_REQUEST", metadata: { fromUserId: SAM } };
+
+  it("answers for a sender still waiting on the reader", () => {
+    expect(answerableSender(request, new Set([SAM]))).toBe(SAM);
+  });
+
+  it("offers nothing once the request is no longer waiting", () => {
+    expect(answerableSender(request, new Set())).toBeNull();
+  });
+
+  it("offers nothing on another notification, nor one without its sender", () => {
+    const waiting = new Set([SAM]);
+    expect(answerableSender({ ...request, type: "DUEL_INVITE" }, waiting)).toBeNull();
+    expect(answerableSender({ type: "FRIEND_REQUEST" }, waiting)).toBeNull();
+    expect(answerableSender({ type: "FRIEND_REQUEST", metadata: null }, waiting)).toBeNull();
   });
 });
 
@@ -184,5 +222,56 @@ describe("what a profile sends", () => {
       const date = new Date(2026, month, 12, 12);
       expect(longDay(date.toISOString())).toBe(full.format(date));
     }
+  });
+});
+
+describe("the friends' moments on the home tab", () => {
+  const item = {
+    key: "badge:alex:premier-pas",
+    kind: "badge",
+    at: "2026-10-21T08:30:00.000Z",
+    title: "Premier pas",
+    friend: {
+      id: "11111111-1111-4111-8111-111111111111",
+      name: "Alex",
+      username: "alex",
+      avatarSrc: null,
+      profileOpen: true,
+      duelOpen: false,
+    },
+  };
+
+  it("reads the moments the route sends", () => {
+    expect(readFriendsActivity({ ok: true, hasFriends: true, items: [item] })).toEqual({
+      ok: true,
+      activity: { hasFriends: true, items: [item] },
+    });
+    expect(readFriendsActivity({ ok: true, hasFriends: false, items: [] })).toEqual({
+      ok: true,
+      activity: { hasFriends: false, items: [] },
+    });
+  });
+
+  it("says the route's reason when it refuses, or a failed load when it gives none", () => {
+    expect(readFriendsActivity({ ok: false, error: "Non authentifié." })).toEqual({
+      ok: false,
+      error: "Non authentifié.",
+    });
+    expect(readFriendsActivity({ ok: false })).toEqual({
+      ok: false,
+      error: FRIENDS_ACTIVITY_FAILED,
+    });
+  });
+
+  it("fails the load of a reply without its items, which the tab would read the length of", () => {
+    expect(readFriendsActivity({ ok: true, hasFriends: true })).toEqual({
+      ok: false,
+      error: FRIENDS_ACTIVITY_FAILED,
+    });
+    expect(readFriendsActivity({ ok: true, hasFriends: true, items: [{ key: "x" }] }).ok).toBe(
+      false,
+    );
+    expect(readFriendsActivity(null).ok).toBe(false);
+    expect(readFriendsActivity("<html>502</html>").ok).toBe(false);
   });
 });

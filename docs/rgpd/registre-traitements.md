@@ -54,10 +54,10 @@
 | Finalité | Répondre aux demandes via formulaire de contact |
 | Base légale | Exécution mesures pré-contractuelles (Art. 6.1.b RGPD) |
 | Catégories de personnes | Visiteurs et utilisateurs |
-| Catégories de données | Email, objet, contenu des messages (demande et réponses) |
-| Destinataires | Supabase (`ContactTicket` + fil de messages), Resend (envoi de la réponse par mail) |
+| Catégories de données | Email, objet, contenu des messages (demande et réponses), notes internes de l'équipe sur la demande (jamais montrées au demandeur) |
+| Destinataires | Supabase (`ContactTicket` + fil de messages + `TicketNote`), Resend (envoi de la réponse par mail) |
 | Transferts hors UE | Resend US (CCT) |
-| Durée de conservation | 3 mois après résolution / 12 mois sans activité si non résolu, appliqués chaque nuit par `/api/cron/retention` (`packages/db/src/rgpd/retention.ts`), fil de messages compris ; l'appel d'un bannissement encore en vigueur est gardé tant qu'il dure, puisque c'est lui qui empêche un second appel |
+| Durée de conservation | 3 mois après résolution / 12 mois sans activité si non résolu, appliqués chaque nuit par `/api/cron/retention` (`packages/db/src/rgpd/retention.ts`), fil de messages et notes internes compris ; l'appel d'un bannissement encore en vigueur est gardé tant qu'il dure, puisque c'est lui qui empêche un second appel. À l'effacement du compte, la demande est anonymisée et ses notes internes supprimées (`packages/db/src/rgpd/delete-account.ts`) |
 | Mesures de sécurité | TLS 1.3, rate limiting, honeypot et seuil de temps de remplissage, RLS sur le fil |
 | Note | Aucune donnée ne part chez Atlassian, et plus aucune variable ne le suggère : les demandes vivent en base et la console y répond. |
 

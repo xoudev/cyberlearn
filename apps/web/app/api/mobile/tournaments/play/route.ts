@@ -48,6 +48,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       tournament: page.tournament,
       challenge: page.challenge,
       solved: page.solved,
+      disqualified: page.disqualified,
     };
     return NextResponse.json({ ok: true, challenge: view });
   }

@@ -1,24 +1,13 @@
 import crypto from "node:crypto";
-import matter from "gray-matter";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import type { ImportValidationResult, ImportValidationError } from "@cyberlearn/types";
+import { lessonFileRepository, type Prisma } from "@cyberlearn/db";
+import { checkLessonFile } from "./lesson-file-check";
 import {
-  importLessonMetadataSchema,
-  type ImportValidationResult,
-  type ImportValidationError,
-} from "@cyberlearn/types";
-import { prisma } from "@cyberlearn/db";
-
-// Tags / attributes that indicate script injection
-const INJECTION_PATTERNS = [
-  /<script[\s>]/i,
-  /<iframe[\s>]/i,
-  /<object[\s>]/i,
-  /<embed[\s>]/i,
-  /javascript:/i,
-  /data:text\/html/i,
-  /\bon[A-Z][a-zA-Z]*\s*=/, // inline event handlers (camelCase: onChange=, onClick=, …)
-  /dangerouslySetInnerHTML/i,
-];
+  fieldsOfFile,
+  prerequisiteLoop,
+  prerequisiteLoopMessage,
+  previewLessonUpdate,
+} from "./lesson-update.service";
 
 /** Batch awareness for multi-file imports. */
 export interface BatchValidationContext {
@@ -26,118 +15,17 @@ export interface BatchValidationContext {
   peerRefCodes: readonly string[];
 }
 
-/** Metadata as the import schema reads it off a lesson file's frontmatter. */
-export type LessonFileMetadata = NonNullable<ImportValidationResult["metadata"]>;
-
-export type LessonFileCheck =
-  | { ok: true; metadata: LessonFileMetadata; body: string; warnings: string[] }
-  | { ok: false; errors: ImportValidationError[]; warnings: string[] };
-
-/**
- * What a lesson file must pass whatever is done with it: the first three
- * layers of the import. Shared with the update from the repository, so a
- * lesson cannot reach the database by one door that the other would refuse.
- *
- * Layer 1 - Frontmatter parsing (gray-matter)
- * Layer 2 - Metadata Zod validation
- * Layer 3 - MDX body: injection check + dry-run compile
- */
-export async function checkLessonFile(fileContent: string): Promise<LessonFileCheck> {
-  const errors: ImportValidationError[] = [];
-  const warnings: string[] = [];
-
-  // ── Layer 1: Parse frontmatter ────────────────────────────────────────────
-  let parsed: matter.GrayMatterFile<string>;
-  try {
-    parsed = matter(fileContent);
-  } catch (e) {
-    return {
-      ok: false,
-      errors: [
-        { message: `Erreur de parsing YAML: ${e instanceof Error ? e.message : "inconnu"}` },
-      ],
-      warnings: [],
-    };
-  }
-
-  const body = parsed.content.trim();
-
-  // ── Layer 2: Zod metadata validation ─────────────────────────────────────
-  const metaParsed = importLessonMetadataSchema.safeParse(parsed.data);
-  if (!metaParsed.success) {
-    for (const issue of metaParsed.error.issues) {
-      errors.push({
-        field: issue.path.join("."),
-        message: issue.message,
-      });
-    }
-    return { ok: false, errors, warnings };
-  }
-
-  const metadata = metaParsed.data;
-
-  // ── Layer 3: Injection detection + MDX dry-run compile ───────────────────
-  // Strip fenced and inline code blocks so patterns like onChange= in code
-  // examples don't trigger false positives.
-  const bodyWithoutCode = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
-
-  for (const pattern of INJECTION_PATTERNS) {
-    const match = pattern.exec(bodyWithoutCode);
-    if (match) {
-      // Find the line number in the original body for the matched position
-      const matchIndexInStripped = match.index;
-      const snippet = bodyWithoutCode
-        .slice(Math.max(0, matchIndexInStripped - 40), matchIndexInStripped + 60)
-        .replace(/\n/g, " ")
-        .trim();
-
-      return {
-        ok: false,
-        errors: [
-          {
-            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) - contexte : "…${snippet}…"`,
-          },
-        ],
-        warnings,
-      };
-    }
-  }
-
-  // Word count warnings
-  const wordCount = body.split(/\s+/).filter(Boolean).length;
-  if (wordCount < 300) warnings.push(`Contenu court (${String(wordCount)} mots, recommandé: 300+)`);
-  if (wordCount > 5000) warnings.push(`Contenu long (${String(wordCount)} mots)`);
-
-  // Check for unflagged code fences
-  const codeFences = body.matchAll(/^```(?!\w)/gm);
-  const unflaggedCount = [...codeFences].length;
-  if (unflaggedCount > 0) {
-    warnings.push(
-      `${String(unflaggedCount)} bloc${unflaggedCount > 1 ? "s" : ""} de code sans langage précisé`,
-    );
-  }
-
-  // MDX dry-run: compiled *and* run, section by section, with the lesson
-  // page's own remark plugins. A compile alone was the check here, and it let
-  // through the two errors Sentry recorded on 22 September - `True` inside a
-  // prop compiles perfectly well and only fails when it runs.
-  const render = await checkLessonMdx(body);
-  if (!render.ok) {
-    return {
-      ok: false,
-      errors: [{ field: "contentMdx", message: describeLessonMdxProblem(render) }],
-      warnings,
-    };
-  }
-
-  return { ok: true, metadata, body, warnings };
-}
-
 /**
  * Four-layer validation pipeline for MDX lesson import: the file's own
  * checks (checkLessonFile), then
  *
- * Layer 4 - Business rules: refCode/slug uniqueness, prerequisites exist
+ * Layer 4 - Business rules: a slug another lesson has, prerequisites exist,
+ *           and for a lesson already in the database, none leads back to it
+ *
+ * A refCode already in the database is not a refusal: the file can update
+ * that lesson, and the result carries what it would change (`update`) for the
+ * admin to see before anything is written. The update keeps the lesson's
+ * slug, so only a new lesson needs its slug free.
  *
  * With a batch context, a prerequisite that is missing from the database but
  * declared by a sibling file downgrades to a warning: the batch import orders
@@ -154,30 +42,23 @@ export async function validateMdxContent(
   const warnings = [...file.warnings];
 
   // ── Layer 4: Business validation ─────────────────────────────────────────
-  const [existingRefCode, existingSlug] = await Promise.all([
-    prisma.lesson.findFirst({ where: { refCode: metadata.refCode }, select: { id: true } }),
-    prisma.lesson.findFirst({ where: { slug: metadata.slug }, select: { id: true } }),
+  const [existing, slugOwner] = await Promise.all([
+    lessonFileRepository.findByRefCode(metadata.refCode),
+    lessonFileRepository.findIdBySlug(metadata.slug),
   ]);
 
-  if (existingRefCode) {
-    errors.push({
-      field: "refCode",
-      message: `Conflit: une leçon avec ce refCode existe déjà (ID: ${existingRefCode.id}). Pour la remplacer par son fichier du dépôt : Leçons, « Synchroniser avec le dépôt ».`,
-    });
-  }
-
-  if (existingSlug) {
+  if (existing === null && slugOwner !== null) {
     errors.push({
       field: "slug",
-      message: `Conflit: une leçon avec ce slug existe déjà (ID: ${existingSlug.id})`,
+      message: `Conflit: une leçon avec ce slug existe déjà (ID: ${slugOwner})`,
     });
   }
 
+  const prereqLessons =
+    metadata.prerequisites.length > 0
+      ? await lessonFileRepository.findByRefCodesForLinks(metadata.prerequisites)
+      : [];
   if (metadata.prerequisites.length > 0) {
-    const prereqLessons = await prisma.lesson.findMany({
-      where: { refCode: { in: metadata.prerequisites } },
-      select: { refCode: true },
-    });
     const foundRefCodes = new Set(prereqLessons.map((l) => l.refCode));
     const peerRefCodes = new Set(batch?.peerRefCodes ?? []);
     for (const prereq of metadata.prerequisites) {
@@ -195,7 +76,28 @@ export async function validateMdxContent(
     }
   }
 
+  // A lesson already in the database can be required by others: its new
+  // prerequisites must not lead back to it. A new lesson cannot close a loop
+  // with the database, nothing in it requires a lesson it does not hold.
+  if (existing !== null && errors.length === 0) {
+    const loop = await prerequisiteLoop(
+      existing.id,
+      prereqLessons.map((l) => l.id),
+    );
+    if (loop !== null) {
+      errors.push({ field: "prerequisites", message: prerequisiteLoopMessage(loop) });
+    }
+  }
+
   if (errors.length > 0) return { valid: false, errors, warnings };
+
+  if (existing !== null) {
+    const update = await previewLessonUpdate(existing, {
+      slug: metadata.slug,
+      fields: fieldsOfFile(metadata, body),
+    });
+    return { valid: true, errors: [], warnings, metadata, body, update };
+  }
 
   return { valid: true, errors: [], warnings, metadata, body };
 }
@@ -207,52 +109,40 @@ export interface ImportResult {
 }
 
 /**
- * Atomically imports a validated MDX lesson into the database.
- * Creates the lesson in DRAFT status + prerequisite links.
+ * Atomically imports a validated MDX lesson into the database: the lesson in
+ * DRAFT status, its prerequisite links, its first version and its
+ * `lesson.import.success` audit row, in one transaction
+ * (lessonFileRepository.createFromFile). `auditMetadata` is what that row
+ * says of where the file came from.
  */
 export async function importValidatedLesson(
   metadata: Awaited<ReturnType<typeof validateMdxContent>>["metadata"] & NonNullable<unknown>,
   body: string,
   authorId: string,
+  // Prisma's JSON input type: what the audit row's column takes.
+  auditMetadata: Prisma.InputJsonObject,
 ): Promise<ImportResult> {
   const contentHash = crypto.createHash("sha256").update(body).digest("hex");
 
-  const lesson = await prisma.$transaction(async (tx) => {
-    const created = await tx.lesson.create({
-      data: {
-        refCode: metadata.refCode,
-        slug: metadata.slug,
-        title: metadata.title,
-        description: metadata.description,
-        category: metadata.category,
-        difficulty: metadata.difficulty,
-        estimatedMinutes: metadata.estimatedMinutes,
-        xpReward: metadata.xpReward,
-        coverImageUrl: metadata.coverImageUrl ?? null,
-        contentMdx: body,
-        status: "DRAFT",
-        authorId: authorId,
-      },
-    });
-
-    if (metadata.prerequisites.length > 0) {
-      const prereqLessons = await tx.lesson.findMany({
-        where: { refCode: { in: metadata.prerequisites } },
-        select: { id: true, refCode: true },
-      });
-
-      await tx.lessonPrerequisite.createMany({
-        data: prereqLessons.map((p) => ({
-          lessonId: created.id,
-          prerequisiteId: p.id,
-        })),
-      });
-    }
-
-    return created;
+  const lesson = await lessonFileRepository.createFromFile({
+    fields: {
+      refCode: metadata.refCode,
+      slug: metadata.slug,
+      title: metadata.title,
+      description: metadata.description,
+      category: metadata.category,
+      difficulty: metadata.difficulty,
+      estimatedMinutes: metadata.estimatedMinutes,
+      xpReward: metadata.xpReward,
+      coverImageUrl: metadata.coverImageUrl ?? null,
+      contentMdx: body,
+    },
+    actorId: authorId,
+    prerequisiteRefCodes: metadata.prerequisites,
+    auditMetadata,
   });
 
-  return { lessonId: lesson.id, refCode: lesson.refCode, contentHash };
+  return { lessonId: lesson.lessonId, refCode: lesson.refCode, contentHash };
 }
 
 // ── Batch ordering ────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { colors, fonts } from "@cyberlearn/tokens";
 import { HELD_FOR_REVIEW } from "@cyberlearn/lib/moderation/notice";
 import { PressableScale } from "@/components/anim";
 import { ActionChip } from "@/components/buttons";
+import { FriendMark } from "@/components/friends";
 import { Card, Text } from "@/components/ui";
 import { forumDate, replyCountLabel, type ForumTopicSummary } from "@/lib/forum";
 
@@ -58,10 +59,16 @@ export function TopicRow({
               {topic.preview}
             </Text>
           ) : null}
-          <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
-            {showCategory ? `${topic.categoryName} · ` : ""}
-            {topic.author?.name ?? "Compte supprimé"} · {forumDate(topic.lastPostAt)}
-          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+            <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+              {showCategory ? `${topic.categoryName} · ` : ""}
+              {topic.author?.name ?? "Compte supprimé"}
+            </Text>
+            {topic.author?.isFriend === true ? <FriendMark size={11} /> : null}
+            <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+              {` · ${forumDate(topic.lastPostAt)}`}
+            </Text>
+          </View>
         </View>
         <View style={{ alignItems: "center", minWidth: 44 }}>
           <Text

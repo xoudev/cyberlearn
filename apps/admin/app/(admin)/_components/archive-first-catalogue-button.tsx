@@ -4,7 +4,13 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { archiveFirstCatalogueAction } from "../_actions/catalogue-actions";
+
+/** What the archiving did, for its toast: "12 parcours et 40 leçons archivés." */
+function archivedNotice(paths: number, lessons: number): string {
+  return `${String(paths)} parcours et ${String(lessons)} leçon${lessons > 1 ? "s" : ""} archivés.`;
+}
 
 /** Archives the first catalogue's paths and lessons, after a confirmation. */
 export function ArchiveFirstCatalogueButton({
@@ -15,18 +21,22 @@ export function ArchiveFirstCatalogueButton({
   lessons: number;
 }): React.ReactElement | null {
   const router = useRouter();
-  const [step, setStep] = useState<"idle" | "confirm" | "running" | "failed">("idle");
+  const [step, setStep] = useState<"idle" | "confirm" | "running">("idle");
 
   if (paths === 0 && lessons === 0) return null;
 
+  // The button goes once there is nothing left to archive, so what it did is
+  // said in a toast, which outlives it. A failure leaves it in place to retry.
   const start = async (): Promise<void> => {
     setStep("running");
     try {
-      await archiveFirstCatalogueAction();
+      const archived = await archiveFirstCatalogueAction();
       setStep("idle");
+      toast.success(archivedNotice(archived.paths, archived.lessons));
       router.refresh();
     } catch {
-      setStep("failed");
+      setStep("idle");
+      toast.error("L'archivage a échoué. Réessaie.");
     }
   };
 
@@ -64,21 +74,14 @@ export function ArchiveFirstCatalogueButton({
   }
 
   return (
-    <>
-      <button
-        type="button"
-        className="a-btn a-btn--ghost"
-        onClick={() => {
-          setStep("confirm");
-        }}
-      >
-        Archiver l&apos;ancien catalogue ({paths + lessons})
-      </button>
-      {step === "failed" ? (
-        <span role="alert" className="a-sync-file">
-          L&apos;archivage a échoué. Réessaie.
-        </span>
-      ) : null}
-    </>
+    <button
+      type="button"
+      className="a-btn a-btn--ghost"
+      onClick={() => {
+        setStep("confirm");
+      }}
+    >
+      Archiver l&apos;ancien catalogue ({paths + lessons})
+    </button>
   );
 }

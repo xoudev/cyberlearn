@@ -4,8 +4,13 @@ import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import {
+  ALL_FRIENDS_IN_DUEL_NOTE,
+  canChallengeFriend,
+  challengeFriendMeta,
+  challengeTarget,
   duelActionLabel,
   duelRecordLines,
+  FRIEND_IN_DUEL_LABEL,
   isSettled,
   OUTCOME_LABEL,
   outcomeOf,
@@ -14,6 +19,7 @@ import {
 } from "@cyberlearn/lib/social/duel";
 import { PressableScale } from "@/components/anim";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import { Avatar } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
@@ -22,9 +28,11 @@ import { useCosmetics } from "@/lib/cosmetics";
 import {
   boardRecord,
   duelMeta,
+  duelProfileTarget,
   invitationMeta,
   outcomeTone,
   type DuelBoard,
+  type DuelFriend,
   type DuelSummary,
 } from "@/lib/duels";
 
@@ -46,9 +54,13 @@ const RULES: { title: string; text: string }[] = [
 
 /**
  * Duels: the site's /duels in the app. The reader's record, the rules, the
- * invitations waiting, a form to challenge a friend on a path (the friend
- * named in ?ami= picked), and every duel going on or settled, each with its
- * outcome in a word and its small print; a duel opens on its own screen.
+ * invitations waiting, a form to challenge a friend on a path (each friend
+ * with their avatar, handle and level, the one named in ?ami= picked, one
+ * already in a duel with the reader not offered but leading to that duel, as
+ * in the site's "Défier" window), and every duel going on or settled, each
+ * with its outcome in a word and its small print; a duel opens on its own
+ * screen. The site draws the form as a window over its page; here it stays
+ * on the screen, the native pattern.
  */
 export default function DuelsScreen(): React.JSX.Element {
   const { ami } = useLocalSearchParams<{ ami?: string }>();
@@ -101,11 +113,7 @@ function DuelsBody({
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    setFriend(
-      board.friends.some((f) => f.id === initialFriend)
-        ? initialFriend
-        : (board.friends[0]?.id ?? null),
-    );
+    setFriend(challengeTarget(board.friends, initialFriend));
     setPath(board.paths[0]?.id ?? null);
   }, [board, initialFriend]);
 
@@ -158,6 +166,7 @@ function DuelsBody({
                 <Text variant="micro" style={{ color: theme.accent }}>
                   Défi reçu
                 </Text>
+                <DuelPlayerName player={duel.other} />
                 <Text variant="bodySm" style={{ color: colors.textPrimary }}>
                   {`${duel.other.name} te défie sur « ${duel.pathTitle} »`}
                 </Text>
@@ -192,18 +201,24 @@ function DuelsBody({
         ) : (
           <Card style={{ gap: 10 }}>
             <Text variant="bodySm">Ami</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            <View style={{ gap: 6 }}>
               {board.friends.map((f) => (
-                <Choice
+                <FriendChoice
                   key={f.id}
-                  label={f.name}
+                  friend={f}
                   picked={friend === f.id}
-                  onPress={() => {
+                  onPick={() => {
                     setFriend(f.id);
                   }}
+                  onOpenDuel={open}
                 />
               ))}
             </View>
+            {board.friends.some(canChallengeFriend) ? null : (
+              <Text variant="bodySm" style={{ color: colors.textMuted }}>
+                {ALL_FRIENDS_IN_DUEL_NOTE}
+              </Text>
+            )}
             <Text variant="bodySm">Parcours</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {board.paths.map((p) => (
@@ -334,9 +349,43 @@ function SectionCount({ text }: { text: string }): React.JSX.Element {
 }
 
 /**
+ * The other player of an invitation: their picture and name, the name
+ * opening their profile when the server offered one (duelProfileTarget).
+ * Outside the card's buttons, which answer the duel.
+ */
+function DuelPlayerName({ player }: { player: DuelSummary["other"] }): React.JSX.Element {
+  const router = useRouter();
+  const target = duelProfileTarget(player);
+  const body = (
+    <>
+      <Avatar avatarUrl={player.avatarSrc ?? null} displayName={player.name} size={36} />
+      <Text variant="h3" numberOfLines={1} style={{ flexShrink: 1 }}>
+        {player.name}
+      </Text>
+    </>
+  );
+  if (target === null) {
+    return <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>{body}</View>;
+  }
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`Profil de ${player.name}`}
+      onPress={() => {
+        router.push({ pathname: "/u/[username]", params: { username: target } });
+      }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}
+    >
+      {body}
+    </Pressable>
+  );
+}
+
+/**
  * One of the reader's duels: the path and its outcome in a word, both
- * players face to face with their right answers, the small print, and what
- * opening it does.
+ * players face to face with their pictures and right answers, the small
+ * print, and what opening it does. The whole card opens the duel, whose
+ * screen opens the other's profile.
  */
 function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): React.JSX.Element {
   const { theme } = useCosmetics();
@@ -367,6 +416,11 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
           <Pill label={OUTCOME_LABEL[outcome]} color={tone} />
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Avatar
+            avatarUrl={duel.reader.avatarSrc ?? null}
+            displayName={duel.reader.name}
+            size={28}
+          />
           <Text variant="h3" style={{ flex: 1 }}>
             Toi
           </Text>
@@ -384,6 +438,11 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
           <Text variant="h3" numberOfLines={1} style={{ flex: 1, textAlign: "right" }}>
             {duel.other.name}
           </Text>
+          <Avatar
+            avatarUrl={duel.other.avatarSrc ?? null}
+            displayName={duel.other.name}
+            size={28}
+          />
         </View>
         <Text variant="mono" style={{ fontSize: 11, color: colors.textMuted }}>
           {duelMeta(duel)}
@@ -399,6 +458,76 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
         </Text>
       </Card>
     </PressableScale>
+  );
+}
+
+/**
+ * A friend in the challenge form, as a card of the site's "Défier" window:
+ * the avatar, the name, the handle and the level, picked like a radio button.
+ * A friend already in a duel with the reader cannot be picked: the row says
+ * so, and opens that duel.
+ */
+function FriendChoice({
+  friend,
+  picked,
+  onPick,
+  onOpenDuel,
+}: {
+  friend: DuelFriend;
+  picked: boolean;
+  onPick: () => void;
+  onOpenDuel: (duelId: string) => void;
+}): React.JSX.Element {
+  const { theme } = useCosmetics();
+  const meta = challengeFriendMeta(friend);
+  const duelId = canChallengeFriend(friend) ? null : friend.openDuelId;
+  return (
+    <Pressable
+      onPress={
+        duelId !== null
+          ? () => {
+              onOpenDuel(duelId);
+            }
+          : onPick
+      }
+      accessibilityRole={duelId !== null ? "link" : "radio"}
+      accessibilityState={duelId !== null ? undefined : { selected: picked }}
+      accessibilityLabel={
+        duelId !== null
+          ? `${friend.name}, ${meta}. ${FRIEND_IN_DUEL_LABEL} : voir le duel`
+          : `${friend.name}, ${meta}`
+      }
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        minHeight: 44,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderStyle: duelId !== null ? "dashed" : "solid",
+        borderColor: picked ? colors.accent : colors.borderDefault,
+      }}
+    >
+      <Avatar avatarUrl={friend.avatarSrc} displayName={friend.name} size={32} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text
+          variant="bodySm"
+          numberOfLines={1}
+          style={{ color: picked ? colors.accent : colors.textPrimary }}
+        >
+          {friend.name}
+        </Text>
+        <Text variant="mono" numberOfLines={1} style={{ fontSize: 10.5, color: colors.textMuted }}>
+          {meta}
+        </Text>
+        {duelId !== null ? (
+          <Text variant="mono" style={{ fontSize: 10.5, color: theme.accent }}>
+            {`${FRIEND_IN_DUEL_LABEL} · Voir le duel →`}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 

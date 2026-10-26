@@ -11,7 +11,9 @@
     "./layout.css": "./src/layout.css",
     "./brand-typeface": "./src/brand-typeface.ts",
     "./dialogs.css": "./src/dialogs.css",
-    "./mdx-editor": "./src/components/mdx-editor-panel.tsx"
+    "./skeleton.css": "./src/skeleton.css",
+    "./mdx-editor": "./src/components/mdx-editor-panel.tsx",
+    "./lesson-studio": "./src/components/lesson-studio/index.ts"
   },
   "scripts": {
     "build": "tsc",

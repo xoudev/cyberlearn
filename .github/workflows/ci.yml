@@ -234,6 +234,9 @@ jobs:
   # écrit" - which the import pipeline carried into the database and the lesson
   # page rendered as the last paragraph of the lesson. Nothing flagged it: it is
   # valid markdown. A grep costs nothing and is the only thing that would have.
+  # The console and the teachers' editor refuse the same pattern on save
+  # (packages/lib/src/mdx/authoring.ts), as they refuse an em dash (6c) and a
+  # diagram markdown rewrites (6a); this keeps content/ to it.
   lesson-markers:
     name: Lesson authoring markers
     runs-on: ubuntu-latest
@@ -243,7 +246,7 @@ jobs:
       - name: No authoring marker left in a lesson
         run: |
           if grep -rnE '^[[:space:]]*OK .*crit[[:space:]]*$' content/lessons --include='*.mdx'; then
-            echo "::error::A lesson ends on an authoring marker ("OK 03 écrit"). It renders to the reader. Run: node content-check.mjs --fix from apps/admin"
+            echo "::error::A lesson holds an authoring marker ("OK 03 écrit"). It renders to the reader. Run: pnpm --filter @cyberlearn/admin content:check --fix"
             exit 1
           fi
 
@@ -320,7 +323,17 @@ jobs:
 
       - name: Start Supabase local stack
         # Exclude services the integration tests don't need (saves image pulls).
-        run: supabase start -x studio,imgproxy,vector,logflare
+        # Three tries: a registry that refuses image pulls ("toomanyrequests", as
+        # on 22 October) for a minute is not a failed run. Signing in to ghcr.io
+        # did not lift that refusal; waiting did.
+        run: |
+          for attempt in 1 2 3; do
+            if supabase start -x studio,imgproxy,vector,logflare; then exit 0; fi
+            echo "supabase start failed (attempt $attempt of 3)"
+            supabase stop --no-backup || true
+            sleep $((attempt * 45))
+          done
+          exit 1
 
       - name: Export local stack env (exact names the tests read)
         run: |
@@ -350,7 +363,13 @@ jobs:
         # Gate 1: no public table without RLS. Allowlist: _prisma_migrations is
         # Prisma's own tracking table (no RLS by design; deliberately NOT
         # hardened, since enabling RLS on it could break migrate deploy itself).
-        # Gate 2: tripwire on the policy count: >= the 56 baseline policies.
+        # Gate 2: tripwire on the policy count: >= 55, the 56 baseline policies
+        # less the one that left with review_schedules_legacy. That table was
+        # dropped by 20261023120000_drop_review_schedules_legacy and carried
+        # exactly one policy at that point, the restrictive mfa_verified_session
+        # every table has (its review_select_own had gone with
+        # 20261018120000_retire_review_schedules), so the floor goes down by
+        # that one and no more.
         # Deliberately >=, not ==, so adding policies needs no CI edit; a DROP
         # that regresses the count below the baseline still fails loudly.
         # Both gates are fail-closed: `if ! [ ... ]` treats an empty/non-numeric
@@ -362,8 +381,8 @@ jobs:
             echo "::error::public tables without RLS: $EXPOSED"; exit 1
           fi
           COUNT=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -t -A -c "SELECT count(*) FROM pg_policies WHERE schemaname = 'public';")
-          if ! [ "$COUNT" -ge 56 ]; then
-            echo "::error::pg_policies count regressed or unreadable: '$COUNT' (expected >= 56)"; exit 1
+          if ! [ "$COUNT" -ge 55 ]; then
+            echo "::error::pg_policies count regressed or unreadable: '$COUNT' (expected >= 55)"; exit 1
           fi
           echo "RLS coverage OK: no exposed table, $COUNT policies"
 

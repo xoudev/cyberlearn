@@ -3,6 +3,8 @@ import Link from "next/link";
 import { BastionLogo } from "@/components/bastion-logo";
 import { PublicNavbar } from "@/app/_components/public-navbar";
 import { pageAddress } from "@/app/page-metadata";
+import { newRequestHref } from "@/app/(app)/support/_components/new-request-query";
+import { getActiveBan, getRequestUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { availabilityLine, installIntro } from "./availability";
 import "./download.css";
@@ -60,19 +62,25 @@ function ExternalAction({
   );
 }
 
-export default function DownloadPage(): React.JSX.Element {
+export default async function DownloadPage(): Promise<React.JSX.Element> {
+  const user = await getRequestUser();
+  const member = user !== null && (await getActiveBan()) === null;
+  const Content = member ? "div" : "main";
   const androidPlayUrl = env.NEXT_PUBLIC_ANDROID_PLAY_URL;
   const androidApkUrl = env.NEXT_PUBLIC_ANDROID_APK_URL;
   const iosAppStoreUrl = env.NEXT_PUBLIC_IOS_APP_STORE_URL;
   const androidAvailable = Boolean(androidPlayUrl ?? androidApkUrl);
   const stores = { android: androidAvailable, iosAppStore: Boolean(iosAppStoreUrl) };
-  const androidNotifyUrl =
-    "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
+  // A member asks from the site, answered at the account's address; a visitor
+  // from the public form.
+  const androidNotifyUrl = member
+    ? newRequestHref("android")
+    : "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
 
   return (
-    <div className="download-page">
-      <PublicNavbar />
-      <main id="contenu">
+    <div className={member ? "download-page download-page--member" : "download-page"}>
+      {member ? null : <PublicNavbar />}
+      <Content id="contenu">
         <section className="download-hero" aria-labelledby="download-title">
           <div className="download-hero__copy">
             <p className="download-kicker">CyberLearn / Application mobile</p>
@@ -95,9 +103,11 @@ export default function DownloadPage(): React.JSX.Element {
                   Être prévenu du lancement
                 </Link>
               )}
-              <Link href="/login" className="download-action download-action--secondary">
-                Ouvrir sur le web
-              </Link>
+              {member ? null : (
+                <Link href="/login" className="download-action download-action--secondary">
+                  Ouvrir sur le web
+                </Link>
+              )}
             </div>
             <p className="download-hero__availability">{availabilityLine(stores)}</p>
           </div>
@@ -241,7 +251,7 @@ export default function DownloadPage(): React.JSX.Element {
                   </li>
                 </ol>
               )}
-              {!iosAppStoreUrl ? (
+              {!iosAppStoreUrl && !member ? (
                 <div className="download-install__actions">
                   <Link href="/login" className="download-action">
                     <span>Ouvrir CyberLearn</span>
@@ -252,23 +262,25 @@ export default function DownloadPage(): React.JSX.Element {
             </article>
           </div>
         </section>
-      </main>
-      <footer className="download-footer">
-        <div>
-          <Link href="/" className="download-brand" aria-label="CyberLearn · accueil">
-            <BastionLogo size={28} />
-            <span>
-              CyberLearn<b>.</b>
-            </span>
-          </Link>
-          <nav aria-label="Liens de pied de page">
-            <Link href="/privacy">Confidentialité</Link>
-            <Link href="/legal">Mentions légales</Link>
-            <Link href="/contact">Contact</Link>
-          </nav>
-          <span>© {new Date().getFullYear()} CyberLearn</span>
-        </div>
-      </footer>
+      </Content>
+      {!member && (
+        <footer className="download-footer">
+          <div>
+            <Link href="/" className="download-brand" aria-label="CyberLearn · accueil">
+              <BastionLogo size={28} />
+              <span>
+                CyberLearn<b>.</b>
+              </span>
+            </Link>
+            <nav aria-label="Liens de pied de page">
+              <Link href="/privacy">Confidentialité</Link>
+              <Link href="/legal">Mentions légales</Link>
+              <Link href="/contact">Contact</Link>
+            </nav>
+            <span>© {new Date().getFullYear()} CyberLearn</span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

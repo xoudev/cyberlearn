@@ -46,7 +46,7 @@ describe("LessonCompleteModal", () => {
     expect(screen.getByText("Premier pas")).toBeTruthy();
     expect(screen.queryByText("+120")).toBeNull();
     expect(screen.getByRole("link", { name: "Voir mes badges" }).getAttribute("href")).toBe(
-      "/badges",
+      "/profile?tab=badges",
     );
   });
 });

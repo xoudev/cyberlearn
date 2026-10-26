@@ -10,7 +10,13 @@ import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
 import { fetchFriendsApi } from "@/lib/api";
-import { handleFrom, listCountLabel, type Friend, type FriendListKind } from "@/lib/friends";
+import {
+  handleFrom,
+  HANDLE_FORMAT_ERROR,
+  listCountLabel,
+  type Friend,
+  type FriendListKind,
+} from "@/lib/friends";
 
 const SECTIONS: { kind: FriendListKind; title: string }[] = [
   { kind: "incoming", title: "Demandes reçues" },
@@ -38,10 +44,7 @@ export default function Friends(): React.JSX.Element {
   };
 
   const empty =
-    data !== undefined &&
-    data.incoming.length === 0 &&
-    data.friends.length === 0 &&
-    data.outgoing.length === 0;
+    data?.incoming.length === 0 && data.friends.length === 0 && data.outgoing.length === 0;
 
   return (
     <Screen onRefresh={() => refetch()}>
@@ -120,7 +123,7 @@ function FindSomebody(): React.JSX.Element {
   const open = (): void => {
     const handle = handleFrom(value);
     if (handle === null) {
-      setError("Un pseudo compte de 3 à 32 caractères : lettres, chiffres et tirets.");
+      setError(HANDLE_FORMAT_ERROR);
       return;
     }
     setError(null);

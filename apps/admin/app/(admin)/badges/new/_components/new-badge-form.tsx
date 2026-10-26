@@ -76,7 +76,12 @@ function Field({
       {children}
       {error && (
         <p
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: DANGER, margin: "4px 0 0" }}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--a-danger)",
+            margin: "4px 0 0",
+          }}
         >
           {error}
         </p>
@@ -112,7 +117,14 @@ function CriterionFields({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {criterionError && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: DANGER, margin: 0 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--a-danger)",
+            margin: 0,
+          }}
+        >
           {criterionError}
         </p>
       )}
@@ -312,7 +324,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
             borderLeft: `3px solid ${DANGER}`,
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: DANGER,
+            color: "var(--a-danger)",
             marginBottom: 24,
           }}
         >

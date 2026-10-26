@@ -5,14 +5,13 @@
 // server's (../_actions/mock-exam-actions.ts).
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ANSWER_WORD,
   answerCounts,
   answerState,
-  bestScore,
   domainVerdict,
-  lastDomainScores,
   MOCK_LAST_MINUTE_MS,
   mockAdvice,
   mockClock,
@@ -28,16 +27,37 @@ import {
   type MockResult,
   type MockReviewItem,
 } from "@cyberlearn/lib/exam/mock";
-import { BastionLogo } from "@/components/bastion-logo";
-import "@/components/assessment-workspace.css";
+import {
+  clearDraft,
+  loadDraft,
+  restoreMockAnswers,
+  saveDraft,
+} from "@cyberlearn/lib/exam/answers-draft";
+import { Brackets } from "@/app/_components/corner-brackets";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
+import { addressWith } from "@/hooks/use-query-dialog";
+import { browserDraftStorage } from "@/lib/exam/answers-draft-storage";
 import type { MockOverview } from "@/lib/exam/mock-exam";
+import { SUBMIT_FAILED } from "@/lib/exam/network-messages";
 import { startMockExamAction, submitMockExamAction } from "../_actions/mock-exam-actions";
+import { MOCK_GO, mockWindowHref } from "./mock-address";
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconCheck,
+  IconChevron,
+  IconClock,
+  IconCross,
+  IconDash,
+  IconInfo,
+  IconPaper,
+  plural,
+} from "./mock-exam-bits";
 import "./mock-exam.css";
 
 type Stage =
-  | { kind: "intro" }
+  | { kind: "opening" }
   | {
       kind: "running";
       attemptId: string;
@@ -52,304 +72,84 @@ type Stage =
  */
 type Tone = "ok" | "mid" | "low" | "none";
 
-// Pinned to the site's zone, so the server and the browser print the same day.
-const dayFormat = new Intl.DateTimeFormat("fr-FR", {
-  day: "numeric",
-  month: "long",
-  timeZone: "Europe/Paris",
-});
-
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-function plural(n: number, word: string): string {
-  return n > 1 ? `${word}s` : word;
+/** Whether the address carries ?go=1, the window's "Commencer". */
+function startedByWindow(): boolean {
+  return new URLSearchParams(window.location.search).has(MOCK_GO);
 }
-
-// ── Icons (decorative: every one sits beside the words it illustrates) ──────
-
-function Svg({ children }: { children: React.ReactNode }): React.ReactElement {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="square"
-      strokeLinejoin="miter"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {children}
-    </svg>
-  );
-}
-
-const IconClock = (): React.ReactElement => (
-  <Svg>
-    <circle cx="8" cy="9" r="5.2" />
-    <path d="M8 6.6V9l1.8 1.3M6.2 2.5h3.6" />
-  </Svg>
-);
-const IconQuestion = (): React.ReactElement => (
-  <Svg>
-    <path d="M5.8 6a2.2 2.2 0 1 1 3.2 2c-.6.3-1 .8-1 1.5V10" />
-    <path d="M8 12.6v.4" />
-  </Svg>
-);
-const IconModules = (): React.ReactElement => (
-  <Svg>
-    <path d="M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z" />
-  </Svg>
-);
-const IconPaper = (): React.ReactElement => (
-  <Svg>
-    <path d="M3.5 1.8h6.2l2.8 2.8v9.6h-9zM5.8 7.5h4.4M5.8 10.2h4.4" />
-  </Svg>
-);
-const IconCheck = (): React.ReactElement => (
-  <Svg>
-    <path d="M3 8.5 6.5 12 13 4.5" />
-  </Svg>
-);
-const IconCross = (): React.ReactElement => (
-  <Svg>
-    <path d="m4 4 8 8M12 4l-8 8" />
-  </Svg>
-);
-const IconDash = (): React.ReactElement => (
-  <Svg>
-    <path d="M4 8h8" />
-  </Svg>
-);
-const IconArrowRight = (): React.ReactElement => (
-  <Svg>
-    <path d="M3 8h10M9 4l4 4-4 4" />
-  </Svg>
-);
-const IconArrowLeft = (): React.ReactElement => (
-  <Svg>
-    <path d="M13 8H3m4-4L3 8l4 4" />
-  </Svg>
-);
-const IconChevron = (): React.ReactElement => (
-  <Svg>
-    <path d="m6 3 5 5-5 5" />
-  </Svg>
-);
-const IconInfo = (): React.ReactElement => (
-  <Svg>
-    <circle cx="8" cy="8" r="6" />
-    <path d="M8 7.2v4M8 4.8v.2" />
-  </Svg>
-);
-
-// ── Intro ─────────────────────────────────────────────────────────────────
 
 /**
- * Before an attempt, framed like the final exam's intro: the path, what the
- * exam is and its three figures, the rules a practice run actually has, and
- * the way in; beside it, the modules it covers (with the last score of each,
- * once there is one) and the attempts already handed in.
+ * Takes ?go=1 off the address once the exam is under way: a reload, or the
+ * address bookmarked or shared, lands on the window on the path's page
+ * (next.config.ts redirects a page load without it) rather than drawing
+ * another paper. Through the History API, which Next follows without a
+ * request; the hand-in then posts to the address without it, which the
+ * redirect leaves alone.
  */
-function Intro({
+function leaveGo(): void {
+  if (!startedByWindow()) return;
+  window.history.replaceState(null, "", addressWith(window.location.href, MOCK_GO, null));
+}
+
+// ── Opening ───────────────────────────────────────────────────────────────
+
+/**
+ * Between the window's "Commencer" and the paper: the paper being drawn (or
+ * the attempt still running taken up again), or why it could not be, with
+ * the way to try again and the way back. Or, for a page brought back without
+ * ?go=1, the way to the window while the router takes the reader there.
+ */
+function Opening({
   overview,
   busy,
   error,
-  onStart,
+  leaving,
+  onRetry,
 }: {
   overview: MockOverview;
   busy: boolean;
   error: string | null;
-  onStart: () => void;
+  leaving: boolean;
+  onRetry: () => void;
 }): React.ReactElement {
-  const { history } = overview;
-  const lastByDomain = lastDomainScores(history);
-  const best = bestScore(history);
-  const moduleCount = overview.domains.length;
-
   return (
-    <section className="mkx-intro" aria-label="Examen blanc">
-      <header className="assessment-brand">
-        <BastionLogo size={36} />
-        <span>CyberLearn / Examen blanc</span>
-      </header>
-
-      <div className="mkx-intro__main">
-        <p className="mkx-eyebrow">T’entraîner avant l’examen</p>
-        <h1 className="pg-title">{overview.pathTitle}</h1>
-        <p className="pg-lede">
-          {String(overview.questionCount)} questions tirées des quiz du parcours, trois par module,
-          en {String(overview.timeLimitMinutes)} minutes. Comme à une certification, le score se lit
-          par module : chaque module dit ce qui est acquis et ce qui reste à revoir.
+    <section className="mkx-open" aria-label="Examen blanc">
+      <Brackets />
+      <p className="mkx-eyebrow">{"// Examen blanc"}</p>
+      <h1 className="pg-title">{overview.pathTitle}</h1>
+      {!overview.ready ? (
+        <p className="mkx-note">
+          Ce parcours n&apos;a pas encore assez de questions pour un examen blanc.
         </p>
-
-        <div className="assessment-departure">
-          <ul className="mkx-stats" aria-label="L'examen en chiffres">
-            <li className="mkx-stat">
-              <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-                <IconQuestion />
-              </span>
-              <span className="mkx-stat__val">{overview.questionCount}</span>
-              <span className="mkx-stat__lbl">Questions</span>
-            </li>
-            <li className="mkx-stat">
-              <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-                <IconClock />
-              </span>
-              <span className="mkx-stat__val">
-                {overview.timeLimitMinutes}
-                <small> min</small>
-              </span>
-              <span className="mkx-stat__lbl">Chrono</span>
-            </li>
-            <li className="mkx-stat">
-              <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-                <IconModules />
-              </span>
-              <span className="mkx-stat__val">{moduleCount}</span>
-              <span className="mkx-stat__lbl">{plural(moduleCount, "Module")}</span>
-            </li>
-          </ul>
-
-          <ul className="mkx-rules">
-            <li>
-              <span className="mkx-rules__k">Chrono</span>
-              <span>
-                Il part dès que tu commences et ne s&apos;arrête plus. À 00:00, ta copie est rendue
-                telle quelle.
-              </span>
-            </li>
-            <li>
-              <span className="mkx-rules__k">Verdict</span>
-              <span>
-                Chaque module reçoit le sien : acquis, à consolider ou à revoir, avec la correction
-                de chaque question.
-              </span>
-            </li>
-            <li>
-              <span className="mkx-rules__k">Sans enjeu</span>
-              <span>
-                C&apos;est un entraînement : ni certificat, ni XP, autant de fois que tu veux.
-              </span>
-            </li>
-          </ul>
-
-          {overview.ready && overview.running !== null ? (
-            <p className="mkx-live">
-              <span className="mkx-live__dot" aria-hidden="true" />
-              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant ne
-              sont pas gardées.
-            </p>
-          ) : null}
-          {error !== null ? (
-            <p role="alert" className="mkx-error">
-              {error}
-            </p>
-          ) : null}
-          {overview.ready ? null : (
-            <p className="mkx-note">
-              Ce parcours n&apos;a pas encore assez de questions pour un examen blanc.
-            </p>
-          )}
-
-          <div className="mkx-cta">
-            {overview.ready ? (
-              <button
-                type="button"
-                className="btn btn--accent btn--lg mkx-start"
-                onClick={onStart}
-                disabled={busy}
-              >
-                {overview.running !== null
-                  ? "Reprendre l'examen en cours"
-                  : "Commencer l'examen blanc"}
-                <IconArrowRight />
-              </button>
-            ) : null}
-            <Link href={`/paths/${overview.pathSlug}`} className="mkx-back">
-              <IconArrowLeft />
-              Retour au parcours
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="mkx-intro__side">
-        <div>
-          <div className="mkx-head">
-            <h2>
-              <span aria-hidden="true">{"// "}</span>
-              Les modules couverts
-            </h2>
-            <span className="mkx-head__meta">
-              {moduleCount} {plural(moduleCount, "module")}
-            </span>
-          </div>
-          {moduleCount > 0 ? (
-            <ul className="mkx-mods" aria-label="Les modules couverts">
-              {overview.domains.map((domain) => {
-                const last = lastByDomain.get(domain.domain);
-                return (
-                  <li key={domain.domain}>
-                    <span className="mkx-mods__name">{domain.domain}</span>
-                    <span className="mkx-mods__n">
-                      {String(domain.drawn)} question{domain.drawn > 1 ? "s" : ""}
-                    </span>
-                    {last !== undefined ? (
-                      <span className="mkx-mods__last" data-tone={verdictTone(last.percent)}>
-                        Dernier examen : {last.correct} / {last.total} ·{" "}
-                        {domainVerdict(last.percent)}
-                      </span>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mkx-empty">Aucun module de ce parcours n&apos;a encore de quiz.</p>
-          )}
-        </div>
-
-        <section aria-labelledby="mkx-hist-title">
-          <div className="mkx-head">
-            <h2 id="mkx-hist-title">
-              <span aria-hidden="true">{"// "}</span>
-              Tes examens blancs
-            </h2>
-            {best !== null ? (
-              <span className="mkx-head__meta">
-                {history.length} derniers · meilleur {best} %
-              </span>
-            ) : null}
-          </div>
-          {history.length > 0 ? (
-            <ol className="mkx-hist">
-              {history.map((attempt) => (
-                <li key={attempt.submittedAt} data-tone={verdictTone(attempt.score)}>
-                  <span className="mkx-hist__date">
-                    {dayFormat.format(new Date(attempt.submittedAt))}
-                  </span>
-                  <span className="mkx-meter" aria-hidden="true">
-                    <i style={{ width: `${String(attempt.score)}%` }} />
-                  </span>
-                  <span className="mkx-hist__score">
-                    {attempt.score} %
-                    {attempt.late ? <span className="mkx-hist__late">hors délai</span> : null}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="mkx-empty">
-              Aucun examen blanc rendu sur ce parcours pour l&apos;instant : tes scores
-              s&apos;afficheront ici.
-            </p>
-          )}
-        </section>
+      ) : error !== null ? (
+        <p role="alert" className="mkx-error">
+          {error}
+        </p>
+      ) : (
+        <p className="mkx-open__wait" role="status">
+          <span className="mkx-live__dot" aria-hidden="true" />
+          {leaving ? "Retour à la présentation de l'examen…" : "Préparation de ta copie…"}
+        </p>
+      )}
+      <div className="mkx-cta">
+        {overview.ready && error !== null ? (
+          <button
+            type="button"
+            className="btn btn--accent btn--lg mkx-start"
+            onClick={onRetry}
+            disabled={busy}
+          >
+            Réessayer
+            <IconArrowRight />
+          </button>
+        ) : null}
+        <Link href={`/paths/${overview.pathSlug}`} className="mkx-back">
+          <IconArrowLeft />
+          Retour au parcours
+        </Link>
       </div>
     </section>
   );
@@ -725,6 +525,8 @@ function Result({
 }): React.ReactElement {
   const first = new Set(weakestDomains(result.domains).map((d) => d.domain));
   const { wrong, blank } = answerCounts(result.review);
+  // The gauge's ring: a circle of radius 86 in a 200 box, filled to the score.
+  const ring = 2 * Math.PI * 86;
   // The focus lands on the heading at hand-in, past the gauge and the badge:
   // the heading says the score first, for whoever does not see them.
   const scoreSaid = `${String(result.score)} %, ${domainVerdict(result.score)}. `;
@@ -732,13 +534,22 @@ function Result({
   return (
     <section className="mkx-result" aria-label="Résultat de l'examen blanc">
       <div className="mkx-hero" data-tone={verdictTone(result.score)}>
-        <div className="assessment-score" aria-label="Score global">
-          <span>Ton résultat</span>
-          <strong>{result.score} %</strong>
-          <p>
-            {result.correct} / {result.total} réponses correctes
-          </p>
-          <span>Examen blanc · sans XP ni certificat</span>
+        <div className="mkx-gauge">
+          <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+            <circle className="mkx-gauge__track" cx="100" cy="100" r="86" />
+            <circle
+              className="mkx-gauge__fill"
+              cx="100"
+              cy="100"
+              r="86"
+              strokeDasharray={ring}
+              strokeDashoffset={ring * (1 - result.score / 100)}
+            />
+          </svg>
+          <div className="mkx-gauge__center">
+            <p className="mkx-gauge__pct">{result.score} %</p>
+            <p className="mkx-gauge__sub">Score global</p>
+          </div>
         </div>
 
         <div>
@@ -855,38 +666,62 @@ function Result({
 // ── The flow ──────────────────────────────────────────────────────────────
 
 /**
- * A mock exam, from the overview to the review: the modules it covers and
- * the attempts already made, then the questions with a countdown (handed in
- * by itself at zero), then the score by module, what to go back to, and each
- * question with its answer. The focus follows the stage, to the paper's name
- * when it opens and to the verdict when the copy is handed in.
+ * A mock exam, from the paper to the review: the questions with a countdown
+ * (handed in by itself at zero), then the score by module, what to go back
+ * to, and each question with its answer. What the exam covers and the
+ * attempts already made are shown before, in the window on the path's page
+ * (mock-exam-intro.tsx), whose "Commencer" leads here with ?go=1: the exam
+ * starts as the page opens, once. Without it, nothing starts and the reader
+ * goes to the window. The focus follows the stage, to the paper's name when
+ * it opens and to the verdict when the copy is handed in.
  */
 export function MockExamFlow({ overview }: { overview: MockOverview }): React.ReactElement {
-  const [stage, setStage] = useState<Stage>({ kind: "intro" });
+  const router = useRouter();
+  const [stage, setStage] = useState<Stage>({ kind: "opening" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(overview.ready);
+  const [leaving, setLeaving] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const submitting = useRef(false);
   // The hand-in at zero is tried once: if it fails, the buttons stay to try
   // again, rather than a request every second until the rate limit refuses.
   const autoSent = useRef(false);
+  // The start on opening is asked once, even when React runs the effect twice.
+  const opened = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const start = async (): Promise<void> => {
+  const start = useCallback(async (): Promise<void> => {
     setBusy(true);
     setError(null);
-    const started = await startMockExamAction(overview.pathId);
-    setBusy(false);
+    let started: Awaited<ReturnType<typeof startMockExamAction>>;
+    try {
+      started = await startMockExamAction(overview.pathId);
+    } catch {
+      // The call itself failed (the network, a deploy): nothing was drawn.
+      setBusy(false);
+      setError("Impossible de lancer l'examen pour l'instant. Réessaie dans un moment.");
+      return;
+    }
     if (!started.ok) {
+      setBusy(false);
       setError(started.error);
       return;
     }
-    setAnswers({});
+    // A paper taken up again after a reload gets back the answers it had.
+    // Only the ones that belong to it: the server refuses a copy with an
+    // answer to a question it does not have.
+    const kept = restoreMockAnswers(
+      await loadDraft(browserDraftStorage, "mock", started.attemptId),
+      started.questions,
+    );
+    setBusy(false);
+    leaveGo();
+    setAnswers(kept);
     submitting.current = false;
     autoSent.current = false;
     // From the moment it starts: the clock otherwise opens on the time the
-    // intro sat open, for its first second.
+    // request took, for its first second.
     setNow(Date.now());
     setStage({
       kind: "running",
@@ -894,21 +729,61 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
       deadline: new Date(started.startedAt).getTime() + started.timeLimitMinutes * 60_000,
       questions: started.questions,
     });
-  };
+  }, [overview.pathId]);
+
+  // The window's "Commencer" (or "Reprendre") led here: the exam starts now.
+  // Read from the address as the page opens, not from the server's props: Back
+  // or Forward to this page (?go=1 already off) restores it from the router's
+  // cache, with no request for the redirect to answer, and it must not draw a
+  // paper and start the clock without a click. It goes to the window instead,
+  // as a page load would.
+  useEffect(() => {
+    if (opened.current || !overview.ready) return;
+    opened.current = true;
+    if (!startedByWindow()) {
+      setLeaving(true);
+      router.replace(mockWindowHref(overview.pathSlug));
+      return;
+    }
+    void start();
+  }, [overview.ready, overview.pathSlug, router, start]);
 
   const submit = useCallback(async (): Promise<void> => {
     if (stage.kind !== "running" || submitting.current) return;
     submitting.current = true;
     setBusy(true);
     setError(null);
-    const handed = await submitMockExamAction(stage.attemptId, answers);
+    let handed: Awaited<ReturnType<typeof submitMockExamAction>>;
+    try {
+      handed = await submitMockExamAction(stage.attemptId, answers);
+    } catch {
+      // The call itself failed (the network, a deploy): the copy is not in,
+      // and the answers are all still here, and on this device. The paper used
+      // to stay on a disabled button for good, the clock running, and a reload
+      // brought the attempt back with a blank copy: the buttons are back, to
+      // try again by hand.
+      submitting.current = false;
+      setBusy(false);
+      setError(SUBMIT_FAILED);
+      return;
+    }
     setBusy(false);
     if (!handed.ok) {
       submitting.current = false;
       setError(handed.error);
       return;
     }
+    // The copy is in: no draft of it is kept.
+    void clearDraft(browserDraftStorage, "mock", stage.attemptId);
     setStage({ kind: "result", result: handed.result, late: handed.late });
+  }, [stage, answers]);
+
+  // The answers are kept on this device as they are given, so that a reload of
+  // the page takes the attempt up again with them instead of with a blank
+  // copy. Dropped once the copy is in.
+  useEffect(() => {
+    if (stage.kind !== "running" || Object.keys(answers).length === 0) return;
+    void saveDraft(browserDraftStorage, "mock", stage.attemptId, answers);
   }, [stage, answers]);
 
   // The clock: a tick a second while running, and the attempt handed in at zero.
@@ -927,9 +802,9 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
     void submit();
   }, [now, stage, submit]);
 
-  // The focus follows the stage: the intro's button is gone once it is pressed.
+  // The focus follows the stage: to the paper's name, then to the verdict.
   useEffect(() => {
-    if (stage.kind !== "intro") headingRef.current?.focus();
+    if (stage.kind !== "opening") headingRef.current?.focus();
   }, [stage.kind]);
 
   const parts = useMemo(
@@ -970,5 +845,13 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
     );
   }
 
-  return <Intro overview={overview} busy={busy} error={error} onStart={() => void start()} />;
+  return (
+    <Opening
+      overview={overview}
+      busy={busy}
+      error={error}
+      leaving={leaving}
+      onRetry={() => void start()}
+    />
+  );
 }

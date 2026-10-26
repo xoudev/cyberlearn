@@ -24,6 +24,10 @@ export async function tournamentViewAction(tournamentId: unknown): Promise<Tourn
 export async function submitTournamentFlagAction(input: unknown): Promise<TournamentFlagResult> {
   const user = await requireRequestUser();
   const result = await submitTournamentFlag(user.id, input);
-  if (result.ok && result.correct && !result.already) revalidatePath("/tournaments", "layout");
+  if (result.ok && result.correct && !result.already) {
+    revalidatePath("/tournaments", "layout");
+    // The list is the Tournois tab of the challenges (/challenges?tab=tournois).
+    revalidatePath("/challenges");
+  }
   return result;
 }

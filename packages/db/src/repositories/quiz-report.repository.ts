@@ -119,4 +119,20 @@ export const quizReportRepository = {
     });
     return count;
   },
+
+  /** Every report the account made on a quiz, oldest first, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.quizReport.findMany({
+      where: { userId },
+      select: {
+        quizId: true,
+        reason: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+        lesson: { select: { title: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  },
 };

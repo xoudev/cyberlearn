@@ -6,13 +6,29 @@ import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
 import { notificationAge } from "@cyberlearn/lib/social/notification-age";
+import {
+  friendRequestSender,
+  REQUEST_ANSWERED_LABEL,
+  REQUEST_GONE_LABEL,
+} from "@cyberlearn/lib/social/friendship";
 import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
+import {
+  announceRead,
+  markItemsRead,
+  onReadElsewhere,
+  unreadAfter,
+} from "@/lib/notifications/read-sync";
 import {
   getNotificationsAction,
   markNotificationReadAction,
   markAllNotificationsReadAction,
 } from "@/app/(app)/_actions/notification-actions";
+import {
+  acceptFriendRequestAction,
+  declineFriendRequestAction,
+  type FriendActionResult,
+} from "@/app/(app)/_actions/friend-actions";
 
 // Keyed on the enum rather than on string: a new NotificationType now fails to
 // compile until it has an icon, instead of reaching the panel with a blank
@@ -85,6 +101,10 @@ export function NotificationPanel({
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(initialUnreadCount);
   const [items, setItems] = useState<NotificationItem[]>([]);
+  // The senders whose request still waits on the reader: the friend requests
+  // whose notification can still be answered in place. Read with the list
+  // (getNotificationsAction checks each one against the table).
+  const [waiting, setWaiting] = useState<ReadonlySet<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   // What went wrong, said in the panel. An error thrown inside a transition
   // goes to the nearest error boundary, which for the navbar is the site's
@@ -93,8 +113,25 @@ export function NotificationPanel({
   const [isPending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // The rows as last drawn, for news from the history page to be weighed against.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useClickOutside(open, panelRef, buttonRef, setOpen);
+
+  // What the history page (/notifications) marks read, the badge and the rows
+  // follow: the navbar is not reloaded by a move between pages, and the count
+  // it was given would otherwise stay as it was.
+  useEffect(
+    () =>
+      onReadElsewhere("panel", (news) => {
+        setUnread((count) => unreadAfter(count, itemsRef.current, news));
+        setItems((prev) => markItemsRead(prev, news, new Date()));
+      }),
+    [],
+  );
 
   // A row is a link now, so following it is the router's job: a click moves
   // to the page without reloading the site, and one that points at the
@@ -114,6 +151,7 @@ export function NotificationPanel({
         const res = await getNotificationsAction();
         if (res.success && res.notifications) {
           setItems(res.notifications);
+          setWaiting(new Set(res.waitingSenders ?? []));
           setUnread(res.unreadCount ?? 0);
           setLoaded(true);
           return;
@@ -144,6 +182,9 @@ export function NotificationPanel({
           if (open) {
             const incoming = payload.new as NotificationItem;
             setItems((prev) => [incoming, ...prev]);
+            // A request that has just arrived is waiting by definition.
+            const sender = friendRequestSender(incoming);
+            if (sender !== null) setWaiting((prev) => new Set([...prev, sender]));
           } else {
             // Force reload next time panel opens
             setLoaded(false);
@@ -169,6 +210,7 @@ export function NotificationPanel({
       }
       setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)));
       setUnread((c) => Math.max(0, c - 1));
+      announceRead({ source: "panel", ids: [id] });
     });
   }, []);
 
@@ -184,6 +226,7 @@ export function NotificationPanel({
       }
       setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date() })));
       setUnread(0);
+      announceRead({ source: "panel", all: true });
     });
   }, []);
 
@@ -220,20 +263,7 @@ export function NotificationPanel({
 
       {/* Panel */}
       {open && (
-        <div
-          className="card chrome-notifications"
-          ref={panelRef}
-          style={{
-            position: "absolute",
-            top: "calc(100% + 10px)",
-            right: 0,
-            width: 360,
-            maxHeight: 480,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--color-border-default)",
-            overflowY: "auto",
-            zIndex: 1000,
-          }}
-        >
+        <div className="card notif-panel chrome-notifications" ref={panelRef}>
           {/* Header */}
           <div
             style={{
@@ -365,13 +395,117 @@ export function NotificationPanel({
                 <NotificationRow
                   key={item.id}
                   item={item}
+                  waiting={waiting}
                   onRead={handleMarkRead}
                   onFollow={close}
                 />
               ))}
             </div>
           )}
+
+          {/* The panel shows the last twenty: the rest are on the history. */}
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              padding: "10px 18px",
+              borderTop: "1px solid var(--color-border-subtle)",
+              background: "var(--color-bg-elevated)",
+              textAlign: "center",
+            }}
+          >
+            <Link
+              href="/notifications"
+              onClick={close}
+              className="link-action mono-label mono-label--xs"
+              style={{ color: "var(--color-info)" }}
+            >
+              Tout voir
+            </Link>
+          </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "Accepter" and "Refuser" under a friend request's notice, beside its link
+ * rather than inside it: a control inside a link is two controls in one.
+ * Refusing removes only a request still waiting (declineFriendRequestAction),
+ * never a friendship accepted elsewhere since the notice arrived. Once
+ * answered, the notice says how, and is read.
+ */
+function FriendRequestAnswer({
+  senderId,
+  onAnswered,
+}: {
+  senderId: string;
+  onAnswered: () => void;
+}): React.JSX.Element {
+  const [pending, start] = useTransition();
+  const [said, setSaid] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const answer = (accept: boolean): void => {
+    setError(null);
+    start(async () => {
+      let result: FriendActionResult;
+      try {
+        result = accept
+          ? await acceptFriendRequestAction(senderId)
+          : await declineFriendRequestAction(senderId);
+      } catch {
+        setError("Impossible pour l'instant. Réessaie dans un moment.");
+        return;
+      }
+      if (result.ok) {
+        setSaid(REQUEST_ANSWERED_LABEL[accept ? "accepted" : "declined"]);
+        onAnswered();
+      } else if (result.error === undefined || result.error === REQUEST_GONE_LABEL) {
+        // Answered from the friends panel or the profile, or taken back:
+        // nothing left to answer, so the buttons go.
+        setSaid(REQUEST_GONE_LABEL);
+        onAnswered();
+      } else {
+        setError(result.error);
+      }
+    });
+  };
+
+  if (said !== null) {
+    return (
+      <p className="notif-answer notif-answer--said" role="status">
+        {said}
+      </p>
+    );
+  }
+  return (
+    <div className="notif-answer" role="group" aria-label="Répondre à la demande d'ami">
+      <button
+        type="button"
+        className="btn btn--accent btn--sm"
+        disabled={pending}
+        onClick={() => {
+          answer(true);
+        }}
+      >
+        Accepter
+      </button>
+      <button
+        type="button"
+        className="btn btn--ghost btn--sm"
+        disabled={pending}
+        onClick={() => {
+          answer(false);
+        }}
+      >
+        Refuser
+      </button>
+      {error !== null && (
+        <span className="notif-answer-error" role="alert">
+          {error}
+        </span>
       )}
     </div>
   );
@@ -389,8 +523,41 @@ function isRouteHandler(href: string): boolean {
  *
  * It used to be a clickable <div>: no role, out of the tab order, deaf to
  * Enter, and following it reloaded the whole site.
+ *
+ * Exported for the history page (/notifications), which lists the same rows.
  */
-function NotificationRow({
+export function NotificationRow({
+  item,
+  waiting,
+  onRead,
+  onFollow,
+}: {
+  item: NotificationItem;
+  /** The senders whose request still waits on the reader. */
+  waiting: ReadonlySet<string>;
+  onRead: (id: string) => void;
+  onFollow: () => void;
+}): React.JSX.Element {
+  // A friend request still waiting is answered from the notice itself: its
+  // row and the two buttons under it, side by side in one item.
+  const sender = friendRequestSender(item);
+  const row = <NoticeRow item={item} onRead={onRead} onFollow={onFollow} />;
+  if (sender === null || !waiting.has(sender)) return row;
+  return (
+    <div className="notif-item">
+      {row}
+      <FriendRequestAnswer
+        senderId={sender}
+        onAnswered={() => {
+          if (!item.readAt) onRead(item.id);
+        }}
+      />
+    </div>
+  );
+}
+
+/** The notice itself: a link, a button, or text, as described above. */
+function NoticeRow({
   item,
   onRead,
   onFollow,

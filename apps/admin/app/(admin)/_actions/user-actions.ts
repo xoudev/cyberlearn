@@ -5,14 +5,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
+  auditLogRepository,
   banRepository,
   deleteAccount,
-  prisma,
   resetProgress,
   userRepository,
   UserRole,
   type ChangeRoleResult,
 } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { banExpiryFor, banTimeLeft, isBanDurationKey } from "@cyberlearn/lib";
 import { sendAccountDeletedEmail, sendBanNoticeEmail } from "@cyberlearn/email";
 import { LAST_ADMIN_REFUSAL, banRefusal, roleChangeRefusal } from "@/lib/account-guards";
@@ -122,10 +123,7 @@ export async function deleteUserAction(
 
   // Read before erasing: afterwards there is no address to write to and no name
   // to write to it with.
-  const target = await prisma.user.findUnique({
-    where: { id: parsed.data.userId },
-    select: { id: true, email: true, displayName: true, username: true, role: true },
-  });
+  const target = await userRepository.findConsoleTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
   if (target.email.toLowerCase() !== parsed.data.confirmEmail) {
@@ -151,7 +149,7 @@ export async function deleteUserAction(
       actorId: admin.id,
       // Distinct from the self-service action, so the audit log can tell apart
       // someone who left from someone who was removed.
-      action: "admin.user.deleted",
+      action: AUDIT_ACTION.user.deleted,
     });
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "deleteUserAction failed");
@@ -183,16 +181,14 @@ export async function deleteUserAction(
     // recorded where it can still be acted on rather than thrown away.
     emailFailed = true;
     logger.error({ scope: "admin", err: errorMessage(error) }, "account deletion notice failed");
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        actorHashedId: summary.hashedUserId,
-        action: "admin.user.deleted.notice_failed",
-        targetType: "user",
-        targetId: summary.hashedUserId,
-        anonymized: true,
-        metadata: { error: error instanceof Error ? error.message : String(error) },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      actorHashedId: summary.hashedUserId,
+      action: AUDIT_ACTION.user.deletionNoticeFailed,
+      targetType: "user",
+      targetId: summary.hashedUserId,
+      anonymized: true,
+      metadata: { error: error instanceof Error ? error.message : String(error) },
     });
   }
 
@@ -243,10 +239,7 @@ export async function banUserAction(
     return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
-  const target = await prisma.user.findUnique({
-    where: { id: parsed.data.userId },
-    select: { id: true, email: true, displayName: true, username: true, role: true },
-  });
+  const target = await userRepository.findConsoleTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
   // The same rule the moderation queue applies before its own sanction.
@@ -267,14 +260,12 @@ export async function banUserAction(
   });
   if (!issued.ok) return { error: "Ce compte est déjà banni." };
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "admin.user.banned",
-      targetType: "User",
-      targetId: target.id,
-      metadata: { expiresAt: expiresAt?.toISOString() ?? null, reason: parsed.data.reason },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.user.banned,
+    targetType: "User",
+    targetId: target.id,
+    metadata: { expiresAt: expiresAt?.toISOString() ?? null, reason: parsed.data.reason },
   });
 
   let emailFailed = false;
@@ -330,14 +321,12 @@ export async function liftBanAction(
   });
   if (!lifted) return { error: "Ce compte n'est pas banni." };
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "admin.user.ban_lifted",
-      targetType: "User",
-      targetId: parsed.data.userId,
-      metadata: { reason: reason === undefined || reason === "" ? null : reason },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.user.banLifted,
+    targetType: "User",
+    targetId: parsed.data.userId,
+    metadata: { reason: reason === undefined || reason === "" ? null : reason },
   });
 
   revalidatePath(`/users/${parsed.data.userId}`);
@@ -383,10 +372,7 @@ export async function resetProgressAction(
   const parsed = resetProgressSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Paramètres invalides." };
 
-  const target = await prisma.user.findUnique({
-    where: { id: parsed.data.userId },
-    select: { id: true, username: true, email: true },
-  });
+  const target = await userRepository.findConsoleTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
   // Accounts that have not finished onboarding have no handle yet; the address

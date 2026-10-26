@@ -3,37 +3,34 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { computeLevel, computeTier } from "@cyberlearn/lib";
-import { classRepository, userRepository, prisma } from "@cyberlearn/db";
+import { certificateRepository, classRepository, userRepository } from "@cyberlearn/db";
 import { BADGE_RARITY_LABELS, BADGE_RARITY_VAR, rarestOf } from "@cyberlearn/ui";
 import { publicProfileUrl } from "@cyberlearn/lib/social/portfolio";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { buildBadgeCollection } from "@/lib/badges/collection";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { AvatarView } from "@/components/avatar-view";
 import { CopyButton } from "@/components/copy-button";
 import { StreakCard } from "@/components/streak-card";
 import { TierBadge } from "@/components/tier-badge";
 import { ProfileProgress } from "@/components/profile-progress";
-import type { SerializedBadge } from "@/lib/badges/collection";
-import {
-  ProfileContent,
-  type SerializedLesson,
-  type SerializedCert,
-} from "./_components/profile-content";
+import { ProfileContent } from "./_components/profile-content";
+import { ActivityFeed, type SerializedLesson } from "./_components/activity-feed";
+import { BadgesCollection } from "./_components/badges-collection";
+import { CertificatesList } from "./_components/certificates-list";
 import "../../../components/profile-workspace.css";
 
 export const metadata: Metadata = { title: "Profil" };
 
 export default async function ProfilePage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
-  const [user, certs, classes] = await Promise.all([
-    userRepository.findProfile(authUser.id),
-    prisma.certificate.findMany({
-      where: { userId: authUser.id, revokedAt: null },
-      include: { path: { select: { title: true } } },
-      orderBy: { issuedAt: "desc" },
-      take: 10,
-    }),
+  const [{ collection, user }, certs, classes] = await Promise.all([
+    buildBadgeCollection(authUser.id).then(async (collection) => ({
+      collection,
+      user: await userRepository.findProfile(authUser.id),
+    })),
+    certificateRepository.listForUser(authUser.id),
     classRepository.findForMember(authUser.id),
   ]);
   if (!user) notFound();
@@ -45,22 +42,6 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
     user.createdAt,
   );
   const avatarRarity = rarestOf(user.badges.map((entry) => entry.badge.rarity));
-  const serializedBadges: SerializedBadge[] = user.badges.map((entry) => ({
-    id: entry.badge.id,
-    refCode: entry.badge.refCode,
-    earned: true,
-    progress: null,
-    name: entry.badge.name,
-    description: entry.badge.description,
-    iconUrl: entry.badge.iconUrl,
-    rarity: entry.badge.rarity,
-    criterionType: entry.badge.criterionType,
-    earnedDateStr: new Intl.DateTimeFormat("fr-FR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(entry.earnedAt),
-  }));
   const serializedLessons: SerializedLesson[] = user.lessonProgress.map((entry) => ({
     lessonId: entry.lessonId,
     slug: entry.lesson.slug,
@@ -73,17 +54,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         )
       : null,
   }));
-  const serializedCerts: SerializedCert[] = certs.map((cert) => ({
-    id: cert.id,
-    publicId: cert.publicId,
-    pathTitle: cert.path.title,
-    issuedDateStr: new Intl.DateTimeFormat("fr-FR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(cert.issuedAt),
-    sha256Hash: cert.sha256Hash,
-  }));
+  const completedLessonsCount = user.counts.lessons;
+  const certsCount = certs.filter((cert) => cert.revokedAt === null).length;
   const legendaryCount = user.badges.filter((entry) => entry.badge.rarity === "LEGENDARY").length;
   const isPublic = user.preferences?.publicProfile !== false;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
@@ -171,7 +143,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         </div>
         <div>
           <dt>Leçons terminées</dt>
-          <dd>{user.lessonProgress.length}</dd>
+          <dd>{completedLessonsCount}</dd>
         </div>
         <div>
           <dt>Badges obtenus</dt>
@@ -184,7 +156,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         </div>
         <div>
           <dt>Certificats délivrés</dt>
-          <dd>{certs.length}</dd>
+          <dd>{certsCount}</dd>
         </div>
       </dl>
       <section className="profile-calendar" aria-labelledby="profile-calendar-title">
@@ -195,9 +167,24 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         <StreakCard userId={authUser.id} year />
       </section>
       <ProfileContent
-        badges={serializedBadges}
-        lessons={serializedLessons}
-        certs={serializedCerts}
+        counts={{
+          activite: completedLessonsCount,
+          badges: `${String(collection.earnedCount)}/${String(collection.totalCount)}`,
+          certificats: certsCount,
+        }}
+        panels={{
+          activite: <ActivityFeed lessons={serializedLessons} total={completedLessonsCount} />,
+          badges: (
+            <BadgesCollection
+              groups={collection.groups}
+              earnedCount={collection.earnedCount}
+              totalCount={collection.totalCount}
+              rarityTotals={collection.rarityTotals}
+              rarityEarned={collection.rarityEarned}
+            />
+          ),
+          certificats: <CertificatesList certs={certs} />,
+        }}
       />
     </div>
   );

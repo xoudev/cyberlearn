@@ -1,5 +1,8 @@
+import { friendsActivityReplySchema } from "@cyberlearn/types";
 import type { DuelResultCounts, HeadToHead } from "@cyberlearn/lib/social/duel";
+import type { FriendActivityItem } from "@cyberlearn/lib/social/friend-activity";
 import {
+  friendRequestSender,
   UNFRIEND_DETAIL,
   unfriendQuestion,
   type FriendshipView,
@@ -21,6 +24,34 @@ import type { Category, Rarity } from "./db";
  */
 
 export type { FriendshipView } from "@cyberlearn/lib/social/friendship";
+export type { FriendActivityItem } from "@cyberlearn/lib/social/friend-activity";
+
+/** "Tes amis" on the home tab, as /api/mobile/friends/activity sends it. */
+export interface FriendsActivity {
+  /** False: the reader has no friend, and the home tab draws no section. */
+  hasFriends: boolean;
+  items: FriendActivityItem[];
+}
+
+/** Said when the friends' moments could not be loaded or their reply not read. */
+export const FRIENDS_ACTIVITY_FAILED = "Chargement impossible";
+
+/**
+ * /api/mobile/friends/activity's body read back: the moments, or why there
+ * are none. Never half a reply: the home tab reads `items.length`, which a
+ * body without `items` would make a crash rather than a missing section.
+ */
+export function readFriendsActivity(
+  body: unknown,
+): { ok: true; activity: FriendsActivity } | { ok: false; error: string } {
+  const parsed = friendsActivityReplySchema.safeParse(body);
+  if (!parsed.success) return { ok: false, error: FRIENDS_ACTIVITY_FAILED };
+  if (!parsed.data.ok) return { ok: false, error: parsed.data.error ?? FRIENDS_ACTIVITY_FAILED };
+  return {
+    ok: true,
+    activity: { hasFriends: parsed.data.hasFriends, items: parsed.data.items },
+  };
+}
 
 /** One person in a list, as /api/mobile/friends sends them. */
 export interface Friend {
@@ -34,6 +65,12 @@ export interface Friend {
   since: string;
   /** Whether the reader would be let into their profile (false: private, and not a friend). */
   profileOpen: boolean;
+  /**
+   * A duel still open between the reader and this friend: "Défier" waits for
+   * it to end. Absent from a server from before it, which reads as none (the
+   * duels screen still refuses a second duel).
+   */
+  duelOpen?: boolean;
 }
 
 export interface FriendLists {
@@ -246,6 +283,40 @@ export function showsFriendMark(entry: {
   );
 }
 
+/**
+ * The handle a public row's chip is about, or null when the row has none to
+ * show, as on the site (LeaderboardClient's addableHandle): the server says
+ * where the reader stands only on a named row that is not their own
+ * (`friendship`), and a friend already carries the mark. A request on its way
+ * keeps the chip, which says "Demande envoyée" instead of offering again. A
+ * server from before it sends nothing, which offers nothing.
+ */
+export function addableHandle(entry: {
+  isCurrentUser: boolean;
+  username: string | null;
+  friendship?: FriendshipView | null;
+}): string | null {
+  if (entry.isCurrentUser || entry.username === null) return null;
+  const view = entry.friendship ?? null;
+  if (view === null || view === "friends") return null;
+  return entry.username;
+}
+
+/**
+ * The person a friend request's notification can still be answered for, or
+ * null: a notification of another type, one from before the sender was
+ * written down, or a request no longer waiting on the reader (`waiting`:
+ * the senders of the friends screen's incoming list), answered from the
+ * friends screen or the site, or taken back.
+ */
+export function answerableSender(
+  notification: { type: string; metadata?: unknown },
+  waiting: ReadonlySet<string>,
+): string | null {
+  const sender = friendRequestSender(notification);
+  return sender !== null && waiting.has(sender) ? sender : null;
+}
+
 /** A board row's name: nobody is anonymous on the friends board. */
 export function boardName(entry: { displayName: string | null; username: string | null }): string {
   return entry.displayName || (entry.username ? `@${entry.username}` : "?");
@@ -307,15 +378,10 @@ export function longDay(iso: string): string {
 }
 
 /**
- * A handle typed to open somebody's profile: "@Alex " reads as "alex". Null
- * for anything a handle cannot be (3 to 32 lowercase letters, digits and
- * inner hyphens, the rule sign-up applies), so the screen says so rather than
- * asking the server about a name that cannot exist.
+ * A handle typed to open somebody's profile, read the way the site's friends
+ * panel reads it (@cyberlearn/lib/social/friendship).
  */
-export function handleFrom(input: string): string | null {
-  const handle = input.trim().replace(/^@/, "").toLowerCase();
-  return /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(handle) ? handle : null;
-}
+export { handleFrom, HANDLE_FORMAT_ERROR } from "@cyberlearn/lib/social/friendship";
 
 const RARITIES: readonly string[] = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
 const CATEGORIES: readonly string[] = ["DEV", "CYBERSEC", "NETWORK"];

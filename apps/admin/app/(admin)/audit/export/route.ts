@@ -1,4 +1,5 @@
-import { auditLogRepository, prisma } from "@cyberlearn/db";
+import { auditLogRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import {
   AUDIT_CSV_HEADER,
@@ -41,17 +42,16 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "admin.audit.export",
-        targetType: "AuditLog",
-        metadata: {
-          rows: total,
-          ...(params.action !== undefined ? { action: params.action } : {}),
-          ...(params.from !== undefined ? { from: params.from } : {}),
-          ...(params.to !== undefined ? { to: params.to } : {}),
-        },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.audit.export,
+      targetType: "AuditLog",
+      targetId: null,
+      metadata: {
+        rows: total,
+        ...(params.action !== undefined ? { action: params.action } : {}),
+        ...(params.from !== undefined ? { from: params.from } : {}),
+        ...(params.to !== undefined ? { to: params.to } : {}),
       },
     });
   } catch (error) {

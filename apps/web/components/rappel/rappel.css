@@ -1,0 +1,298 @@
+/* The review window (rappel-dialog.tsx): one question at a time, its
+   verdict, and the end. Square, like the rest of the site. */
+
+/* The window's body (.modal-shell__body, packages/ui) has no margin of its own:
+   its header and its action row hold 20px each side, and this is what puts the
+   pips, the question and the answers on the same line as them rather than
+   against the frame. */
+.rp {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 20px 20px;
+}
+
+.rp-quiet {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.rp-quiet p {
+  margin: 0 0 12px;
+}
+
+.rp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cosmetic-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms ease;
+}
+.rp-link:hover {
+  border-color: currentColor;
+}
+
+/* Where the reader is in today's few: a square a question. */
+.rp-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.rp-pip {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-border-default);
+}
+.rp-pip[data-state="right"] {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+.rp-pip[data-state="wrong"] {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+.rp-pip[data-state="current"] {
+  border-color: var(--cosmetic-accent);
+}
+.rp-pip[data-state="current"]::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: color-mix(in srgb, var(--cosmetic-accent) 55%, transparent);
+}
+
+/* The question */
+.rp-question__eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.rp-question__eyebrow span {
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--color-text-faint);
+}
+.rp-question__text {
+  margin: 0 0 18px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.rp-options {
+  display: grid;
+  gap: 8px;
+}
+.rp-option {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px 10px 10px;
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+  border-radius: 0;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+.rp-option:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  border-color: var(--cosmetic-accent);
+}
+.rp-option:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 2px;
+}
+.rp-option:disabled {
+  cursor: default;
+}
+.rp-option__key {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--color-border-default);
+}
+.rp-option__text {
+  overflow-wrap: anywhere;
+}
+.rp-option[data-state="right"] {
+  color: var(--color-text-primary);
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 9%, var(--color-bg-sunken));
+}
+.rp-option[data-state="right"] .rp-option__key {
+  color: var(--color-bg-base);
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+.rp-option[data-state="wrong"] {
+  color: var(--color-text-primary);
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-bg-sunken));
+}
+.rp-option[data-state="wrong"] .rp-option__key {
+  border-color: var(--color-danger);
+}
+.rp-option[data-state="idle"] {
+  opacity: 0.6;
+}
+
+/* The verdict */
+.rp-verdict {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--rp-tone) 45%, transparent);
+  background: color-mix(in srgb, var(--rp-tone) 7%, var(--color-bg-elevated));
+}
+.rp-verdict[data-correct="true"],
+.rp-end__row[data-correct="true"] {
+  --rp-tone: var(--color-success);
+}
+.rp-verdict[data-correct="false"],
+.rp-end__row[data-correct="false"] {
+  --rp-tone: var(--color-danger);
+}
+.rp-verdict__mark,
+.rp-end__mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--rp-tone);
+  border: 1px solid currentColor;
+}
+.rp-verdict__mark svg,
+.rp-end__mark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rp-verdict__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.rp-verdict__title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+.rp-verdict__why {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* The end */
+.rp-end {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.rp-end__head p {
+  margin: 0;
+}
+.rp-end__xp {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--cosmetic-accent);
+}
+.rp-end__score {
+  margin-top: 4px !important;
+  font-size: 16px;
+  color: var(--color-text-primary);
+}
+.rp-end__note {
+  margin-top: 6px !important;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.rp-end__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rp-end__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.rp-end__row p {
+  margin: 0;
+}
+.rp-end__lesson {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.rp-end__q {
+  margin: 2px 0 6px !important;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .rp-question__text {
+    font-size: 17px;
+  }
+  .rp-option {
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 10px;
+    padding: 9px 10px 9px 8px;
+  }
+  .rp-option__key {
+    width: 26px;
+    height: 26px;
+  }
+}

@@ -76,4 +76,34 @@ describe("LessonQA", () => {
     );
     expect(html.split('aria-label="Ami"').length - 1).toBe(1);
   });
+
+  it("lets the line under a question wrap, so the report button is not cut off at 375 px", () => {
+    // Name, date, count and "Signaler" do not fit one line on a phone, and the
+    // card clips what overflows: the button was the part that went.
+    const html = renderToStaticMarkup(
+      <LessonQA
+        lessonId="l1"
+        lessonSlug="lecon"
+        currentUserId="me"
+        friendIds={new Set()}
+        questions={[
+          {
+            id: "q1",
+            title: "Pourquoi ?",
+            content: "Je ne comprends pas.",
+            isResolved: false,
+            createdAt: new Date("2026-10-01T10:00:00Z"),
+            user: { id: STRANGER, displayName: "Sam", username: "sam", level: 2 },
+            _count: { answers: 0 },
+            answers: [],
+          },
+        ]}
+      />,
+    );
+
+    const footer =
+      /<div class="lesson-question__meta" style="([^"]*)">(?:(?!<div).)*Signaler/su.exec(html);
+    expect(footer?.[1]).toContain("flex-wrap:wrap");
+    expect(footer?.[1]).toContain("row-gap:8px");
+  });
 });

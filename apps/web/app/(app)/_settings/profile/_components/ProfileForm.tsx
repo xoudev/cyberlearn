@@ -96,8 +96,17 @@ export function ProfileForm({
   function handleCropped(blob: Blob): void {
     const fd = new FormData();
     fd.set("avatar", croppedBlobToFile(blob));
+    // A call that fails inside a transition goes to the nearest error boundary,
+    // the site's own, and replaces the page under the drawer. It is said in a
+    // toast instead, with the cropper left open to confirm again.
     startUpload(async () => {
-      const res = await uploadAvatarAction({}, fd);
+      let res: Awaited<ReturnType<typeof uploadAvatarAction>>;
+      try {
+        res = await uploadAvatarAction({}, fd);
+      } catch {
+        toast.error("Photo non envoyée, réessaie.");
+        return;
+      }
       setCropFile(null);
       if (res.ok) {
         toast.success("Photo importée");
@@ -130,7 +139,13 @@ export function ProfileForm({
     fd.set("bio", bio);
     fd.set("avatarUrl", avatar);
     startTransition(async () => {
-      const res = await updateProfileAction({}, fd);
+      let res: Awaited<ReturnType<typeof updateProfileAction>>;
+      try {
+        res = await updateProfileAction({}, fd);
+      } catch {
+        toast.error("Profil non enregistré, réessaie.");
+        return;
+      }
       if (res.success) {
         setSaved({ displayName, bio, avatar });
         toast.success("Profil enregistré");

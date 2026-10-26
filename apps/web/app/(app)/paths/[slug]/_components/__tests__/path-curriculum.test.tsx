@@ -19,6 +19,13 @@ vi.mock("next/link", () => ({
   ),
 }));
 const { PathCurriculum } = await import("../path-curriculum");
+vi.mock("@/components/rappel/rappel-button", () => ({
+  RappelButton: ({ children, title }: { children: React.ReactNode; title?: string }) => (
+    <button type="button" title={title}>
+      {children}
+    </button>
+  ),
+}));
 const lessons = ["Premiers repères", "Lire une requête", "Observer le réseau"].map(
   (title, index) => ({
     moduleId: null,

@@ -10,7 +10,9 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { SECTION_PARAM, sectionFromQuery } from "@cyberlearn/lib/revisions/passage";
+import { addressWith } from "@/hooks/use-query-dialog";
 import { StepperContext, type StepperContextType } from "./section-pane";
 import { completeLesson } from "../_actions/track-progress";
 import type { CompleteLessonResult } from "../_actions/track-progress";
@@ -23,6 +25,17 @@ import { LESSON_ARTICLE_CLASS } from "./lesson-article";
 interface ExerciseState {
   required: Map<number, Set<string>>;
   done: Map<number, Set<string>>;
+}
+
+/** The exercises already done when the lesson opens, held done for their sections. */
+function seedExerciseState(done: readonly { step: number; id: string }[]): ExerciseState {
+  const doneByStep = new Map<number, Set<string>>();
+  for (const { step, id } of done) {
+    const ids = doneByStep.get(step) ?? new Set<string>();
+    ids.add(id);
+    doneByStep.set(step, ids);
+  }
+  return { required: new Map<number, Set<string>>(), done: doneByStep };
 }
 
 type ExerciseAction =
@@ -63,6 +76,17 @@ function exerciseReducer(state: ExerciseState, action: ExerciseAction): Exercise
 
 // ── LessonStepper ─────────────────────────────────────────────────────────────
 
+/** The id the address's fragment names (`#quiz-q-1`), if any. */
+function hashTarget(): string | null {
+  const fragment = window.location.hash.slice(1);
+  if (fragment === "") return null;
+  try {
+    return decodeURIComponent(fragment);
+  } catch {
+    return fragment;
+  }
+}
+
 interface LessonStepperProps {
   children: ReactNode;
   lessonId: string;
@@ -76,6 +100,22 @@ interface LessonStepperProps {
    */
   reviewing?: boolean;
   sections: { text: string; id: string }[];
+  /**
+   * The section to open on, from 0: the one a "Revoir ce passage" link asks
+   * for (`?section=`), which the page passes only where every section may be
+   * opened already (a finished lesson, an administrator's preview). Read on
+   * the first render only: a passage asked for later, the lesson on screen,
+   * is read off the address.
+   */
+  initialStep?: number;
+  /**
+   * A lesson not finished opens where the reader stopped (lib/lessons/resume.ts):
+   * the sections they got through, marked done in the plan, and the exercises
+   * they already passed, held done so that their section is not shut again.
+   * Read on the first render only.
+   */
+  initialDoneSteps?: readonly number[];
+  initialExercisesDone?: readonly { step: number; id: string }[];
   /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
   planExtra?: ReactNode;
   /** The reader's note on the lesson, as saved. */
@@ -95,22 +135,29 @@ export function LessonStepper({
   isCompleted,
   reviewing = false,
   sections,
+  initialStep = 0,
+  initialDoneSteps = [],
+  initialExercisesDone = [],
   planExtra,
   note,
 }: LessonStepperProps): React.ReactElement {
   const totalSteps = Math.max(1, sections.length);
+  const firstStep = Math.min(Math.max(0, initialStep), totalSteps - 1);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(firstStep);
   const [doneSteps, setDoneSteps] = useState<ReadonlySet<number>>(() =>
-    isCompleted ? new Set(Array.from({ length: totalSteps }, (_el, i) => i)) : new Set<number>(),
+    isCompleted
+      ? new Set(Array.from({ length: totalSteps }, (_el, i) => i))
+      : new Set(initialDoneSteps.filter((step) => step < totalSteps)),
   );
   // The furthest section the reader has had on screen: going back from it
   // with "Précédente" leaves it open in the plan, where it used to shut.
-  const [furthestStep, setFurthestStep] = useState(0);
-  const [exerciseState, dispatchExercise] = useReducer(exerciseReducer, {
-    required: new Map<number, Set<string>>(),
-    done: new Map<number, Set<string>>(),
-  });
+  const [furthestStep, setFurthestStep] = useState(firstStep);
+  const [exerciseState, dispatchExercise] = useReducer(
+    exerciseReducer,
+    initialExercisesDone,
+    seedExerciseState,
+  );
   const exerciseStateRef = useRef(exerciseState);
   exerciseStateRef.current = exerciseState;
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
@@ -127,17 +174,48 @@ export function LessonStepper({
   // opening a lesson must not move the page.
   const articleRef = useRef<HTMLElement>(null);
   const shownStepRef = useRef(currentStep);
+  /** The element a passage asked for (below), brought into view instead of the section's top. */
+  const passageTargetRef = useRef<string | null>(null);
   useEffect(() => {
     if (shownStepRef.current === currentStep) return;
     shownStepRef.current = currentStep;
     const article = articleRef.current;
     if (!article) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    article.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    const targetId = passageTargetRef.current;
+    passageTargetRef.current = null;
+    const target = targetId === null ? null : document.getElementById(targetId);
+    (target ?? article).scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
     // Keyboard and screen-reader users start the new section too, not on a
     // button that is now far below them.
     article.focus({ preventScroll: true });
   }, [currentStep]);
+
+  // "Revoir ce passage" over the lesson already on screen (revisions/passage.ts):
+  // `?section=` asks for a section, `#quiz-<id>` for the question in it. The
+  // page opened on the section it asked for, but the reader may have moved
+  // on since, and the stepper keeps its own section. So the request is met
+  // here, then taken off the address: the same link followed again later
+  // changes the address again, and is heard again. Met only where every
+  // section may be opened already, as the page does.
+  const requestedSection = useSearchParams().get(SECTION_PARAM);
+  useEffect(() => {
+    if (requestedSection === null) return;
+    if (isCompleted || reviewing) {
+      const step = sectionFromQuery(requestedSection, totalSteps);
+      // On its section already, the question is in the page, and the
+      // navigation has brought it into view.
+      if (step !== shownStepRef.current) passageTargetRef.current = hashTarget();
+      setCurrentStep(step);
+      setFurthestStep((furthest) => Math.max(furthest, step));
+    }
+    // Through the History API, which Next follows without asking the server
+    // for the page again (hooks/use-query-dialog.ts).
+    window.history.replaceState(null, "", addressWith(window.location.href, SECTION_PARAM, null));
+  }, [requestedSection, isCompleted, reviewing, totalSteps]);
 
   // ── Stable exercise dispatchers ──────────────────────────────────────────────
 
@@ -196,8 +274,19 @@ export function LessonStepper({
     if (!canAdvance) return;
     if (isLastStep && !isCompleted && !reviewing) {
       setRefusal(null);
+      // A call that fails inside a transition goes to the nearest error
+      // boundary, the site's own, and the lesson just finished with it. It is
+      // said under the lesson instead. Finishing again is safe: if the server
+      // recorded the first one before the connection broke, it answers
+      // `alreadyCompleted` and the page is read again.
       startTransition(async () => {
-        const res = await completeLesson(lessonId);
+        let res: Awaited<ReturnType<typeof completeLesson>>;
+        try {
+          res = await completeLesson(lessonId);
+        } catch {
+          setRefusal("La leçon n'a pas pu être validée, réessaie.");
+          return;
+        }
         if (res.refusal !== null) {
           // The page reads the lesson again: a lock it did not know about,
           // say, shows as the locked lesson.

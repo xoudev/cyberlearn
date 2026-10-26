@@ -1,238 +1,87 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Pressable, View } from "react-native";
-import { colors } from "@cyberlearn/tokens";
-import {
-  REVIEW_GRADES,
-  outcomeOf,
-  reviewDueLabel,
-  reviewMinutes,
-  reviewOutcomeText,
-  reviewXpFor,
-  type ReviewOutcome,
-  type ReviewQuality,
-} from "@cyberlearn/lib/revisions/review-display";
-import { Rise } from "@/components/anim";
-import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import React, { useEffect, useRef } from "react";
+import { View } from "react-native";
+import { BackButton } from "@/components/buttons";
+import { RecallFlow, RecallHeader } from "@/components/recall-flow";
 import { Screen } from "@/components/screen";
-import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
-import { Card, SectionLabel, StatCell, Text } from "@/components/ui";
-import { gradeReviewApi } from "@/lib/api";
-import { CATEGORY_COLOR, CATEGORY_LABEL } from "@/lib/db";
-import { useRevisions } from "@/lib/queries";
-import { waitingText } from "@cyberlearn/lib/revisions/session";
-import { reviewSummary, splitReviews, type ReviewItem } from "@/lib/revisions";
+import { ErrorState, ListSkeleton } from "@/components/states";
+import { answerDailyRecallApi } from "@/lib/api";
+import { dailyRecallKey, useDailyRecall } from "@/lib/queries";
+import {
+  justHandedIn,
+  withVerdict,
+  type RecallResult,
+  type RecallVerdict,
+  type RecallView,
+} from "@/lib/rappel";
 import { useSession } from "@/lib/session";
 
 /**
- * Révisions: the site's /revisions. Lessons finished come back when they are
- * about to be forgotten (SM-2); the learner says how well they remembered, and
- * the server moves the next date and pays a tenth of the lesson's XP for a
- * recall. Honours the spacedRepetition switch like the site: off, the screen
- * says so and points to the settings, and the queue waits untouched.
+ * Révisions: the day's recall, the site's ?rappel=1 window. Six questions at
+ * most from the learner's finished lessons, drawn once a day by the site's
+ * service, each answer checked there with its explanation; the last one
+ * hands the recall in for 15 XP, once a day, counted for the streak. Opened
+ * from the home tab's card, the profile's "Révisions" and the daily reminder
+ * (lib/notification-links.ts). The route keeps its name, so the links of the
+ * older app versions and notifications still land here.
+ *
+ * Honours the spacedRepetition switch as the site does: the server answers
+ * "off", and the screen points to the settings.
  */
-
-const GRADE_COLOR: Record<ReviewOutcome, string> = {
-  forgot: colors.danger,
-  hard: colors.warning,
-  easy: colors.success,
-  mastered: colors.success,
-};
-
 export default function Revisions(): React.JSX.Element {
-  const router = useRouter();
-  const { session } = useSession();
-  const userId = session?.user.id;
-  const { data, isLoading, error, refetch } = useRevisions(userId);
-  const now = new Date();
-
-  return (
-    <Screen onRefresh={() => refetch()}>
-      <View style={{ marginBottom: 16 }}>
-        <BackButton />
-      </View>
-      <SectionLabel eyebrow="Session · SM-2" title="Révisions" />
-
-      {isLoading ? (
-        <ListSkeleton rows={3} />
-      ) : error || !data ? (
-        <ErrorState onRetry={() => void refetch()} code="REVISIONS_LOAD" />
-      ) : !data.enabled ? (
-        <Card style={{ gap: 10 }}>
-          <Text variant="h3">Les révisions sont coupées</Text>
-          <Text variant="body">
-            Tu as désactivé la répétition espacée. Rien n&apos;est perdu : ce que tu avais à réviser
-            t&apos;attend si tu la réactives.
-          </Text>
-          <GradientButton label="Ouvrir les réglages" onPress={() => router.push("/settings")} />
-        </Card>
-      ) : (
-        <RevisionsBody items={data.items} now={now} />
-      )}
-    </Screen>
-  );
-}
-
-function RevisionsBody({ items, now }: { items: ReviewItem[]; now: Date }): React.JSX.Element {
-  const { due, waiting, upcoming } = splitReviews(items, now);
-  const summary = reviewSummary(due);
-  const next = upcoming[0];
-  const waitingLine = waitingText(waiting);
-
-  return (
-    <View style={{ gap: 18 }}>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <StatCell value={summary.count} label="À réviser" accent={colors.accent} />
-        <StatCell value={`${String(summary.minutes)} min`} label="Environ" />
-        <StatCell value={`+${String(summary.xp)}`} label="XP max" />
-      </View>
-
-      {due.length === 0 ? (
-        <EmptyState
-          title="Rien à réviser aujourd'hui"
-          body={
-            next
-              ? `Prochaine révision : ${reviewDueLabel(new Date(next.nextReviewAt), now).text.toLowerCase()}, « ${next.title} ».`
-              : "Termine une leçon : elle reviendra ici au moment où tu risques de l'oublier."
-          }
-        />
-      ) : (
-        <View style={{ gap: 12 }}>
-          <Text variant="bodySm">
-            Relis la leçon si besoin, puis dis honnêtement comment tu l&apos;as retenue : c&apos;est
-            ce qui règle la prochaine date.
-          </Text>
-          {due.map((item, i) => (
-            <Rise key={item.scheduleId} index={i}>
-              <ReviewCard item={item} now={now} />
-            </Rise>
-          ))}
-          {waitingLine !== null ? (
-            <Text variant="mono" style={{ fontSize: 11 }}>
-              {waitingLine}
-            </Text>
-          ) : null}
-        </View>
-      )}
-
-      {upcoming.length > 0 ? (
-        <View style={{ gap: 8 }}>
-          <SectionLabel title="Ensuite" />
-          {upcoming.map((item) => (
-            <View
-              key={item.scheduleId}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                gap: 12,
-                paddingVertical: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.borderSubtle,
-              }}
-            >
-              <Text variant="body" style={{ flex: 1, color: colors.textPrimary }} numberOfLines={2}>
-                {item.title}
-              </Text>
-              <Text variant="mono" style={{ fontSize: 11 }}>
-                {reviewDueLabel(new Date(item.nextReviewAt), now).text}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function ReviewCard({ item, now }: { item: ReviewItem; now: Date }): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { session } = useSession();
-  const [sending, setSending] = useState(false);
-  const [done, setDone] = useState<{ outcome: ReviewOutcome; xp: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const cat = CATEGORY_COLOR[item.category];
-  const xp = reviewXpFor(item.xpReward);
+  const userId = session?.user.id;
+  const { data, isLoading, refetch } = useDailyRecall(userId);
 
-  async function grade(quality: ReviewQuality): Promise<void> {
-    if (sending || done) return;
-    setSending(true);
-    setError(null);
-    const reply = await gradeReviewApi(item.scheduleId, quality);
-    setSending(false);
-    if (reply.ok) {
-      setDone({ outcome: outcomeOf(quality, reply.mastered), xp: reply.reviewXp });
-      // XP and level show elsewhere; the queue itself is refetched on leaving.
-      void queryClient.invalidateQueries({ queryKey: ["dashboard", session?.user.id] });
-      void queryClient.invalidateQueries({ queryKey: ["profile", session?.user.id] });
-    } else {
-      setError(reply.error);
+  // Handed in, by the last answer here or read back after a refusal (its
+  // reply lost, or answered on the site): XP, level, streak and its weekly
+  // quest moved on the server, and the home tab does not refetch on focus.
+  const seen = useRef<RecallView | undefined>(undefined);
+  useEffect(() => {
+    if (justHandedIn(seen.current, data)) {
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["streak", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["quests", userId] });
     }
-  }
+    seen.current = data;
+  }, [data, queryClient, userId]);
+
+  const onAnswered = (verdict: RecallVerdict, result: RecallResult | null): void => {
+    // The home tab's card reads the same query: it says "fait aujourd'hui"
+    // as soon as the last answer hands the recall in.
+    queryClient.setQueryData<RecallView>(dailyRecallKey(userId), (old) =>
+      old === undefined ? old : withVerdict(old, verdict, result),
+    );
+  };
 
   return (
-    <Card accent={done ? GRADE_COLOR[done.outcome] : cat} style={{ gap: 10 }}>
-      <Text variant="micro" style={{ color: cat }}>
-        {CATEGORY_LABEL[item.category]} · {reviewDueLabel(new Date(item.nextReviewAt), now).text}
-      </Text>
-      <Text variant="h3">{item.title}</Text>
-      <Text variant="mono" style={{ fontSize: 11 }}>
-        ~{reviewMinutes(item.difficulty)} min · +{xp} XP si retenue
-      </Text>
+    <Screen>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton />
+      </View>
+      <RecallHeader mode="daily" view={data} />
 
-      {done ? (
-        <Text
-          variant="body"
-          accessibilityLiveRegion="polite"
-          style={{ color: GRADE_COLOR[done.outcome] }}
-        >
-          {reviewOutcomeText(done.outcome, done.xp)}
-        </Text>
+      {data !== undefined ? (
+        <RecallFlow
+          view={data}
+          answer={(question, selected) => answerDailyRecallApi(question.index, selected)}
+          reread={async () => {
+            await refetch();
+          }}
+          onAnswered={onAnswered}
+          onOpenSettings={() => {
+            router.push("/settings");
+          }}
+        />
+      ) : isLoading ? (
+        <ListSkeleton rows={3} />
       ) : (
-        <>
-          <View style={{ alignSelf: "flex-start" }}>
-            <ActionChip
-              label="Relire la leçon"
-              tone="neutral"
-              onPress={() =>
-                router.push({ pathname: "/lessons/[slug]", params: { slug: item.slug } })
-              }
-            />
-          </View>
-          <Text variant="bodySm">Comment tu l&apos;as retenue ?</Text>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {REVIEW_GRADES.map((g) => (
-              <Pressable
-                key={g.quality}
-                onPress={() => void grade(g.quality)}
-                disabled={sending}
-                accessibilityRole="button"
-                accessibilityLabel={`${g.label} : noter cette révision`}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  minHeight: 44,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: GRADE_COLOR[g.outcome],
-                  backgroundColor: pressed ? `${GRADE_COLOR[g.outcome]}22` : "transparent",
-                  opacity: sending ? 0.5 : 1,
-                })}
-              >
-                <Text variant="micro" style={{ color: GRADE_COLOR[g.outcome], letterSpacing: 1 }}>
-                  {g.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {error !== null ? (
-            <Text variant="bodySm" style={{ color: colors.danger }} accessibilityRole="alert">
-              {error}
-            </Text>
-          ) : null}
-        </>
+        <ErrorState onRetry={() => void refetch()} code="RAPPEL_LOAD" />
       )}
-    </Card>
+    </Screen>
   );
 }

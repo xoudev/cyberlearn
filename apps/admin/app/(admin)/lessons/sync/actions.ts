@@ -1,7 +1,12 @@
 "use server";
 
 import { z } from "zod";
-import { CHALLENGE_REF_CODE, lessonRefCodeSchema, pathRefCodeSchema } from "@cyberlearn/types";
+import {
+  CHALLENGE_REF_CODE,
+  lessonRefCodeSchema,
+  pathRefCodeSchema,
+  type ImportValidationError,
+} from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { applyLessonUpdate } from "@/lib/services/lesson-sync.service";
 import {
@@ -18,6 +23,11 @@ const inputSchema = z.object({
 });
 
 export type SyncActionResult = { ok: true } | { ok: false; message: string; details: string[] };
+
+/** A problem of a file as a line: one with a place already says where; a field is named. */
+function detailOf(e: ImportValidationError): string {
+  return e.line === undefined && e.field ? `${e.field} : ${e.message}` : e.message;
+}
 
 /**
  * Updates one lesson from its file in the repository.
@@ -37,13 +47,7 @@ export async function updateLessonFromRepositoryAction(input: {
 
   const result = await applyLessonUpdate(parsed.data.refCode, parsed.data.hash, admin.id);
   if (!result.ok) {
-    return {
-      ok: false,
-      message: result.message,
-      details: (result.errors ?? []).map((e) =>
-        e.field ? `${e.field} : ${e.message}` : e.message,
-      ),
-    };
+    return { ok: false, message: result.message, details: (result.errors ?? []).map(detailOf) };
   }
   return { ok: true };
 }
@@ -64,13 +68,7 @@ export async function importLessonFromRepositoryAction(input: {
 
   const result = await importLessonFromRepository(parsed.data.refCode, admin.id);
   if (!result.ok) {
-    return {
-      ok: false,
-      message: result.message,
-      details: (result.errors ?? []).map((e) =>
-        e.field ? `${e.field} : ${e.message}` : e.message,
-      ),
-    };
+    return { ok: false, message: result.message, details: (result.errors ?? []).map(detailOf) };
   }
   return { ok: true };
 }

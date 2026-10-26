@@ -6,6 +6,7 @@ import {
   NOTE_REPORT_REASON_LABELS,
 } from "@cyberlearn/lib/notes/report-reasons";
 import { EmptyState, GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
+import { NOTES_HEADER } from "../_components/moderation-head";
 import { resolveNoteReportsAction } from "./actions";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -103,8 +104,8 @@ export default async function NoteReportsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Sécurité" }, { label: "Modération", href: "/moderation" }]}
-        title="Notes signalées"
+        crumbs={NOTES_HEADER.crumbs}
+        title={NOTES_HEADER.title}
         description={
           notes.length === 0
             ? "Les notes qu'un destinataire signale arrivent ici, avec la raison et son commentaire."

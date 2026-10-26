@@ -16,6 +16,7 @@ import {
   PythonStatusNotice,
   usePythonRuntimeState,
 } from "./python-status";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 
 /** A test once it has been through parseChallengeTests: both fields are text. */
 export type TestCase = ChallengeTestCase;
@@ -73,7 +74,7 @@ function ChallengeMisconfigured({
       <div
         style={{
           fontFamily: "var(--font-mono, monospace)",
-          fontSize: 10,
+          fontSize: LAB_LABEL_SIZE,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           color: "var(--color-warning)",
@@ -175,13 +176,15 @@ function PythonChallengeBody({
         position: "relative",
       }}
     >
-      {/* Header */}
+      {/* Header: the title and the badge share a line where they fit. */}
       <div
         className="lesson-practice__head"
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: 8,
           padding: "12px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
           background: "var(--color-bg-elevated)",
@@ -190,7 +193,7 @@ function PythonChallengeBody({
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             color: "var(--color-text-secondary)",
@@ -213,7 +216,7 @@ function PythonChallengeBody({
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 9,
+            fontSize: LAB_LABEL_SIZE,
             fontWeight: 700,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
@@ -250,67 +253,71 @@ function PythonChallengeBody({
         </div>
       )}
 
-      {/* Monaco editor or textarea fallback */}
-      {editorLoaded && MonacoEditor ? (
-        <MonacoEditor
-          // Remounted when a draft is restored or reset: the editor is
-          // uncontrolled, and only reads its value when it mounts.
-          key={revision}
-          height="240px"
-          language="python"
-          defaultValue={code}
-          onChange={(v) => {
-            setCode(v ?? "");
-          }}
-          theme={LESSON_EDITOR_THEME}
-          beforeMount={handleBeforeMount}
-          options={{
-            fontSize: 13,
-            fontFamily: "JetBrains Mono, monospace",
-            minimap: { enabled: false },
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            wordWrap: "off",
-            padding: { top: 12, bottom: 12 },
-            overviewRulerLanes: 0,
-            overviewRulerBorder: false,
-            hideCursorInOverviewRuler: true,
-            renderLineHighlight: "none",
-            glyphMargin: false,
-            automaticLayout: true,
-            fixedOverflowWidgets: true,
-            scrollbar: {
-              vertical: "hidden",
-              horizontal: "auto",
-              useShadows: false,
-              verticalScrollbarSize: 0,
-              alwaysConsumeMouseWheel: false,
-            },
-          }}
-        />
-      ) : (
-        <textarea
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-          }}
-          style={{
-            display: "block",
-            width: "100%",
-            height: 240,
-            background: "var(--color-bg-elevated)",
-            border: "none",
-            color: "var(--color-text-secondary)",
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: 13,
-            lineHeight: 1.7,
-            padding: "12px 20px",
-            resize: "vertical",
-            outline: "none",
-          }}
-          spellCheck={false}
-        />
-      )}
+      {/* Monaco editor or textarea fallback, in a box whose height follows
+          the block's width (globals.css, .python-challenge__editor). The
+          editor fills it and scrolls inside it, with its own scrollbar. */}
+      <div className="python-challenge__editor">
+        {editorLoaded && MonacoEditor ? (
+          <MonacoEditor
+            // Remounted when a draft is restored or reset: the editor is
+            // uncontrolled, and only reads its value when it mounts.
+            key={revision}
+            height="100%"
+            language="python"
+            defaultValue={code}
+            onChange={(v) => {
+              setCode(v ?? "");
+            }}
+            theme={LESSON_EDITOR_THEME}
+            beforeMount={handleBeforeMount}
+            options={{
+              fontSize: 13,
+              fontFamily: "JetBrains Mono, monospace",
+              minimap: { enabled: false },
+              lineNumbers: "on",
+              scrollBeyondLastLine: false,
+              wordWrap: "off",
+              padding: { top: 12, bottom: 12 },
+              overviewRulerLanes: 0,
+              overviewRulerBorder: false,
+              hideCursorInOverviewRuler: true,
+              renderLineHighlight: "none",
+              glyphMargin: false,
+              automaticLayout: true,
+              fixedOverflowWidgets: true,
+              scrollbar: {
+                vertical: "auto",
+                horizontal: "auto",
+                useShadows: false,
+                verticalScrollbarSize: 10,
+                alwaysConsumeMouseWheel: false,
+              },
+            }}
+          />
+        ) : (
+          <textarea
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              background: "var(--color-bg-elevated)",
+              border: "none",
+              color: "var(--color-text-secondary)",
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: 13,
+              lineHeight: 1.7,
+              padding: "12px 20px",
+              resize: "none",
+              outline: "none",
+            }}
+            spellCheck={false}
+          />
+        )}
+      </div>
 
       {/* Action bar */}
       <div
@@ -318,6 +325,7 @@ function PythonChallengeBody({
         style={{
           display: "flex",
           alignItems: "stretch",
+          flexWrap: "wrap",
           borderTop: "1px solid var(--color-border-subtle)",
           background: "var(--color-bg-elevated)",
         }}
@@ -341,7 +349,11 @@ function PythonChallengeBody({
               ⟳
             </span>
           ) : (
-            <span style={{ fontSize: 9, lineHeight: 1 }}>▶</span>
+            // The glyph is drawn at three quarters of the label it leads, as
+            // it was: an icon, not text to read.
+            <span aria-hidden="true" style={{ fontSize: "0.75em", lineHeight: 1 }}>
+              ▶
+            </span>
           )}
           {running
             ? runtimeState === "loading"
@@ -350,13 +362,16 @@ function PythonChallengeBody({
             : "Lancer les tests"}
         </button>
 
+        {/* Beside the button where there is room, under it on a phone. */}
         <div
           style={{
-            flex: 1,
+            flex: "1 1 240px",
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 16px",
+            gap: "6px 14px",
+            padding: "6px 16px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -376,7 +391,7 @@ function PythonChallengeBody({
                 <span
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
+                    fontSize: LAB_LABEL_SIZE,
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
                     color: allPassed ? "var(--cosmetic-accent)" : "var(--color-category-cybersec)",
@@ -390,7 +405,7 @@ function PythonChallengeBody({
               <span
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 10,
+                  fontSize: LAB_LABEL_SIZE,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
                   color: "var(--color-text-faint)",
@@ -403,7 +418,7 @@ function PythonChallengeBody({
               <span
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 10,
+                  fontSize: LAB_LABEL_SIZE,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
                   color: "var(--cosmetic-accent)",
@@ -424,7 +439,7 @@ function PythonChallengeBody({
             <span
               style={{
                 fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
+                fontSize: LAB_LABEL_SIZE,
                 letterSpacing: "0.1em",
                 color: "var(--color-text-faint)",
               }}
@@ -476,7 +491,7 @@ function PythonChallengeBody({
                 <span
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 11,
+                    fontSize: LAB_LABEL_SIZE,
                     fontWeight: 700,
                     color: result.passed
                       ? "var(--cosmetic-accent)"
@@ -492,7 +507,7 @@ function PythonChallengeBody({
                   <div
                     style={{
                       fontFamily: "var(--font-mono, monospace)",
-                      fontSize: 11,
+                      fontSize: LAB_MONO_SIZE,
                       marginBottom: !result.passed ? 4 : 0,
                       overflowWrap: "anywhere",
                     }}
@@ -504,7 +519,7 @@ function PythonChallengeBody({
                     <div
                       style={{
                         fontFamily: "var(--font-mono, monospace)",
-                        fontSize: 11,
+                        fontSize: LAB_MONO_SIZE,
                         lineHeight: 1.5,
                         color: "var(--color-category-cybersec)",
                         whiteSpace: "pre-wrap",
@@ -519,7 +534,7 @@ function PythonChallengeBody({
                     <div
                       style={{
                         fontFamily: "var(--font-mono, monospace)",
-                        fontSize: 11,
+                        fontSize: LAB_MONO_SIZE,
                         lineHeight: 1.5,
                         color: "var(--color-text-muted)",
                         whiteSpace: "pre-wrap",
@@ -537,7 +552,7 @@ function PythonChallengeBody({
                 <div
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
+                    fontSize: LAB_MONO_SIZE,
                     textAlign: "right",
                     overflowWrap: "anywhere",
                   }}
@@ -563,7 +578,7 @@ function PythonChallengeBody({
                 background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
                 borderTop: "1px solid color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
                 fontFamily: "var(--font-mono, monospace)",
-                fontSize: 11,
+                fontSize: LAB_LABEL_SIZE,
                 letterSpacing: "0.1em",
                 color: "var(--cosmetic-accent)",
                 display: "flex",

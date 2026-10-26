@@ -66,4 +66,23 @@ describe("LessonRating", () => {
     expect(screen.getByRole("heading", { name: "Ta note a été enregistrée" })).toBeTruthy();
     expect(screen.getByText("4,5 · 2 avis")).toBeTruthy();
   });
+
+  it("says the rating was not sent, and keeps the stars, when the call fails", async () => {
+    rateLessonAction.mockRejectedValueOnce(new Error("network"));
+    renderRating(true);
+    fireEvent.click(screen.getByRole("button", { name: "4 étoiles" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Envoyer la note" }));
+      await Promise.resolve();
+    });
+    expect((await screen.findByRole("alert")).textContent).toBe("Note non envoyée, réessaie.");
+    // Nothing saved is claimed, and the button is back for another try.
+    expect(screen.queryByRole("heading", { name: "Ta note a été enregistrée" })).toBeNull();
+    expect(screen.getByRole("button", { name: "4 étoiles" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Envoyer la note" }).hasAttribute("disabled")).toBe(
+      false,
+    );
+  });
 });

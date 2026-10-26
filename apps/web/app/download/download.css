@@ -1,3 +1,8 @@
+/*
+ * The layout answers to the page's own width, not the window's: signed in, the
+ * page sits beside the app's sidebar, so a window of 1100px leaves it 860px.
+ * Alone, the page is as wide as the window and nothing changes.
+ */
 .download-page {
   --color-bg-base: #0b0c0e;
   --color-bg-sunken: #121418;

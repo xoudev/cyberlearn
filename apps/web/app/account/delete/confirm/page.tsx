@@ -25,7 +25,8 @@ export default async function AccountDeleteConfirmPage({
       </h1>
       <div className="state-description">
         <p>
-          Ton profil, ta progression, tes badges, tes notes et tes certificats seront effacés.{" "}
+          Ton profil, ta progression, tes badges et tes notes seront effacés. Tes certificats
+          restent vérifiables publiquement, mais ne portent plus ton nom.{" "}
           <b>Cette action est irréversible.</b>
         </p>
         <p>

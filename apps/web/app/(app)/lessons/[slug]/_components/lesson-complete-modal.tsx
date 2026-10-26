@@ -12,6 +12,7 @@ import {
 } from "@cyberlearn/ui";
 import type { CompleteLessonResult } from "../_actions/track-progress";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { LevelReached } from "@/components/level-reached";
 
 function useCountUp(target: number, duration = 900): number {
@@ -109,7 +110,11 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           <button className="btn btn--ghost" type="button" onClick={onClose}>
             Fermer
           </button>
-          <Link className="btn" href={hasBadges ? "/badges" : "/profile"} onClick={onClose}>
+          <Link
+            className="btn"
+            href={hasBadges ? profileTabHref("badges") : "/profile"}
+            onClick={onClose}
+          >
             {hasBadges ? "Voir mes badges" : "Voir mon profil"}
           </Link>
         </div>

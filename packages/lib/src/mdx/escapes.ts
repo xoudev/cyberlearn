@@ -1,6 +1,12 @@
 import { createProcessor } from "@mdx-js/mdx";
 import remarkGfm from "remark-gfm";
-import type { EsNode, MdNode } from "./attributes.js";
+import {
+  type EsNode,
+  type MdNode,
+  type MdxPlace,
+  type PlacedProblem,
+  startOfEsNode,
+} from "./attributes.js";
 
 /**
  * Backslashes JavaScript drops from a lesson's text.
@@ -36,72 +42,114 @@ const CONTEXT = 30;
 
 /** The first backslash a piece of MDX would lose, in French, or null. */
 export function escapeProblem(mdx: string): string | null {
+  return escapeProblems(mdx)[0]?.message ?? null;
+}
+
+/** The first backslash each string of a piece of MDX would lose, at its place. */
+export function escapeProblems(mdx: string): PlacedProblem[] {
   let tree: MdNode;
   try {
     // An mdast Root: MdNode is the subset of it read here.
     tree = processor.parse(mdx);
   } catch {
     // Not parsing is checkLessonMdx's to report, with the section.
-    return null;
+    return [];
   }
-  return problemInNode(tree);
+  const found: PlacedProblem[] = [];
+  collectInNode(tree, mdx.split("\n"), found);
+  return found;
 }
 
-function problemInNode(node: MdNode): string | null {
+function collectInNode(node: MdNode, lines: string[], found: PlacedProblem[]): void {
   if (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") {
     for (const attribute of node.attributes ?? []) {
-      const problem = problemInAttribute(node.name ?? "", attribute);
-      if (problem !== null) return problem;
+      collectInAttribute(node.name ?? "", attribute, lines, found);
     }
   }
   for (const child of node.children ?? []) {
     // SAFETY: every child of an mdast node is an mdast node.
-    const problem = problemInNode(child as MdNode);
-    if (problem !== null) return problem;
+    collectInNode(child as MdNode, lines, found);
   }
-  return null;
 }
 
-function problemInAttribute(element: string, attribute: unknown): string | null {
+function collectInAttribute(
+  element: string,
+  attribute: unknown,
+  lines: string[],
+  found: PlacedProblem[],
+): void {
   // SAFETY: an mdxJsxAttribute has a string name and a value that is a string
   // (no escapes there), null, or an expression carrying its ESTree.
   const { type, name, value } = attribute as { type?: string; name?: string; value?: unknown };
-  if (type !== "mdxJsxAttribute" || typeof value !== "object" || value === null) return null;
+  if (type !== "mdxJsxAttribute" || typeof value !== "object" || value === null) return;
   const program = (value as { data?: { estree?: EsNode } }).data?.estree;
-  const lost = program === undefined ? null : lostInTree(program);
-  return lost === null ? null : `<${element}>, attribut « ${String(name)} » : ${lost}`;
+  if (program === undefined) return;
+  for (const lost of lostInTree(program, lines)) {
+    found.push({
+      ...lost,
+      message: `<${element}>, attribut « ${String(name)} » : ${lost.message}`,
+    });
+  }
 }
 
-/** The first lost backslash in the strings of an expression, described, or null. */
-function lostInTree(node: unknown): string | null {
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      const lost = lostInTree(item);
-      if (lost !== null) return lost;
-    }
-    return null;
-  }
-  if (typeof node !== "object" || node === null) return null;
+/** The lost backslash of each string of an expression, described and placed. */
+function lostInTree(node: unknown, lines: string[]): PlacedProblem[] {
+  if (Array.isArray(node)) return node.flatMap((item) => lostInTree(item, lines));
+  if (typeof node !== "object" || node === null) return [];
   // SAFETY: an ESTree node; type, raw and value are read and checked below.
   const n = node as EsNode;
   if (n.type === "Literal" && typeof n.value === "string" && typeof n.raw === "string") {
     // The raw text keeps its quotes: the first character says which one it is.
-    return lostIn(n.raw.slice(1, -1), n.raw.charAt(0));
+    const raw = n.raw;
+    const at = lostIn(raw.slice(1, -1), raw.charAt(0));
+    if (at === null) return [];
+    // +1: the index is in the text between the quotes.
+    return [placed(describe(raw.slice(1, -1), at), startOfEsNode(n), raw, at + 1, lines)];
   }
   if (n.type === "TemplateElement") {
-    // SAFETY: a TemplateElement's value holds the text as written in `raw`.
-    return lostIn((n.value as { raw: string }).raw, "`");
+    // SAFETY: a TemplateElement's value holds the text as written in `raw`,
+    // which starts where the node does, just past the backtick.
+    const raw = (n.value as { raw: string }).raw;
+    const at = lostIn(raw, "`");
+    return at === null ? [] : [placed(describe(raw, at), startOfEsNode(n), raw, at, lines)];
   }
+  const found: PlacedProblem[] = [];
   for (const [key, child] of Object.entries(n)) {
     if (key === "loc" || key === "range") continue;
-    const lost = lostInTree(child);
-    if (lost !== null) return lost;
+    found.push(...lostInTree(child, lines));
   }
-  return null;
+  return found;
 }
 
-/** The first backslash a string as written would lose, described, or null. */
-function lostIn(text: string, quote: string): string | null {
+/**
+ * Where `text[index]` is in the MDX, `text` being written from `start` on.
+ *
+ * On the string's first line, that is a count of characters. On a later line,
+ * MDX has already taken some of the line's indentation when the string reaches
+ * the tree (see indentation.ts), so the column is found again from the line as
+ * written: its own indentation, then what follows the string's on that line.
+ */
+function placed(
+  message: string,
+  start: MdxPlace | null,
+  text: string,
+  index: number,
+  lines: string[],
+): PlacedProblem {
+  if (start === null) return { message, line: 1, column: 1 };
+  const before = text.slice(0, index);
+  const lastBreak = before.lastIndexOf("\n");
+  if (lastBreak === -1) return { message, line: start.line, column: start.column + index };
+  const line = start.line + before.split("\n").length - 1;
+  const inString = before.slice(lastBreak + 1);
+  const stringIndent = inString.length - inString.trimStart().length;
+  const written = lines[line - 1] ?? "";
+  const writtenIndent = written.length - written.trimStart().length;
+  return { message, line, column: writtenIndent + inString.length - stringIndent + 1 };
+}
+
+/** Where the first backslash a string as written would lose is, or null. */
+function lostIn(text: string, quote: string): number | null {
   for (let i = 0; i < text.length; i++) {
     if (text[i] !== "\\") continue;
     const next = text.charAt(i + 1);
@@ -110,7 +158,7 @@ function lostIn(text: string, quote: string): string | null {
       next === quote ||
       // `\${` is how a template shows `${` rather than reading a placeholder.
       (quote === "`" && next === "$" && text.charAt(i + 2) === "{");
-    if (!kept) return describe(text, i);
+    if (!kept) return i;
     i++;
   }
   return null;

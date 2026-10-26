@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma, ticketRepository } from "@cyberlearn/db";
+import { ticketRepository, userRepository } from "@cyberlearn/db";
 import {
   TICKET_MESSAGE_MAX,
   TICKET_MESSAGE_MIN,
@@ -11,6 +11,7 @@ import {
   type TicketFormTheme,
 } from "@cyberlearn/lib/tickets/tickets";
 import { checkContactForm, checkNotifyingWrite } from "@/lib/rate-limit";
+import { tooManyRequests } from "@/lib/rate-limit-copy";
 
 /**
  * A help request, from the side of the person asking: filing one, and adding
@@ -71,15 +72,11 @@ export async function fileTicket(input: {
   if (!limit.success) {
     return {
       ok: false,
-      error: `Trop de demandes. Réessayez dans ${String(limit.retryAfterSeconds)} secondes.`,
+      error: tooManyRequests(limit.retryAfterSeconds),
     };
   }
 
-  const { subject, theme, message, email } = parsed.data;
-  const ticket = await prisma.contactTicket.create({
-    data: { subject, theme, message, email, userId: input.userId, status: "OPEN" },
-    select: { id: true },
-  });
+  const ticket = await ticketRepository.create({ ...parsed.data, userId: input.userId });
   return { ok: true, ticketId: ticket.id };
 }
 
@@ -108,11 +105,7 @@ export async function fileAccountTicket(input: {
   ip: string;
   fields: unknown;
 }): Promise<FileTicketResult> {
-  const profile = await prisma.user.findUnique({
-    where: { id: input.user.id },
-    select: { email: true },
-  });
-  const email = profile?.email ?? input.user.email;
+  const email = (await userRepository.findEmailById(input.user.id)) ?? input.user.email;
   if (!email) return { ok: false, error: NO_REPLY_ADDRESS };
 
   // Not an object at all: the request's fields are missing, and fileTicket
@@ -162,14 +155,11 @@ export async function replyAsRequester(
 
   // Ownership first, and on its own: the repository gate knows about statuses,
   // not about who is allowed to write here.
-  const ticket = await prisma.contactTicket.findFirst({
-    where: { id: parsed.data.ticketId, userId },
-    select: { id: true },
-  });
-  if (!ticket) return { ok: false, error: "Ticket introuvable." };
+  const ticketId = await ticketRepository.findOwnedId(parsed.data.ticketId, userId);
+  if (ticketId === null) return { ok: false, error: "Ticket introuvable." };
 
   const result = await ticketRepository.addMessage({
-    ticketId: ticket.id,
+    ticketId,
     authorId: userId,
     fromStaff: false,
     body: parsed.data.body,

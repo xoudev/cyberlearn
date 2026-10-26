@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { checkLessonFile } from "../lib/services/lesson-import.service";
+import { checkLessonFile } from "../lib/services/lesson-file-check";
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 

@@ -1,8 +1,14 @@
 "use client";
+import Link from "next/link";
 
 // TOTP entry, automatic submission and verification require browser interaction.
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import {
+  MFA_RECOURSE_HINT,
+  MFA_RECOURSE_PATH,
+  MFA_RECOURSE_PROMPT,
+} from "@cyberlearn/lib/auth/mfa-recourse";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { OtpCodeInput, useOtpAutoSubmit } from "@cyberlearn/ui";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
@@ -101,6 +107,15 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
       <button className={styles.submit} type="submit" disabled={pending}>
         {pending ? "Vérification…" : "Valider le code"}
       </button>
+      {/* Without the phone there is no code to type, and the team can remove the
+          factor. The contact form is outside the second-factor gate, so this
+          does not bring the person back here. */}
+      <div className={styles.recourse}>
+        <Link className={styles.link} href={MFA_RECOURSE_PATH}>
+          {MFA_RECOURSE_PROMPT}
+        </Link>
+        <p className={styles.finePrint}>{MFA_RECOURSE_HINT}</p>
+      </div>
       <button
         className={styles.link}
         type="button"

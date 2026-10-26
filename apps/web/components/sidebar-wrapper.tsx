@@ -3,6 +3,7 @@
 // Client boundary: the drawer manages responsive visibility, keyboard focus and dismissal.
 
 import React, { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
@@ -16,6 +17,15 @@ export function SidebarWrapper({ children }: SidebarWrapperProps): React.ReactEl
   // Its own server snapshot keeps the first client render identical to the HTML.
   const isMobile = useMediaQuery("(max-width: 1023px)");
   const collapsed = !isMobile && state === "collapsed";
+  const pathname = usePathname();
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
+  function closeOnLink(event: React.MouseEvent<HTMLElement>): void {
+    if (isMobile && event.target instanceof Element && event.target.closest("a[href]")) {
+      setOpenMobile(false);
+    }
+  }
   const drawerRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!openMobile || !isMobile) return;
@@ -68,6 +78,7 @@ export function SidebarWrapper({ children }: SidebarWrapperProps): React.ReactEl
         aria-modal={isMobile && openMobile ? true : undefined}
         aria-label={isMobile ? "Navigation" : undefined}
         className="sidebar-wrapper"
+        onClick={closeOnLink}
         style={{
           width: collapsed ? "60px" : "240px",
           minWidth: collapsed ? "60px" : "240px",

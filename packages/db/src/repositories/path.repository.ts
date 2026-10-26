@@ -1,5 +1,9 @@
 import { prisma } from "../prisma.js";
-import type { Prisma, ProgressStatus } from "@prisma/client";
+import type { ContentStatus, Prisma, ProgressStatus } from "@prisma/client";
+import { planPathLessons, POSITION_PARKING } from "./path-lessons.js";
+
+/** The global client or a transaction's: both have the models. */
+type Db = Prisma.TransactionClient;
 
 /**
  * What the open catalogue of paths is, in one place.
@@ -232,5 +236,184 @@ export const pathRepository = {
       this.countCompletedLessons(userId, pathId),
     ]);
     return total.length > 0 && completed >= total.length;
+  },
+
+  // ── Console reads ───────────────────────────────────────────────────────────
+
+  /**
+   * The catalogue paths among these ids, with the refCode the audit names
+   * them by. A teacher's class path is left out: a catalogue lesson put in it
+   * would be promised to people who cannot open it.
+   */
+  async findCatalogueRefCodes(ids: readonly string[]): Promise<{ id: string; refCode: string }[]> {
+    if (ids.length === 0) return [];
+    return prisma.path.findMany({
+      where: { id: { in: [...ids] }, audience: "CATALOGUE" },
+      select: { id: true, refCode: true },
+    });
+  },
+
+  /**
+   * The paths the console offers to put a lesson in, by refCode: the
+   * catalogue's, archives left aside, and those the lesson is already in
+   * (`keep`) even if archived since. A teacher's class path is never offered.
+   */
+  async findCatalogueOptions(
+    keep: readonly string[] = [],
+  ): Promise<{ id: string; refCode: string; title: string; status: ContentStatus }[]> {
+    return prisma.path.findMany({
+      where: {
+        audience: "CATALOGUE",
+        OR: [{ status: { not: "ARCHIVED" } }, { id: { in: [...keep] } }],
+      },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true, status: true },
+    });
+  },
+
+  /** The refCodes of the lessons that come before this place in a path, whatever their state. */
+  async findRefCodesBefore(pathId: string, position: number): Promise<string[]> {
+    const rows = await prisma.pathLesson.findMany({
+      where: { pathId, position: { lt: position } },
+      select: { lesson: { select: { refCode: true } } },
+    });
+    return rows.map((row) => row.lesson.refCode);
+  },
+
+  /**
+   * A path's refCode and those of every lesson it holds, recaps and drafts
+   * included: the refCode the console proposes for a lesson added at its end
+   * is drawn from them (nextPathLessonNumber).
+   */
+  async findLessonRefCodes(
+    pathId: string,
+  ): Promise<{ refCode: string; lessonRefCodes: string[] } | null> {
+    const path = await prisma.path.findUnique({
+      where: { id: pathId },
+      select: { refCode: true, lessons: { select: { lesson: { select: { refCode: true } } } } },
+    });
+    if (!path) return null;
+    return {
+      refCode: path.refCode,
+      lessonRefCodes: path.lessons.map((link) => link.lesson.refCode),
+    };
+  },
+
+  // ── Console writes ──────────────────────────────────────────────────────────
+  //
+  // They run inside the caller's transaction, which also writes the path or
+  // the lesson and the audit line, so they take its client as last argument.
+
+  /**
+   * Gives a path exactly these lessons, in this order.
+   *
+   * A lesson already in the path keeps its module and isRequired, unless it
+   * was moved into the middle of another module, which it then joins; a new
+   * one joins its neighbour's module (planPathLessons). Positions are 1-based,
+   * as the sync writes them. Lessons left out are unlinked.
+   */
+  async replaceLessons(
+    pathId: string,
+    orderedLessonIds: readonly string[],
+    db: Db = prisma,
+  ): Promise<void> {
+    const existing = await db.pathLesson.findMany({
+      where: { pathId },
+      orderBy: { position: "asc" },
+      select: { lessonId: true, moduleId: true, isRequired: true },
+    });
+    const plan = planPathLessons(existing, orderedLessonIds);
+
+    await db.pathLesson.deleteMany({
+      where: { pathId, lessonId: { notIn: [...orderedLessonIds] } },
+    });
+    await db.pathLesson.updateMany({
+      where: { pathId },
+      data: { position: { increment: POSITION_PARKING } },
+    });
+    for (const row of plan) {
+      await db.pathLesson.upsert({
+        where: { pathId_lessonId: { pathId, lessonId: row.lessonId } },
+        create: { pathId, ...row },
+        // Never isRequired: the console does not edit it.
+        update: { position: row.position, moduleId: row.moduleId },
+      });
+    }
+  },
+
+  /**
+   * Adds a lesson at the end of a path, after its last lesson.
+   *
+   * It is filed under `moduleId` when given, a module of this path, and under
+   * the path's last module otherwise; a path without modules leaves it null.
+   * A lesson already in the path stays where it is.
+   */
+  async attachLesson(
+    pathId: string,
+    lessonId: string,
+    db: Db = prisma,
+    moduleId?: string,
+  ): Promise<void> {
+    // One query after the other: they share the caller's transaction.
+    const last = await db.pathLesson.findFirst({
+      where: { pathId },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+    const chosen =
+      moduleId === undefined
+        ? null
+        : await db.pathModule.findFirst({ where: { id: moduleId, pathId }, select: { id: true } });
+    const module =
+      chosen ??
+      (await db.pathModule.findFirst({
+        where: { pathId },
+        orderBy: { position: "desc" },
+        select: { id: true },
+      }));
+    // After the last lesson, whether the path starts at 1 as the sync writes
+    // it or at 0 as the console used to.
+    const position = (last?.position ?? 0) + 1;
+    await db.pathLesson.upsert({
+      where: { pathId_lessonId: { pathId, lessonId } },
+      create: { pathId, lessonId, position, moduleId: module?.id ?? null },
+      update: {},
+    });
+  },
+
+  /**
+   * Takes a lesson out of a path and closes the gap it leaves, so the lessons
+   * after it keep following each other.
+   */
+  async detachLesson(pathId: string, lessonId: string, db: Db = prisma): Promise<void> {
+    const link = await db.pathLesson.findUnique({
+      where: { pathId_lessonId: { pathId, lessonId } },
+      select: { position: true },
+    });
+    if (!link) return;
+    await db.pathLesson.delete({ where: { pathId_lessonId: { pathId, lessonId } } });
+    // Parked first: shifting the tail down one row at a time would land a
+    // lesson on the position the next one still holds.
+    await db.pathLesson.updateMany({
+      where: { pathId, position: { gt: link.position } },
+      data: { position: { increment: POSITION_PARKING } },
+    });
+    await db.pathLesson.updateMany({
+      where: { pathId, position: { gt: POSITION_PARKING } },
+      data: { position: { decrement: POSITION_PARKING + 1 } },
+    });
+  },
+
+  /** Every path the account started, for its GDPR export (rgpd/build-export.ts). */
+  async exportProgressFor(userId: string) {
+    return prisma.userPathProgress.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        startedAt: true,
+        completedAt: true,
+        path: { select: { title: true, slug: true } },
+      },
+    });
   },
 };

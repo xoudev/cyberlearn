@@ -10,6 +10,7 @@ import {
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
 import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
+import { TOO_MANY_MESSAGES } from "@/lib/rate-limit-copy";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
 import { errorMessage } from "@cyberlearn/lib/logger";
@@ -47,7 +48,6 @@ export interface ForumActionResult {
    */
   heldForReview?: boolean;
 }
-const TOO_FAST = "Trop de messages. Réessaie dans une minute.";
 
 /**
  * Links are ordinary here and count everywhere else.
@@ -62,7 +62,7 @@ export async function createForumTopic(userId: string, input: unknown): Promise<
   // Shared with the lesson Q&A on purpose: somebody flooding the site does not
   // care which surface they use, so the budget should not be per surface.
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = z
     .object({
@@ -127,7 +127,7 @@ export async function createForumTopic(userId: string, input: unknown): Promise<
 
 export async function replyInForum(userId: string, input: unknown): Promise<ForumActionResult> {
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = z.object({ topicId: uuid, content: bodySchema }).safeParse(input);
   if (!parsed.success) return { ok: false, error: "Message trop court." };
@@ -183,7 +183,7 @@ export async function editForumPost(
   // Editing is writing: same budget as posting, or an edit loop would be the
   // way around it.
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = z.object({ postId: uuid, content: bodySchema }).safeParse(input);
   if (!parsed.success) return { ok: false, error: "Message trop court." };

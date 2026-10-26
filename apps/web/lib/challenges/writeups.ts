@@ -5,11 +5,13 @@ import {
   friendshipRepository,
   moderationRepository,
   prisma,
+  userRepository,
   writeupRepository,
 } from "@cyberlearn/db";
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
 import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
+import { TOO_MANY_MESSAGES } from "@/lib/rate-limit-copy";
 
 /**
  * Write-ups: after solving a challenge, a learner publishes their solution,
@@ -24,6 +26,11 @@ import { checkQaSubmission } from "@/lib/rate-limit";
 
 export interface WriteupAuthor {
   name: string;
+  /**
+   * The handle the name opens a profile with: null when the author has none,
+   * or when the reader would not be let into their profile (a closed one,
+   * unless they are friends), as in the forum. A link to it is a 404.
+   */
   username: string | null;
   /** One of the reader's friends: a write-up is always signed, so the mark hides nothing. */
   isFriend: boolean;
@@ -39,8 +46,14 @@ export interface WriteupView {
 
 export interface OwnWriteup {
   content: string;
-  /** Held for review: written, not shown to anybody else yet. */
+  /** Out of the others' sight: held for review, or hidden by a moderator. */
   isHidden: boolean;
+  /**
+   * Hidden by a moderator rather than held by the screen: nobody else sees
+   * it, and publishing again does not bring it back. Its author can still
+   * remove it.
+   */
+  hiddenByModeration: boolean;
   updatedAt: string;
 }
 
@@ -61,8 +74,9 @@ const publishSchema = z.object({
     .max(10000, "10 000 caractères au plus pour une solution."),
 });
 
-const TOO_FAST = "Trop de messages. Réessayez dans une minute.";
 const NOT_FOUND = "Défi introuvable.";
+const HIDDEN_BY_MODERATION =
+  "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.";
 
 async function findActive(id: string): Promise<{ slug: string } | null> {
   return prisma.challenge.findFirst({ where: { id, isActive: true }, select: { slug: true } });
@@ -71,11 +85,13 @@ async function findActive(id: string): Promise<{ slug: string } | null> {
 function authorOf(
   user: { id: string; displayName: string; username: string | null } | null,
   friends: ReadonlySet<string>,
+  open: ReadonlySet<string>,
 ): WriteupAuthor | null {
   if (user === null) return null;
   return {
     name: user.displayName || (user.username ?? "Sans nom"),
-    username: user.username,
+    // The name stays whatever the profile; only its link depends on the reader.
+    username: open.has(user.id) ? user.username : null,
     isFriend: friends.has(user.id),
   };
 }
@@ -101,17 +117,28 @@ export async function writeupBoardFor(
     writeupRepository.listOthers(id.data, userId),
     friendshipRepository.friendIds(userId),
   ]);
+  // Whose profile would open for this reader, in one call for all the authors:
+  // the name of somebody who closed theirs is not a link.
+  const open = await userRepository.profilesOpenTo(
+    userId,
+    others.flatMap((w) => (w.user === null ? [] : [w.user.id])),
+  );
   return {
     solved: true,
     count,
     own:
       own === null
         ? null
-        : { content: own.content, isHidden: own.isHidden, updatedAt: own.updatedAt.toISOString() },
+        : {
+            content: own.content,
+            isHidden: own.isHidden,
+            hiddenByModeration: own.hiddenByModeration,
+            updatedAt: own.updatedAt.toISOString(),
+          },
     others: others.map((w) => ({
       id: w.id,
       content: w.content,
-      author: authorOf(w.user, friends),
+      author: authorOf(w.user, friends, open),
       updatedAt: w.updatedAt.toISOString(),
     })),
   };
@@ -121,11 +148,12 @@ export async function writeupBoardFor(
  * Publishes the reader's solution, or replaces the previous one. Only once
  * the challenge is solved; screened like the forum (links allowed: a
  * solution points at the tools it used), what the screen flags written
- * hidden and put in the queue.
+ * hidden and put in the queue. A solution a moderator hid is never written
+ * over: publishing again would put it back in front of everybody.
  */
 export async function publishWriteup(userId: string, input: unknown): Promise<WriteupResult> {
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = publishSchema.safeParse(input);
   if (!parsed.success) {
@@ -139,6 +167,10 @@ export async function publishWriteup(userId: string, input: unknown): Promise<Wr
   if (!(await writeupRepository.hasSolved(userId, id))) {
     return { ok: false, error: "Résous le défi avant de publier ta solution." };
   }
+  // Refused before the screen, so it records nothing about a text that will
+  // not be written. The repository checks again, in the update itself.
+  const own = await writeupRepository.findOwn(userId, id);
+  if (own?.hiddenByModeration === true) return { ok: false, error: HIDDEN_BY_MODERATION };
 
   const screen = await moderationRepository.screen({
     text: content,
@@ -154,6 +186,8 @@ export async function publishWriteup(userId: string, input: unknown): Promise<Wr
     content,
     isHidden: screen.flagged,
   });
+  // A moderator hid it between the check above and the write.
+  if (writeup === null) return { ok: false, error: HIDDEN_BY_MODERATION };
   if (screen.eventId !== null) {
     await moderationRepository.attachContent(screen.eventId, writeup.id);
   }

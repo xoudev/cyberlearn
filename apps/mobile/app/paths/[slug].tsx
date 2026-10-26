@@ -4,20 +4,22 @@ import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { CheckIcon, ChevronRight, LockIcon } from "@/components/icons";
-import { BackButton, GradientButton } from "@/components/buttons";
+import { BackButton, GradientButton, TEXT_LINK_TARGET } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
 import { usePathDetail } from "@/lib/queries";
-import { missionStates } from "@/lib/missions";
+import { missionStates, moduleStarts } from "@/lib/missions";
 import { PathCover } from "@/components/path-cover";
 import { OfflineToggle } from "@/components/offline-toggle";
 import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@cyberlearn/lib/content/rating";
 import { useSession } from "@/lib/session";
-import { groupIntoModules, moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
+import { moduleLabel } from "@cyberlearn/lib/paths/modules";
+import { MODULE_REVIEW_ACTION, MODULE_REVIEW_HINT } from "@cyberlearn/lib/revisions/recall-copy";
+import { moduleReviewable } from "@/lib/rappel";
 
 export default function PathDetail(): React.JSX.Element {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -46,6 +48,12 @@ export default function PathDetail(): React.JSX.Element {
               params: { slug: slug ?? "", module: String(module), title: data.title },
             })
           }
+          onOpenReview={(module) =>
+            router.push({
+              pathname: "/paths/module-review",
+              params: { slug: data.slug, module: String(module), title: data.title },
+            })
+          }
           onOpenMockExam={() =>
             router.push({ pathname: "/mock-exam/[slug]", params: { slug: data.slug } })
           }
@@ -61,6 +69,7 @@ function PathBody({
   userId,
   onOpenLesson,
   onOpenSheet,
+  onOpenReview,
   onOpenMockExam,
   onRated,
 }: {
@@ -68,6 +77,8 @@ function PathBody({
   userId: string | undefined;
   onOpenLesson: (slug: string) => void;
   onOpenSheet: (module: number) => void;
+  /** "Réviser ce module": a few questions of the module's finished lessons. */
+  onOpenReview: (module: number) => void;
   onOpenMockExam: () => void;
   onRated: () => void;
 }): React.JSX.Element {
@@ -76,15 +87,9 @@ function PathBody({
   const total = data.missions.length;
   const pct = total > 0 ? Math.round((data.completedCount / total) * 100) : 0;
   const states = missionStates(data.missions, data.unlockAll);
-  // A header before the first mission of each of the path's own modules. A path
-  // without modules stays one list, as it always was here.
-  const moduleStarts = new Map<number, ModuleGroup>();
-  if (data.modules.length > 0) {
-    for (const group of groupIntoModules(data.missions, data.modules)) {
-      const first = group.indices[0];
-      if (first !== undefined && group.title !== null) moduleStarts.set(first, group);
-    }
-  }
+  // A header before the first mission of each module, titled or not (blocks of
+  // six for a path without modules of its own), as the site draws its gates.
+  const starts = moduleStarts(data.missions, data.modules);
   const currentIndex = states.indexOf("current");
   const resume = currentIndex >= 0 ? data.missions[currentIndex] : null;
 
@@ -171,7 +176,7 @@ function PathBody({
                   : state === "open"
                     ? colors.textSecondary
                     : colors.textDisabled;
-            const moduleStart = moduleStarts.get(i);
+            const moduleStart = starts.get(i);
             return (
               <React.Fragment key={m.lessonId}>
                 {moduleStart ? (
@@ -180,26 +185,48 @@ function PathBody({
                       {moduleLabel(moduleStart).toUpperCase()} · {moduleStart.indices.length}{" "}
                       missions
                     </Text>
-                    <Text variant="h3" numberOfLines={2}>
-                      {moduleStart.title}
-                    </Text>
+                    {moduleStart.title !== null ? (
+                      <Text variant="h3" numberOfLines={2}>
+                        {moduleStart.title}
+                      </Text>
+                    ) : null}
                     {moduleStart.description ? (
                       <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
                         {moduleStart.description}
                       </Text>
                     ) : null}
-                    <Pressable
-                      onPress={() => {
-                        onOpenSheet(moduleStart.number);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Fiche de révision du ${moduleLabel(moduleStart).toLowerCase()}`}
-                      style={{ alignSelf: "flex-start", marginTop: 4 }}
+                    <View
+                      style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 18, rowGap: 4 }}
                     >
-                      <Text variant="micro" style={{ color: colors.accent }}>
-                        FICHE DE RÉVISION ›
-                      </Text>
-                    </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          onOpenSheet(moduleStart.number);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Fiche de révision du ${moduleLabel(moduleStart).toLowerCase()}`}
+                        style={TEXT_LINK_TARGET}
+                      >
+                        <Text variant="micro" style={{ color: colors.accent }}>
+                          FICHE DE RÉVISION ›
+                        </Text>
+                      </Pressable>
+                      {/* Its review asks about the lessons finished: none, nothing to offer. */}
+                      {moduleReviewable(data.missions, moduleStart.indices) ? (
+                        <Pressable
+                          onPress={() => {
+                            onOpenReview(moduleStart.number);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Réviser le ${moduleLabel(moduleStart).toLowerCase()} en deux minutes`}
+                          accessibilityHint={MODULE_REVIEW_HINT}
+                          style={TEXT_LINK_TARGET}
+                        >
+                          <Text variant="micro" style={{ color: colors.accent }}>
+                            {MODULE_REVIEW_ACTION.toUpperCase()} ›
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
                     <OfflineToggle
                       pathSlug={data.slug}
                       pathTitle={data.title}

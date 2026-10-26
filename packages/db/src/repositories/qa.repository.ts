@@ -164,4 +164,40 @@ export const qaRepository = {
       select: { userId: true },
     });
   },
+
+  // The account's own side of the Q&A, for its GDPR export
+  // (rgpd/build-export.ts): what it asked, what it answered, what it upvoted.
+
+  async exportQuestionsFor(userId: string) {
+    return prisma.lessonQuestion.findMany({
+      where: { userId },
+      select: {
+        title: true,
+        content: true,
+        isResolved: true,
+        createdAt: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+    });
+  },
+
+  async exportAnswersFor(userId: string) {
+    return prisma.lessonAnswer.findMany({
+      where: { userId },
+      select: {
+        content: true,
+        isAccepted: true,
+        upvotes: true,
+        createdAt: true,
+        question: { select: { id: true, title: true } },
+      },
+    });
+  },
+
+  async exportUpvotesFor(userId: string) {
+    return prisma.lessonAnswerUpvote.findMany({
+      where: { userId },
+      select: { answerId: true, createdAt: true },
+    });
+  },
 };

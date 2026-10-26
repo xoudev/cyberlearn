@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { BAN_DURATIONS, banExpiryFor, banTimeLeft, isBanActive, isBanDurationKey } from "./ban.js";
+import {
+  BAN_DURATIONS,
+  banExpiryFor,
+  banState,
+  banTimeLeft,
+  isBanActive,
+  isBanDurationKey,
+} from "./ban.js";
 
 const NOW = new Date("2026-09-18T12:00:00.000Z");
 const ban = (over: Partial<{ expiresAt: Date | null; liftedAt: Date | null }> = {}) => ({
@@ -35,6 +42,29 @@ describe("isBanActive", () => {
 
   it("stops applying when a permanent ban is lifted", () => {
     expect(isBanActive(ban({ liftedAt: NOW }), NOW)).toBe(false);
+  });
+});
+
+describe("banState", () => {
+  it("calls a ban in force active, permanent or not", () => {
+    expect(banState(ban(), NOW)).toBe("ACTIVE");
+    expect(banState(ban({ expiresAt: new Date("2026-09-19T12:00:00.000Z") }), NOW)).toBe("ACTIVE");
+  });
+
+  it("calls a ban past its end expired, from the moment it ends", () => {
+    expect(banState(ban({ expiresAt: NOW }), NOW)).toBe("EXPIRED");
+    expect(banState(ban({ expiresAt: new Date("2026-09-01T00:00:00.000Z") }), NOW)).toBe("EXPIRED");
+  });
+
+  it("calls a lifted ban lifted, even one whose end has passed since", () => {
+    // Lifted on the 10th, due to end on the 15th, read on the 18th: somebody
+    // ended it, and "expired" would say nobody did.
+    const lifted = ban({
+      expiresAt: new Date("2026-09-15T00:00:00.000Z"),
+      liftedAt: new Date("2026-09-10T00:00:00.000Z"),
+    });
+    expect(banState(lifted, NOW)).toBe("LIFTED");
+    expect(banState(ban({ liftedAt: NOW }), NOW)).toBe("LIFTED");
   });
 });
 

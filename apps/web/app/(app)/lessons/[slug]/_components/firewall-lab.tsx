@@ -13,6 +13,7 @@ import {
   type Verdict,
 } from "@cyberlearn/lib/network/firewall";
 import { type FirewallProbe, parseFirewallLab } from "@cyberlearn/types";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <FirewallLab>: the rules of a host firewall to write, and test packets that
@@ -146,9 +147,7 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          PARE-FEU
-        </span>
+        <span style={labKicker(ACCENT)}>PARE-FEU</span>
         {lab.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {lab.title}
@@ -171,7 +170,13 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
 
         <div style={{ display: "grid", gap: 6 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: LAB_LABEL_SIZE,
+                color: "var(--color-text-muted)",
+              }}
+            >
               RÈGLES DE LA CHAÎNE D&apos;ENTRÉE
             </span>
             <button
@@ -270,7 +275,9 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
             gap: 8,
           }}
         >
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+          <span
+            style={{ fontFamily: MONO, fontSize: LAB_LABEL_SIZE, color: "var(--color-text-muted)" }}
+          >
             ESSAYER UN PAQUET
           </span>
           <form

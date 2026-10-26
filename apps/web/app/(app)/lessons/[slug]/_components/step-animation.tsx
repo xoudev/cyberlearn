@@ -6,6 +6,7 @@ import React, { useCallback, useState } from "react";
 import { ANIMATION_SCENES, stepAt, stepBounds } from "@cyberlearn/lib/animations/scenes";
 import { parseStepAnimation } from "@cyberlearn/types";
 import type { PlayerCommand } from "./step-animation-player";
+import { labKicker } from "./lab-text";
 
 /**
  * <StepAnimation>: an animation the learner steps through. Each step plays
@@ -97,9 +98,7 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          ANIMATION · PAS À PAS
-        </span>
+        <span style={labKicker(ACCENT)}>ANIMATION · PAS À PAS</span>
         <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
           {parsed.value.title ?? scene.title}
         </span>

@@ -3,6 +3,7 @@ import {
   type ListFactorsAnswer,
   type TotpFactorsState,
 } from "@cyberlearn/lib/auth/mfa-factors";
+import { MFA_RECOURSE_PATH } from "@cyberlearn/lib/auth/mfa-recourse";
 
 const SVG_DATA_URI_PREFIX = "data:image/svg+xml";
 
@@ -70,6 +71,16 @@ export function readMfaRemovalAnswer(body: unknown): boolean | null {
   if (!("ok" in body) || body.ok !== true) return null;
   if (!("canDisable" in body) || typeof body.canDisable !== "boolean") return null;
   return body.canDisable;
+}
+
+/**
+ * The site's contact form for somebody without the phone that makes their
+ * codes, opened in the browser from the code screen: the same address as the
+ * site's own link (@cyberlearn/lib/auth/mfa-recourse), behind the site's origin.
+ * The form is open to a visitor, which is what the browser is.
+ */
+export function mfaRecourseUrl(siteUrl: string): string {
+  return `${siteUrl.replace(/\/+$/u, "")}${MFA_RECOURSE_PATH}`;
 }
 
 /** The part of `supabase.auth` that the code screen signs out with. */

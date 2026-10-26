@@ -1,4 +1,5 @@
-import { prisma } from "@cyberlearn/db";
+import { auditLogRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { isFirstCatalogueLesson, isFirstCataloguePath } from "@cyberlearn/types";
 
 /**
@@ -47,24 +48,27 @@ export async function archiveFirstCatalogue(actorId: string): Promise<FirstCatal
   if (pathIds.length === 0 && lessonIds.length === 0) return { paths: 0, lessons: 0 };
 
   // Counted from what the update really changed, not from the read above.
-  const [paths, lessons] = await prisma.$transaction([
-    prisma.path.updateMany({
+  // The audit row is written by the transaction's client, so it lands with
+  // the archive or not at all.
+  return prisma.$transaction(async (tx) => {
+    const paths = await tx.path.updateMany({
       where: { id: { in: pathIds }, status: { not: "ARCHIVED" } },
       data: { status: "ARCHIVED" },
-    }),
-    prisma.lesson.updateMany({
+    });
+    const lessons = await tx.lesson.updateMany({
       where: { id: { in: lessonIds }, status: { not: "ARCHIVED" } },
       data: { status: "ARCHIVED" },
-    }),
-    prisma.auditLog.create({
-      data: {
+    });
+    await auditLogRepository.record(
+      {
         actorId,
-        action: "catalogue.first.archive",
+        action: AUDIT_ACTION.catalogue.firstArchive,
         targetType: "catalogue",
         targetId: null,
         metadata: { paths: pathIds.length, lessons: lessonIds.length },
       },
-    }),
-  ]);
-  return { paths: paths.count, lessons: lessons.count };
+      tx,
+    );
+    return { paths: paths.count, lessons: lessons.count };
+  });
 }

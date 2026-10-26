@@ -6,9 +6,18 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import "../exam.css";
 import { BastionLogo } from "@/components/bastion-logo";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
+import {
+  clearDraft,
+  loadDraft,
+  restoreExamAnswers,
+  saveDraft,
+} from "@cyberlearn/lib/exam/answers-draft";
 import "@/components/assessment-workspace.css";
 import { Crumb } from "@/components/crumb";
+import { browserDraftStorage } from "@/lib/exam/answers-draft-storage";
 import { unlockDateLabel, waitLeftLabel } from "@/lib/exam/cooldown-label";
+import { START_FAILED, SUBMIT_FAILED } from "@/lib/exam/network-messages";
 import {
   type StartQuizResult,
   type SubmitQuizResult,
@@ -187,6 +196,9 @@ export function ExamFlow(props: Props): React.JSX.Element {
   // limit refuses (the mock exam guards it the same way).
   const autoSentRef = useRef(false);
   const resumedRef = useRef(false);
+  // The start of an attempt already running, until this screen has taken it up:
+  // asking again after a failed resume must not give it a fresh half hour.
+  const runningStartRef = useRef(resumeStartedAtMs);
 
   const doSubmit = useCallback(
     async (auto: boolean) => {
@@ -201,7 +213,19 @@ export function ExamFlow(props: Props): React.JSX.Element {
               timeLimitMinutes * 60,
               Math.max(0, timeLimitMinutes * 60 - Math.ceil((deadlineMs - Date.now()) / 1000)),
             );
-      const res = await submitQuizAttempt(attemptId, answers);
+      let res: SubmitQuizResult;
+      try {
+        res = await submitQuizAttempt(attemptId, answers);
+      } catch {
+        // The call itself failed (the network, a deploy): the copy is not in,
+        // and the answers are all still here, and on this device. The screen
+        // used to stay on "Envoi…" for good, the clock running, with nothing to
+        // press: the button is back, to try again by hand.
+        submittingRef.current = false;
+        setBusy(false);
+        setError(SUBMIT_FAILED);
+        return;
+      }
       setBusy(false);
       if (!res.ok) {
         submittingRef.current = false;
@@ -209,6 +233,8 @@ export function ExamFlow(props: Props): React.JSX.Element {
         if (auto) router.refresh();
         return;
       }
+      // The copy is in: no draft of it is kept.
+      void clearDraft(browserDraftStorage, "exam", attemptId);
       setTimeUsed(usedSeconds);
       setResult(res);
       setPhase("results");
@@ -244,16 +270,34 @@ export function ExamFlow(props: Props): React.JSX.Element {
       submittingRef.current = false;
       autoSentRef.current = false;
       void (async () => {
-        const res = await startQuizAttempt(pathId);
-        setBusy(false);
+        let res: StartQuizResult;
+        try {
+          res = await startQuizAttempt(pathId);
+        } catch {
+          // The call itself failed: no copy was drawn. The rules are back
+          // with the button, instead of a screen stuck on "Préparation…".
+          setBusy(false);
+          setError(START_FAILED);
+          return;
+        }
         if (!res.ok || !res.attemptId || !res.questions) {
+          setBusy(false);
           setError(res.error ?? "Impossible de démarrer l'examen.");
           return;
         }
+        // A copy taken up again after a reload gets back the answers it had.
+        // Only the ones that belong to it: the server refuses a copy with an
+        // answer it does not know.
+        const kept = restoreExamAnswers(
+          await loadDraft(browserDraftStorage, "exam", res.attemptId),
+          res.questions,
+        );
+        setBusy(false);
+        runningStartRef.current = null;
         setAttemptId(res.attemptId);
         setQuestions(res.questions);
         setIndex(0);
-        setAnswers({});
+        setAnswers(kept);
         setDeadlineMs(anchorMs + timeLimitMinutes * 60_000);
         setPhase("taking");
       })();
@@ -268,6 +312,14 @@ export function ExamFlow(props: Props): React.JSX.Element {
       begin(resumeStartedAtMs);
     }
   }, [resumeStartedAtMs, begin]);
+
+  // The answers are kept on this device as they are given, so that a reload of
+  // the page, what a screen that stops answering invites, takes the attempt up
+  // again with them instead of with a blank copy. Dropped once the copy is in.
+  useEffect(() => {
+    if (phase !== "taking" || attemptId === null || Object.keys(answers).length === 0) return;
+    void saveDraft(browserDraftStorage, "exam", attemptId, answers);
+  }, [phase, attemptId, answers]);
 
   if (phase === "taking") {
     return (
@@ -337,7 +389,7 @@ export function ExamFlow(props: Props): React.JSX.Element {
       busy={busy}
       error={error}
       onStart={() => {
-        begin(Date.now());
+        begin(runningStartRef.current ?? Date.now());
       }}
     />
   );
@@ -436,7 +488,9 @@ function IntroScreen(props: {
                   {pathCompleted ? (
                     <Link
                       className="exam-start"
-                      href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
+                      href={
+                        certPublicId ? `/verify/${certPublicId}` : profileTabHref("certificats")
+                      }
                     >
                       Voir mon certificat {IcoArrowRight}
                     </Link>
@@ -810,7 +864,7 @@ function ResultsScreen(props: {
                 <div className="r-action">
                   <Link
                     className="r-btn r-btn--cert"
-                    href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
+                    href={certPublicId ? `/verify/${certPublicId}` : profileTabHref("certificats")}
                   >
                     <svg
                       width="17"

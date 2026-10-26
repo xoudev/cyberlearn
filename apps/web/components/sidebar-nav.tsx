@@ -10,16 +10,22 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { AvatarView } from "@/components/avatar-view";
 import { BastionLogo } from "@/components/bastion-logo";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
+import { useQueryDialog } from "@/hooks/use-query-dialog";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import { isActiveHref, sidebarGroups, type SidebarIcon } from "@/lib/sidebar/items";
+import {
+  isActiveHref,
+  sidebarGroups,
+  type SidebarIcon,
+  type SidebarItem,
+} from "@/lib/sidebar/items";
 
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
   hasClasses: boolean;
   /** False once someone has switched spaced repetition off in their settings. */
   showRevisions: boolean;
-  /** Revisions due right now. */
-  dueReviews: number;
+  /** Duel invitations waiting on the reader's answer, counted beside « Duels ». */
+  duelInvitations: number;
   level: number;
   rankName: string;
   displayName: string;
@@ -89,14 +95,16 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
           <path d="M14 3v5h5M8.5 12h7M8.5 16h5" />
         </svg>
       );
-    case "badge":
+    case "glossary":
+      // A page of words under a magnifier: the definitions to look up.
       return (
         <svg {...STROKE}>
           <path d="M12 2.5l7.5 4.3v8.4L12 19.5l-7.5-4.3V6.8L12 2.5Z" />
           <circle cx="12" cy="11" r="3" />
         </svg>
       );
-    case "cert":
+    case "profile":
+      // Somebody's head and shoulders: their own page.
       return (
         <svg {...STROKE}>
           <rect x="3" y="4" width="18" height="12" />
@@ -123,13 +131,6 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
         <svg {...STROKE}>
           <path d="M4 4l11 11M20 4L9 15" />
           <path d="M13 17l4-4M11 17l-4-4M16 19l3-3M8 19l-3-3" />
-        </svg>
-      );
-    case "tournament":
-      return (
-        <svg {...STROKE}>
-          <path d="M5 21V3" />
-          <path d="M5 4h13l-3 4.5L18 13H5" />
         </svg>
       );
     case "classes":
@@ -177,12 +178,66 @@ function SignOutButton({ onClick }: { onClick: () => void }): React.ReactElement
   );
 }
 
+/** What an entry shows: its icon, its label, and its count when it has one. */
+function NavItemInside({ item }: { item: SidebarItem }): React.ReactElement {
+  return (
+    <>
+      <span className="sidebar-nav-icon">
+        <NavIcon name={item.icon} />
+      </span>
+      <span className="sidebar-label sidebar-nav-text">{item.label}</span>
+      {item.count !== null && (
+        <span
+          className="sidebar-label sidebar-nav-count"
+          aria-label={item.countLabel ?? `${String(item.count)} à faire`}
+        >
+          {item.count}
+        </span>
+      )}
+    </>
+  );
+}
+
+/**
+ * An entry that opens a window over the page rather than leading to one: the
+ * day's recall, under "Révisions". A button, since nothing is navigated to;
+ * on a phone the drawer closes so the window is not drawn behind it.
+ */
+function DialogNavItem({
+  item,
+  opens,
+  collapsed,
+  active,
+}: {
+  item: SidebarItem;
+  opens: { query: string; value: string };
+  collapsed: boolean;
+  active: boolean;
+}): React.ReactElement {
+  const dialog = useQueryDialog(opens.query);
+  const { isMobile, setOpenMobile } = useSidebar();
+  return (
+    <button
+      type="button"
+      title={collapsed ? item.label : undefined}
+      aria-current={active ? "page" : undefined}
+      className="sidebar-nav-item"
+      onClick={() => {
+        if (isMobile) setOpenMobile(false);
+        dialog.open(opens.value);
+      }}
+    >
+      <NavItemInside item={item} />
+    </button>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function SidebarNav({
   hasClasses,
   showRevisions,
-  dueReviews,
+  duelInvitations,
   level,
   rankName,
   displayName,
@@ -206,7 +261,7 @@ export function SidebarNav({
     void handleSignOut();
   };
 
-  const groups = sidebarGroups({ hasClasses, showRevisions, dueReviews });
+  const groups = sidebarGroups({ hasClasses, showRevisions, duelInvitations });
   const accountIdentity = (
     <>
       <span className="sidebar-avatar-frame" style={cosmeticAvatarFilter(0.35)}>
@@ -271,6 +326,17 @@ export function SidebarNav({
             )}
             {group.items.map((item) => {
               const active = isActiveHref(pathname, item.href);
+              if (item.opens !== undefined) {
+                return (
+                  <DialogNavItem
+                    key={item.href}
+                    item={item}
+                    opens={item.opens}
+                    collapsed={collapsed}
+                    active={active}
+                  />
+                );
+              }
               return (
                 <Link
                   key={item.href}
@@ -282,18 +348,7 @@ export function SidebarNav({
                     if (isMobile) setOpenMobile(false);
                   }}
                 >
-                  <span className="sidebar-nav-icon">
-                    <NavIcon name={item.icon} />
-                  </span>
-                  <span className="sidebar-label sidebar-nav-text">{item.label}</span>
-                  {item.count !== null && (
-                    <span
-                      className="sidebar-label sidebar-nav-count"
-                      aria-label={`${String(item.count)} à faire`}
-                    >
-                      {item.count}
-                    </span>
-                  )}
+                  <NavItemInside item={item} />
                 </Link>
               );
             })}

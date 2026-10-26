@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const findMany = vi.fn();
 const prefsFindUnique = vi.fn();
-const upsert = vi.fn();
+const save = vi.fn();
 vi.mock("@cyberlearn/db", () => ({
   PUBLISHED_PATH_LESSON: { lesson: { status: "PUBLISHED" } },
   prisma: {
     path: { findMany },
-    userPreferences: { findUnique: prefsFindUnique, upsert },
+    userPreferences: { findUnique: prefsFindUnique },
   },
+  preferencesRepository: { save },
 }));
 
 const {
@@ -33,7 +34,7 @@ function params(query: string): Record<string, string | string[]> {
 beforeEach(() => {
   findMany.mockReset();
   prefsFindUnique.mockReset();
-  upsert.mockReset();
+  save.mockReset();
 });
 
 describe("parseLearningAnswers", () => {
@@ -154,12 +155,11 @@ describe("suggestionsFor", () => {
 });
 
 describe("saving and reading the answers", () => {
-  it("upserts them on the user's preferences", async () => {
+  it("saves them on the user's preferences", async () => {
     await saveLearningAnswers("user-1", { goals: ["CYBERSEC"], level: "NEW" });
-    expect(upsert).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
-      create: { userId: "user-1", learningGoals: ["CYBERSEC"], startingLevel: "NEW" },
-      update: { learningGoals: ["CYBERSEC"], startingLevel: "NEW" },
+    expect(save).toHaveBeenCalledExactlyOnceWith("user-1", {
+      learningGoals: ["CYBERSEC"],
+      startingLevel: "NEW",
     });
   });
 

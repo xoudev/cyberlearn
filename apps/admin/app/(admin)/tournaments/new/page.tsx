@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "../../_components/admin-ui";
 import { createTournamentAction } from "../_actions/tournament-actions";
 import { TournamentForm } from "../_components/tournament-form";
+import { NEW_TOURNAMENT_HEADER } from "../_components/tournament-head";
 import { tournamentOptions } from "../_components/tournament-options";
 import { requireAdminPage } from "@/lib/auth";
 
@@ -16,9 +17,9 @@ export default async function NewTournamentPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }, { label: "Tournois", href: "/tournaments" }]}
-        title="Nouveau tournoi"
-        description="Les élèves des classes choisies reçoivent une notification dès l'enregistrement ; les défis restent cachés jusqu'au début."
+        crumbs={NEW_TOURNAMENT_HEADER.crumbs}
+        title={NEW_TOURNAMENT_HEADER.title}
+        description={NEW_TOURNAMENT_HEADER.description}
       />
       <TournamentForm
         phase="UPCOMING"

@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { parameterise, parseSqlInjectionLab, pasteFields } from "@cyberlearn/types";
 import { lastResult, SqlSandbox, type SqlOutcome, type WorkerLike } from "@/lib/sql/sandbox";
 import { SqlResultTable } from "./sql-result-table";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 
 /**
  * <SqlInjectionLab>: a login form whose server code is shown, run against a
@@ -109,7 +110,7 @@ export function SqlInjectionLab(
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.16em",
             color: RED,
           }}
@@ -167,7 +168,7 @@ export function SqlInjectionLab(
             background: "var(--color-bg-elevated)",
             border: "1px solid var(--color-border-subtle)",
             color: "var(--color-text-secondary)",
-            fontSize: 12.5,
+            fontSize: LAB_MONO_SIZE,
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
           }}
@@ -233,7 +234,7 @@ export function SqlInjectionLab(
                   background: "var(--color-bg-elevated)",
                   border: "1px solid var(--color-border-subtle)",
                   color: "#D8D6EA",
-                  fontSize: 12.5,
+                  fontSize: LAB_MONO_SIZE,
                   whiteSpace: "pre-wrap",
                   overflowWrap: "anywhere",
                 }}

@@ -6,14 +6,20 @@ import {
   auditListSearch,
   certificateListSearch,
   certificateQueryOf,
+  contentListSearch,
+  contentQueryOf,
   lessonListSearch,
   lessonQueryOf,
   parseAuditListParams,
   parseCertificateListParams,
+  parseContentListParams,
   parseLessonListParams,
   parsePendingListParams,
+  parseReportListParams,
   parseUserListParams,
   pendingListSearch,
+  reportQueryOf,
+  showsCronRuns,
   userListSearch,
   userQueryOf,
   withKnownAction,
@@ -96,6 +102,7 @@ describe("the audit log's parameters", () => {
       action: "admin.user.mfa_reset",
       from: "2026-10-01",
       to: "2026-10-07",
+      crons: false,
       dir: "asc",
       page: 2,
     });
@@ -141,6 +148,20 @@ describe("the audit log's parameters", () => {
     expect(parisDayEnd("2026-12-31")).toEqual(new Date("2026-12-31T23:00:00Z"));
     // The day the clocks go back is 25 hours long.
     expect(parisDayEnd("2026-10-25")).toEqual(new Date("2026-10-25T23:00:00Z"));
+  });
+
+  it("hides the scheduled jobs' runs unless asked, or named by the filter", () => {
+    expect(auditFilterOf(parseAuditListParams({})).hideCronRuns).toBe(true);
+
+    const asked = parseAuditListParams({ crons: "1" });
+    expect(auditFilterOf(asked).hideCronRuns).toBe(false);
+    expect(auditListSearch(asked)).toEqual({ crons: "1" });
+    // Anything but "1" is the default, and a link leaves the default out.
+    expect(parseAuditListParams({ crons: "yes" }).crons).toBe(false);
+
+    expect(showsCronRuns(parseAuditListParams({ action: "cron.retention" }))).toBe(true);
+    expect(showsCronRuns(parseAuditListParams({ target: "cron" }))).toBe(true);
+    expect(showsCronRuns(parseAuditListParams({ action: "lesson.create" }))).toBe(false);
   });
 
   it("has no date bound without a day", () => {
@@ -251,6 +272,78 @@ describe("the certificate list's parameters", () => {
     expect(certificateListSearch(parseCertificateListParams({ sort: "issued" }))).toEqual({
       sort: "issued",
     });
+  });
+});
+
+describe("the published-content list's parameters", () => {
+  it("opens on the forum's messages, visible and hidden, page 1", () => {
+    const params = parseContentListParams({});
+    expect(params).toEqual({
+      surface: "FORUM_POST",
+      state: undefined,
+      q: "",
+      author: undefined,
+      page: 1,
+    });
+    expect(contentListSearch(params)).toEqual({});
+    expect(contentQueryOf(params)).toEqual({
+      surface: "FORUM_POST",
+      hidden: undefined,
+      q: "",
+      authorId: undefined,
+      page: 1,
+      pageSize: 25,
+    });
+  });
+
+  it("reads a surface, a state, a search and a page", () => {
+    const params = parseContentListParams({
+      surface: "CLASS_RESOURCE",
+      state: "hidden",
+      q: " corrigé ",
+      page: "3",
+    });
+    expect(contentListSearch(params)).toEqual({
+      surface: "CLASS_RESOURCE",
+      state: "hidden",
+      q: "corrigé",
+      page: "3",
+    });
+    expect(contentQueryOf(params)).toMatchObject({ hidden: true, q: "corrigé", page: 3 });
+    expect(contentQueryOf(parseContentListParams({ state: "visible" })).hidden).toBe(false);
+  });
+
+  it("ignores what it does not know, rather than failing", () => {
+    expect(parseContentListParams({ surface: "forum.post", state: "deleted" })).toMatchObject({
+      surface: "FORUM_POST",
+      state: undefined,
+    });
+  });
+
+  it("reads an author's id, keeps it in the links and hands it to the query", () => {
+    const author = "44444444-4444-4444-8444-444444444444";
+    const params = parseContentListParams({ author, surface: "LESSON_ANSWER" });
+    expect(params.author).toBe(author);
+    expect(contentListSearch(params)).toEqual({ surface: "LESSON_ANSWER", author });
+    expect(contentQueryOf(params).authorId).toBe(author);
+  });
+
+  it("drops an author that is not an id, rather than searching for it", () => {
+    expect(parseContentListParams({ author: "ada" }).author).toBeUndefined();
+    expect(parseContentListParams({ author: "" }).author).toBeUndefined();
+    expect(contentQueryOf(parseContentListParams({ author: "ada" })).authorId).toBeUndefined();
+  });
+});
+
+describe("the report queue's parameters", () => {
+  it("opens on the first page, twenty contents to a page", () => {
+    expect(reportQueryOf(parseReportListParams({}))).toEqual({ page: 1, pageSize: 20 });
+  });
+
+  it("reads a page, and drops one that is not", () => {
+    expect(reportQueryOf(parseReportListParams({ page: "3" }))).toEqual({ page: 3, pageSize: 20 });
+    expect(parseReportListParams({ page: "-1" })).toEqual({ page: 1 });
+    expect(parseReportListParams({ page: "deux" })).toEqual({ page: 1 });
   });
 });
 

@@ -21,6 +21,12 @@ import {
  * from the page.
  */
 
+/** The working list's header; the page adds its count to the title. */
+export const LESSONS_HEADER = {
+  crumbs: [{ label: "Contenu" }] as const satisfies readonly [Crumb],
+  title: "Leçons",
+};
+
 /** The archives' header, which its loading state shows as it is. */
 export const ARCHIVES_HEADER = {
   crumbs: [
@@ -66,6 +72,7 @@ export const LESSON_COLUMNS: readonly GridColumn[] = [
   { label: "Difficulté", sortKey: "difficulty" },
   { label: "XP", align: "right", sortKey: "xp" },
   { label: "Terminées", align: "right" },
+  { label: "Note", align: "right", sortKey: "rating" },
   { label: "Statut", align: "right", sortKey: "status" },
   { label: "Supprimer" },
 ];

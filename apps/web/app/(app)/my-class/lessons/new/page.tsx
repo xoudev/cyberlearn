@@ -45,7 +45,7 @@ export default async function NewClassLessonPage({
         crumb="my-class/new-lesson"
         eyebrow={`Classe · ${klass.name}`}
         title="Écrire une leçon"
-        lede="Elle ne sera visible que par cette classe, et se comporte comme n'importe quelle autre leçon : progression, XP, révisions, et tu peux la donner avec une date."
+        lede="Elle ne sera visible que par cette classe et compte comme une autre leçon pour la progression et l'XP ; tu peux la donner avec une date. Ses questions ne reviennent pas au rappel du jour de tes élèves : tu peux la réécrire ou la retirer quand tu veux."
       />
       <LessonEditor mode="create" classId={classId} className={klass.name} />
     </div>

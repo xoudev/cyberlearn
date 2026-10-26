@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
   countVisible: vi.fn<(challengeId: string) => Promise<number>>(),
   findOwn: vi.fn<(userId: string, challengeId: string) => Promise<unknown>>(),
   listOthers: vi.fn<(challengeId: string, viewerId: string) => Promise<unknown[]>>(),
-  upsert: vi.fn<(input: unknown) => Promise<{ id: string }>>(),
+  upsert: vi.fn<(input: unknown) => Promise<{ id: string } | null>>(),
   deleteOwn: vi.fn<(userId: string, challengeId: string) => Promise<number>>(),
   screen:
     vi.fn<
@@ -17,6 +17,7 @@ const m = vi.hoisted(() => ({
   announceModeration: vi.fn<(input: unknown) => Promise<void>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
+  profilesOpenTo: vi.fn<(viewerId: string, userIds: readonly string[]) => Promise<Set<string>>>(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
@@ -25,6 +26,7 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: { challenge: { findFirst: m.findChallenge } },
   moderationRepository: { screen: m.screen, attachContent: m.attachContent },
   friendshipRepository: { friendIds: m.friendIds },
+  userRepository: { profilesOpenTo: m.profilesOpenTo },
   writeupRepository: {
     hasSolved: m.hasSolved,
     countVisible: m.countVisible,
@@ -56,6 +58,8 @@ beforeEach(() => {
   m.screen.mockResolvedValue({ flagged: false, throttled: false, eventId: null });
   m.upsert.mockResolvedValue({ id: "w-1" });
   m.friendIds.mockResolvedValue(new Set());
+  // Every profile is open unless a test closes it.
+  m.profilesOpenTo.mockImplementation((_viewer, ids) => Promise.resolve(new Set(ids)));
 });
 
 describe("writeupBoardFor", () => {
@@ -68,7 +72,13 @@ describe("writeupBoardFor", () => {
 
   it("opens the others' solutions once it is solved, an erased author left nameless", async () => {
     const at = new Date("2026-10-01T10:00:00Z");
-    m.findOwn.mockResolvedValue({ content: "Ma solution.", isHidden: true, updatedAt: at });
+    m.findOwn.mockResolvedValue({
+      content: "Ma solution.",
+      isHidden: true,
+      hiddenByModeration: false,
+      updatedAt: at,
+    });
+    m.profilesOpenTo.mockResolvedValue(new Set(["u2"]));
     m.listOthers.mockResolvedValue([
       {
         id: "w-2",
@@ -81,7 +91,12 @@ describe("writeupBoardFor", () => {
     expect(await writeupBoardFor("u1", CHALLENGE)).toEqual({
       solved: true,
       count: 3,
-      own: { content: "Ma solution.", isHidden: true, updatedAt: "2026-10-01T10:00:00.000Z" },
+      own: {
+        content: "Ma solution.",
+        isHidden: true,
+        hiddenByModeration: false,
+        updatedAt: "2026-10-01T10:00:00.000Z",
+      },
       others: [
         {
           id: "w-2",
@@ -118,6 +133,36 @@ describe("writeupBoardFor", () => {
     expect(m.friendIds).toHaveBeenCalledWith("u1");
     // The ids never leave the server.
     expect(JSON.stringify(board)).not.toContain("u2");
+  });
+
+  it("links an author's name only when the reader may open that profile", async () => {
+    const at = new Date("2026-10-01T10:00:00Z");
+    m.findOwn.mockResolvedValue(null);
+    m.profilesOpenTo.mockResolvedValue(new Set(["u2"]));
+    m.listOthers.mockResolvedValue([
+      {
+        id: "w-2",
+        content: "Avec awk.",
+        updatedAt: at,
+        user: { id: "u2", displayName: "Alex", username: "alex" },
+      },
+      {
+        id: "w-4",
+        content: "Avec sed.",
+        updatedAt: at,
+        user: { id: "u3", displayName: "Sam", username: "sam" },
+      },
+      { id: "w-3", content: "Avec cut.", updatedAt: at, user: null },
+    ]);
+    const board = await writeupBoardFor("u1", CHALLENGE);
+    // The name stays; the handle a closed profile would 404 on does not travel.
+    expect(board?.solved && board.others.map((w) => w.author)).toEqual([
+      { name: "Alex", username: "alex", isFriend: false },
+      { name: "Sam", username: null, isFriend: false },
+      null,
+    ]);
+    expect(m.profilesOpenTo).toHaveBeenCalledTimes(1);
+    expect(m.profilesOpenTo).toHaveBeenCalledWith("u1", ["u2", "u3"]);
   });
 
   it("is null for a challenge that is not there", async () => {
@@ -158,6 +203,30 @@ describe("publishWriteup", () => {
     expect(m.upsert).not.toHaveBeenCalled();
   });
 
+  it("refuses to publish over a solution a moderator hid, before screening anything", async () => {
+    m.findOwn.mockResolvedValue({
+      content: "Ma solution.",
+      isHidden: true,
+      hiddenByModeration: true,
+      updatedAt: new Date(),
+    });
+    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toEqual({
+      ok: false,
+      error:
+        "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.",
+    });
+    expect(m.screen).not.toHaveBeenCalled();
+    expect(m.upsert).not.toHaveBeenCalled();
+  });
+
+  it("says so when a moderator hid it between the check and the write", async () => {
+    m.upsert.mockResolvedValue(null);
+    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toMatchObject(
+      { ok: false, error: expect.stringContaining("masquée par la modération") as unknown },
+    );
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
   it("holds a flagged solution for review, tied to its event and announced", async () => {
     m.screen.mockResolvedValue({ flagged: true, throttled: false, eventId: "ev-1" });
     expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toEqual({
@@ -187,9 +256,10 @@ describe("publishWriteup", () => {
       error: "Défi introuvable.",
     });
     m.checkQaSubmission.mockResolvedValue({ success: false });
-    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toMatchObject(
-      { ok: false },
-    );
+    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toEqual({
+      ok: false,
+      error: "Trop de messages. Réessaie dans une minute.",
+    });
     expect(m.upsert).not.toHaveBeenCalled();
   });
 });

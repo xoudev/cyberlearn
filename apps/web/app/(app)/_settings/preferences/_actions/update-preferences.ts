@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@cyberlearn/db";
+import { preferencesRepository } from "@cyberlearn/db";
 import { themeSchema } from "@cyberlearn/types";
 import { requireRequestUser } from "@/lib/auth";
 
@@ -25,11 +25,7 @@ export async function updateThemeAction(
     return { error: "Thème invalide." };
   }
 
-  await prisma.userPreferences.upsert({
-    where: { userId: authUser.id },
-    create: { userId: authUser.id, theme: parsed.data },
-    update: { theme: parsed.data },
-  });
+  await preferencesRepository.save(authUser.id, { theme: parsed.data });
 
   return { success: true };
 }

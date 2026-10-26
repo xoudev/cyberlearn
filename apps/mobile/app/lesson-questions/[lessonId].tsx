@@ -3,7 +3,9 @@ import React, { useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import { ReportContentChip } from "@/components/content-report";
 import { HeldNotice, MessageInput } from "@/components/forum";
+import { FriendMark } from "@/components/friends";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
@@ -34,7 +36,8 @@ import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
  * A lesson's questions and answers: the Q&A under a lesson on the site. Ask,
- * answer, accept an answer on one's own question, upvote somebody else's.
+ * answer, accept an answer on one's own question, upvote somebody else's, and
+ * report somebody else's question or answer to the team.
  * Every write goes through the site's service: same limits, same screen, the
  * same "held for review" when the moderation takes a message down.
  */
@@ -94,17 +97,25 @@ function AuthorLine({
   extra?: string;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
+  // The friend mark is a drawing, which cannot sit inside a line of text:
+  // the name and the rest of the line are two texts either side of it.
   return (
-    <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
-      <Text style={{ color: author ? colors.textPrimary : colors.textMuted }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+      <Text
+        variant="mono"
+        style={{ fontSize: 10.5, color: author ? colors.textPrimary : colors.textMuted }}
+      >
         {author?.name ?? "Utilisateur supprimé"}
       </Text>
-      {author ? (
-        <Text style={{ color: theme.accent }}>{` ${levelLabel(author.level)}`}</Text>
-      ) : null}
-      {` · ${qaDate(date)}`}
-      {extra !== undefined ? ` · ${extra}` : ""}
-    </Text>
+      {author?.isFriend === true ? <FriendMark size={11} /> : null}
+      <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+        {author ? (
+          <Text style={{ color: theme.accent }}>{` ${levelLabel(author.level)}`}</Text>
+        ) : null}
+        {` · ${qaDate(date)}`}
+        {extra !== undefined ? ` · ${extra}` : ""}
+      </Text>
+    </View>
   );
 }
 
@@ -239,6 +250,11 @@ function QuestionCard({
       <Text variant="body" selectable style={{ color: colors.textSecondary }}>
         {question.content}
       </Text>
+      {!question.mine ? (
+        <View style={{ alignSelf: "flex-start" }}>
+          <ReportContentChip surface="LESSON_QUESTION" contentId={question.id} />
+        </View>
+      ) : null}
 
       {question.answers.length > 0 ? (
         <View style={{ gap: 8 }}>
@@ -294,7 +310,7 @@ function AnswerRow({
       <Text variant="bodySm" selectable style={{ color: colors.textPrimary }}>
         {answer.content}
       </Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Voter pour cette réponse, ${String(answer.upvotes)} votes`}
@@ -334,6 +350,7 @@ function AnswerRow({
             onPress={() => void act(() => acceptLessonAnswerApi(answer.id))}
           />
         ) : null}
+        {!answer.mine ? <ReportContentChip surface="LESSON_ANSWER" contentId={answer.id} /> : null}
       </View>
       {error !== null ? (
         <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>

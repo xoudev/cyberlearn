@@ -5,16 +5,23 @@ const m = vi.hoisted(() => ({
   lessonFindMany: vi.fn(),
   pathUpdateMany: vi.fn(),
   lessonUpdateMany: vi.fn(),
-  auditCreate: vi.fn(),
+  auditRecord: vi.fn(),
+  transaction: vi.fn(),
 }));
+
+/** The transaction's client: the archive and its audit row are written through it. */
+const tx = {
+  path: { updateMany: m.pathUpdateMany },
+  lesson: { updateMany: m.lessonUpdateMany },
+};
 
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
-    path: { findMany: m.pathFindMany, updateMany: m.pathUpdateMany },
-    lesson: { findMany: m.lessonFindMany, updateMany: m.lessonUpdateMany },
-    auditLog: { create: m.auditCreate },
-    $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
+    path: { findMany: m.pathFindMany },
+    lesson: { findMany: m.lessonFindMany },
+    $transaction: m.transaction,
   },
+  auditLogRepository: { record: m.auditRecord },
 }));
 
 const { archiveFirstCatalogue, firstCatalogueCounts } = await import("../first-catalogue.service");
@@ -32,7 +39,8 @@ beforeEach(() => {
   ]);
   m.pathUpdateMany.mockResolvedValue({ count: 1 });
   m.lessonUpdateMany.mockResolvedValue({ count: 2 });
-  m.auditCreate.mockResolvedValue({});
+  m.auditRecord.mockResolvedValue(undefined);
+  m.transaction.mockImplementation((fn: (client: typeof tx) => Promise<unknown>) => fn(tx));
 });
 
 describe("firstCatalogueCounts", () => {
@@ -60,9 +68,17 @@ describe("archiveFirstCatalogue", () => {
       where: { id: { in: ["l-old-1", "l-old-2"] } },
       data: { status: "ARCHIVED" },
     });
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: { actorId: "admin-1", action: "catalogue.first.archive" },
-    });
+    // In the archive's transaction, so the row lands with it or not at all.
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith(
+      {
+        actorId: "admin-1",
+        action: "catalogue.first.archive",
+        targetType: "catalogue",
+        targetId: null,
+        metadata: { paths: 1, lessons: 2 },
+      },
+      tx,
+    );
   });
 
   it("writes nothing once everything is archived", async () => {
@@ -71,6 +87,7 @@ describe("archiveFirstCatalogue", () => {
 
     expect(await archiveFirstCatalogue("admin-1")).toEqual({ paths: 0, lessons: 0 });
     expect(m.pathUpdateMany).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.transaction).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 });

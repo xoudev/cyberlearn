@@ -53,6 +53,14 @@ export interface SettingsDrawerControls {
   openHref: (href: string) => boolean;
   /** Starts loading the data and the forms before the drawer is asked for. */
   prefetch: () => void;
+  /**
+   * Closes it for a link inside it that is being followed. A navigation to
+   * another page closes it anyway; this is for one that keeps the pathname,
+   * such as the certificates' tab (/profile?tab=certificats) followed from
+   * the deletion of the account while the drawer is open over the profile.
+   * Like a navigation, it hands the focus to no one.
+   */
+  leave: () => void;
 }
 
 const SettingsDrawerContext = createContext<SettingsDrawerControls | null>(null);
@@ -100,6 +108,8 @@ interface OpenState {
   section: SettingsSectionKey;
   /** The page it opened over: a navigation away closes it. */
   pathname: string;
+  /** Set by `leave`: a link inside it is followed without changing the pathname. */
+  left?: boolean;
 }
 
 export function SettingsDrawerProvider({
@@ -121,8 +131,10 @@ export function SettingsDrawerProvider({
   // browser's back button does not bring it back. The commit that brings the
   // new page draws it closed, without giving the focus back to its opener:
   // the navbar's gear is still there, but the new page is read from its
-  // start, skip link first. Then it goes, before anything is painted.
-  const navigatedAway = opened !== null && opened.pathname !== pathname;
+  // start, skip link first. Then it goes, before anything is painted. A link
+  // that keeps the pathname (another tab of the same page) says so through
+  // `leave`, and the drawer goes the same way.
+  const navigatedAway = opened !== null && (opened.pathname !== pathname || opened.left === true);
   useLayoutEffect(() => {
     if (navigatedAway) setOpened(null);
   }, [navigatedAway]);
@@ -211,6 +223,10 @@ export function SettingsDrawerProvider({
     setOpened((current) => (current ? { ...current, section } : current));
   }, []);
 
+  const leave = useCallback((): void => {
+    setOpened((current) => (current ? { ...current, left: true } : current));
+  }, []);
+
   // Every link to the settings, wherever it is drawn: a click opens the
   // drawer instead (the link's own handlers still run, Next's Link sees the
   // default prevented and stays put), a hover or a focus starts the loading.
@@ -247,8 +263,8 @@ export function SettingsDrawerProvider({
   }, [open, prefetch]);
 
   const controls = useMemo<SettingsDrawerControls>(
-    () => ({ open, openHref, prefetch }),
-    [open, openHref, prefetch],
+    () => ({ open, openHref, prefetch, leave }),
+    [open, openHref, prefetch, leave],
   );
 
   return (

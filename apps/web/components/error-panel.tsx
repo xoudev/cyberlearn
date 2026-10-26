@@ -4,6 +4,7 @@
 import React from "react";
 import Link from "next/link";
 import { StandaloneFrame } from "./standalone-frame";
+import { newRequestHref } from "@/app/(app)/support/_components/new-request-query";
 
 export function ErrorPanel({
   scope,
@@ -42,7 +43,11 @@ export function ErrorPanel({
           {scope === "app" ? "Tableau de bord" : "Retour à l’accueil"}
         </Link>
         <Link
-          href={`/contact${digest ? `?ref=${encodeURIComponent(digest)}` : ""}`}
+          href={
+            scope === "app"
+              ? newRequestHref(digest ? { incident: digest } : undefined)
+              : `/contact${digest ? `?ref=${encodeURIComponent(digest)}` : ""}`
+          }
           className="state-secondary"
         >
           Signaler le problème

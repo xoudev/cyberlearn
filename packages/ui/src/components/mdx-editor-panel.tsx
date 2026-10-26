@@ -24,6 +24,11 @@
  * The quick one is a deliberate approximation: it reads the MDX with regular
  * expressions so it can run on every keystroke without the remark/rehype
  * chain. It is what the panel has without a `preview`, and a switch away with.
+ *
+ * The separator between the editor and the preview moves, by pointer or by
+ * arrow key, and the browser remembers where it was left (mdx-editor-layout).
+ * The panel is 620px high unless told otherwise; `fill` hands it its
+ * container's height, which is how the console's studio gives it the window.
  */
 
 import { ACCENT, BORDER, MONO } from "../lib/palette.js";
@@ -41,14 +46,47 @@ import {
 import { parseLessonBlocks } from "@cyberlearn/lib/mdx-blocks";
 import { BlockEditor } from "./block-editor/block-editor";
 import { MDX_EDITOR_THEME, mdxEditorTheme } from "./mdx-editor-theme";
+import {
+  clampSplit,
+  opensSplit,
+  readStoredSplit,
+  SPLIT_DEFAULT,
+  SPLIT_MAX,
+  SPLIT_MIN,
+  SPLIT_STEP,
+  splitAt,
+  storeSplit,
+} from "./mdx-editor-layout";
 import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
+import { inLessonOrder, LESSON_CHECK_OWNER, type MdxProblem, problemMarkers } from "./mdx-problems";
 import { inlineTokens, innerText, parseStringProps, stripImportDeclarations } from "./mdx-source";
 
 export { useLessonPreview } from "./mdx-preview-frame";
 export type { LessonPreviewAction, MdxEditorPreview, MdxPreviewResult } from "./mdx-preview-frame";
+export type { MdxProblem } from "./mdx-problems";
+export { MOBILE_PREVIEW_WIDTH, type PreviewDevice } from "./mdx-editor-layout";
 
 type EditorInstance = Parameters<OnMount>[0];
 const DANGER = "var(--color-danger)";
+
+/**
+ * The part of Monaco's namespace the panel uses: the markers, and the keys of
+ * the save shortcut. Its own types do not resolve in this package
+ * (monaco-editor is @monaco-editor/react's dependency, not this one's), so
+ * the members are typed here.
+ */
+interface MarkerApi {
+  editor: {
+    setModelMarkers: (
+      model: unknown,
+      owner: string,
+      markers: (ReturnType<typeof problemMarkers>[number] & { severity: number })[],
+    ) => void;
+  };
+  MarkerSeverity: { Error: number };
+  KeyMod: { CtrlCmd: number };
+  KeyCode: { KeyS: number };
+}
 
 // ── Dynamic import - Monaco has no SSR support ─────────────────────────────────
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
@@ -977,15 +1015,55 @@ export interface MdxEditorPanelProps {
   onChange: (v: string) => void;
   /** The site's rendering of the draft, when the app provides it (useLessonPreview). */
   preview?: MdxEditorPreview;
+  /**
+   * What the last save's content check found, each at its line and column:
+   * marked in the editor and listed above it. A save that ran the check sends
+   * a new array, empty when the content passed; one that stopped before it (a
+   * title the form refused) sends none, and what is on show stays. The site's
+   * preview, when it answers for a later draft, replaces them with what it
+   * found.
+   */
+  problems?: readonly MdxProblem[] | undefined;
+  /** The height of the editor and its preview, under the toolbar. 620px when left out. */
+  height?: number | string;
+  /** Takes all of its container's height instead, which the container must have. */
+  fill?: boolean;
+  /**
+   * What ⌘S (Ctrl+S) does from the code view, where Monaco has the keyboard.
+   * The block view's fields are plain inputs: the app's own listener on the
+   * window (useSaveShortcut) takes the shortcut there.
+   */
+  onSave?: (() => void) | undefined;
 }
 
 export function MdxEditorPanel({
   value,
   onChange,
   preview,
+  problems,
+  height = 620,
+  fill = false,
+  onSave,
 }: MdxEditorPanelProps): React.ReactElement {
   const editorRef = useRef<EditorInstance | null>(null);
+  const monacoRef = useRef<MarkerApi | null>(null);
+  /** Where to go once Monaco is there, when a problem is opened from the block view. */
+  const pendingReveal = useRef<MdxProblem | null>(null);
+  const [mounts, setMounts] = useState(0);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  // The problems on show: the last save's, until the preview answers for a
+  // later draft. A save is told apart by its array, not by what it holds: the
+  // same faults saved again after the preview cleared them are a new finding.
+  // The array is the action state's, so a render of the page keeps it.
+  const [shown, setShown] = useState<readonly MdxProblem[]>(problems ?? []);
+  const [received, setReceived] = useState(problems);
+  if (problems !== received) {
+    setReceived(problems);
+    if (problems !== undefined) setShown(problems);
+  }
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
@@ -1000,6 +1078,28 @@ export function MdxEditorPanel({
   const [previewMode, setPreviewMode] = useState<"site" | "quick">("site");
   const sitePreview = preview !== undefined && previewMode === "site";
 
+  // The editor's share of the width: the default on the server and on the
+  // first render, then what this browser kept.
+  const [splitPct, setSplitPct] = useState(SPLIT_DEFAULT);
+  const [dragging, setDragging] = useState(false);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const stored = readStoredSplit();
+    if (stored !== null) setSplitPct(stored);
+  }, []);
+  // A narrow panel (a phone, a tablet upright) opens on the editor alone: the
+  // two side by side are a sliver each. Measured once, as it mounts; the SPLIT
+  // button is still there for whoever wants both.
+  useEffect(() => {
+    const width = gridRef.current?.getBoundingClientRect().width ?? 0;
+    if (!opensSplit(width)) setSplit(false);
+  }, []);
+  const moveSplit = useCallback((next: number, keep: boolean) => {
+    const clamped = clampSplit(next);
+    setSplitPct(clamped);
+    if (keep) storeSplit(clamped);
+  }, []);
+
   // Debounced quick preview update
   useEffect(() => {
     const t = setTimeout(() => {
@@ -1013,9 +1113,65 @@ export function MdxEditorPanel({
   const lineCount = value.split("\n").length;
   const charCount = value.length;
 
-  const handleMount = useCallback<OnMount>((editor) => {
-    editorRef.current = editor;
+  const revealProblem = useCallback((problem: MdxProblem) => {
+    const ed = editorRef.current;
+    if (!ed) return;
+    ed.revealLineInCenter(problem.line);
+    ed.setPosition({ lineNumber: problem.line, column: problem.column });
+    ed.focus();
   }, []);
+
+  const handleMount = useCallback<OnMount>(
+    (editor, monaco) => {
+      editorRef.current = editor;
+      // Monaco's namespace, read through MarkerApi: its own type does not resolve here.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      monacoRef.current = monaco;
+      // Re-runs the markers' effect: a new editor has a new model.
+      setMounts((n) => n + 1);
+      // Monaco keeps the keys it is given a command for: the browser's own
+      // "save the page" never opens over the editor, and the app's listener on
+      // the window is not called a second time.
+      const keys = monacoRef.current;
+      if (onSaveRef.current !== undefined && keys !== null) {
+        editor.addCommand(keys.KeyMod.CtrlCmd | keys.KeyCode.KeyS, () => {
+          onSaveRef.current?.();
+        });
+      }
+      const pending = pendingReveal.current;
+      pendingReveal.current = null;
+      if (pending !== null) revealProblem(pending);
+    },
+    [revealProblem],
+  );
+
+  // The problems as Monaco markers, under the text they point at.
+  useEffect(() => {
+    const model = editorRef.current?.getModel();
+    const monaco = monacoRef.current;
+    if (!model || !monaco) return;
+    const markers = problemMarkers(shown, model.getLineCount(), (line) =>
+      model.getLineContent(line),
+    ).map((marker) => ({ ...marker, severity: monaco.MarkerSeverity.Error }));
+    monaco.editor.setModelMarkers(model, LESSON_CHECK_OWNER, markers);
+  }, [shown, mounts, editorMode]);
+
+  const openProblem = useCallback(
+    (problem: MdxProblem) => {
+      if (editorMode === "code") {
+        revealProblem(problem);
+        return;
+      }
+      // The block view has no lines: the code view opens, and goes there
+      // once Monaco has mounted.
+      pendingReveal.current = problem;
+      setBlocksProblem(null);
+      setEditorMode("code");
+    },
+    [editorMode, revealProblem],
+  );
+
+  const listed = useMemo(() => inLessonOrder(shown), [shown]);
   // Defined at each mount, not once per page: the cursor is the accent equipped
   // now, read under the panel (mdx-editor-theme.ts).
   const handleBefore = useCallback<BeforeMount>((monaco) => {
@@ -1086,6 +1242,10 @@ export function MdxEditorPanel({
         border: `1px solid ${BORDER}`,
         overflow: "hidden",
         background: "var(--color-bg-base)",
+        display: "flex",
+        flexDirection: "column",
+        height: fill ? "100%" : undefined,
+        minHeight: 0,
       }}
     >
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
@@ -1638,29 +1798,75 @@ export function MdxEditorPanel({
         </p>
       )}
 
+      {listed.length > 0 && (
+        <div
+          role="region"
+          aria-label="Problèmes du contenu"
+          style={{
+            maxHeight: 112,
+            overflowY: "auto",
+            padding: "6px 14px",
+            borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
+            background: "color-mix(in srgb, var(--color-danger) 7%, transparent)",
+            fontSize: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          <b style={{ color: DANGER, fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em" }}>
+            À CORRIGER · {listed.length}
+          </b>
+          <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0 }}>
+            {listed.map((problem, index) => (
+              <li
+                key={`${String(problem.line)}:${String(problem.column)}:${String(index)}`}
+                style={{ display: "flex", gap: 8, alignItems: "baseline" }}
+              >
+                <button
+                  type="button"
+                  title={`Aller à la ligne ${String(problem.line)}, colonne ${String(problem.column)}`}
+                  onClick={() => {
+                    openProblem(problem);
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    padding: "0 6px",
+                    border: `1px solid ${BORDER}`,
+                    background: "transparent",
+                    color: "var(--color-text-secondary)",
+                    fontFamily: MONO,
+                    fontSize: 10,
+                    cursor: "pointer",
+                  }}
+                >
+                  L{problem.line}:{problem.column}
+                </button>
+                <span style={{ color: "var(--color-text-primary)" }}>{problem.message}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── Editor + Preview ──────────────────────────────────────────── */}
       <div
+        ref={gridRef}
         className="mdx-editor-panes"
         data-split={split}
         style={{
           display: "grid",
-          gridTemplateColumns: split ? "55% 45%" : "1fr",
-          height: 620,
+          gridTemplateColumns: split ? `${String(splitPct)}% 7px minmax(0, 1fr)` : "minmax(0, 1fr)",
+          gridTemplateRows: "minmax(0, 1fr)",
+          ...(fill ? { flex: 1, minHeight: 0 } : { height, flexShrink: 0 }),
+          userSelect: dragging ? "none" : undefined,
         }}
       >
         {/* Blocks, or the Monaco editor */}
-        <div
-          style={{
-            borderRight: split ? `1px solid ${BORDER}` : "none",
-            overflow: "hidden",
-            height: 620,
-          }}
-        >
+        <div style={{ overflow: "hidden", height: "100%", minHeight: 0, minWidth: 0 }}>
           {editorMode === "blocks" ? (
             <BlockEditor value={value} onChange={onChange} />
           ) : (
             <MonacoEditor
-              height="620px"
+              height="100%"
               language="markdown"
               value={value}
               onChange={(v) => {
@@ -1696,66 +1902,136 @@ export function MdxEditorPanel({
           )}
         </div>
 
-        {/* Guide / the site's preview / the quick preview */}
-        {split &&
-          (showGuide ? (
-            <MdxGuide onInsert={insertAt} />
-          ) : sitePreview ? (
-            <MdxPreviewFrame
-              value={value}
-              preview={preview}
-              onQuick={() => {
-                setPreviewMode("quick");
-              }}
-            />
-          ) : (
-            <div
-              className="mdx-editor-quick"
-              style={{
-                height: 620,
-                overflow: "auto",
-                padding: "16px 20px 32px",
-                background: "var(--color-bg-elevated)",
-              }}
-            >
+        {/* The separator: dragged, or moved with the arrow keys once focused */}
+        {split && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Largeur de l'éditeur et de l'aperçu"
+            aria-valuemin={SPLIT_MIN}
+            aria-valuemax={SPLIT_MAX}
+            aria-valuenow={Math.round(splitPct)}
+            tabIndex={0}
+            title="Glisser pour élargir l'éditeur ou l'aperçu · double-clic : largeur par défaut"
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragging(true);
+            }}
+            onPointerMove={(event) => {
+              if (!dragging || !gridRef.current) return;
+              const box = gridRef.current.getBoundingClientRect();
+              moveSplit(splitAt(event.clientX, box.left, box.width), false);
+            }}
+            onPointerUp={(event) => {
+              if (!dragging) return;
+              event.currentTarget.releasePointerCapture(event.pointerId);
+              setDragging(false);
+              storeSplit(splitPct);
+            }}
+            onDoubleClick={() => {
+              moveSplit(SPLIT_DEFAULT, true);
+            }}
+            onKeyDown={(event) => {
+              const next =
+                event.key === "ArrowLeft"
+                  ? splitPct - SPLIT_STEP
+                  : event.key === "ArrowRight"
+                    ? splitPct + SPLIT_STEP
+                    : event.key === "Home"
+                      ? SPLIT_MIN
+                      : event.key === "End"
+                        ? SPLIT_MAX
+                        : null;
+              if (next === null) return;
+              event.preventDefault();
+              moveSplit(next, true);
+            }}
+            style={{
+              cursor: "col-resize",
+              touchAction: "none",
+              background: dragging
+                ? "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"
+                : "transparent",
+              borderLeft: `1px solid ${BORDER}`,
+              borderRight: `1px solid ${BORDER}`,
+              outlineOffset: -2,
+            }}
+          />
+        )}
+
+        {/* Guide / the site's preview / the quick preview. Deaf to the pointer
+            while the separator moves: the site's frame would take the drag. */}
+        {split && (
+          <div
+            style={{
+              height: "100%",
+              minWidth: 0,
+              minHeight: 0,
+              pointerEvents: dragging ? "none" : undefined,
+            }}
+          >
+            {showGuide ? (
+              <MdxGuide onInsert={insertAt} />
+            ) : sitePreview ? (
+              <MdxPreviewFrame
+                value={value}
+                preview={preview}
+                onQuick={() => {
+                  setPreviewMode("quick");
+                }}
+                onProblems={setShown}
+              />
+            ) : (
               <div
                 style={{
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  color: "var(--color-text-muted)",
-                  letterSpacing: "0.12em",
-                  marginBottom: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
+                  height: "100%",
+                  overflow: "auto",
+                  padding: "16px 20px 32px",
+                  background: "var(--color-bg-elevated)",
                 }}
               >
-                <span
+                <div
                   style={{
-                    width: 4,
-                    height: 4,
-                    background: ACCENT,
-                    display: "inline-block",
+                    fontFamily: MONO,
+                    fontSize: 9,
+                    color: "var(--color-text-muted)",
+                    letterSpacing: "0.12em",
+                    marginBottom: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
-                />
-                APERÇU RAPIDE
-                <span style={{ marginLeft: "auto", color: "var(--color-border-default)" }}>
-                  approximation · 350 ms
-                </span>
-                {preview !== undefined && (
-                  <PaneButton
-                    title="L'aperçu du site : la leçon rendue par le site, avec ses vrais composants"
-                    onClick={() => {
-                      setPreviewMode("site");
+                >
+                  <span
+                    style={{
+                      width: 4,
+                      height: 4,
+                      background: ACCENT,
+                      display: "inline-block",
                     }}
-                  >
-                    SITE
-                  </PaneButton>
-                )}
+                  />
+                  APERÇU RAPIDE
+                  <span style={{ marginLeft: "auto", color: "var(--color-border-default)" }}>
+                    approximation · 350 ms
+                  </span>
+                  {preview !== undefined && (
+                    <PaneButton
+                      title="L'aperçu du site : la leçon rendue par le site, avec ses vrais composants"
+                      onClick={() => {
+                        setPreviewMode("site");
+                      }}
+                    >
+                      SITE
+                    </PaneButton>
+                  )}
+                </div>
+                <MdxPreview content={quickPreview} />
               </div>
-              <MdxPreview content={quickPreview} />
-            </div>
-          ))}
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Status bar ────────────────────────────────────────────────── */}

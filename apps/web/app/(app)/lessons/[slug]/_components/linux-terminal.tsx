@@ -34,6 +34,7 @@ import { cssToken } from "@cyberlearn/ui";
 import { CommandExplanation } from "./command-explanation";
 import { linuxTerminalTheme } from "./terminal-themes";
 import { useExerciseRecord } from "./use-exercise-record";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 
 /**
  * A real Linux in the lesson: v86, an x86 emulator in WebAssembly, boots a
@@ -49,7 +50,7 @@ import { useExerciseRecord } from "./use-exercise-record";
 /** A typed line, offered for an explanation. */
 const CHIP: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
-  fontSize: 11,
+  fontSize: LAB_MONO_SIZE,
   padding: "3px 8px",
   border: "1px solid var(--color-border-default)",
   background: "transparent",
@@ -315,7 +316,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const parsed = propsSchema.safeParse(rawProps);
   const props = parsed.success ? parsed.data : {};
   const title = props.title ?? LINUX_TERMINAL_DEFAULT_TITLE;
-  const height = props.height ?? 380;
+  // The author's height, when written, is the screen's. Otherwise the screen
+  // follows its block's width in a lesson, and stays at 380px elsewhere
+  // (globals.css, .linux-terminal__screen).
+  const height = props.height;
   const files = props.files ?? {};
   const expected = (props.expectedCommands ?? []).map(normalizeCommand);
   const checks: StateCheck[] = props.checks ?? [];
@@ -713,8 +717,9 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
-          gap: 14,
+          gap: "8px 14px",
           padding: "11px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
@@ -734,7 +739,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             color: "var(--cosmetic-accent)",
             letterSpacing: "0.04em",
             flex: 1,
@@ -763,7 +768,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: allDone ? "var(--cosmetic-accent)" : "var(--color-text-faint)",
@@ -778,7 +783,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
             onClick={restart}
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               background: "transparent",
@@ -794,7 +799,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         ) : null}
       </div>
 
-      <div style={{ position: "relative", height }}>
+      <div
+        className="linux-terminal__screen"
+        style={height === undefined ? { position: "relative" } : { position: "relative", height }}
+      >
         {/* The margin around the screen sits on a wrapper: xterm's fit measures
             the screen's parent without its padding, and gave a padded parent
             one row and a few columns too many. Clipped as well, so the screen
@@ -978,7 +986,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           <span
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--color-text-muted)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -1020,7 +1028,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           <div
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--cosmetic-accent)",
               letterSpacing: "0.18em",
               textTransform: "uppercase",

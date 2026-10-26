@@ -8,17 +8,22 @@ import {
   CARD_SESSION_SIZE,
   cardsForCompletion,
   daysForBox,
+  drawModuleReview,
   drawReviewSession,
   dueAfter,
   dueCutoff,
   gradeReviewSession,
   isReviewableLesson,
+  isSessionAnswered,
   isStale,
   orphanCards,
   pickSessionCards,
   prioritizeCards,
   readDraw,
   readSessionAnswers,
+  REVIEW_SESSION_XP,
+  reviewOptionOrder,
+  reviewQuestions,
   staleBefore,
   type DueCard,
 } from "../cards.js";
@@ -515,6 +520,105 @@ describe("gradeReviewSession", () => {
     const without = new Map(sources);
     without.delete(sourceKey("l3", "q-3"));
     expect(gradeReviewSession(draw, without, { "1": 7, "2": 0 })).toEqual([]);
+  });
+});
+
+describe("a session's questions and its end", () => {
+  const USER = "11111111-1111-4111-8111-111111111111";
+  const cards = [
+    due("1", "l1", "2026-10-01"),
+    due("2", "l2", "2026-10-02"),
+    due("3", "l3", "2026-10-03"),
+  ];
+  const sources = sourcesOf(
+    source("l1", "q-1", ["A", "B", "C"], 1),
+    source("l2", "q-2", ["A", "B"], 0),
+    source("l3", "q-3", ["A", "B"], 1),
+  );
+  const draw = drawReviewSession(cards, sources, USER, "2026-10-11");
+
+  it("pays fifteen XP for a session", () => {
+    expect(REVIEW_SESSION_XP).toBe(15);
+  });
+
+  it("shows the questions in the drawn order, by drawn index, without the answer key", () => {
+    const questions = reviewQuestions(draw, sources);
+    expect(questions.map((q) => q.index)).toEqual([0, 1, 2]);
+    expect(questions[0]?.domain).toBe("Leçon l1");
+    for (const q of questions) expect(Object.keys(q)).not.toContain("correct");
+  });
+
+  it("is done once every question is answered, and not before", () => {
+    expect(isSessionAnswered(draw, sources, {})).toBe(false);
+    expect(isSessionAnswered(draw, sources, { "0": 0, "1": 1 })).toBe(false);
+    expect(isSessionAnswered(draw, sources, { "0": 0, "1": 1, "2": 0 })).toBe(true);
+  });
+
+  it("does not wait for a question gone from its lesson since the draw", () => {
+    const without = new Map(sources);
+    without.delete(sourceKey("l3", "q-3"));
+    expect(reviewQuestions(draw, without).map((q) => q.index)).toEqual([0, 1]);
+    expect(isSessionAnswered(draw, without, { "0": 0, "1": 1 })).toBe(true);
+  });
+
+  it("is never done with nothing left to ask", () => {
+    expect(isSessionAnswered(draw, new Map(), {})).toBe(false);
+    expect(isSessionAnswered([], sources, {})).toBe(false);
+  });
+
+  it("shows a question in the same order in the day's session and on its own", () => {
+    const ref = draw[0];
+    const options = ["A", "B", "C"];
+    expect(ref?.order).toEqual(reviewOptionOrder(options, USER, "l1", "q-1", "2026-10-11"));
+  });
+});
+
+describe("drawModuleReview", () => {
+  const USER = "11111111-1111-4111-8111-111111111111";
+  const moduleSources = [
+    ...["q-1", "q-2", "q-3", "q-4"].map((id) => source("l1", id, ["A", "B", "C"], 2)),
+    ...["q-1", "q-2", "q-3"].map((id) => source("l2", id, ["A", "B"], 0)),
+    ...["q-1", "q-2", "q-3"].map((id) => source("l3", id, ["Oui", "Non", "Aucune des deux"], 1)),
+    source("l4", "q-1", ["A", "B", "C", "D"], 3),
+  ];
+
+  it("asks six questions at most, two at most from one lesson", () => {
+    const draw = drawModuleReview(moduleSources, USER, "linux:2", "2026-10-11");
+    expect(draw).toHaveLength(CARD_SESSION_SIZE);
+    const perLesson = new Map<string, number>();
+    for (const ref of draw) perLesson.set(ref.lessonId, (perLesson.get(ref.lessonId) ?? 0) + 1);
+    expect(Math.max(...perLesson.values())).toBeLessThanOrEqual(CARD_SESSION_PER_LESSON);
+    expect(new Set(draw.map((ref) => sourceKey(ref.lessonId, ref.quizId))).size).toBe(draw.length);
+  });
+
+  it("draws the same questions again for the same learner, module and day, and others another day", () => {
+    const first = drawModuleReview(moduleSources, USER, "linux:2", "2026-10-11");
+    expect(drawModuleReview(moduleSources, USER, "linux:2", "2026-10-11")).toEqual(first);
+    const days = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15"].map((key) =>
+      JSON.stringify(
+        drawModuleReview(moduleSources, USER, "linux:2", key).map((ref) => ref.quizId),
+      ),
+    );
+    expect(new Set([JSON.stringify(first.map((ref) => ref.quizId)), ...days]).size).toBeGreaterThan(
+      1,
+    );
+  });
+
+  it("gives each question the day's order, which an answer is checked against again", () => {
+    for (const ref of drawModuleReview(moduleSources, USER, "linux:2", "2026-10-11")) {
+      const options = moduleSources.find(
+        (s) => s.lessonId === ref.lessonId && s.quizId === ref.quizId,
+      )?.options;
+      expect(ref.order).toEqual(
+        reviewOptionOrder(options ?? [], USER, ref.lessonId, ref.quizId, "2026-10-11"),
+      );
+    }
+  });
+
+  it("asks what there is when the module has fewer questions, and nothing when it has none", () => {
+    const two = moduleSources.filter((s) => s.lessonId === "l2").slice(0, 2);
+    expect(drawModuleReview(two, USER, "linux:2", "2026-10-11")).toHaveLength(2);
+    expect(drawModuleReview([], USER, "linux:2", "2026-10-11")).toEqual([]);
   });
 });
 

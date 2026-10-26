@@ -8,10 +8,13 @@ import {
   counted,
   countdownLabel,
   dateToParisLocal,
+  disqualifiedFlagError,
+  disqualifiedFlagText,
   durationLabel,
   elapsedShare,
   firstSolves,
   flagNotice,
+  noTournamentsCopy,
   parisLocalToDate,
   phaseTallyWord,
   placeLabel,
@@ -200,6 +203,21 @@ describe("phaseTallyWord", () => {
   });
 });
 
+describe("noTournamentsCopy", () => {
+  it("tells a reader in a class that theirs will bring one", () => {
+    const copy = noTournamentsCopy(true);
+    expect(copy.title).toBe("Aucun tournoi pour l'instant");
+    expect(copy.message).toContain("quand la tienne en rejoint un");
+  });
+
+  it("tells a reader in no class that a tournament brings classes together", () => {
+    const copy = noTournamentsCopy(false);
+    expect(copy.title).toBe("Les tournois se jouent en classe");
+    expect(copy.message).toContain("Un tournoi réunit des classes");
+    expect(copy.message).toContain("Tu n'es dans aucune classe pour l'instant");
+  });
+});
+
 describe("teamsLabel", () => {
   it("counts the classes, and the schools when schools play", () => {
     expect(teamsLabel("CLASS", 4, 4)).toBe("4 classes");
@@ -345,6 +363,16 @@ describe("challengeStatus and flagNotice", () => {
     expect(challengeStatus({ phase: "FINISHED", canPlay: false, ...player }, true)).toBe("solved");
     expect(challengeStatus({ phase: "RUNNING", canPlay: true, ...player }, false)).toBe("open");
     expect(challengeStatus({ phase: "FINISHED", canPlay: false, ...player }, false)).toBe("closed");
+  });
+
+  it("is disqualified once the console took the flag back, over and above found", () => {
+    const player = { myTeam: "SIO1-A" };
+    expect(challengeStatus({ phase: "RUNNING", canPlay: true, ...player }, true, true)).toBe(
+      "disqualified",
+    );
+    expect(challengeStatus({ phase: "FINISHED", canPlay: false, ...player }, true, true)).toBe(
+      "disqualified",
+    );
   });
 
   it("is only to read for someone who plays for no team, before the end as after it", () => {
@@ -498,5 +526,28 @@ describe("placeLabel", () => {
   it("writes a rank as a place", () => {
     expect(placeLabel(1)).toBe("1er");
     expect(placeLabel(2)).toBe("2e");
+  });
+});
+
+describe("disqualifiedFlagText and disqualifiedFlagError", () => {
+  it("gives the console's reason, once, and says the flag counts for nobody", () => {
+    expect(disqualifiedFlagText("Flag partagé entre équipes.", "SIO1-A")).toBe(
+      "Motif : Flag partagé entre équipes. Ce flag ne compte plus, ni pour toi ni pour SIO1-A.",
+    );
+    expect(disqualifiedFlagError(" Flag partagé entre équipes ")).toBe(
+      "Ton flag pour ce défi a été disqualifié (Flag partagé entre équipes) : il ne compte plus.",
+    );
+  });
+
+  it("still says it without a reason, or without a team", () => {
+    expect(disqualifiedFlagText(null, null)).toBe(
+      "Ce flag ne compte plus, ni pour toi ni pour ton équipe.",
+    );
+    expect(disqualifiedFlagText("  ", "SIO1-A")).toBe(
+      "Ce flag ne compte plus, ni pour toi ni pour SIO1-A.",
+    );
+    expect(disqualifiedFlagError(null)).toBe(
+      "Ton flag pour ce défi a été disqualifié : il ne compte plus.",
+    );
   });
 });

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
 import { CommandExplanation } from "./command-explanation";
 import { simulatedTerminalTheme } from "./terminal-themes";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import { getTerminalScenario } from "@cyberlearn/lib";
 
@@ -26,7 +27,7 @@ const simulatedTerminalPropsSchema = z.object({
 /** A typed line, offered for an explanation. */
 const CHIP: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
-  fontSize: 11,
+  fontSize: LAB_MONO_SIZE,
   padding: "3px 8px",
   border: "1px solid var(--color-border-default)",
   background: "transparent",
@@ -452,6 +453,14 @@ function buildHelpText(commands: string[]): string {
 }
 
 /**
+ * The line that offers the nearest command after a mistyped one. It speaks to
+ * the reader as the rest of the terminal and of the site do, with "tu".
+ */
+export function didYouMeanLine(near: string): string {
+  return `\x1b[33mTu voulais dire : \x1b[37m${near}\x1b[33m ?\x1b[0m`;
+}
+
+/**
  * The accepted command closest to what was typed, or null when nothing is
  * close. Levenshtein over the whole string, capped at a quarter of its length
  * so "ls -la" does not get "cat robots.txt" suggested at it.
@@ -527,7 +536,9 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     scenario,
     commands: extraCommands,
     title,
-    height = 320,
+    // Written by the author, it is the screen's height. Otherwise the screen
+    // follows its block's width (globals.css, .sim-terminal__screen).
+    height,
     shell = "bash",
     expectedCommands = [],
     hints = [],
@@ -590,6 +601,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     mounted.current = true;
 
     let term: TerminalType;
+    let resizeObserver: ResizeObserver | null = null;
 
     async function initTerminal() {
       const { Terminal } = await import("@xterm/xterm");
@@ -614,6 +626,15 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       if (containerRef.current) {
         term.open(containerRef.current);
         fitAddon.fit();
+        // The screen's height follows its block's width: fitted again when
+        // the block is resized, or the rows would stop short of the frame or
+        // run past it.
+        if (typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(() => {
+            fitAddon.fit();
+          });
+          resizeObserver.observe(containerRef.current);
+        }
       }
 
       termRef.current = term;
@@ -643,7 +664,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         // "commande introuvable", which is where the reader got stuck.
         const near = closestCommand(cmd, Object.keys(commandMap));
         if (near !== null && near !== "help") {
-          term.writeln(`\x1b[33mVouliez-vous dire : \x1b[37m${near}\x1b[33m ?\x1b[0m`);
+          term.writeln(didYouMeanLine(near));
         } else if (!isPs) {
           term.writeln(
             "\x1b[33mAstuce : tape \x1b[37mhelp\x1b[33m pour voir les commandes.\x1b[0m",
@@ -756,6 +777,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     void initTerminal();
 
     return () => {
+      resizeObserver?.disconnect();
       termRef.current?.dispose();
       termRef.current = null;
     };
@@ -779,8 +801,9 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
-          gap: 14,
+          gap: "8px 14px",
           padding: "11px 16px",
           borderBottom: `1px solid ${isPs ? "#1B2A4A" : "var(--color-border-subtle)"}`,
           background: isPs ? "rgba(1,36,86,0.4)" : "rgba(5,4,26,0.7)",
@@ -803,7 +826,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             color: accentColor,
             letterSpacing: "0.04em",
             flex: 1,
@@ -818,7 +841,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           <span
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               color:
@@ -835,7 +858,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           <span
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
               color: "var(--color-text-faint)",
@@ -854,8 +877,9 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       {/* Terminal container */}
       <div
         ref={containerRef}
+        className="sim-terminal__screen"
         style={{
-          height,
+          ...(height === undefined ? {} : { height }),
           padding: "16px 18px",
           overflow: "hidden",
         }}
@@ -875,7 +899,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           <span
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--color-text-muted)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -918,7 +942,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           <div
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--cosmetic-accent)",
               letterSpacing: "0.18em",
               textTransform: "uppercase",

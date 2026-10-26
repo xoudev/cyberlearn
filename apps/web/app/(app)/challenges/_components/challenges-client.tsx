@@ -456,17 +456,11 @@ export function ChallengesClient({ items, weekly, nowMs }: Props): React.ReactEl
     { key: "done", label: "Résolus", count: items.filter((i) => matches(i, "done")).length },
   ];
 
+  // The breadcrumb, the title and the section's tabs are drawn above, by the
+  // page (challenges-header.tsx).
   return (
-    <div className="chx dfx learning-catalogue learning-workspace">
-      <header className="catalogue-masthead">
-        <div className="catalogue-masthead__title">
-          <p className="catalogue-masthead__eyebrow">Pratiquer / Mettre ses réflexes à l’épreuve</p>
-          <h1>
-            Les défis<span>.</span>
-          </h1>
-          <p>Choisis un exercice et mets tes connaissances à l’épreuve.</p>
-        </div>
-      </header>
+    <div className="dfx learning-workspace">
+      <p className="pg-lede">Choisis un exercice et mets tes connaissances à l’épreuve.</p>
       <ul className="dfx-tally catalogue-ledger" aria-label="Où tu en es">
         {tally.map(({ status, n }) => (
           <li key={status} data-tally={status}>

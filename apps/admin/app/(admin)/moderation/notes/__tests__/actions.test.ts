@@ -4,10 +4,10 @@ const requireAdminAction = vi.fn();
 vi.mock("@/lib/auth", () => ({ requireAdminAction }));
 
 const resolveNote = vi.fn();
-const auditCreate = vi.fn();
+const record = vi.fn();
 vi.mock("@cyberlearn/db", () => ({
   noteReportRepository: { resolveNote },
-  prisma: { auditLog: { create: auditCreate } },
+  auditLogRepository: { record },
 }));
 
 const revalidatePath = vi.fn();
@@ -41,8 +41,8 @@ describe("resolveNoteReportsAction", () => {
   it("takes the note off every share, and logs what it covered", async () => {
     await resolveNoteReportsAction(form({ noteId: NOTE, outcome: "UNSHARED" }));
     expect(resolveNote).toHaveBeenCalledWith(NOTE, "UNSHARED");
-    const [args] = auditCreate.mock.calls[0] as [{ data: Record<string, unknown> }];
-    expect(args.data).toMatchObject({
+    const [entry] = record.mock.calls[0] as [Record<string, unknown>];
+    expect(entry).toMatchObject({
       actorId: "admin-1",
       action: "note.report.unshare",
       targetType: "note",
@@ -56,14 +56,14 @@ describe("resolveNoteReportsAction", () => {
     resolveNote.mockResolvedValue({ reports: 1, sharesRemoved: 0 });
     await resolveNoteReportsAction(form({ noteId: NOTE, outcome: "DISMISSED" }));
     expect(resolveNote).toHaveBeenCalledWith(NOTE, "DISMISSED");
-    const [args] = auditCreate.mock.calls[0] as [{ data: Record<string, unknown> }];
-    expect(args.data).toMatchObject({ action: "note.report.dismiss" });
+    const [entry] = record.mock.calls[0] as [Record<string, unknown>];
+    expect(entry).toMatchObject({ action: "note.report.dismiss" });
   });
 
   it("does nothing with an outcome or an id it does not know", async () => {
     await resolveNoteReportsAction(form({ noteId: NOTE, outcome: "DELETE" }));
     await resolveNoteReportsAction(form({ noteId: "x", outcome: "UNSHARED" }));
     expect(resolveNote).not.toHaveBeenCalled();
-    expect(auditCreate).not.toHaveBeenCalled();
+    expect(record).not.toHaveBeenCalled();
   });
 });

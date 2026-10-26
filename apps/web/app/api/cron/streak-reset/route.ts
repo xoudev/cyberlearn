@@ -5,6 +5,7 @@ import { applyDayBoundary, dayKey } from "@cyberlearn/lib";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { failureCounts, trackCronRun } from "@/lib/cron-run";
 
 // Vercel Cron: runs daily (see vercel.json crons config).
 // For each user with a live streak who did not act yesterday, either consume a
@@ -16,7 +17,19 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = new Date();
+  // A write that failed leaves the others to go through, and the run failed all the same.
+  const summary = await trackCronRun("streak-reset", () => resetStreaks(new Date()), {
+    failure: (r) => failureCounts([[r.failed, "écriture en échec", "écritures en échec"]]),
+  });
+  return NextResponse.json({ ok: true, ...summary });
+}
+
+async function resetStreaks(now: Date): Promise<{
+  scanned: number;
+  frozen: number;
+  broken: number;
+  failed: number;
+}> {
   // Coarse pre-filter to limit the scan; the exact day-gap decision is made per
   // user by applyDayBoundary. 20h ago is always at least "not today/yesterday"
   // safe to skip - anyone active more recently is still within the grace window.
@@ -75,11 +88,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     log.error({ scope: "streak-reset", failed }, "streak writes failed");
   }
 
-  return NextResponse.json({
-    ok: true,
+  return {
     scanned: candidates.length,
     frozen: frozenIds.length,
     broken: brokenIds.length,
     failed,
-  });
+  };
 }

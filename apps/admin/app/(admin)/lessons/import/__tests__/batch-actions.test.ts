@@ -1,22 +1,56 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as LessonImport from "@/lib/services/lesson-import.service";
+import type * as LessonUpdate from "@/lib/services/lesson-update.service";
 
 const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn(),
-  findFirst: vi.fn(),
+  findByRefCode: vi.fn(),
+  findIdBySlug: vi.fn(),
   findMany: vi.fn(),
-  auditCount: vi.fn(),
-  auditCreate: vi.fn(),
+  answers: vi.fn(),
+  edits: vi.fn(),
+  drafts: vi.fn(),
+  create: vi.fn(),
+  importCount: vi.fn(),
+  auditRecord: vi.fn(),
+  apply: vi.fn(),
+  validate: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
-  prisma: {
-    lesson: { findFirst: m.findFirst, findMany: m.findMany },
-    auditLog: { count: m.auditCount, create: m.auditCreate },
+  auditLogRepository: { record: m.auditRecord },
+  lessonFileRepository: {
+    countImportsSince: m.importCount,
+    findByRefCode: m.findByRefCode,
+    findIdBySlug: m.findIdBySlug,
+    findByRefCodesForLinks: m.findMany,
+    quizAnswerCounts: m.answers,
+    consoleEditsSinceFile: m.edits,
+    openDrafts: m.drafts,
+    createFromFile: m.create,
   },
 }));
+// The real validation runs unless a test makes one file fail it.
+vi.mock("@/lib/services/lesson-import.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof LessonImport>()),
+  validateMdxContent: m.validate,
+}));
+vi.mock("@/lib/services/lesson-update.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof LessonUpdate>()),
+  applyLessonContentUpdate: m.apply,
+}));
 
-import { validateImportBatchAction } from "../actions";
+import {
+  importLessonBatchAction,
+  updateLessonFromImportAction,
+  validateImportBatchAction,
+} from "../actions";
+
+const { validateMdxContent } = await vi.importActual<typeof LessonImport>(
+  "@/lib/services/lesson-import.service",
+);
 
 function mdx(refCode: string, slug: string, prereqs: string[] = []): string {
   return `---
@@ -37,13 +71,28 @@ Un contenu de test parfaitement ordinaire en Markdown.
 `;
 }
 
+const HASH = "a".repeat(64);
+const HOUR = 60 * 60 * 1000;
+
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: "admin-1" });
-  m.findFirst.mockResolvedValue(null);
+  m.findByRefCode.mockResolvedValue(null);
+  m.findIdBySlug.mockResolvedValue(null);
   m.findMany.mockResolvedValue([]);
-  m.auditCount.mockResolvedValue(0);
-  m.auditCreate.mockResolvedValue({});
+  m.answers.mockResolvedValue([]);
+  m.edits.mockResolvedValue(new Map());
+  m.drafts.mockResolvedValue(new Map());
+  m.create.mockImplementation((input: { fields: { refCode: string } }) =>
+    Promise.resolve({
+      lessonId: `id-${input.fields.refCode}`,
+      refCode: input.fields.refCode,
+      version: 1,
+    }),
+  );
+  m.importCount.mockResolvedValue(0);
+  m.auditRecord.mockResolvedValue(undefined);
+  m.validate.mockImplementation(validateMdxContent);
 });
 
 describe("validateImportBatchAction", () => {
@@ -102,5 +151,185 @@ describe("validateImportBatchAction", () => {
     expect(Array.isArray(res)).toBe(false);
     if (Array.isArray(res)) return;
     expect(res.status).toBe("invalid_input");
+  });
+});
+
+describe("importLessonBatchAction", () => {
+  it("never creates a second lesson for a refCode the database got in the meantime", async () => {
+    m.findByRefCode.mockResolvedValue({
+      id: "lesson-1",
+      refCode: "CL-LSN-001-V01",
+      slug: "lecon-a",
+      status: "DRAFT",
+      updatedAt: new Date(),
+      contentMdx: "# Avant",
+      title: "Une lecon de test",
+      description: "Une description suffisamment longue pour le schema de validation.",
+      category: "DEV",
+      difficulty: "BEGINNER",
+      estimatedMinutes: 10,
+      xpReward: 50,
+      prerequisites: [],
+    });
+
+    const res = await importLessonBatchAction([
+      { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a") },
+    ]);
+
+    expect(res.status).toBe("done");
+    if (res.status !== "done") return;
+    expect(res.outcomes).toMatchObject([{ name: "a.mdx", status: "exists" }]);
+    const [outcome] = res.outcomes;
+    expect(outcome?.status === "exists" && outcome.result.update?.lessonId).toBe("lesson-1");
+    expect(m.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a new lesson in one write, which records its version and its audit row", async () => {
+    const content = mdx("CL-LSN-001-V01", "lecon-a");
+    const res = await importLessonBatchAction([{ name: "a.mdx", content }]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [{ name: "a.mdx", status: "success", lessonId: "id-CL-LSN-001-V01" }],
+    });
+    expect(m.create).toHaveBeenCalledExactlyOnceWith({
+      fields: expect.objectContaining({ refCode: "CL-LSN-001-V01", slug: "lecon-a" }) as unknown,
+      actorId: "admin-1",
+      prerequisiteRefCodes: [],
+      auditMetadata: {
+        refCode: "CL-LSN-001-V01",
+        contentHash: expect.stringMatching(/^[a-f0-9]{64}$/) as unknown,
+      },
+    });
+    // The success row is the publish's own: none is written beside it.
+    expect(m.auditRecord).not.toHaveBeenCalled();
+  });
+
+  it("logs a file that fails its validation as rejected, with its fingerprint and first error", async () => {
+    const content = mdx("CL-LSN-001-V01", "lecon-a");
+    m.validate.mockResolvedValueOnce({ valid: false, errors: [{ message: "x" }], warnings: [] });
+
+    const res = await importLessonBatchAction([{ name: "a.mdx", content }]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [{ name: "a.mdx", status: "validation_error" }],
+    });
+    expect(m.create).not.toHaveBeenCalled();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rejected",
+      targetType: "lesson",
+      targetId: null,
+      metadata: {
+        contentHash: createHash("sha256").update(content).digest("hex"),
+        errorCount: 1,
+        firstError: "x",
+      },
+    });
+  });
+
+  it("stops mid-batch when the budget runs out between two files, and logs that it did", async () => {
+    // The batch's own check, then one per file: the second file finds none left.
+    m.importCount.mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(250);
+
+    const res = await importLessonBatchAction([
+      { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a") },
+      { name: "b.mdx", content: mdx("CL-LSN-002-V01", "lecon-b") },
+    ]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [
+        { name: "a.mdx", status: "success" },
+        { name: "b.mdx", status: "skipped" },
+      ],
+    });
+    expect(m.create).toHaveBeenCalledOnce();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: {},
+    });
+  });
+
+  it("counts updates in the hourly budget, with imports", async () => {
+    m.importCount.mockResolvedValue(250);
+    const before = Date.now();
+    const res = await importLessonBatchAction([
+      { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a") },
+    ]);
+    const after = Date.now();
+    expect(res).toEqual({ status: "rate_limited", remaining: 0 });
+    // Over the last hour: which rows count is lessonFileRepository.countImportsSince's.
+    const [actorId, since] = m.importCount.mock.calls[0] as [string, Date];
+    expect(actorId).toBe("admin-1");
+    expect(since.getTime()).toBeGreaterThanOrEqual(before - HOUR);
+    expect(since.getTime()).toBeLessThanOrEqual(after - HOUR);
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: { requested: 1, remaining: 0 },
+    });
+  });
+});
+
+describe("updateLessonFromImportAction", () => {
+  const input = { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a"), hash: HASH };
+
+  it("writes the file over its lesson, from the import, with the fingerprint seen", async () => {
+    m.apply.mockResolvedValue({ ok: true, lessonId: "lesson-1", version: 3, draftKept: false });
+    expect(await updateLessonFromImportAction(input)).toEqual({
+      status: "success",
+      lessonId: "lesson-1",
+      version: 3,
+      draftKept: false,
+    });
+    expect(m.apply).toHaveBeenCalledWith(input.content, HASH, "admin-1", {
+      kind: "import",
+      file: "a.mdx",
+    });
+  });
+
+  it("says when the studio draft open on the lesson is kept", async () => {
+    m.apply.mockResolvedValue({ ok: true, lessonId: "lesson-1", version: 3, draftKept: true });
+    expect(await updateLessonFromImportAction(input)).toMatchObject({
+      status: "success",
+      draftKept: true,
+    });
+  });
+
+  it("passes on a refusal with the file's problems", async () => {
+    const errors = [{ field: "contentMdx", line: 14, message: "Ligne 14 : …" }];
+    m.apply.mockResolvedValue({ ok: false, reason: "invalid", message: "Refusé.", errors });
+    expect(await updateLessonFromImportAction(input)).toEqual({
+      status: "refused",
+      reason: "invalid",
+      message: "Refusé.",
+      errors,
+    });
+  });
+
+  it("refuses a malformed request before anything else", async () => {
+    const res = await updateLessonFromImportAction({ ...input, hash: "pas-une-empreinte" });
+    expect(res.status).toBe("invalid_input");
+    expect(m.apply).not.toHaveBeenCalled();
+  });
+
+  it("stops at the hourly budget, and logs that it did", async () => {
+    m.importCount.mockResolvedValue(250);
+    expect(await updateLessonFromImportAction(input)).toEqual({ status: "rate_limited" });
+    expect(m.apply).not.toHaveBeenCalled();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: { update: true },
+    });
   });
 });

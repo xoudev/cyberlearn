@@ -1,5 +1,7 @@
+import { removalKindOf, type RemovalKind } from "@cyberlearn/lib/moderation/removal";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { MODERATION_SURFACE } from "./moderation.repository.js";
 
 /**
  * The forum.
@@ -26,6 +28,12 @@ const AUTHOR = {
 export const POSTS_PER_PAGE = 30;
 /** How many threads a section shows at once. */
 export const TOPICS_PER_PAGE = 25;
+/**
+ * How many threads, and how many messages, a GDPR export lists: the most
+ * recent ones of each. The export says so in its metadata
+ * (rgpd/build-export.ts); a message is free text, so the file is bounded.
+ */
+export const FORUM_EXPORT_LIMIT = 1000;
 
 export interface ForumAuthor {
   id: string;
@@ -70,6 +78,12 @@ export interface ForumPostView {
   editedAt: Date | null;
   /** True only for a row the viewer is allowed to see anyway - their own. */
   isHidden: boolean;
+  /**
+   * Why such a row is out of the thread, null when it is up: withdrawn by its
+   * author, held by the screen until a moderator reads it, or hidden by a
+   * moderator. All three are `isHidden`; the author is told which.
+   */
+  removal: RemovalKind | null;
   author: ForumAuthor | null;
 }
 
@@ -120,6 +134,31 @@ function preview(content: string, max = 160): string {
     .replace(/\s+/gu, " ")
     .trim();
   return flat.length <= max ? flat : `${flat.slice(0, max - 1)}…`;
+}
+
+/**
+ * Which of these messages the moderation queue still has an entry for, or whose
+ * thread it has one for: the ones the screen held and a moderator has not read.
+ *
+ * A thread opened and held records its event against the thread rather than
+ * its opening message, so the thread's id is asked about too. Nothing is read
+ * when there is no message to ask about, which is the thread of almost every
+ * reader.
+ */
+async function awaitingReviewAmong(
+  topicId: string,
+  postIds: readonly string[],
+): Promise<Set<string>> {
+  if (postIds.length === 0) return new Set();
+  const events = await prisma.moderationEvent.findMany({
+    where: {
+      outcome: "PENDING",
+      surface: { in: [MODERATION_SURFACE.forumPost, MODERATION_SURFACE.forumTopic] },
+      contentId: { in: [topicId, ...postIds] },
+    },
+    select: { contentId: true },
+  });
+  return new Set(events.flatMap((event) => (event.contentId === null ? [] : [event.contentId])));
 }
 
 /** What a reader may see: everything not hidden, plus their own hidden rows. */
@@ -254,11 +293,20 @@ export const forumRepository = {
           createdAt: true,
           editedAt: true,
           isHidden: true,
+          hiddenByModeration: true,
           author: { select: AUTHOR },
         },
       }),
       prisma.forumPost.count({ where: postWhere }),
     ]);
+
+    // A hidden message of the viewer's own is one of three things, and only
+    // the moderation queue tells a held one from one they withdrew (see
+    // removalKindOf). Asked only when there is such a message on the page.
+    const awaiting = await awaitingReviewAmong(
+      topic.id,
+      posts.filter((p) => p.isHidden && !p.hiddenByModeration).map((p) => p.id),
+    );
 
     return {
       ...toTopicSummary(topic),
@@ -269,6 +317,11 @@ export const forumRepository = {
         createdAt: p.createdAt,
         editedAt: p.editedAt,
         isHidden: p.isHidden,
+        removal: removalKindOf({
+          isHidden: p.isHidden,
+          hiddenByModeration: p.hiddenByModeration,
+          awaitingReview: awaiting.has(p.id) || awaiting.has(topic.id),
+        }),
         author: toAuthor(p.author),
       })),
     };
@@ -439,8 +492,15 @@ export const forumRepository = {
       select: { id: true },
     });
 
+    // Who took it down decides whether the console may put it back: an
+    // administrator's hand on someone else's message is the moderation's, an
+    // author's withdrawal of their own is final.
+    const byModeration = post.authorId !== actor.id;
     await prisma.$transaction(async (tx) => {
-      await tx.forumPost.update({ where: { id: post.id }, data: { isHidden: true } });
+      await tx.forumPost.update({
+        where: { id: post.id },
+        data: { isHidden: true, hiddenByModeration: byModeration },
+      });
       if (first?.id === post.id) {
         await tx.forumTopic.update({ where: { id: post.topicId }, data: { isHidden: true } });
       } else {
@@ -464,6 +524,50 @@ export const forumRepository = {
   /** Holds a thread at the top of its section, or lets it go. Administrators only. */
   async setPinned(topicId: string, pinned: boolean): Promise<void> {
     await prisma.forumTopic.update({ where: { id: topicId }, data: { pinned } });
+  },
+
+  /**
+   * The threads the account opened, most recent first, for its GDPR export
+   * (rgpd/build-export.ts). Hidden ones included: a withdrawn or moderated
+   * thread is still held. The title and the section, not the thread's replies,
+   * which are their authors'; the opening message is among the posts below.
+   */
+  async exportTopicsFor(userId: string) {
+    return prisma.forumTopic.findMany({
+      where: { authorId: userId },
+      select: {
+        title: true,
+        isHidden: true,
+        lockedAt: true,
+        createdAt: true,
+        category: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FORUM_EXPORT_LIMIT,
+    });
+  },
+
+  /**
+   * The messages the account wrote, replies and opening messages, most recent
+   * first, for its GDPR export. Hidden ones included, with who hid them (the
+   * author's own withdrawal or the moderation's): the text stays in the base
+   * and is theirs. The thread's title says where it was written; the other
+   * people's messages around it are not read.
+   */
+  async exportPostsFor(userId: string) {
+    return prisma.forumPost.findMany({
+      where: { authorId: userId },
+      select: {
+        content: true,
+        isHidden: true,
+        hiddenByModeration: true,
+        editedAt: true,
+        createdAt: true,
+        topic: { select: { title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FORUM_EXPORT_LIMIT,
+    });
   },
 };
 

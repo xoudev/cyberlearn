@@ -64,6 +64,8 @@ describe("tickets (integration, real DB)", () => {
   afterAll(async () => {
     if (!configured) return;
     await prisma.contactTicket.deleteMany({ where: { id: { in: [ticketId, resolvedTicketId] } } });
+    // Assigning and noting write audit rows, which would outlive their actor.
+    await prisma.auditLog.deleteMany({ where: { actorId: staff } });
     await prisma.user.deleteMany({ where: { id: { in: USER_IDS } } });
   });
 
@@ -88,6 +90,37 @@ describe("tickets (integration, real DB)", () => {
     it("refuses it to anyone else, id or no id", async () => {
       if (!configured) return;
       expect(await ticketRepository.findForRequester(ticketId, stranger)).toBeNull();
+    });
+
+    it("names a ticket as the account's own only to the account that opened it", async () => {
+      if (!configured) return;
+      expect(await ticketRepository.findOwnedId(ticketId, requester)).toBe(ticketId);
+      expect(await ticketRepository.findOwnedId(ticketId, stranger)).toBeNull();
+    });
+
+    it("files a request open, for the account, and a guest's with none", async () => {
+      if (!configured) return;
+      const request = {
+        subject: `Vidéo muette ${suffix}`,
+        theme: "BUG",
+        message: "La vidéo de la leçon 3 n'a pas de son sur mon téléphone.",
+        email: `demandeur-${suffix}@t.internal`,
+      } as const;
+      const own = await ticketRepository.create({ ...request, userId: requester });
+      const guest = await ticketRepository.create({ ...request, userId: null });
+      try {
+        const rows = await prisma.contactTicket.findMany({
+          where: { id: { in: [own.id, guest.id] } },
+          select: { id: true, status: true, userId: true },
+        });
+        expect(rows.find((r) => r.id === own.id)).toMatchObject({
+          status: "OPEN",
+          userId: requester,
+        });
+        expect(rows.find((r) => r.id === guest.id)).toMatchObject({ status: "OPEN", userId: null });
+      } finally {
+        await prisma.contactTicket.deleteMany({ where: { id: { in: [own.id, guest.id] } } });
+      }
     });
 
     it("lists somebody's own tickets and nobody else's", async () => {
@@ -254,6 +287,214 @@ describe("tickets (integration, real DB)", () => {
       await prisma.contactTicket.delete({ where: { id: doomed } });
 
       expect(await prisma.ticketMessage.count({ where: { ticketId: doomed } })).toBe(0);
+    });
+  });
+
+  describe("the team's side: assignment and notes", () => {
+    it("gives a ticket to an administrator without moving its updatedAt", async () => {
+      if (!configured) return;
+      const before = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { updatedAt: true },
+      });
+
+      const result = await ticketRepository.assign({ ticketId, assigneeId: staff, actorId: staff });
+
+      expect(result).toEqual({ ok: true, changed: true });
+      const after = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { assigneeId: true, updatedAt: true },
+      });
+      expect(after?.assigneeId).toBe(staff);
+      // updatedAt orders the requester's own list: taking a ticket in hand
+      // must not reorder it.
+      expect(after?.updatedAt.getTime()).toBe(before?.updatedAt.getTime());
+    });
+
+    it("refuses to give a ticket to an account that is not an administrator", async () => {
+      if (!configured) return;
+      const result = await ticketRepository.assign({
+        ticketId,
+        assigneeId: stranger,
+        actorId: staff,
+      });
+      expect(result).toEqual({ ok: false, reason: "NOT_ADMIN" });
+      const row = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { assigneeId: true },
+      });
+      expect(row?.assigneeId).toBe(staff);
+    });
+
+    it("adds a note to an open ticket and lists it, without moving updatedAt", async () => {
+      if (!configured) return;
+      const before = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { updatedAt: true },
+      });
+
+      const result = await ticketRepository.addNote({
+        ticketId,
+        authorId: staff,
+        body: "Lycée déjà connu, voir avec la région.",
+      });
+
+      expect(result.ok).toBe(true);
+      const notes = await ticketRepository.listNotes(ticketId);
+      expect(notes.map((n) => n.body)).toEqual(["Lycée déjà connu, voir avec la région."]);
+      expect(notes[0]?.author?.displayName).toBe("Équipe");
+      const after = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { updatedAt: true },
+      });
+      expect(after?.updatedAt.getTime()).toBe(before?.updatedAt.getTime());
+    });
+
+    it("never hands the note or the assignee to the requester's read", async () => {
+      if (!configured) return;
+      const ticket = await ticketRepository.findForRequester(ticketId, requester);
+      expect(ticket).not.toBeNull();
+      expect(Object.keys(ticket ?? {})).not.toContain("notes");
+      expect(Object.keys(ticket ?? {})).not.toContain("assigneeId");
+      expect(JSON.stringify(ticket)).not.toContain("voir avec la région");
+    });
+
+    it("refuses a note on a resolved ticket, and writes nothing", async () => {
+      if (!configured) return;
+      const result = await ticketRepository.addNote({
+        ticketId: resolvedTicketId,
+        authorId: staff,
+        body: "Pour mémoire.",
+      });
+      expect(result).toEqual({ ok: false, reason: "TERMINAL" });
+      expect(await prisma.ticketNote.count({ where: { ticketId: resolvedTicketId } })).toBe(0);
+    });
+
+    it("tells a missing ticket apart from a finished one", async () => {
+      if (!configured) return;
+      expect(
+        await ticketRepository.addNote({ ticketId: randomUUID(), authorId: staff, body: "Rien." }),
+      ).toEqual({ ok: false, reason: "NOT_FOUND" });
+    });
+
+    it("takes the notes with the ticket when the ticket goes", async () => {
+      if (!configured) return;
+      const doomed = await makeTicket(`Éphémère noté ${suffix}`, "OPEN");
+      await ticketRepository.addNote({ ticketId: doomed, authorId: staff, body: "Une note." });
+      await prisma.contactTicket.delete({ where: { id: doomed } });
+
+      expect(await prisma.ticketNote.count({ where: { ticketId: doomed } })).toBe(0);
+    });
+  });
+
+  describe("what the requester's list counts as replies", () => {
+    it("counts the team's replies and leaves the requester's own follow-ups out", async () => {
+      if (!configured) return;
+      const own = await makeTicket(`Compte des réponses ${suffix}`, "OPEN");
+      try {
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: requester,
+          fromStaff: false,
+          body: "Une précision de ma part.",
+        });
+        const before = await ticketRepository.findForUser(requester);
+        // Only the requester has written: nobody has answered.
+        expect(before.find((t) => t.id === own)?._count.messages).toBe(0);
+
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: staff,
+          fromStaff: true,
+          body: "Bien reçu.",
+        });
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: requester,
+          fromStaff: false,
+          body: "Merci.",
+        });
+        const after = await ticketRepository.findForUser(requester);
+        expect(after.find((t) => t.id === own)?._count.messages).toBe(1);
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: own } });
+      }
+    });
+  });
+
+  describe("a ban appeal's standing, for the person who filed it", () => {
+    async function makeAppeal(status: "OPEN" | "RESOLVED"): Promise<string> {
+      const ticket = await prisma.contactTicket.create({
+        data: {
+          userId: requester,
+          email: `demandeur-${suffix}@t.internal`,
+          subject: `Appel ${suffix}`,
+          theme: "BAN_APPEAL",
+          message: "Motif du bannissement : spam\n\n---\n\nJe conteste cette décision.",
+          status,
+        },
+        select: { id: true },
+      });
+      return ticket.id;
+    }
+
+    it("reads the status and no reply for an appeal nobody has answered", async () => {
+      if (!configured) return;
+      const appeal = await makeAppeal("OPEN");
+      try {
+        expect(await ticketRepository.findAppealFor(appeal, requester)).toEqual({
+          status: "OPEN",
+          reply: null,
+        });
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: appeal } });
+      }
+    });
+
+    it("reads the team's last answer, never the appellant's own messages", async () => {
+      if (!configured) return;
+      const appeal = await makeAppeal("OPEN");
+      try {
+        await ticketRepository.addMessage({
+          ticketId: appeal,
+          authorId: staff,
+          fromStaff: true,
+          body: "Première réponse.",
+        });
+        await ticketRepository.addMessage({
+          ticketId: appeal,
+          authorId: staff,
+          fromStaff: true,
+          body: "Après relecture, le bannissement est maintenu.",
+        });
+        // The appellant writes last: the answer is still the team's.
+        await ticketRepository.addMessage({
+          ticketId: appeal,
+          authorId: requester,
+          fromStaff: false,
+          body: "Je ne suis pas d'accord.",
+        });
+        await prisma.contactTicket.update({ where: { id: appeal }, data: { status: "RESOLVED" } });
+
+        const standing = await ticketRepository.findAppealFor(appeal, requester);
+        expect(standing?.status).toBe("RESOLVED");
+        expect(standing?.reply?.body).toBe("Après relecture, le bannissement est maintenu.");
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: appeal } });
+      }
+    });
+
+    it("refuses it to anyone else, and refuses a ticket that is not an appeal", async () => {
+      if (!configured) return;
+      const appeal = await makeAppeal("OPEN");
+      try {
+        expect(await ticketRepository.findAppealFor(appeal, stranger)).toBeNull();
+        // A request of the ordinary kind is not read through here.
+        expect(await ticketRepository.findAppealFor(ticketId, requester)).toBeNull();
+        expect(await ticketRepository.findAppealFor(randomUUID(), requester)).toBeNull();
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: appeal } });
+      }
     });
   });
 });

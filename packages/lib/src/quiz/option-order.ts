@@ -52,13 +52,21 @@ function generator(seed: number): () => number {
 }
 
 /**
+ * Numbers in [0, 1), the same sequence everywhere for the same seed text: for
+ * a draw that has to come out the same when it is made again (revisions/cards).
+ */
+export function seededRandom(seed: string): () => number {
+  return generator(hash(seed));
+}
+
+/**
  * The written indices of the options, in display order: `order[position]` is
  * the index of the option shown at `position`.
  */
 export function quizOptionOrder(options: readonly string[], seed: string): number[] {
   const order = options.map((_, i) => i);
   const movable = order.filter((i) => !isPositionalOption(options[i] ?? ""));
-  const random = generator(hash(seed));
+  const random = seededRandom(seed);
   // Fisher-Yates over the movable options only.
   const shuffled = [...movable];
   for (let i = shuffled.length - 1; i > 0; i--) {

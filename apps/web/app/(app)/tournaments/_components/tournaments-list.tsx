@@ -5,11 +5,11 @@ import {
   counted,
   durationLabel,
   elapsedShare,
+  noTournamentsCopy,
   phaseTallyWord,
   TEAM_SCOPE_LABELS,
   type TournamentPhase,
 } from "@cyberlearn/lib/challenges/tournament";
-import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import type { TournamentSummary } from "@/lib/tournaments/tournaments";
 import { PhaseBadge, SectionHead, WindowBar } from "./parts";
@@ -149,18 +149,23 @@ function Steps(): React.JSX.Element {
 }
 
 /**
- * The CTF tournaments the reader's classes take part in: the one running, the
- * ones to come, the ones played. A tournament under way comes first, before
- * the steps that explain the scoring: it is what the page is opened for. The
- * list is sorted here; `nowMs` is the server's clock, which the window bars
- * of the running tournaments are measured against.
+ * The Tournois tab of the challenges (/challenges?tab=tournois), open to
+ * everyone: the CTF tournaments the reader's classes take part in, the one
+ * running, the ones to come, the ones played. A tournament under way comes
+ * first, before the steps that explain the scoring: it is what the tab is
+ * opened for. The list is sorted here; `nowMs` is the server's clock, which
+ * the window bars of the running tournaments are measured against. The
+ * breadcrumb and the section's title are the page's (challenges-header.tsx).
  */
 export function TournamentsList({
   tournaments,
   nowMs,
+  inClass,
 }: {
   tournaments: readonly TournamentSummary[];
   nowMs: number;
+  /** Whether the reader is in a class or teaches one: what an empty list explains. */
+  inClass: boolean;
 }): React.JSX.Element {
   const sorted = [...tournaments].sort(byUrgency);
   const of = (phase: TournamentPhase): TournamentSummary[] =>
@@ -174,15 +179,15 @@ export function TournamentsList({
     { phase: "FINISHED", n: finished.length },
   ] as const;
 
+  const empty = noTournamentsCopy(inClass);
+
   return (
-    <div className="page-container learning-catalogue learning-workspace trn">
+    <div className="trn">
       <header className="trn-head">
         <div>
-          <Crumb segments={["tournois"]} />
           <p className="pg-eyebrow">
             <b>CTF</b> en équipe
           </p>
-          <h1 className="pg-title">Tournois</h1>
           <p className="pg-lede">
             Des défis CTF ouverts le temps d&apos;un tournoi, entre classes ou entre écoles. Tu
             joues pour ton équipe : ta classe, ou ton école.
@@ -209,10 +214,7 @@ export function TournamentsList({
       )}
 
       {sorted.length === 0 ? (
-        <EmptyState
-          title="Aucun tournoi pour l'instant"
-          message="Un tournoi réunit des classes : quand la tienne en rejoint un, il apparaît ici, et une notification te le dit."
-        />
+        <EmptyState title={empty.title} message={empty.message} />
       ) : (
         <>
           {upcoming.length > 0 && (

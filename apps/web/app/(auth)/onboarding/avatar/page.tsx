@@ -1,7 +1,7 @@
 import React from "react";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { userRepository } from "@cyberlearn/db";
 import { avatarToKeep } from "@cyberlearn/lib/onboarding/avatars";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { AvatarForm } from "./_components/avatar-form";
@@ -15,10 +15,7 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
 
   if (!user) redirect("/login");
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { username: true, displayName: true, avatarUrl: true },
-  });
+  const dbUser = await userRepository.findOnboardingProfile(user.id);
 
   if (!dbUser?.username) redirect("/onboarding");
 

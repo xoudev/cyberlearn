@@ -245,6 +245,10 @@
   padding: 24px var(--page-gutter) 0;
 }
 .pp-standalone__home {
+  /* The one way out of a shared profile: a finger's height, not the text's. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.08em;

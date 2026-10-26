@@ -3,6 +3,7 @@
 // Optimistic status updates use the shared portalled selector and its keyboard navigation.
 import React, { useState, useOptimistic, useTransition } from "react";
 import { Select } from "@cyberlearn/ui";
+import { notifyResult } from "@/lib/notify";
 import { toneColor } from "./admin-ui";
 import { CONTENT_STATUS, type ContentStatus } from "./content-status";
 
@@ -18,7 +19,6 @@ export function StatusBadge({
   action: (id: string, status: ContentStatus) => Promise<{ error?: string }>;
 }): React.JSX.Element {
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<ContentStatus>(currentStatus);
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(confirmed);
 
@@ -41,20 +41,17 @@ export function StatusBadge({
             (next !== "DRAFT" && next !== "PUBLISHED" && next !== "ARCHIVED")
           )
             return;
-          setError(null);
           startTransition(async () => {
             setOptimisticStatus(next);
             const result = await action(entityId, next);
-            if (result.error) setError(result.error);
-            else setConfirmed(next);
+            const ok = notifyResult(result, {
+              success: `Statut mis à jour : ${CONTENT_STATUS[next].label.toLowerCase()}.`,
+              error: "Le statut n’a pas pu être changé.",
+            });
+            if (ok) setConfirmed(next);
           });
         }}
       />
-      {error && (
-        <p role="alert" className="a-form-error">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

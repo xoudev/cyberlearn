@@ -47,4 +47,19 @@ export const lessonQuizRepository = {
       orderBy: { answeredAt: "asc" },
     });
   },
+
+  /** Every answer the account gave, in every lesson, oldest first, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.lessonQuizAnswer.findMany({
+      where: { userId },
+      select: {
+        quizId: true,
+        selected: true,
+        correct: true,
+        answeredAt: true,
+        lesson: { select: { title: true } },
+      },
+      orderBy: { answeredAt: "asc" },
+    });
+  },
 };

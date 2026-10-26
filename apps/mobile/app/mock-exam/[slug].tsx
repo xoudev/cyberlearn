@@ -27,6 +27,12 @@ import {
   type MockReviewItem,
   type VerdictTone,
 } from "@cyberlearn/lib/exam/mock";
+import {
+  clearDraft,
+  loadDraft,
+  restoreMockAnswers,
+  saveDraft,
+} from "@cyberlearn/lib/exam/answers-draft";
 import { Rise } from "@/components/anim";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { CheckIcon, ClockIcon, CrossIcon } from "@/components/icons";
@@ -36,6 +42,7 @@ import { Card, Pill, SectionLabel, StatCell, Text, XPBar } from "@/components/ui
 import { fetchMockOverviewApi, startMockExamApi, submitMockExamApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { pad2 } from "@/lib/exam";
+import { examDraftStorage } from "@/lib/exam-draft";
 import { attemptDay, handedInSince, type MockOverview } from "@/lib/mock-exam";
 
 /**
@@ -147,12 +154,21 @@ function MockExamFlow({
     setBusy(true);
     setMessage(null);
     const started = await startMockExamApi(overview.pathId);
-    setBusy(false);
     if (!started.ok) {
+      setBusy(false);
       setMessage(started.error);
       return;
     }
-    setAnswers({});
+    // A paper taken up again (the app was closed, the phone restarted) gets
+    // back the answers it had, as the site's does after a reload. Only the
+    // ones that belong to it: the server refuses a copy with an answer to a
+    // question it does not have.
+    const kept = restoreMockAnswers(
+      await loadDraft(examDraftStorage, "mock", started.attemptId),
+      started.questions,
+    );
+    setBusy(false);
+    setAnswers(kept);
     submitting.current = false;
     autoSent.current = false;
     setNow(Date.now());
@@ -189,9 +205,20 @@ function MockExamFlow({
       }
       return;
     }
+    // The copy is in: no draft of it is kept.
+    void clearDraft(examDraftStorage, "mock", attemptId);
     setStage({ kind: "result", result: handed.result, late: handed.late });
     void queryClient.invalidateQueries({ queryKey: ["mock-exam", overview.pathSlug] });
   }, [stage, answers, onStale, queryClient, overview.pathSlug]);
+
+  // The answers are kept on the phone as they are given, so that the app being
+  // closed takes the attempt up again with them instead of with a blank copy
+  // (the site keeps them the same way across a reload). Dropped once the copy
+  // is in.
+  useEffect(() => {
+    if (stage.kind !== "running" || Object.keys(answers).length === 0) return;
+    void saveDraft(examDraftStorage, "mock", stage.attemptId, answers);
+  }, [stage, answers]);
 
   // The clock: a tick a second while running. At 00:00 the copy goes in once;
   // if that fails, the hand-in buttons stay to send it again.
@@ -423,8 +450,8 @@ function IntroView({
           {handedIn ? <Note tone={colors.success}>{HANDED_IN_NOTE}</Note> : null}
           {overview.ready && overview.running !== null ? (
             <Note tone={colors.warning}>
-              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant ne
-              sont pas gardées.
+              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant
+              sont gardées sur ce téléphone, tu les retrouves en reprenant.
             </Note>
           ) : null}
           {overview.ready ? null : (

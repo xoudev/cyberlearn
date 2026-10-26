@@ -28,7 +28,7 @@ export default async function TournamentChallengePage({
   const user = await requireRequestUser();
   const page = await tournamentChallengeFor(user.id, id, slug);
   if (page === null) notFound();
-  const { tournament, challenge, solved } = page;
+  const { tournament, challenge, solved, disqualified } = page;
 
   // The machine, with the player's own flag where the author wrote {{FLAG}},
   // exactly as the catalogue hands it out (challenges/[slug]/page.tsx).
@@ -50,6 +50,7 @@ export default async function TournamentChallengePage({
       tournament={tournament}
       challenge={challenge}
       solved={solved}
+      disqualified={disqualified}
       machine={machine}
     />
   );

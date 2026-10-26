@@ -3,10 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { auditLogRepository, prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { readPathLessonIds } from "./lesson-ids";
 
 const createPathSchema = z.object({
@@ -66,13 +68,13 @@ export async function createPathAction(
         coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
         status: publishNow ? "PUBLISHED" : "DRAFT",
         publishedAt: publishNow ? new Date() : null,
+        // 1-based, as the sync writes them; a new path has no module yet.
         ...(orderedLessonIds.length > 0
           ? {
               lessons: {
-                create: orderedLessonIds.map((lessonId, position) => ({
+                create: orderedLessonIds.map((lessonId, index) => ({
                   lessonId,
-                  position,
-                  isRequired: true,
+                  position: index + 1,
                 })),
               },
             }
@@ -80,14 +82,12 @@ export async function createPathAction(
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "path.create",
-        targetType: "Path",
-        targetId: path.id,
-        metadata: { title: path.title, status: path.status, lessonCount: orderedLessonIds.length },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.path.create,
+      targetType: "Path",
+      targetId: path.id,
+      metadata: { title: path.title, status: path.status, lessonCount: orderedLessonIds.length },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
@@ -100,7 +100,7 @@ export async function createPathAction(
     return { error: "Erreur lors de la création." };
   }
 
-  redirect("/paths");
+  redirect(withSavedNotice("/paths", "created"));
 }
 
 // ── Update status ─────────────────────────────────────────────────────────────
@@ -126,18 +126,19 @@ export async function updatePathStatusAction(
   const updateData: { status: ContentStatus; publishedAt?: Date } = { status };
   if (status === "PUBLISHED") updateData.publishedAt = new Date();
 
-  await prisma.$transaction([
-    prisma.path.update({ where: { id: pathId }, data: updateData }),
-    prisma.auditLog.create({
-      data: {
+  await prisma.$transaction(async (tx) => {
+    await tx.path.update({ where: { id: pathId }, data: updateData });
+    await auditLogRepository.record(
+      {
         actorId: admin.id,
-        action: "path.status",
+        action: AUDIT_ACTION.path.status,
         targetType: "Path",
         targetId: pathId,
         metadata: { from: path.status, to: status },
       },
-    }),
-  ]);
+      tx,
+    );
+  });
 
   revalidatePath("/paths");
   revalidatePath("/paths/archives");
@@ -175,14 +176,12 @@ export async function deletePathAction(
   try {
     await prisma.path.delete({ where: { id: parsed.data } });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "path.delete",
-        targetType: "Path",
-        targetId: parsed.data,
-        metadata: { title: path.title, status: path.status },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.path.delete,
+      targetType: "Path",
+      targetId: parsed.data,
+      metadata: { title: path.title, status: path.status },
     });
   } catch {
     return { error: "Une erreur est survenue lors de la suppression." };

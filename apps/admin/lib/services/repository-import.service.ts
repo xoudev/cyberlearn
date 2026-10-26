@@ -1,9 +1,12 @@
 import crypto from "node:crypto";
 import matter from "gray-matter";
-import { prisma } from "@cyberlearn/db";
+import { auditLogRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import {
   catalogueFromManifest,
+  changedValue,
   ChallengeSyncError,
+  challengeChanges,
   challengeMatches,
   findChallengeDir,
   loadChallengeFiles,
@@ -13,9 +16,11 @@ import {
   loadPathManifests,
   loadQuizFiles,
   manifestLessons,
+  quizChanges,
   quizMatches,
   syncPath,
   syncQuiz,
+  type CatalogueChange,
   type LoadedPathManifest,
 } from "@cyberlearn/db/catalogue";
 import type { ImportValidationError } from "@cyberlearn/types";
@@ -142,10 +147,26 @@ export async function importLessonFromRepository(
       errors: explainMissingPrerequisites(result.errors, files),
     };
   }
+  // In the database since the page was drawn: an update now, shown with its
+  // differences in the list of updates, never a second lesson.
+  if (result.update) {
+    return {
+      ok: false,
+      reason: "conflict",
+      message: `${refCode} est déjà en base. Recharge la page : elle apparaîtra parmi les mises à jour.`,
+    };
+  }
 
+  // The lesson, its first version and its `lesson.import.success` audit row,
+  // in one transaction.
   let lessonId: string;
   try {
-    ({ lessonId } = await importValidatedLesson(result.metadata, result.body, actorId));
+    ({ lessonId } = await importValidatedLesson(result.metadata, result.body, actorId, {
+      refCode,
+      contentHash: crypto.createHash("sha256").update(source.content).digest("hex"),
+      source: "repository",
+      file: source.file,
+    }));
   } catch (error) {
     // Two tabs importing the same file: the second finds the row the first wrote.
     if (isUniqueViolation(error)) {
@@ -157,21 +178,6 @@ export async function importLessonFromRepository(
     }
     throw error;
   }
-
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "lesson.import.success",
-      targetType: "lesson",
-      targetId: lessonId,
-      metadata: {
-        refCode,
-        contentHash: crypto.createHash("sha256").update(source.content).digest("hex"),
-        source: "repository",
-        file: source.file,
-      },
-    },
-  });
   return { ok: true, lessonId };
 }
 
@@ -191,6 +197,8 @@ export interface PathSyncState {
   database: { id: string; status: string } | null;
   /** The database already holds what a sync would write. */
   upToDate: boolean;
+  /** What a sync would overwrite on an existing path; empty when up to date or new. */
+  changes: CatalogueChange[];
 }
 
 export interface PathSyncOverview {
@@ -270,6 +278,79 @@ function isUpToDate(row: PathRow, loaded: LoadedPathManifest, imported: Set<stri
   return sameFields && sameModules && sameLessons;
 }
 
+/** Where a lesson sits in a path, as the sync page says it. */
+function placeOf(index: number, module: number | null): string {
+  return `position ${String(index + 1)} · ${module === null ? "hors module" : `module ${String(module)}`}`;
+}
+
+/**
+ * What syncPath would write over an existing path, in words: its fields, its
+ * modules by position, and where each lesson lands. Lessons are placed as the
+ * sync places them: the manifest's own already in the database, in its order,
+ * then those it no longer lists, kept at the end and out of any module.
+ */
+export function pathChanges(
+  row: PathRow,
+  loaded: LoadedPathManifest,
+  imported: Set<string>,
+): CatalogueChange[] {
+  const target = catalogueFromManifest(loaded.manifest);
+  const changes: CatalogueChange[] = [
+    ...changedValue("Titre", row.title, target.title),
+    ...changedValue("Description", row.description, target.description),
+    ...changedValue("Domaine", row.category, target.category),
+    ...changedValue("Type de parcours", row.track, target.track),
+    ...changedValue("Difficulté", row.difficulty, target.difficulty),
+    ...changedValue("Durée (h)", row.estimatedHours, target.estimatedHours),
+  ];
+
+  const positions = [
+    ...new Set([...row.modules.map((m) => m.position), ...target.modules.map((_, i) => i + 1)]),
+  ].sort((a, b) => a - b);
+  for (const position of positions) {
+    const label = `Module ${String(position)}`;
+    const saved = row.modules.find((m) => m.position === position);
+    const wanted = target.modules[position - 1];
+    if (!saved && wanted) changes.push({ kind: "added", label, value: wanted.title });
+    else if (saved && !wanted) changes.push({ kind: "removed", label, value: saved.title });
+    else if (saved && wanted) {
+      changes.push(
+        ...changedValue(label, saved.title, wanted.title),
+        ...changedValue(`${label} (description)`, saved.description, wanted.description),
+      );
+    }
+  }
+
+  const expected = target.lessons.filter((l) => imported.has(l.refCode));
+  const current = new Map(
+    row.lessons.map((link, index) => [
+      link.lesson.refCode,
+      placeOf(index, link.module?.position ?? null),
+    ]),
+  );
+  for (const [index, lesson] of expected.entries()) {
+    const after = placeOf(index, lesson.moduleIndex === null ? null : lesson.moduleIndex + 1);
+    const before = current.get(lesson.refCode);
+    if (before === undefined) changes.push({ kind: "added", label: lesson.refCode, value: after });
+    else changes.push(...changedValue(lesson.refCode, before, after));
+  }
+  const listed = new Set(expected.map((l) => l.refCode));
+  const leftovers = row.lessons.filter((link) => !listed.has(link.lesson.refCode));
+  for (const [k, link] of leftovers.entries()) {
+    const before = current.get(link.lesson.refCode) ?? "";
+    const after = placeOf(expected.length + k, null);
+    if (before !== after) {
+      changes.push({
+        kind: "changed",
+        label: link.lesson.refCode,
+        before,
+        after: `${after} (plus dans le manifeste)`,
+      });
+    }
+  }
+  return changes;
+}
+
 /** Every manifest of content/paths against its path. Reads, writes nothing. */
 export async function pathSyncOverview(dir = findPathManifestDir()): Promise<PathSyncOverview> {
   if (dir === null) return { available: false, errors: [], paths: [] };
@@ -292,6 +373,7 @@ export async function pathSyncOverview(dir = findPathManifestDir()): Promise<Pat
     const { manifest, file } = loaded;
     const own = manifestLessons(manifest);
     const row = byRefCode.get(manifest.refCode);
+    const upToDate = row !== undefined && isUpToDate(row, loaded, imported);
     return {
       refCode: manifest.refCode,
       slug: manifest.slug,
@@ -301,7 +383,8 @@ export async function pathSyncOverview(dir = findPathManifestDir()): Promise<Pat
       lessons: own.length,
       importedLessons: own.filter((l) => imported.has(l.refCode)).length,
       database: row ? { id: row.id, status: row.status } : null,
-      upToDate: row !== undefined && isUpToDate(row, loaded, imported),
+      upToDate,
+      changes: row !== undefined && !upToDate ? pathChanges(row, loaded, imported) : [],
     };
   });
   return { available: true, errors, paths };
@@ -356,19 +439,17 @@ export async function syncPathFromRepository(
   }
 
   const result = await syncPath(prisma, catalogueFromManifest(loaded.manifest));
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "path.sync",
-      targetType: "path",
-      targetId: result.pathId,
-      metadata: {
-        refCode,
-        file: loaded.file,
-        created: result.created,
-        attached: result.attached,
-        missing: result.missing,
-      },
+  await auditLogRepository.record({
+    actorId,
+    action: AUDIT_ACTION.path.sync,
+    targetType: "path",
+    targetId: result.pathId,
+    metadata: {
+      refCode,
+      file: loaded.file,
+      created: result.created,
+      attached: result.attached,
+      missing: result.missing,
     },
   });
   return {
@@ -395,6 +476,8 @@ export interface QuizSyncState {
   exists: boolean;
   /** The database already holds what a sync would write. */
   upToDate: boolean;
+  /** What a sync would overwrite on an existing exam; empty when up to date or new. */
+  changes: CatalogueChange[];
 }
 
 export interface QuizSyncOverview {
@@ -441,6 +524,7 @@ export async function quizSyncOverview(dir = findQuizDir()): Promise<QuizSyncOve
     errors,
     quizzes: quizzes.map(({ slug, file, quiz }): QuizSyncState => {
       const path = bySlug.get(slug);
+      const upToDate = path?.quiz ? quizMatches(path.quiz, quiz) : false;
       return {
         slug,
         file,
@@ -449,7 +533,8 @@ export async function quizSyncOverview(dir = findQuizDir()): Promise<QuizSyncOve
         passThreshold: quiz.passThreshold,
         path: path ? { id: path.id, title: path.title } : null,
         exists: Boolean(path?.quiz),
-        upToDate: path?.quiz ? quizMatches(path.quiz, quiz) : false,
+        upToDate,
+        changes: path?.quiz && !upToDate ? quizChanges(path.quiz, quiz) : [],
       };
     }),
   };
@@ -512,21 +597,19 @@ export async function syncQuizFromRepository(
   }
 
   const result = await syncQuiz(prisma, path.id, loaded.quiz);
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "quiz.sync",
-      targetType: "quiz",
-      targetId: result.quizId,
-      metadata: {
-        slug,
-        file: loaded.file,
-        created: result.created,
-        questions: result.questions,
-        retired: result.retired,
-        questionsToDraw: loaded.quiz.questionsToDraw,
-        passThreshold: loaded.quiz.passThreshold,
-      },
+  await auditLogRepository.record({
+    actorId,
+    action: AUDIT_ACTION.quiz.sync,
+    targetType: "quiz",
+    targetId: result.quizId,
+    metadata: {
+      slug,
+      file: loaded.file,
+      created: result.created,
+      questions: result.questions,
+      retired: result.retired,
+      questionsToDraw: loaded.quiz.questionsToDraw,
+      passThreshold: loaded.quiz.passThreshold,
     },
   });
   return { ok: true, created: result.created, questions: result.questions };
@@ -547,6 +630,8 @@ export interface ChallengeSyncState {
   isActive: boolean;
   /** The database already holds what a sync would write. */
   upToDate: boolean;
+  /** What a sync would overwrite on an existing challenge; empty when up to date or new. */
+  changes: CatalogueChange[];
 }
 
 export interface ChallengeSyncOverview {
@@ -577,6 +662,11 @@ export async function challengeSyncOverview(
       xpReward: true,
       maxAttempts: true,
       orderIndex: true,
+      timeLimitMin: true,
+      flag: true,
+      starterCode: true,
+      attachmentUrl: true,
+      resourceUrl: true,
       machine: true,
       isActive: true,
       prerequisite: { select: { refCode: true } },
@@ -590,6 +680,8 @@ export async function challengeSyncOverview(
     errors,
     challenges: challenges.map(({ file, challenge }): ChallengeSyncState => {
       const row = byRefCode.get(challenge.refCode);
+      const stored = row && { ...row, prerequisiteRefCode: row.prerequisite?.refCode ?? null };
+      const upToDate = stored !== undefined && challengeMatches(stored, challenge);
       return {
         refCode: challenge.refCode,
         slug: challenge.slug,
@@ -598,12 +690,8 @@ export async function challengeSyncOverview(
         prerequisite: challenge.prerequisite ?? null,
         exists: row !== undefined,
         isActive: row?.isActive ?? false,
-        upToDate:
-          row !== undefined &&
-          challengeMatches(
-            { ...row, prerequisiteRefCode: row.prerequisite?.refCode ?? null },
-            challenge,
-          ),
+        upToDate,
+        changes: stored !== undefined && !upToDate ? challengeChanges(stored, challenge) : [],
       };
     }),
   };
@@ -674,14 +762,12 @@ export async function syncChallengeFromRepository(
     }
     throw error;
   }
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "challenge.sync",
-      targetType: "challenge",
-      targetId: result.challengeId,
-      metadata: { refCode, file: loaded.file, created: result.created, hints: result.hints },
-    },
+  await auditLogRepository.record({
+    actorId,
+    action: AUDIT_ACTION.challenge.sync,
+    targetType: "challenge",
+    targetId: result.challengeId,
+    metadata: { refCode, file: loaded.file, created: result.created, hints: result.hints },
   });
   return { ok: true, created: result.created };
 }
@@ -745,19 +831,21 @@ export async function publishCatalogueDrafts(
   if (drafts.lessons.length === 0 && drafts.paths.length === 0) return { lessons: 0, paths: 0 };
 
   const publishedAt = new Date();
-  const [lessons, paths] = await prisma.$transaction([
-    prisma.lesson.updateMany({
+  // The audit row is written by the transaction's client, so it lands with
+  // the publication or not at all.
+  return prisma.$transaction(async (tx) => {
+    const lessons = await tx.lesson.updateMany({
       where: { id: { in: drafts.lessons.map((l) => l.id) }, status: "DRAFT" },
       data: { status: "PUBLISHED", publishedAt },
-    }),
-    prisma.path.updateMany({
+    });
+    const paths = await tx.path.updateMany({
       where: { id: { in: drafts.paths.map((p) => p.id) }, status: "DRAFT" },
       data: { status: "PUBLISHED", publishedAt },
-    }),
-    prisma.auditLog.create({
-      data: {
+    });
+    await auditLogRepository.record(
+      {
         actorId,
-        action: "catalogue.publish",
+        action: AUDIT_ACTION.catalogue.publish,
         targetType: "catalogue",
         targetId: null,
         metadata: {
@@ -765,7 +853,8 @@ export async function publishCatalogueDrafts(
           paths: drafts.paths.map((p) => p.refCode),
         },
       },
-    }),
-  ]);
-  return { lessons: lessons.count, paths: paths.count };
+      tx,
+    );
+    return { lessons: lessons.count, paths: paths.count };
+  });
 }

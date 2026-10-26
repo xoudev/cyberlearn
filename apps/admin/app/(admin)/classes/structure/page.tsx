@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { classRepository } from "@cyberlearn/db";
 import { GhostLink, KpiCard, PageHeader, PrimaryLink } from "../../_components/admin-ui";
+import { STRUCTURE_HEADER, STRUCTURE_KPI_LABELS } from "../_components/class-columns";
 import { StructureEditor } from "./_components/structure-editor";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -33,9 +34,9 @@ export default async function AdminStructurePage(): Promise<React.ReactElement> 
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Structure" }, { label: "Classes", href: "/classes" }]}
-        title="Établissements et promos"
-        description="Renommer, corriger un slug, archiver une année. Archiver un établissement retire aussi ses promos et ses classes, sans toucher à leur propre état."
+        crumbs={STRUCTURE_HEADER.crumbs}
+        title={STRUCTURE_HEADER.title}
+        description={STRUCTURE_HEADER.description}
         actions={
           <>
             <GhostLink href="/classes">Voir les classes</GhostLink>
@@ -45,11 +46,11 @@ export default async function AdminStructurePage(): Promise<React.ReactElement> 
       />
 
       <div className="a-kpi-grid">
-        <KpiCard label="Établissements actifs" value={String(liveEstablishments)} tone="info" />
-        <KpiCard label="Promos actives" value={String(livePromotions)} tone="purple" />
-        <KpiCard label="Classes rattachées" value={String(classCount)} tone="accent" />
+        <KpiCard label={STRUCTURE_KPI_LABELS[0]} value={String(liveEstablishments)} tone="info" />
+        <KpiCard label={STRUCTURE_KPI_LABELS[1]} value={String(livePromotions)} tone="purple" />
+        <KpiCard label={STRUCTURE_KPI_LABELS[2]} value={String(classCount)} tone="accent" />
         <KpiCard
-          label="Archivés"
+          label={STRUCTURE_KPI_LABELS[3]}
           value={String(
             establishments.length - liveEstablishments + (promotions.length - livePromotions),
           )}

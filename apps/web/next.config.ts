@@ -90,7 +90,7 @@ const nextConfig: NextConfig = {
       { source: "/classement", destination: "/leaderboard", permanent: true },
       { source: "/defis", destination: "/challenges", permanent: true },
       { source: "/casier", destination: "/locker", permanent: true },
-      { source: "/certifs", destination: "/certificates", permanent: true },
+      { source: "/certifs", destination: "/profile?tab=certificats", permanent: true },
       { source: "/legal/cgu", destination: "/legal/terms", permanent: true },
       { source: "/ma-classe", destination: "/my-class", permanent: true },
       // The settings have no pages: they are a drawer over the page. Their
@@ -115,6 +115,40 @@ const nextConfig: NextConfig = {
         destination: "/forum/:category?compose=1",
         permanent: false,
       },
+      // The mock exam's presentation is a window over its path (?mock=1); its
+      // page runs the exam, started by the window's button (?go=1). Loaded
+      // any other way (a bookmark, an old link, a reload), it opens the window
+      // rather than the clock.
+      //
+      // A document load only. Once the exam runs, ?go=1 is off the address
+      // (mock-exam-flow.tsx), and the router sends its requests to that
+      // address: a server action's POST (the hand-in, the restart), marked by
+      // its Next-Action header, and a refresh of the page, marked by RSC.
+      // Redirected, they would run under the path's page instead.
+      {
+        source: "/paths/:slug/mock-exam",
+        missing: [
+          { type: "query", key: "go" },
+          { type: "header", key: "next-action" },
+          { type: "header", key: "rsc" },
+        ],
+        destination: "/paths/:slug?mock=1",
+        permanent: false,
+      },
+      // The badges and the certificates are tabs of the profile now, and the
+      // tournaments a tab of the challenges (?tab=, the values of
+      // @cyberlearn/lib/social/profile-tabs and challenges/tabs). Notices
+      // already stored, e-mails and bookmarks still carry the old addresses.
+      // /tournaments alone: a tournament's own pages stay where they are.
+      { source: "/badges", destination: "/profile?tab=badges", permanent: false },
+      { source: "/certificates", destination: "/profile?tab=certificats", permanent: false },
+      { source: "/tournaments", destination: "/challenges?tab=tournois", permanent: false },
+      // The revisions are the day's recall, a window over any page
+      // (?rappel=1): the old SM-2 queue's page is gone. Its addresses live on
+      // in bookmarks and in the reminders already stored, and open the
+      // window over the dashboard. /review was itself an older name of it.
+      { source: "/revisions", destination: "/dashboard?rappel=1", permanent: false },
+      { source: "/review", destination: "/dashboard?rappel=1", permanent: false },
     ]);
   },
   rewrites() {

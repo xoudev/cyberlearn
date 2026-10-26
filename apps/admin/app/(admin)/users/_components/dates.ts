@@ -1,6 +1,8 @@
-/** A day as the account lists print it: "12 oct. 2026". */
+import { consoleDateFormat } from "@/lib/console-time";
+
+/** A day as the account lists print it: "12 oct. 2026", in Paris. */
 export function formatDay(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+  return consoleDateFormat({
     day: "2-digit",
     month: "short",
     year: "numeric",

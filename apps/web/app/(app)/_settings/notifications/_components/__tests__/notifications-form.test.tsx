@@ -58,4 +58,25 @@ describe("NotificationsForm", () => {
     expect(fd?.get("emailNotifications")).toBe("true");
     expect(fd?.get("weeklyDigest")).toBe("false");
   });
+
+  it("says the choices were not saved, and keeps them to save again, when the call fails", async () => {
+    const { toast } = await import("sonner");
+    m.update.mockRejectedValueOnce(new Error("network"));
+    renderForm();
+    fireEvent.click(screen.getByRole("switch", { name: "Rappels de révision" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Préférences non enregistrées, réessaie.");
+    });
+    // Still flipped and still unsaved: the button is there for another try.
+    expect(
+      screen.getByRole("switch", { name: "Rappels de révision" }).getAttribute("aria-checked"),
+    ).toBe("false");
+    expect(toast.success).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Préférences enregistrées");
+    });
+  });
 });

@@ -8,6 +8,7 @@ import {
   CHALLENGE_STATUS_LABELS,
   challengeStatus,
   challengeTypeLabel,
+  disqualifiedFlagText,
   flagNotice,
   tournamentDateLabel,
 } from "@cyberlearn/lib/challenges/tournament";
@@ -89,10 +90,14 @@ export default function TournamentChallengeScreen(): React.JSX.Element {
 function ChallengeBody({ page }: { page: TournamentChallengeView }): React.JSX.Element {
   const { theme } = useCosmetics();
   const { tournament, challenge, solved } = page;
+  const disqualified = page.disqualified ?? null;
   const sections = useMemo(() => parseLesson(challenge.instructions).sections, [challenge]);
   const siteUrl = `${SITE_URL}/tournaments/${tournament.id}/${challenge.slug}`;
   const notice = flagNotice(tournament);
-  const status = challengeStatus(tournament, solved);
+  const status = challengeStatus(tournament, solved, disqualified !== null);
+  // Taken back by the console: what the flag block says instead of "found", as on the site.
+  const takenBack =
+    disqualified === null ? null : disqualifiedFlagText(disqualified.reason, tournament.myTeam);
   const category = categoryMeta(challenge.category);
   const diff = difficultyMeta(challenge.difficulty);
   const attachment =
@@ -228,8 +233,19 @@ function ChallengeBody({ page }: { page: TournamentChallengeView }): React.JSX.E
 
       <View>
         {/* Once no flag can be given, the head no longer invites one. */}
-        <SectionLabel title={notice !== null && !solved ? "Le flag" : "Soumettre le flag"} />
-        {solved ? (
+        <SectionLabel
+          title={
+            (notice !== null && !solved) || takenBack !== null ? "Le flag" : "Soumettre le flag"
+          }
+        />
+        {takenBack !== null ? (
+          <Card accent={colors.danger} style={{ gap: 6 }}>
+            <Text variant="micro" style={{ color: colors.danger }}>
+              Flag disqualifié
+            </Text>
+            <Text variant="bodySm">{takenBack}</Text>
+          </Card>
+        ) : solved ? (
           <Card accent={colors.success} style={{ gap: 6 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <CheckIcon size={14} color={colors.success} strokeWidth={2} />

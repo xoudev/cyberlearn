@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 import "./_components/mock-exam.css";
 import "@/components/assessment-workspace.css";
 
@@ -9,15 +9,6 @@ function StatSkeleton(): React.ReactElement {
       <Skeleton w={48} h={28} style={{ margin: "0 auto" }} />
       <Skeleton w={64} h={9} style={{ margin: "9px auto 0" }} />
     </li>
-  );
-}
-
-function HeadSkeleton({ title, meta }: { title: number; meta: number }): React.ReactElement {
-  return (
-    <div className="mkx-head">
-      <Skeleton w={title} h={11} style={{ maxWidth: "70%" }} />
-      <Skeleton w={meta} h={10} />
-    </div>
   );
 }
 
@@ -64,31 +55,13 @@ export default function MockExamLoading(): React.ReactElement {
             </div>
           </div>
         </div>
-
-        <div className="mkx-intro__side">
-          <div>
-            <HeadSkeleton title={190} meta={70} />
-            <ul className="mkx-mods mkx-mods--loading">
-              {["62%", "48%", "70%", "54%"].map((w) => (
-                <li key={w}>
-                  <Skeleton w={300} h={14} style={{ maxWidth: w }} />
-                  <Skeleton w={84} h={11} />
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <HeadSkeleton title={180} meta={150} />
-            <ol className="mkx-hist">
-              {[0, 1, 2].map((i) => (
-                <li key={i}>
-                  <Skeleton w={64} h={12} />
-                  <Skeleton h={6} />
-                  <Skeleton w={42} h={13} />
-                </li>
-              ))}
-            </ol>
-          </div>
+        {/* .pg-title here: clamp(32px, 4vw, 52px); the paths' titles (21-30
+            characters) wrap to two lines at that size. */}
+        <Skeleton w="82%" h="clamp(30px, 3.8vw, 48px)" style={{ marginBottom: 8 }} />
+        <Skeleton w="46%" h="clamp(30px, 3.8vw, 48px)" style={{ marginBottom: 24 }} />
+        <Skeleton w={210} h={12} style={{ marginBottom: 30 }} />
+        <div className="mkx-cta">
+          <Skeleton w={160} h={11} style={{ alignSelf: "center" }} />
         </div>
       </div>
     </div>

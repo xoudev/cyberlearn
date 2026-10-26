@@ -1,0 +1,175 @@
+@import "../../../../components/progression-workspace.css";
+
+.certificate-next {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  margin-top: 34px;
+}
+.certificate-next__brand {
+  background: #191c22;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: start;
+  gap: 48px;
+}
+.certificate-next__brand > span {
+  font:
+    10px var(--font-mono),
+    monospace;
+  color: #aaa79f;
+}
+.certificate-next__body {
+  background: #eae7df;
+  color: #141518;
+  padding: 36px;
+  border-top: 4px solid #ff6b2b;
+}
+.certificate-next__body .workspace-kicker {
+  color: #55524d;
+}
+.certificate-next h2 {
+  margin: 0 0 24px;
+  font:
+    600 clamp(38px, 4vw, 62px) / 1 var(--font-display),
+    sans-serif;
+}
+.certificate-next p:not(.workspace-kicker) {
+  margin: 0;
+  color: #55524d;
+  line-height: 1.7;
+  font-size: 14px;
+  max-width: 560px;
+}
+.certificates-workspace .certificate-next .btn {
+  background: #141518;
+  border-color: #141518;
+  color: #eae7df;
+  gap: 26px;
+}
+.certificates-workspace .certificate-next .btn:hover {
+  background: #35373d;
+}
+.certificate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 22px;
+  margin-top: 32px;
+}
+.certificate-record {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: #141518;
+  background: #eae7df;
+  border-top: 4px solid #ff6b2b;
+}
+.certificate-record__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border-bottom: 1px solid #bdbab3;
+  font-size: 12px;
+}
+.certificate-record__body {
+  flex: 1;
+  padding: 28px;
+}
+.certificate-record__reference {
+  color: #55524d;
+  margin: 0 0 22px;
+  font:
+    11px var(--font-mono),
+    monospace;
+}
+.certificate-record h3 {
+  font:
+    600 40px / 1.05 var(--font-display),
+    sans-serif;
+  margin: 0 0 18px;
+}
+.certificate-record__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  color: #55524d;
+  font-size: 12px;
+}
+.certificate-record dl {
+  border-top: 1px solid #bdbab3;
+  margin: 24px 0 0;
+  padding-top: 18px;
+}
+.certificate-record dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 8px 0;
+  font-size: 12px;
+}
+.certificate-record dt {
+  color: #55524d;
+}
+.certificate-record dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.certificate-record__actions {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid #bdbab3;
+}
+.certificate-record__actions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  flex: 1 1 auto;
+  padding: 14px;
+  text-decoration: none;
+  font-size: 12px;
+  color: #141518;
+}
+.certificate-record__actions a:last-child {
+  background: #141518;
+  color: #eae7df;
+}
+.certificate-record__actions a:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.certificate-record[data-revoked="true"] {
+  border-top-color: #aaa79f;
+  background: #191c22;
+  color: #f4f2ed;
+}
+.certificate-record[data-revoked="true"]
+  :is(.certificate-record__reference, .certificate-record__meta, dt) {
+  color: #aaa79f;
+}
+.certificate-record[data-revoked="true"] :is(.certificate-record__top, dl) {
+  border-color: #44454a;
+}
+@media (max-width: 700px) {
+  .certificate-next {
+    grid-template-columns: 1fr;
+  }
+  .certificate-next__brand {
+    flex-direction: row;
+    align-items: center;
+    padding: 24px;
+    gap: 18px;
+  }
+  .certificate-next__body {
+    padding: 26px;
+  }
+  .certificate-next__brand svg {
+    width: 48px;
+    height: 48px;
+  }
+}

@@ -1,4 +1,5 @@
 import type { ProgressStatus } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 
 /**
@@ -19,7 +20,7 @@ export const LESSON_CORRECTIONS = [
 ] as const satisfies readonly LessonCorrection[];
 
 /** The audit action of a lesson's progress corrected from the console. */
-export const LESSON_CORRECTION_ACTION = "admin.user.lesson_progress.correct";
+export const LESSON_CORRECTION_ACTION = AUDIT_ACTION.user.lessonProgressCorrect;
 
 export type LessonCorrectionResult =
   | {
@@ -71,10 +72,9 @@ export const lessonProgressRepository = {
    * cannot get out of on their own.
    *
    * "reset" puts the lesson back to never opened: its progress, its quiz
-   * answers (each is answered once, so they would stay locked), the review
-   * cards they produced and the lesson's review schedule. The XP it paid
-   * stays paid, and finishing it again pays again, as for any first
-   * completion.
+   * answers (each is answered once, so they would stay locked) and the review
+   * cards they produced. The XP it paid stays paid, and finishing it again
+   * pays again, as for any first completion.
    *
    * "complete" marks it finished without paying anything, as a waiver opens a
    * lesson without crediting it: no XP, no streak, no badge. The path it
@@ -109,22 +109,18 @@ export const lessonProgressRepository = {
 
       if (mode === "reset") {
         const where = { userId, lessonId };
-        const [progress, answers, cards, schedules] = await Promise.all([
+        const [progress, answers, cards] = await Promise.all([
           tx.userLessonProgress.deleteMany({ where }),
           tx.lessonQuizAnswer.deleteMany({ where }),
           tx.reviewCard.deleteMany({ where }),
-          // The lesson-level review its completion scheduled goes with it,
-          // as resetProgress clears it for every lesson.
-          tx.reviewSchedule.deleteMany({ where }),
         ]);
-        if (progress.count + answers.count + cards.count + schedules.count === 0) {
+        if (progress.count + answers.count + cards.count === 0) {
           return { ok: false, reason: "NOTHING_TO_RESET" };
         }
         await audit({
           progressRemoved: progress.count,
           answersRemoved: answers.count,
           cardsRemoved: cards.count,
-          schedulesRemoved: schedules.count,
         });
         return {
           ok: true,
@@ -149,6 +145,25 @@ export const lessonProgressRepository = {
       const previousStatus = existing?.status ?? null;
       await audit({ previousStatus });
       return { ok: true, mode, lessonTitle: lesson.title, previousStatus };
+    });
+  },
+
+  /** Every lesson the account opened, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.userLessonProgress.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        attempts: true,
+        bestScore: true,
+        timeSpentSeconds: true,
+        startedAt: true,
+        completedAt: true,
+        lastAccessedAt: true,
+        quizCorrect: true,
+        quizTotal: true,
+        lesson: { select: { title: true, slug: true } },
+      },
     });
   },
 };

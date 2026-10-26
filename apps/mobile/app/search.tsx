@@ -76,7 +76,7 @@ export default function Search(): React.JSX.Element {
           <ErrorState onRetry={() => void refetch()} code="SEARCH" />
         ) : !data && isFetching ? (
           <ListSkeleton rows={3} />
-        ) : data && data.length === 0 ? (
+        ) : data?.length === 0 ? (
           <Text variant="bodySm" accessibilityLiveRegion="polite">
             {SEARCH_COPY.empty(asked)}
           </Text>

@@ -1,11 +1,16 @@
+import { MFA_RECOURSE_HINT, MFA_RECOURSE_PROMPT } from "@cyberlearn/lib/auth/mfa-recourse";
 import { createOtpAutoSubmit, sanitizeOtpCode } from "@cyberlearn/lib/auth/otp-code";
+import { colors } from "@cyberlearn/tokens";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
-import { leaveMfaChallenge } from "@/lib/mfa";
+import { Text } from "@/components/ui";
+import { SITE_URL } from "@/lib/api";
+import { leaveMfaChallenge, mfaRecourseUrl } from "@/lib/mfa";
 import { clearRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { supabase } from "@/lib/supabase";
 
@@ -115,6 +120,18 @@ export default function MfaChallenge(): React.JSX.Element {
         loading={busy}
         disabled={!factorId}
       />
+      {/* Without the phone there is no code to type, and the team can remove the
+          factor: the site's contact form says so and takes the request. The
+          browser is not signed in, which the form does not need. */}
+      <View>
+        <AuthTextLink
+          label={MFA_RECOURSE_PROMPT}
+          onPress={() => void WebBrowser.openBrowserAsync(mfaRecourseUrl(SITE_URL))}
+        />
+        <Text variant="bodySm" style={{ color: colors.textMuted, textAlign: "center" }}>
+          {MFA_RECOURSE_HINT}
+        </Text>
+      </View>
       <AuthTextLink label="Utiliser un autre compte" onPress={() => void switchAccount()} />
     </AuthFormScreen>
   );

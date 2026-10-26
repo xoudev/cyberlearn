@@ -24,7 +24,14 @@ export const writeupRepository = {
   async findOwn(userId: string, challengeId: string) {
     return prisma.challengeWriteup.findUnique({
       where: { challengeId_userId: { challengeId, userId } },
-      select: { id: true, content: true, isHidden: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        content: true,
+        isHidden: true,
+        hiddenByModeration: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   },
 
@@ -50,24 +57,53 @@ export const writeupRepository = {
     return prisma.challengeWriteup.count({ where: { challengeId, isHidden: false } });
   },
 
-  /** Writes the reader's write-up, replacing the previous version if any. */
+  /**
+   * Writes the reader's write-up, replacing the previous version if any.
+   *
+   * Null when the console took the previous version down, which is never
+   * written over: isHidden comes from the screen alone, and writing it on that
+   * row would put back what a moderator hid. The condition sits in the update
+   * itself, so a moderator hiding it in between is not undone either.
+   */
   async upsert(input: {
     challengeId: string;
     userId: string;
     content: string;
     isHidden: boolean;
-  }): Promise<{ id: string }> {
-    return prisma.challengeWriteup.upsert({
-      where: { challengeId_userId: { challengeId: input.challengeId, userId: input.userId } },
-      create: input,
-      update: { content: input.content, isHidden: input.isHidden },
-      select: { id: true },
+  }): Promise<{ id: string } | null> {
+    const key = { challengeId: input.challengeId, userId: input.userId };
+    const { count } = await prisma.challengeWriteup.updateMany({
+      where: { ...key, hiddenByModeration: false },
+      data: { content: input.content, isHidden: input.isHidden },
     });
+    if (count === 0) {
+      // None yet, or one the moderation hid, which the conflict leaves alone.
+      await prisma.challengeWriteup.createMany({ data: [input], skipDuplicates: true });
+    }
+    const row = await prisma.challengeWriteup.findUnique({
+      where: { challengeId_userId: key },
+      select: { id: true, hiddenByModeration: true },
+    });
+    return row === null || row.hiddenByModeration ? null : { id: row.id };
   },
 
   /** Removes the reader's own write-up; how many went (0 or 1). */
   async deleteOwn(userId: string, challengeId: string): Promise<number> {
     const { count } = await prisma.challengeWriteup.deleteMany({ where: { challengeId, userId } });
     return count;
+  },
+
+  /** Every solution the account published, hidden ones included, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.challengeWriteup.findMany({
+      where: { userId },
+      select: {
+        content: true,
+        isHidden: true,
+        createdAt: true,
+        updatedAt: true,
+        challenge: { select: { title: true, slug: true } },
+      },
+    });
   },
 };

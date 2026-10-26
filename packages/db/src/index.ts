@@ -20,6 +20,8 @@ export {
 export { banRepository, activeBanFilter, type BanView } from "./repositories/ban.repository.js";
 export {
   friendshipRepository,
+  type FriendActivityRow,
+  type FriendActor,
   type FriendEdge,
   type FriendPerson,
   type RequestResult,
@@ -34,25 +36,44 @@ export type {
   CatalogueFilters,
   LessonFilters,
   ConsoleLessonFolder,
+  ConsoleLessonHit,
   ConsoleLessonOrigin,
   ConsoleLessonQuery,
   ConsoleLessonRow,
   ConsoleLessonSort,
+  ConsoleLessonCreate,
+  ConsoleLessonPathsChange,
+  ConsoleLessonPrerequisitesChange,
+  LessonCataloguePaths,
+  LessonDeletionCheck,
+  LessonOption,
+  LessonPrerequisites,
+  LessonRef,
+  LessonStudioView,
 } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
+export {
+  preferencesRepository,
+  type PreferenceChanges,
+} from "./repositories/preferences.repository.js";
 export {
   userRepository,
   consoleUserWhere,
   generatedUsername,
   CONSOLE_PROFILE_ACTION,
+  announcementAudienceWhere,
+  type AnnouncementAudience,
   type ChangeRoleResult,
   type ConsoleProfile,
   type ConsoleProfileField,
   type ConsoleProfileReset,
   type ConsoleProfileUpdate,
+  type ConsoleTarget,
+  type ConsoleUserHit,
   type ConsoleUserQuery,
   type ConsoleUserRow,
   type ConsoleUserSort,
+  type OwnConsoleAccount,
   type ProfileAccess,
   type ProfilePreviewCard,
 } from "./repositories/user.repository.js";
@@ -62,6 +83,7 @@ export {
   PLACEMENT_WAIVER_REASON,
   type PlacementResetResult,
 } from "./repositories/placement.repository.js";
+export { dashboardRepository } from "./repositories/dashboard.repository.js";
 export {
   lessonProgressRepository,
   LESSON_CORRECTIONS,
@@ -72,10 +94,14 @@ export {
 export {
   auditLogRepository,
   auditWhere,
+  type AuditEntry,
   type AuditFilter,
   type AuditQuery,
   type AuditRow,
 } from "./repositories/audit-log.repository.js";
+// The names themselves are read from "@cyberlearn/db/audit-actions", which a
+// test replacing this module with a fake leaves real.
+export type { AuditAction } from "./audit-actions.js";
 export {
   lastPage,
   type ConsolePage,
@@ -88,6 +114,11 @@ export {
   type DeleteAccountOptions,
   type DeletionSummary,
 } from "./rgpd/delete-account.js";
+export {
+  buildExportPayload,
+  type ExportOptions,
+  type ExportPayload,
+} from "./rgpd/build-export.js";
 export {
   purgeExpiredRecords,
   RETENTION_MONTHS,
@@ -151,19 +182,57 @@ export {
   type ContributionTally,
   type ProfilePathRow,
 } from "./repositories/profile.repository.js";
-export { tournamentRepository } from "./repositories/tournament.repository.js";
-export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
-export { ratingRepository } from "./repositories/rating.repository.js";
 export {
-  reviewRepository,
-  LIVE_REVIEW_FILTER,
-  type ReviewQueueRow,
-  type ReviewSessionView,
-  type ReviewReminder,
-} from "./repositories/review.repository.js";
+  tournamentRepository,
+  consoleSolveWhere,
+  TOURNAMENT_SOLVE_AUDIT_ACTION,
+  type ConsoleSolveQuery,
+  type ConsoleSolveRow,
+  type ConsoleSolveStatus,
+  type OwnSolve,
+  type SolveDecisionResult,
+} from "./repositories/tournament.repository.js";
+export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
+export {
+  ratingRepository,
+  consoleLessonRatingWhere,
+  type ConsoleLessonRatingQuery,
+  type ConsoleRatingRow,
+} from "./repositories/rating.repository.js";
+export {
+  referenceRepository,
+  cosmeticReferenceWhere,
+  forumCategoryReferenceWhere,
+  placementReferenceWhere,
+  questReferenceWhere,
+  type CosmeticReferenceQuery,
+  type CosmeticReferenceRow,
+  type ForumCategoryReferenceRow,
+  type PlacementReferenceQuery,
+  type PlacementReferenceRow,
+  type QuestReferenceQuery,
+  type QuestReferenceRow,
+  type ReferenceQuery,
+  type SeasonReferenceQuery,
+  type SeasonReferenceRow,
+} from "./repositories/reference.repository.js";
+export {
+  cronRunRepository,
+  cronRunAction,
+  cronRunFrom,
+  CRON_RUN_TARGET,
+  WITHOUT_CRON_RUNS,
+  type CronJobRuns,
+  type CronRunInput,
+  type CronRunSummary,
+  type CronRunView,
+} from "./repositories/cron-run.repository.js";
 export {
   reviewCardRepository,
+  LIVE_REVIEW_FILTER,
   type DueCardRow,
+  type DueQuestionRow,
+  type ReviewLessonRow,
   type ReviewSessionRow,
 } from "./repositories/review-card.repository.js";
 export {
@@ -175,6 +244,36 @@ export {
   LESSON_PREVIEW_TOKEN,
   LESSON_PREVIEW_TTL_MS,
 } from "./repositories/lesson-preview.repository.js";
+export {
+  lessonVersionRepository,
+  LESSON_CONTENT_SELECT,
+  LESSON_VERSIONS_LISTED,
+  lessonBaseOf,
+  lessonContentHash,
+  lessonContentOf,
+  sameLessonContent,
+  type LessonBase,
+  type LessonContent,
+  type LessonVersionRow,
+  type PublishLessonInput,
+  type PublishLessonResult,
+} from "./repositories/lesson-version.repository.js";
+export {
+  lessonDraftRepository,
+  type LessonDraftRow,
+  type PublishLessonDraftResult,
+  type SaveLessonDraftResult,
+} from "./repositories/lesson-draft.repository.js";
+export {
+  lessonFileRepository,
+  LESSON_FROM_FILE_ACTIONS,
+  type LessonFileRow,
+  type LessonOutsideFiles,
+  type LessonFileCreate,
+  type LessonFileWrite,
+  type LessonFileWriteAction,
+  type LessonFileWriteResult,
+} from "./repositories/lesson-file.repository.js";
 export {
   quizReportRepository,
   QUIZ_REPORT_REASONS,
@@ -209,8 +308,42 @@ export {
   noteFolderRepository,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";
-export { notificationRepository } from "./repositories/notification.repository.js";
-export type { NotificationItem } from "./repositories/notification.repository.js";
+export {
+  contentModerationRepository,
+  CONTENT_AUDIT_ACTION,
+  CONTENT_SURFACES,
+  type ConsoleContentQuery,
+  type ConsoleContentRow,
+  type ContentAuthor,
+  type ContentGesture,
+  type ContentGestureResult,
+  type ContentNotice,
+  type ContentSurface,
+  type ModeratedContent,
+  type ReviewableContent,
+} from "./repositories/content-moderation.repository.js";
+export {
+  contentReportRepository,
+  CONTENT_REPORT_REASONS,
+  type ContentReportReasonValue,
+  type ReportAgainstAuthor,
+  type ReportedContent,
+  type ReportQueue,
+} from "./repositories/content-report.repository.js";
+export {
+  notificationRepository,
+  notificationPageWhere,
+  NOTIFICATION_BATCH_SIZE,
+  NOTIFICATION_PAGE_MAX,
+} from "./repositories/notification.repository.js";
+export type {
+  NotificationBatchAudit,
+  NotificationCursor,
+  NotificationItem,
+  NotificationPage,
+  NotificationPageQuery,
+  NotificationRow,
+} from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
 export type {
   LeaderboardEntry,
@@ -232,6 +365,26 @@ export { questRepository } from "./repositories/quest.repository.js";
 export type { QuestWithProgress } from "./repositories/quest.repository.js";
 export { streakRepository } from "./repositories/streak.repository.js";
 export type { StreakOverview } from "./repositories/streak.repository.js";
+export {
+  STREAK_CORRECTION_ACTION,
+  type StreakCorrectionResult,
+  type StreakCounters,
+} from "./repositories/streak.repository.js";
+export {
+  BADGE_GRANT_ACTION,
+  BADGE_REVOKE_ACTION,
+  type BadgeGrantResult,
+  type BadgeRevokeResult,
+  type HeldBadge,
+} from "./repositories/badge.repository.js";
+export { xpLedgerRepository, type XpLedgerRow } from "./repositories/xp-ledger.repository.js";
+export {
+  adjustXp,
+  XP_ADJUSTMENT_ACTION,
+  type AdjustXpInput,
+  type AdjustXpResult,
+  type XpStanding,
+} from "./xp/adjust.js";
 export { cosmeticRepository } from "./repositories/cosmetic.repository.js";
 export type { CosmeticWithState, EquippedCodes } from "./repositories/cosmetic.repository.js";
 export { leagueRepository } from "./repositories/league.repository.js";
@@ -265,7 +418,6 @@ export type {
   NoteFolder,
   Certificate,
   Notification,
-  ReviewSchedule,
   ReviewCard,
   ReviewSession,
   ContactTicket,
@@ -309,6 +461,7 @@ export {
   LeagueDivision,
   XpSource,
   WrappedPeriod,
+  LessonVersionSource,
 } from "@prisma/client";
 export {
   ticketRepository,
@@ -319,8 +472,12 @@ export {
   LAST_TICKET_MESSAGE,
   awaitsTeamReply,
   compareTicketsForQueue,
+  consoleTicketWhere,
   isCriticalTicket,
   needsTeam,
   type AddMessageResult,
+  type AddNoteResult,
+  type AssignTicketResult,
+  type ConsoleTicketHit,
   type QueueTicket,
 } from "./repositories/ticket.repository.js";

@@ -1,0 +1,18 @@
+/* <PhpLab>: the code, then the request and its answer. Side by side once the
+   lesson block (lesson-block.ts) has room for a line of PHP and a page beside
+   it; one under the other before that, as on a phone. The block, not the
+   screen: at 1440px the block can be 1150px wide, or half that with the notes
+   docked beside the lesson. */
+
+.php-lab__panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@container lesson-block (min-width: 900px) {
+  .php-lab__panes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

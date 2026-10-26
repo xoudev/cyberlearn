@@ -14,6 +14,7 @@ import {
 import { keepFormInput } from "@/lib/form-input";
 import { Card } from "../../_components/admin-ui";
 import type { TournamentFormState } from "../_actions/tournament-actions";
+import { TOURNAMENT_FORM_CARDS } from "./tournament-head";
 
 /**
  * The tournament form, to compose one or to edit it. Before the start every
@@ -90,7 +91,7 @@ export function TournamentForm({
       className="a-form"
       style={{ display: "grid", gap: 18 }}
     >
-      <Card title="Le tournoi" pad>
+      <Card title={TOURNAMENT_FORM_CARDS.tournament} pad>
         <div className="a-form">
           <label className="a-field">
             <span className="a-label">Titre</span>
@@ -150,7 +151,7 @@ export function TournamentForm({
         </div>
       </Card>
 
-      <Card title="Les équipes" pad>
+      <Card title={TOURNAMENT_FORM_CARDS.teams} pad>
         <div className="a-form">
           {!composing ? <p className="a-form-notice">{lockedReason}</p> : null}
           <label className="a-field">
@@ -204,7 +205,7 @@ export function TournamentForm({
         </div>
       </Card>
 
-      <Card title="Les défis" pad>
+      <Card title={TOURNAMENT_FORM_CARDS.challenges} pad>
         <div className="a-form">
           <span className="a-field-hint">
             Les défis qui se valident par un flag (CTF, Python). Un défi désactivé dans le catalogue

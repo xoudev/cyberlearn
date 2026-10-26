@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
+import { usernameSchema } from "@cyberlearn/types";
 import {
   canChallenge,
+  challengeFriendName,
   FRIENDS_LABEL,
   FRIENDSHIP_ACTION_LABEL,
+  friendRequestSender,
   friendshipActionAsksFirst,
   friendshipActions,
   friendshipAfter,
   friendshipMove,
   friendshipView,
+  handleFrom,
   orderPair,
   otherSide,
+  ROW_FRIEND_LABEL,
+  rowFriendAction,
+  rowFriendActionName,
   UNFRIEND_PROMPT,
   unfriendQuestion,
 } from "./friendship.js";
@@ -117,5 +124,82 @@ describe("the buttons on a profile", () => {
     expect(canChallenge("incoming")).toBe(false);
     expect(canChallenge("outgoing")).toBe(false);
     expect(canChallenge("none")).toBe(false);
+  });
+});
+
+describe("handleFrom", () => {
+  it("reads a typed handle the way it was stored", () => {
+    expect(handleFrom("@Alex ")).toBe("alex");
+    expect(handleFrom("  sam-42")).toBe("sam-42");
+  });
+
+  it("refuses what cannot be a handle, rather than asking the server", () => {
+    for (const input of ["", "@", "ab", "-alex", "alex-", "al ex", "élise", "a".repeat(33)]) {
+      expect(handleFrom(input)).toBeNull();
+    }
+  });
+
+  it("agrees with the rule sign-up applies", () => {
+    // usernameSchema is what an account's handle passed when it was made: a
+    // handle the field refuses would be somebody nobody can find.
+    for (const input of [
+      "abc",
+      "a1",
+      "abcd",
+      "a-b",
+      "a--b",
+      "9lives",
+      "x".repeat(32),
+      "x".repeat(33),
+      "-ab",
+      "ab-",
+      "a_b",
+      "ABC",
+    ]) {
+      const schema = usernameSchema.safeParse(input.toLowerCase());
+      expect(handleFrom(input) !== null, input).toBe(schema.success);
+    }
+  });
+});
+
+describe("a row's friend button", () => {
+  it("asks a stranger, agrees with somebody who asked, and offers nothing otherwise", () => {
+    expect(rowFriendAction("none")).toBe("request");
+    expect(rowFriendAction("incoming")).toBe("accept");
+    expect(rowFriendAction("outgoing")).toBeNull();
+    expect(rowFriendAction("friends")).toBeNull();
+  });
+
+  it("is one word on the row, and a sentence for a screen reader", () => {
+    expect(ROW_FRIEND_LABEL.request).toBe("Ajouter");
+    expect(rowFriendActionName("request", "Alex")).toBe("Ajouter Alex en ami");
+    expect(rowFriendActionName("accept", "Alex")).toBe("Accepter la demande de Alex");
+  });
+
+  it("names a challenge, and says when a duel is already open", () => {
+    expect(challengeFriendName("Alex", false)).toBe("Défier Alex en duel");
+    expect(challengeFriendName("Alex", true)).toBe("Duel en cours avec Alex");
+  });
+});
+
+describe("friendRequestSender", () => {
+  it("reads who asked from a request's notification", () => {
+    expect(friendRequestSender({ type: "FRIEND_REQUEST", metadata: { fromUserId: ALICE } })).toBe(
+      ALICE,
+    );
+  });
+
+  it("finds nobody on an older notification, another type, or metadata it did not write", () => {
+    expect(friendRequestSender({ type: "FRIEND_REQUEST", metadata: null })).toBeNull();
+    expect(friendRequestSender({ type: "FRIEND_REQUEST" })).toBeNull();
+    expect(
+      friendRequestSender({ type: "FRIEND_REQUEST", metadata: { fromUserId: 12 } }),
+    ).toBeNull();
+    expect(
+      friendRequestSender({ type: "FRIEND_REQUEST", metadata: { fromUserId: "../admin" } }),
+    ).toBeNull();
+    expect(
+      friendRequestSender({ type: "FRIEND_ACCEPTED", metadata: { fromUserId: ALICE } }),
+    ).toBeNull();
   });
 });

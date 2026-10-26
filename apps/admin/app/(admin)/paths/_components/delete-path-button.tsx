@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { notifyResult } from "@/lib/notify";
 import { useAdminConfirmation } from "../../_components/admin-confirmation";
 import { deletePathAction } from "../_actions/path-actions";
 
@@ -40,7 +41,6 @@ export function DeletePathButton({
   const router = useRouter();
   const confirm = useAdminConfirmation();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [hov, setHov] = useState(false);
 
   async function handleDelete(): Promise<void> {
@@ -51,16 +51,17 @@ export function DeletePathButton({
     )
       return;
 
-    setError(null);
     startTransition(async () => {
       const fd = new FormData();
       fd.set("pathId", pathId);
       const result = await deletePathAction({}, fd);
-      if (result.success) {
-        router.refresh();
-      } else if (result.error) {
-        setError(result.error);
-      }
+      // In a toast rather than a popup under the row: the table's overflow
+      // clipped it, and a deletion that worked said nothing at all.
+      const ok = notifyResult(result, {
+        success: `Parcours « ${pathTitle} » supprimé.`,
+        error: "La suppression a échoué.",
+      });
+      if (ok) router.refresh();
     });
   }
 
@@ -86,14 +87,14 @@ export function DeletePathButton({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 44,
-          height: 44,
+          width: 28,
+          height: 28,
           background:
             hov && !disabled
               ? "color-mix(in srgb, var(--a-danger) 8%, transparent)"
               : "transparent",
           border: `1px solid ${hov && !disabled ? "color-mix(in srgb, var(--a-danger) 30%, transparent)" : "transparent"}`,
-          color: disabled ? "var(--a-muted)" : "var(--a-danger)",
+          color: disabled ? "var(--a-border-2)" : "var(--a-danger)",
           cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",
           flexShrink: 0,
@@ -115,45 +116,6 @@ export function DeletePathButton({
           <TrashIcon />
         )}
       </button>
-
-      {error && (
-        <div
-          style={{
-            position: "absolute",
-            right: 0,
-            top: "calc(100% + 4px)",
-            background: "var(--a-surface)",
-            border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
-            padding: "6px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--a-danger)",
-            whiteSpace: "nowrap",
-            zIndex: 50,
-            maxWidth: 280,
-            lineHeight: 1.5,
-          }}
-        >
-          {error}
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-            }}
-            style={{
-              marginLeft: 8,
-              color: "var(--a-muted)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
     </div>
   );
 }

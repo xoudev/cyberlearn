@@ -1,3 +1,9 @@
+import {
+  REMOVAL_NOTICE,
+  isRemovalKind,
+  type RemovalKind,
+} from "@cyberlearn/lib/moderation/removal";
+
 /**
  * The forum, as the app receives it from /api/mobile/forum/* (see
  * apps/web/lib/forum/mobile-view.ts). Who may read, write, edit or take down
@@ -10,6 +16,12 @@ export interface ForumAuthor {
   name: string;
   level: number;
   role: string;
+  /**
+   * One of the reader's friends, marked beside the name as on the site. A
+   * forum author is always named, so the mark hides nothing. Absent from a
+   * server older than the marks.
+   */
+  isFriend?: boolean;
 }
 
 export interface ForumCategory {
@@ -44,6 +56,11 @@ export interface ForumPost {
   editedAt: string | null;
   /** Taken down; only ever sent to its own author. */
   hidden: boolean;
+  /**
+   * Why it is hidden: withdrawn by its author, held by the screen for a
+   * moderator, or hidden by one. Absent from a server older than this field.
+   */
+  removal?: RemovalKind | null;
   /** Written by the reader. */
   mine: boolean;
   author: ForumAuthor | null;
@@ -87,6 +104,17 @@ export function canEditPost(post: ForumPost): boolean {
 /** Its author may take a post down, and so may an administrator. */
 export function canRemovePost(post: ForumPost, viewerIsAdmin: boolean): boolean {
   return !post.hidden && (post.mine || viewerIsAdmin);
+}
+
+/**
+ * The line above a post its author can see but nobody else can, or null when
+ * the post is up. Held for a moderator, hidden by one and withdrawn are three
+ * different things, as on the site; a server that does not say which is read
+ * as a withdrawal, which is all it used to send.
+ */
+export function removalNotice(post: ForumPost): string | null {
+  if (!post.hidden) return null;
+  return REMOVAL_NOTICE[isRemovalKind(post.removal) ? post.removal : "WITHDRAWN"];
 }
 
 /** The label next to a name in a thread, as on the site. */

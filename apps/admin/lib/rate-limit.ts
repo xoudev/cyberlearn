@@ -23,7 +23,62 @@ const authRateLimit = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "15 m"), prefix: "rl:admin:auth" })
   : null;
 
+/**
+ * 5 announcements per hour per administrator. One goes to every account at
+ * once: a second click, a script left running or a session that is not its
+ * owner's should stop at a handful, not at the whole user base a few times.
+ */
+const announcementRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "1 h"),
+      prefix: "rl:admin:announce",
+    })
+  : null;
+
+/**
+ * 10 GDPR exports per hour per administrator. Each one reads the whole of an
+ * account and hands it over in one file, which is why the learner's own export
+ * is held to one a day: here a session that is not its owner's, or a script,
+ * stops at a handful of accounts instead of walking the user base. Keyed on
+ * the administrator rather than the account, so a request answered twice (a
+ * file lost, a second letter) is not refused for a day.
+ */
+const userExportRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "1 h"),
+      prefix: "rl:admin:user-export",
+    })
+  : null;
+
 const LIMIT_TIMEOUT_MS = 1_000;
+
+/**
+ * Asks a limiter about a key, allowing when it does not answer: an error and a
+ * timeout are logged and let through, like an unconfigured Redis.
+ */
+async function allowedBy(limiter: Ratelimit, key: string, name: string): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // Capped as well as retry-bounded: a request that neither resolves nor
+    // rejects would hold the form open indefinitely.
+    const { success } = await Promise.race([
+      limiter.limit(key),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${name} rate limit timed out after ${String(LIMIT_TIMEOUT_MS)}ms`));
+        }, LIMIT_TIMEOUT_MS);
+      }),
+    ]);
+    return success;
+  } catch (error) {
+    logger.error({ scope: "rate-limit", err: errorMessage(error) }, `${name} check failed open`);
+    return true;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
 
 /**
  * Checks the auth rate limit for the given request.
@@ -45,25 +100,26 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
   // RGPD pseudonymization: never store raw IPs. This used to be the same HMAC
   // written out here, under a salt read by a second getter - one primitive, two
   // implementations, and nothing to stop them drifting apart.
-  const hashedIp = pseudonymize(rawIp);
+  return allowedBy(authRateLimit, pseudonymize(rawIp), "auth");
+}
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    // Capped as well as retry-bounded: a request that neither resolves nor
-    // rejects would hold the sign-in open indefinitely.
-    const { success } = await Promise.race([
-      authRateLimit.limit(hashedIp),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error(`auth rate limit timed out after ${String(LIMIT_TIMEOUT_MS)}ms`));
-        }, LIMIT_TIMEOUT_MS);
-      }),
-    ]);
-    return success;
-  } catch (error) {
-    logger.error({ scope: "rate-limit", err: errorMessage(error) }, "auth check failed open");
-    return true;
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
+/**
+ * Whether this administrator may send another announcement now. Keyed on the
+ * account rather than the address: the session is what sends it. Fails open
+ * for the reason the sign-in limit does - the gate in front of it is the
+ * ADMIN role and a TOTP challenge, not Redis.
+ */
+export async function checkAnnouncementRateLimit(adminId: string): Promise<boolean> {
+  if (!announcementRateLimit) return true;
+  return allowedBy(announcementRateLimit, adminId, "announcement");
+}
+
+/**
+ * Whether this administrator may export another account's data now. Fails
+ * open like the other two: the ADMIN role and a TOTP challenge stand in front
+ * of it, and every export is written to the audit log either way.
+ */
+export async function checkUserExportRateLimit(adminId: string): Promise<boolean> {
+  if (!userExportRateLimit) return true;
+  return allowedBy(userExportRateLimit, adminId, "user export");
 }

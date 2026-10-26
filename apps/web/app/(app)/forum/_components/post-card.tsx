@@ -10,8 +10,10 @@ import Link from "next/link";
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { editPostAction, hidePostAction } from "../_actions/forum-actions";
 import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
+import { REMOVAL_TAG } from "@cyberlearn/lib/moderation/removal";
 import { ConfirmButton } from "@/components/confirm-button";
 import { FriendMark } from "@/components/friend-mark";
+import { ReportContentButton } from "@/components/report-content-dialog";
 import { Monogram, authorName, formatDate } from "./forum-bits";
 import type { ForumPostView } from "@cyberlearn/db";
 
@@ -22,7 +24,7 @@ import type { ForumPostView } from "@cyberlearn/db";
  * instead of disappearing: a post that silently vanishes reads as a bug, and
  * the author is the one person entitled to know it was theirs that went.
  * Removing asks first, in place, as the app does: it cannot be taken back
- * from here.
+ * from here. Somebody else's message can be reported to the team instead.
  */
 export function PostCard({
   post,
@@ -30,6 +32,7 @@ export function PostCard({
   profileHref,
   canEdit,
   canRemove,
+  canReport = false,
   path,
   hidden = false,
   isFriend = false,
@@ -43,6 +46,8 @@ export function PostCard({
   isFriend?: boolean;
   canEdit: boolean;
   canRemove: boolean;
+  /** Somebody else's message, up: « Signaler » sends it to the team. */
+  canReport?: boolean;
   path: string;
   hidden?: boolean;
 }): React.JSX.Element {
@@ -111,10 +116,20 @@ export function PostCard({
           <span>
             {formatDate(post.createdAt)}
             {post.editedAt !== null && <span> · modifié</span>}
-            {hidden && <span style={{ color: "#FF6B7A" }}> · retiré</span>}
+            {/* Three different reasons leave the same trace on the row: the
+                author withdrew it, the screen is holding it for a moderator,
+                or a moderator hid it. "retiré" for all three told someone
+                whose message was only waiting that it was gone. */}
+            {hidden && (
+              <span style={{ color: post.removal === "HELD" ? "var(--color-warning)" : "#FF6B7A" }}>
+                {" "}
+                · {REMOVAL_TAG[post.removal ?? "WITHDRAWN"]}
+              </span>
+            )}
           </span>
-          {(canEdit || canRemove) && !hidden && (
+          {(canEdit || canRemove || canReport) && !hidden && (
             <span className="fo-post-tools">
+              {canReport && <ReportContentButton surface="FORUM_POST" contentId={post.id} />}
               {canEdit && (
                 <button
                   type="button"

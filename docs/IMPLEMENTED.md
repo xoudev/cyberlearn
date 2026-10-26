@@ -20,9 +20,9 @@
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
 | `/contact` | Formulaire de contact / signalement, pour un visiteur (connecté, on dépose une demande depuis la fenêtre « Nouvelle demande » de `/support`) |
-| `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat ; le bilan compté sur tous les duels |
-| `/tournaments` · `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct |
-| `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction |
+| `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat ; le bilan compté sur tous les duels ; « Défier un ami » ouvre une fenêtre (`?duel=1`, ou `?duel=<id>` avec l'ami choisi, depuis « Rejouer » ou le profil ; l'ancienne adresse `?ami=<id>` y mène) : les amis en cartes, celui qui est déjà en duel montré sans pouvoir être choisi, puis le parcours |
+| `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction. Sa présentation (modules couverts, règles, dernières tentatives) est une fenêtre sur la page du parcours (`?mock=1`), dont « Commencer » mène à l'examen avec `?go=1` ; sans `go`, l'adresse est redirigée vers cette fenêtre |
+| `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct. La liste est l'onglet Tournois de `/challenges` ; `/tournaments` y redirige |
 | `/u/[username]` | Profil public d'un utilisateur : chiffres comptés en base (badges, leçons terminées, défis résolus), l'année d'activité jour par jour, « Face à face » et « Défier » entre amis, les trois badges les plus rares, les parcours en cours et terminés avec leur progression, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, le bilan des duels et les contributions, la chronologie, activité ; une image d'aperçu pour un lien partagé (sans nom pour un profil privé) et `noindex` sur un profil privé ; dans l'interface de l'app pour un visiteur connecté, seul pour un visiteur anonyme, aux cosmétiques de son propriétaire ; « Ami ✓ » et son menu, « Accepter » et « Refuser » une demande, « Défier en duel » qui suit l'amitié ; sur sa propre page, « Modifier mon profil » et « Copier le lien » |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
 | `/download` | Page de téléchargement de l'app mobile |
@@ -49,10 +49,12 @@
 | `/lessons` · `/lessons/[slug]` | Catalogue et leçon (MDX, quiz, Q&A, notes) |
 | `/paths` · `/paths/[slug]` | Catalogue des parcours et progression |
 | `/paths/[slug]/exam` | Examen final à tirage aléatoire et temps limité |
-| `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) |
-| `/revisions` · `/review` | Révisions espacées SM-2 |
+| `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
+| `/revisions` · `/review` | Pas de page : redirection vers le rappel du jour, `/dashboard?rappel=1` (`next.config.ts`) ; l'ancienne file SM-2 est retirée |
+| `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
-| `/badges` · `/certificates` | Collection de badges, attestations obtenues |
+| `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu » |
+| `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
 | `/forum` · `/forum/[category]` | Forum par catégories ; « Nouveau sujet » ouvre le formulaire dans une fenêtre sur la section (`?compose=1`) |
@@ -64,14 +66,14 @@
 | `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande ; « Nouvelle demande » ouvre une fenêtre (`?request=1`) : thème, objet, message, réponse à l'adresse du compte |
 | `/wrapped` | Récap annuel, ouvert du 1er décembre au 7 janvier |
 | `/changelog` | Pas de page : redirection vers `/dashboard?news=1`. Les notes de version s'ouvrent dans un tiroir sur la page en cours, depuis le bouton Nouveautés de la barre du haut |
-| `/profile` | Profil |
+| `/profile` | Profil, en trois onglets dans l'adresse (`?tab=activite`, `badges`, `certificats`) : l'activité, la collection de badges (gagnés et verrouillés, avec leur progression), tous les certificats, révoqués compris |
 | `/settings/<section>` | Pas de page : redirection vers `/dashboard?settings=<section>`, où le volet des paramètres s'ouvre sur la section (`profile`, `privacy`, `preferences`, `notifications`, `moderation`, `account`, `data`). `/profile/edit` redirige vers la section profil |
 
 #### API Routes
 
 | Route | Description |
 |---|---|
-| `/api/cron/review-reminders` | Cron - rappels de révision SM-2 (quotidien) |
+| `/api/cron/review-reminders` | Cron - rappel du jour prêt, sans nombre (quotidien) |
 | `/api/cron/streak-reset` | Cron - reset du streak à minuit |
 | `/api/cron/season-rollover` | Cron - clôture de saison, promotions et relégations |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
@@ -81,13 +83,15 @@
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
-| `/api/me/export` | Export des données personnelles (RGPD Art. 20) |
+| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). Version 1.2 : l'ancienne file de révisions (`reviewSchedules`) n'y figure plus, sa table est supprimée et ses lignes ont été converties en cartes (`reviewCards`). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
 | `/api/mobile/leaderboard` | Classement et échelle de pod ; `?period=week\|month` pour la semaine ou le mois, sans paramètre la réponse d'avant |
 | `/api/mobile/my-class` | Travail donné à l'élève |
 | `/api/mobile/loadout` | Cosmétiques équipés |
 | `/api/mobile/password` | Changement de mot de passe |
+| `/api/mobile/review-cards` | Rappel du jour (GET, POST d'une réponse) ; `?path=&module=` pour réviser un module |
+| `/api/mobile/review` | Ancienne file SM-2, retirée : gardée pour les versions de l'app d'avant les cartes, refuse toute note (409, `{ ok: false, error }`) sans rien noter ni créditer |
 
 ---
 
@@ -105,21 +109,25 @@
 - Génération de **waivers** après le test : accès direct aux leçons avancées si score suffisant
 
 #### Dashboard
-- En-tête : la date, le prénom, la série et les révisions dues, le niveau en anneau avec l'XP et le rang
+- En-tête : la date, le prénom, la série et « Ton rappel du jour t'attend » tant qu'il est à faire, le niveau en anneau avec l'XP et le rang
 - La mission : la leçon en cours, sinon la prochaine du parcours en tête (classement `featured-paths`, à partir du niveau, du test de placement et des derniers domaines travaillés), avec le module en cours dessiné leçon par leçon (`module-route`)
-- Révisions SM-2 dues du jour, en lignes
+- Ce qui n'attend pas, seulement quand il y en a : les défis reçus d'un ami, à accepter ou refuser sur place (`listDuelInvitationsFor`, les mêmes cartes que `/duels`), et les tournois en cours, celui qui ferme le premier d'abord, avec la part du temps écoulé et « Entrer » (`runningTournaments` de `@cyberlearn/lib/dashboard/your-move`)
+- Le rappel du jour : à faire, fait aujourd'hui ou rien aujourd'hui, sans nombre, et le bouton qui l'ouvre
 - La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
+- Tes amis, pour qui en a : leurs derniers moments (leçon du catalogue terminée, badge, certificat, défi résolu, duel gagné), avec leur avatar, le lien de leur profil et « Défier », grisé en « Duel en cours » tant qu'un duel est ouvert ; lus dans les tables existantes (`friendshipRepository.recentFriendActivity`), même service pour l'app (`GET /api/mobile/friends/activity`)
 - Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
-- Barre latérale en trois groupes (Apprendre, Progression, Communauté) et un bloc compte ; seul le nombre de révisions dues y est compté
+- Barre latérale : le tableau de bord, puis Apprendre (Parcours, Leçons, Révisions, Bloc-notes, Glossaire), S'entraîner (Défis, Duels), Progression (Mon profil, Classement, Casier) et Communauté (Forum, Mes classes pour qui en a une, Aide), et un bloc compte. Groupes, libellés et ordre partagés avec le hub de l'app (`@cyberlearn/lib/navigation/groups`). Seules les invitations aux duels en attente y sont comptées (`duelRepository.countInvitations`) ; « Révisions » ouvre le rappel du jour
+- Registre des routes (`apps/web/lib/routes.ts`) : pour chaque adresse, si elle demande une session, si `robots.txt` l'écarte et son icône dans la barre latérale. Le middleware, `robots.txt` et la barre latérale le lisent ; un test parcourt `app/(app)` et échoue sur une page connectée absente du registre
 
 #### Leçons
 - Contenu rendu en MDX (remark-gfm, rehype-highlight, rehype-sanitize)
-- Une colonne centrée : en-tête compact (fil d'Ariane, titre, chapeau, durée, XP, difficulté, statut), la prose dans une mesure de lecture (720 px), les composants à la largeur de l'article
+- Une colonne centrée : en-tête compact (fil d'Ariane, titre, chapeau, durée, XP, difficulté, statut), la prose dans une mesure de lecture (720 px), chaque composant dans un bloc à sa taille
+- Ateliers à leur taille : chaque composant est rendu dans un bloc conteneur (`.lesson-block`, `container-type: inline-size`), dans la mesure du texte (encadrés, quiz, petits exercices) ou large jusqu'à 1200 px (terminaux, éditeurs, schémas, ateliers à panneaux, image `variant="full"`), selon le champ `width` du registre des composants. Dedans, l'atelier se dispose selon la largeur du bloc et non de l'écran : octets 16, 8 ou 4 par ligne selon la place (HexEditor, PacketDissector), panneau de NetworkLab sous le canevas ou à côté, code et réponse côte à côte (PhpLab), photo et carte côte à côte (PhotoOsint), terminal et graphe côte à côte (GitSandbox), options du quiz sur une ou deux lignes ; terminaux, éditeurs et aperçu PHP plus hauts dans un bloc large ; libellés à 12 px et texte mono à 13 px ; un seul cadre dans FindTheFlaw, PhishingEmail et LogHunt ; libellés des schémas jamais sous 11 px
 - Navigation par sections depuis une barre d'outils collée sous la barre du haut : section n/N avec sa barre, précédente et suivante (ou « Terminer » sur la dernière), plan des sections en tiroir avec l'auteur et le glossaire, notes en tiroir (ancrées à côté du texte à partir de 1440 px), « Mode focus » qui replie la barre latérale
 - Quiz optionnel intégré
 - Q&A par leçon (questions, réponses, votes, marquer comme acceptée)
 - Notation 1–5 étoiles avec recalcul des moyennes en temps réel
-- Complétion avec attribution d'XP, évaluation des badges, création du ReviewSchedule SM-2
+- Complétion avec attribution d'XP, évaluation des badges, mise en file des cartes de révision
 - Gestion des prérequis (chaîne de leçons)
 - Un administrateur ouvre une leçon non publiée par son adresse, avec un bandeau et sans progression ni XP ; la leçon vitrine `vitrine-des-composants` rend chaque composant une fois
 
@@ -157,19 +165,21 @@
   nombre réel de joueurs classés et la place du lecteur, même au-delà des
   cent lignes ; un nom public mène au profil, avec son avatar
 
-#### Révisions (Spaced Repetition SM-2)
-- Algorithme SuperMemo-2 : `easeFactor`, `intervalDays`, `repetitions`, `nextReviewAt`
-- ReviewSchedule créé à chaque complétion de leçon
-- Page `/revisions` : la session du jour, cinq leçons au plus parmi celles dont `nextReviewAt ≤ now`, les plus en retard d'abord ; le reste attend son tour (`reviewRepository`, règles dans `@cyberlearn/lib/revisions/session`)
-- Seules les leçons encore publiées reviennent ; une leçon retenue assez de fois (prochain intervalle ≥ 60 jours) sort du cycle
-- Cron quotidien pour les rappels par notification, au compte de la session
-- En préparation, à côté de la file SM-2 qu'elles remplaceront : les cartes de révision, une question de quiz par carte (tables `review_cards` et `review_sessions`, lecture de ses propres lignes seulement, écriture par le serveur). Une leçon terminée, sur le site ou dans l'app, met en file les questions ratées (dues le lendemain) et la dernière réussie (due une semaine plus tard), sauf les bilans de module, les projets et les leçons de classe ; même interrupteur `spacedRepetition`. Boîtes de Leitner : une bonne réponse fait monter la carte (revue 1, 3, 7 puis 21 jours plus tard) puis la retire, une erreur la renvoie à la première boîte ; une carte réussie au moins une fois (colonne `everCorrect`) et en retard de plus de 30 jours sort d'elle-même, et aucune séance ne la tire entre-temps ; une carte dont la question a quitté la leçon sort aussi, mais pas sur une leçon lue sans aucun quiz (MDX illisible). Une séance par jour, six cartes au plus, deux au plus par leçon, l'ordre des options tiré pour le jour. Règles dans `@cyberlearn/lib/revisions/cards`, lectures et écritures dans `reviewCardRepository` ; aucun écran ne les montre encore. Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne). À reprendre quand la file SM-2 sera retirée : les leçons de classe n'ont pas de cartes, alors que l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) promet aux enseignants « progression, XP, révisions » ; corriger cet en-tête, ou revoir l'exclusion avec le PO
+#### Révisions : « Rappel du jour » (cartes de Leitner) et « Réviser ce module »
+- Les cartes de révision, une question de quiz par carte (tables `review_cards` et `review_sessions`, lecture de ses propres lignes seulement, écriture par le serveur). Une leçon terminée, sur le site ou dans l'app, met en file les questions ratées (dues le lendemain) et la dernière réussie (due une semaine plus tard), sauf les bilans de module, les projets et les leçons de classe ; interrupteur `spacedRepetition`. Boîtes de Leitner : une bonne réponse fait monter la carte (revue 1, 3, 7 puis 21 jours plus tard) puis la retire, une erreur la renvoie à la première boîte ; une carte réussie au moins une fois (colonne `everCorrect`) et en retard de plus de 30 jours sort d'elle-même, et aucune séance ne la tire entre-temps ; une carte dont la question a quitté la leçon sort aussi, mais pas sur une leçon lue sans aucun quiz (MDX illisible). Règles dans `@cyberlearn/lib/revisions/cards`, lectures et écritures dans `reviewCardRepository`
+- **Rappel du jour** : une fenêtre par-dessus la page (`?rappel=1`, `components/rappel/rappel-dialog.tsx`), ouverte depuis l'entrée Révisions de la barre latérale, la carte « Rappel du jour » du tableau de bord et la notification de rappel. Une séance par jour, tirée à la première ouverture de la fenêtre, ou au premier passage sur le tableau de bord avec une carte due (`dailyRecallState`), et gardée avec l'ordre des options (six cartes au plus, deux au plus par leçon, les plus en retard d'abord) ; c'est à ce moment que les cartes périmées et orphelines sont retirées. Des cartes dues dont aucune question ne peut être posée (leur leçon ne donne aucun quiz, MDX illisible) : la journée est gardée vide et rendue d'office, sans XP, et le tableau de bord, la fenêtre et le rappel disent tous trois qu'il n'y a rien aujourd'hui. Une question à la fois, chaque réponse corrigée sur le serveur et définitive (tirage et vérification de `social/duel.ts`, écriture conditionnelle `answerInSession`), qui déplace sa carte ; puis l'explication de l'auteur et « Revoir ce passage », qui ouvre la leçon sur la section de la question (`?section=N#quiz-<id>`, `@cyberlearn/lib/revisions/passage`, la section ouverte seulement sur une leçon terminée ; la leçon déjà à l'écran, son stepper ouvre la section, amène la question à l'écran et retire `section` de l'adresse, pour qu'un même lien suivi plus tard soit encore entendu). Fermée en cours de route, la séance reprend à la question suivante. Une réponse refusée (déjà donnée dans un autre onglet ou sur le téléphone, question retirée de sa leçon, séance de la veille) relit la séance : le verdict donné ailleurs, la question suivante ou le rappel du jour s'affichent, avec la raison du refus. La dernière réponse rend la séance : 15 XP une seule fois (`REVIEW_SESSION_XP`, journal d'XP source `REVIEW`), le jour compté pour la série et sa quête hebdomadaire. Aucun compteur d'attente nulle part : ni dans la barre latérale, ni sur le tableau de bord (« à faire », « fait aujourd'hui » ou « rien aujourd'hui »), ni dans la notification. Service partagé `apps/web/lib/revisions/daily-recall.ts`, actions `(app)/_rappel/_actions`
+- **Réviser ce module · 2 min** : sur la page d'un parcours, dans l'en-tête de chaque module dont une leçon est terminée, à côté de « Fiche PDF » ; la même fenêtre (`?rappel=module-<n>-<parcours>`), six questions au plus des leçons terminées du module, corrigées une à une sur le serveur, sans XP, sans carte déplacée et sans rien enregistrer : le tirage est le même toute la journée et l'ordre des options d'une question se recalcule pour la vérifier. Disponible même répétition espacée coupée
+- L'app passe par `GET/POST /api/mobile/review-cards` (le même service), réponses lues par les schémas Zod de `@cyberlearn/types` (`review-cards.schema.ts`), avec les mêmes mots (`@cyberlearn/lib/revisions/recall-copy`) : l'écran Révisions (`app/revisions.tsx`) est le rappel du jour, ouvert depuis la carte « Rappel du jour » de l'Accueil (« Ton rappel du jour t'attend » sous le prénom tant qu'il est à faire), l'entrée Révisions du profil et la notification ; « Réviser ce module · 2 min » dans l'en-tête de module de l'écran du parcours (`app/paths/module-review.tsx`) ; « Revoir ce passage » ouvre l'écran de la leçon terminée sur la section qui contient la question (`lib/rappel.ts`)
+- Cron quotidien `review-reminders` : une notification « Ton rappel du jour est prêt », sans nombre, vers `/dashboard?rappel=1`, à qui a une carte due dont la question est encore dans sa leçon (la règle du tirage, `learnersWithRecall`, chaque leçon lue une fois pour tous), garde les deux interrupteurs et n'a pas encore fait le rappel du jour ; une fois par jour au plus
+- Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne)
+- Les leçons de classe n'ont pas de cartes : l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) le dit aux enseignants
+- L'ancienne file SM-2 est retirée (`sm2.ts`, la page `/revisions`, son service de notation, `reviewRepository`) : une leçon terminée n'y ajoute plus rien, `/revisions` et `/review` ouvrent le rappel du jour. Ses lignes ont été converties en cartes (script `db:backfill-review-cards`, lancé à la main en production avant cette version), puis sa table `review_schedules_legacy` a été supprimée (migration `20261023120000_drop_review_schedules_legacy`), avec le script et la section `reviewSchedules` de l'export RGPD (version 1.2). Pour les versions de l'app d'avant les cartes, qui lisaient la file elles-mêmes : `review_schedules` est une vue vide (`security_invoker`, aucune ligne, bâtie sur `review_cards`, relation vers `lessons` gardée), où elles voient une file sans rien à faire, et `/api/mobile/review` refuse toute note sans rien noter ni créditer (migration `20261018120000_retire_review_schedules`). La vue accepte aussi, sans rien en garder, les écritures d'un déploiement d'avant les cartes. La vue et la route restent : les retirer est une décision à part, quand plus aucune de ces versions n'est supportée (`docs/MOBILE_PARITY.md`)
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
-- Préférences : répétition espacée ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
+- Préférences : répétition espacée (le rappel du jour) ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans la coquille de l'app (`components/app-shell.tsx`, dessinée par `(app)/layout.tsx`), les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse (entrée `settings` des fenêtres ouvertes par l'adresse, `components/query-dialogs.ts`, dessinées par `QueryDialogHost` monté dans la même coquille ; cadre `SideDrawer` de `@cyberlearn/ui`, voir `docs/dev/dialogs.md`)
 
 #### Notifications
@@ -180,6 +190,14 @@
   TOURNAMENT_ANNOUNCED, CERTIFICATE_REVOKED
 - Badge de comptage non-lu dans la navbar
 - Marquer une ou toutes les notifications comme lues
+- Le panneau de la barre du haut montre les 20 dernières ; « Tout voir » mène à
+  l'historique `/notifications`, paginé par curseur (date puis identifiant) pour
+  qu'une notification arrivée entre deux pages ne décale rien. L'app pagine sa
+  boîte de 50 en 50 avec « Charger plus »
+- Ce que l'historique marque lu, la pastille et le panneau le suivent, et
+  l'inverse : un événement sur la fenêtre (`lib/notifications/read-sync.ts`),
+  la barre du haut ne se rechargeant pas d'une page à l'autre
+- Une demande d'ami encore en attente se reçoit avec « Accepter » et « Refuser » sous son avis (`metadata.fromUserId`), dans le panneau comme sur l'historique `/notifications`, « Refuser » ne retirant qu'une demande encore en attente
 
 #### Contact & Support
 - Formulaire à 8 thèmes (BUG, QUESTION, FEATURE_REQUEST, SECURITY,
@@ -203,11 +221,24 @@
   depuis son onglet ; la marque « Ami » à côté du nom d'un ami (classement,
   ligue, forum, questions-réponses, solutions, classe, tournois), seulement
   sur une ligne qui montre déjà qui elle est
+- Panneau des amis de la barre du haut : les listes entières (plus de limite
+  cachée à soixante amis), « Défier » sur chaque ami, qui ouvre la fenêtre
+  `?duel=<id>` et se grise en « Duel en cours », et « Ouvrir un profil » par
+  son @pseudo ; « Ajouter » sur un camarade de sa classe et sur une ligne
+  publique du classement (par le @pseudo que la ligne montre) ; l'avatar des
+  joueurs et le lien du profil de l'autre sur les cartes de duel
 
 #### Modération et sanctions
 - Filtrage à la publication : un contenu signalé est masqué avant relecture
 - File de relecture côté console : restaurer ou supprimer
 - L'auteur est notifié de la décision, et la retrouve dans ses réglages
+- « Signaler » sous ce que d'autres publient (message du forum, question ou
+  réponse sous une leçon, solution de défi, ressource de classe), sur le site et
+  dans l'app (sauf les ressources, que l'app ne montre pas encore) : les raisons
+  d'une note signalée, un commentaire facultatif, vingt par heure au plus,
+  seulement ce que le lecteur voit et jamais le sien (table `content_reports`,
+  lue par son seul auteur sous RLS, écrite par le serveur) ; l'auteur ne sait
+  pas qui l'a signalé, et rien n'est retiré avant la relecture
 - Bannissement avec motif, durée, échéance et dépôt d'appel
 
 #### Saisons, quêtes et cosmétiques
@@ -242,16 +273,17 @@
 | `/` | Redirige vers `/dashboard` |
 | `/login` | Connexion admin |
 | `/dashboard` | Stats globales, recherche, et issues Sentry non résolues |
-| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), sélection et changement de statut groupé |
-| `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
-| `/lessons/[id]/edit` | Éditer une leçon |
-| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
+| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
+| `/lessons/new` | Créer une leçon (éditeur MDX + preview), qui s'ouvre ensuite dans son studio |
+| `/lessons/[id]` | Studio de la leçon : sa fiche dans un rail, l'éditeur et l'aperçu du site côte à côte sur toute la largeur, brouillon enregistré seul, « Publier les changements », versions à restaurer ; dessous, ses parcours et prérequis, et les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, avec un lien vers tous. `/lessons/[id]/edit` y redirige (`next.config.ts`) |
+| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier), par glisser-déposer ; une leçon déjà en base se met à jour après diff et confirmation ; chaque erreur donne sa ligne |
+| `/lessons/[id]/ratings` | Tous les avis d'une leçon, 25 par page (`?q=&score=&page=`) : note, commentaire, apprenant, date ; la note moyenne et le nombre d'avis en tête |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |
 | `/paths` | Liste des parcours |
 | `/paths/new` | Créer un parcours |
-| `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) |
+| `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) ; avis des apprenants |
 | `/paths/[id]/quiz` | Composer l'examen final d'un parcours |
 | `/badges` | Liste des badges |
 | `/badges/new` | Créer un badge (10 types de critères) |
@@ -259,15 +291,23 @@
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
-| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), double authentification, remise à zéro complète, suppression |
+| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression. « Exporter les données (RGPD) » télécharge le fichier que l'apprenant obtient sur le site |
+| `/users/[id]/export` | Export RGPD d'un compte, pour une demande faite à l'équipe : le même fichier JSON que `/api/me/export`, construit par le même `buildExportPayload` de `@cyberlearn/db`. Inscrit au journal (`admin.user.data.exported`) avant de partir, et refusé si l'inscription échoue ; 10 exports par heure et par administrateur |
 | `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
+| `/tournaments/[id]/flags` | Flags trouvés d'un tournoi, 25 par page (`?q=&status=&page=`) : joueur, défi, classe, heure. Disqualifier avec un motif (5 à 300 caractères), rétablir ; chaque geste est inscrit au journal |
 | `/moderation` | File de relecture des contenus signalés |
-| `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
-| `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
+| `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
+| `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord, 20 contenus par page groupés et paginés par la base (`?page=`) ; masquer, supprimer, classer sans suite, ou le renvoi à la file du filtre pour un contenu qu'elle tient encore |
+| `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
+| `/announcements` | Envoyer une annonce (notification `ANNOUNCEMENT`) à tous les comptes, à des rôles ou à des classes, et l'historique des envois, lu dans l'audit log |
+| `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période ; les passages des tâches planifiées masqués sauf demande (`?crons=1`, ou un filtre qui les nomme) |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
+| `/system/crons` | Tâches planifiées : planning, dernier passage (durée, bilan), dernière erreur, prochain passage attendu, retard signalé |
+| `/reference/cosmetics` · `/reference/quests` · `/reference/seasons` · `/reference/forum-categories` · `/reference/placement` | Référentiels en consultation seule, 25 par page avec recherche et filtres : cosmétiques, quêtes, saisons de ligue, sections du forum, questions du test de positionnement. Un bandeau cite le fichier qui écrit les lignes (seed, migration ou tâche planifiée) |
+| `/account` | Mon compte : identité, double authentification, méthodes et dernière connexion, mes actions (le journal filtré sur soi), fermer ses autres sessions ou toutes ; le mot de passe se change sur le site |
 | `/settings` | Configuration de l'application |
 
 ---
@@ -276,6 +316,23 @@
 
 #### Gestion des leçons
 - Création et édition par blocs (titres, Markdown, et les vingt-huit composants sous forme de champs, exercices et labos compris, validés par le parseur de la page) ou en MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
+- Studio de leçon (`/lessons/[id]`) : ce qui est tapé part dans un brouillon
+  serveur (`lesson_drafts`, un par leçon) après chaque pause de deux secondes
+  ou tout de suite avec ⌘S, jamais dans la leçon ; l'état est affiché
+  (« Brouillon enregistré à 14:05 », « Modifications non enregistrées »).
+  « Publier les changements » applique les règles du formulaire et la
+  vérification du MDX au brouillon, le recopie dans la leçon, incrémente
+  `lessons.version`, garde la version (`lesson_versions`) et l'inscrit au
+  journal (`lesson.publish`) : `lessonVersionRepository.publish`, la fonction
+  par laquelle passent aussi l'import (création et « Mettre à jour », versions
+  « Import », `lesson.import.success` et `lesson.import.update`) et la
+  synchronisation (versions « Synchronisation », `lesson.sync`), une ligne
+  d'audit par écriture. Une version se remet dans le brouillon ; un brouillon
+  modifié dans un autre onglet, ou une leçon changée depuis que le studio l'a
+  chargée (par une publication, un import ou une synchronisation, qui gardent
+  le brouillon tel quel), est signalé avant d'écrire.
+  Séparateur déplaçable entre l'éditeur et l'aperçu, aperçu bureau ou mobile
+  (390 px), alerte avant de quitter avec des modifications non enregistrées
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED, ligne par ligne ou sur
   une sélection, gardée d'une page à l'autre
 - Liste lue page par page par la base ; ses filtres sont dans l'adresse, et les
@@ -337,6 +394,24 @@
   (`quiz_attempts.cooldownWaivedAt`) ou clore sans délai une tentative jamais
   rendue dont le temps est écoulé, remettre une leçon à zéro ou la marquer
   terminée sans XP
+- Corrections d'XP, de série et de badges, avec un motif inscrit dans l'audit
+  log et une confirmation qui nomme le compte : ajouter ou retirer de l'XP
+  (une ligne `ADJUSTMENT` du registre `xp_ledger`, total jamais sous zéro,
+  niveau recalculé sans notification, saison et classements de la semaine et
+  du mois suivent), fixer la série, son record et les gels en réserve (le
+  record suit une série mise au-dessus et ne descend que si on le change,
+  jamais sous la série ; une série rendue après une interruption compte le
+  jour même comme actif), attribuer un badge (ses XP et la notification d'un
+  badge obtenu) ou le retirer, en reprenant au choix les XP qu'il a rapportés
+  (jamais sous zéro, l'avis dit ce qui a vraiment été repris). Le retrait est
+  refusé tant que le compte remplit encore le critère du badge, sans lui et
+  sans les XP repris : rien ne marque un badge comme retiré, et la collection
+  ou la leçon suivante le rendrait, XP compris. On corrige d'abord ce qui le
+  remplit, le critère, ou on désactive le badge.
+  Les vingt dernières lignes du registre d'XP se lisent sur la fiche. Le
+  crédit d'XP (`creditXp`), la saison (`recordSeasonXp`) et l'attribution de
+  badges (`awardBadges`) vivent dans `@cyberlearn/db/gamification`, partagés
+  par le site et la console
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte
 - Suppression complète du compte et de ce qu'il possède, avec e-mail à la clé
@@ -361,6 +436,27 @@
 - File de relecture des contenus bloqués à la publication
 - Restaurer ou supprimer, décision notifiée à l'auteur
 - Une décision peut porter une sanction
+- Contenus publiés (forum, questions-réponses, solutions, ressources de
+  classe) : masquer, réafficher, supprimer, chaque geste confirmé, prévenu à
+  l'auteur (avis de modération) et inscrit dans l'audit log
+  (`moderation.content.hide`, `.restore`, `.delete`) dans la même transaction
+  que le geste ; masquer ou supprimer le message qui ouvre un sujet emporte le
+  sujet, supprimer une question emporte ses réponses ; le compte des réponses
+  d'un sujet est recompté à chaque geste. Un contenu encore dans la file du
+  filtre se décide dans la file. Un message du forum retiré par son auteur ne
+  se réaffiche jamais depuis la console : seul ce que la modération a masqué
+  revient (colonne `hiddenByModeration`, posée par la console et par un
+  administrateur qui retire le message d'un autre) ; une solution masquée ne
+  revient pas quand son auteur la republie ; masquer ou supprimer une réponse
+  acceptée rouvre sa question, la réafficher la résout de nouveau
+- Signalements des apprenants groupés par contenu, avec la raison, le
+  commentaire et le signaleur : masquer ou supprimer les classe, « Classer sans
+  suite » les ferme et laisse le contenu (`moderation.report.dismiss`) ; une
+  suppression depuis la file du filtre les ferme aussi ; la limite horaire d'un
+  signaleur se compte sur `reportedAt`, que la console ne touche pas ; une
+  ressource de classe masquée reste listée pour son enseignant, marquée comme
+  telle, et sort de la vue de ses élèves (colonne `isHidden`, appliquée aussi
+  par la RLS de `class_resources`)
 
 #### Classes et établissements
 - Établissements et promotions, création et édition
@@ -374,6 +470,43 @@
 - Mise à jour du statut (OPEN → IN_PROGRESS → RESOLVED → CLOSED)
 - Fil de conversation avec le demandeur ; une demande RESOLVED ou CLOSED
   n'accepte plus de message, de part ni d'autre
+- Page d'un ticket lue par le dépôt (`ticketRepository.findWithThread`) : le
+  demandeur mène à sa fiche (`/users/[id]`)
+- Appel d'un bannissement : carte « Bannissement contesté » (motif, date et
+  auteur de la décision, durée restante en mots de `banTimeLeft`, état en
+  cours, levé ou expiré, motif de la levée) et bouton « Lever », qui lève ce
+  bannissement-là et aucun autre, seulement s'il est encore en cours (le
+  filtre est dans la requête qui écrit) ; ligne d'audit
+  `admin.user.ban_lifted` avec le ticket et le bannissement, réponse
+  facultative au demandeur postée avant de passer le ticket en RESOLVED ; le
+  champ « Motif de la levée » est le même composant que sur la fiche
+- Assignation à un administrateur (ou à personne), refusée pour tout autre
+  compte, sans déplacer la date de dernière activité du ticket ; colonne
+  « Assigné à » et facette « Assignation » (« À moi », « Non assigné ») dans
+  la liste ; audit `ticket.assign`
+- Notes internes (table `ticket_notes`, RLS : aucun droit pour `anon` ni
+  `authenticated`, lecture réservée à ADMIN) : carte « Notes internes » à
+  part du fil, jamais lue par le site ni par l'app (`findForRequester`,
+  `findForUser`) ; même règle qu'une réponse, aucune note sur une demande
+  RESOLVED ou CLOSED ; effacées avec leur ticket, ou dès l'effacement du
+  compte du demandeur (`deleteAccount`) ; audit `ticket.note.add`, sans le
+  texte de la note
+
+#### Annonces
+- Titre (200 caractères au plus), message (1 000), lien optionnel vers une
+  page du site (chemin qui commence par une seule « / ») et destinataires :
+  tous les comptes, un ou plusieurs rôles, ou les membres de classes actives ;
+  les comptes bannis sont exclus (`userRepository.countForAudience` et
+  `idsForAudience`, un seul filtre pour les deux)
+- Le nombre de destinataires est compté puis confirmé avant l'envoi ; s'il a
+  changé entre-temps, rien ne part et le nouveau nombre est à confirmer
+- Envoi par lots de 1 000 (`notificationRepository.createMany`) dans une
+  seule transaction, avec la ligne d'audit `announcement.send` (titre,
+  message, lien, audience, nombre de destinataires) ; 5 annonces par heure et
+  par administrateur au plus
+- Historique des envois sur la même page, lu dans l'audit log, sans table à
+  part ; l'annonce arrive dans la cloche du site et dans les notifications de
+  l'app
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)
@@ -384,6 +517,34 @@
 - Export CSV du filtre courant (séparateur point-virgule, UTF-8 avec BOM,
   cellules prises pour des formules neutralisées), 50 000 lignes au plus :
   au-delà, la page demande un filtre plus étroit ; l'export est lui-même tracé
+
+#### Tâches planifiées
+- Les six routes `apps/web/app/api/cron/*` consignent chaque passage dans le
+  journal d'audit (`actorId` nul, action `cron.<nom>`, cible `Cron`) : réussite,
+  durée, bilan, cause d'un échec. L'écriture n'échoue jamais la tâche
+- La liste `CRON_JOBS` (`packages/lib/src/cron/jobs.ts`) donne chemin, planning
+  et libellé ; un test la compare à `apps/web/vercel.json`. `keep-alive` est
+  appelée par cron-job.org, hors de `vercel.json`
+- Une tâche qui isole ses échecs un par un (écritures de séries, rappels,
+  effacements et avis de comptes inactifs) est consignée en échec dès qu'une
+  ligne n'a pas pu passer, avec leur nombre ; keep-alive nomme le service qui
+  ne répond pas
+- `/system/crons` dit pour chacune : en ordre, en échec, en retard (passage dû
+  depuis plus d'une heure et absent), jamais vue ; le bilan du dernier passage
+  en français. keep-alive est jugée sur l'intervalle depuis son dernier
+  passage (6 h et l'heure de grâce), pas sur les heures UTC de son planning :
+  cron-job.org garde un fuseau par tâche
+- Ces passages restent hors du fil « Activité récente » du tableau de bord, et
+  hors de `/audit` tant qu'on ne les demande pas : ils chasseraient les gestes
+  des administrateurs
+
+#### Tournois
+- Un flag disqualifié garde sa ligne (`disqualifiedAt`, `disqualifiedById`,
+  `disqualifiedReason`) : il ne compte plus dans aucun classement, sur le site
+  comme dans l'app, et ne peut pas être soumis de nouveau. Rétablissable.
+  La page du défi le dit au joueur, motif compris, sur le site comme dans
+  l'app ; un nouvel envoi est refusé avec le motif. L'export RGPD du joueur
+  reprend la date et le motif, pas l'auteur
 
 ---
 
@@ -398,15 +559,17 @@
 - Migrations versionnées, RLS incluse : toute migration qui crée une table
   active la RLS et pose ses policies dans le même fichier
 - Row Level Security sur toutes les tables du schéma `public`, vérifiée par un
-  gate CI fail-closed (aucune table exposée, >= 56 policies)
+  gate CI fail-closed (aucune table exposée, >= 55 policies)
 - Seeds séparés : `db:seed`, `db:seed-paths`, `db:seed-quizzes`,
   `db:seed-cosmetics`, `db:seed-season`
+- Scripts lancés à la main, en essai par défaut (`--apply` pour écrire) :
+  `db:backfill-badge-xp`, `db:backfill-daily-streaks` (voir `docs/DEPLOY.md`)
 - Les sources ne sont jamais compilées à côté d'elles-mêmes (`noEmit` +
   garde `.gitignore`) : un `.js` émis passerait devant son `.ts` à la
   résolution et les tests liraient le dernier build
 
 ### `packages/lib` - Logique métier
-- `xp.ts` - Calcul XP/niveau · `sm2.ts` - SuperMemo-2 · `pseudonymize.ts` - HMAC
+- `xp.ts` - Calcul XP/niveau · `revisions/cards.ts` - cartes de Leitner · `pseudonymize.ts` - HMAC
 - `gamification/` - `badge-evaluator.ts` (les 10 critères, fonction pure),
   `streak-state.ts`, `day.ts`, `week.ts`, `league.ts`, `quest.ts`, `tier.ts`,
   `wrapped.ts`, `wrapped-window.ts` (la fenêtre du 1er décembre au 7 janvier)
@@ -456,7 +619,7 @@
 | `ProgressStatus` | NOT_STARTED, IN_PROGRESS, COMPLETED |
 | `BadgeRarity` | COMMON, RARE, EPIC, LEGENDARY |
 | `BadgeCriterionType` | LESSON_COMPLETED, PATH_COMPLETED, XP_THRESHOLD, STREAK_DAYS, CATEGORY_MASTERY, PERFECT_QUIZ, LESSON_SPECIFIC, LEVEL, BADGE_EARNED, CUSTOM |
-| `XpSource` | LESSON, BADGE, QUEST, CHALLENGE, REVIEW |
+| `XpSource` | LESSON, BADGE, QUEST, CHALLENGE, REVIEW, EXERCISE, ADJUSTMENT |
 | `QuestType` | LESSON_COMPLETED, PERFECT_QUIZ, STREAK_DAYS, FORUM_POST, WEEKLY_BONUS |
 | `SeasonStatus` | ACTIVE, CLOSING, CLOSED |
 | `LeagueDivision` | BRONZE, ARGENT, OR, PLATINE, DIAMANT |

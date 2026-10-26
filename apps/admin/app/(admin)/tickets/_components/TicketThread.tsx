@@ -129,7 +129,7 @@ export function TicketThread({
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#fff",
+                color: "var(--a-fg)",
                 background: "var(--a-blue)",
                 border: "1px solid var(--a-blue)",
                 cursor: pending ? "default" : "pointer",
