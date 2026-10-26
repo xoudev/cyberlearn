@@ -59,9 +59,8 @@ export function EmailViewer({
 
       <div style={{ display: "grid", gap: 8 }}>
         <p className="a-field-hint" style={{ margin: 0 }}>
-          Mise en page et contenu fidèles. Les polices, elles, ne se chargent pas ici : la console
-          bloque les polices distantes. La plupart des clients mail les bloquent aussi, donc ce
-          repli est proche de ce que voit le destinataire.
+          Le logo et le lettrage utilisent la même image que les mails envoyés. Les autres polices
+          peuvent être remplacées par celles du client mail ; cet aperçu montre ce rendu de repli.
         </p>
         {current !== undefined && (
           <iframe

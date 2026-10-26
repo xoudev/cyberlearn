@@ -305,14 +305,6 @@ code,
 pre {
   font-family: var(--font-mono), monospace;
 }
-.a-auth-admin {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
-  font-size: 13px;
-  font-weight: 700;
-}
 .a-dashboard-summary {
   background: var(--a-chalk);
   color: var(--a-ink);

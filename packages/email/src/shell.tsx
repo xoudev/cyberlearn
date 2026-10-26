@@ -1,8 +1,9 @@
-import { Column, Head, Img, Row, Section, Text } from "@react-email/components";
+import { Head, Img, Section } from "@react-email/components";
 import React from "react";
-import { styles, tokens } from "./theme.js";
+import { styles } from "./theme.js";
 
 const ASSETS = "https://cyberlearn.fr/brand";
+export const EMAIL_BRAND_IMAGE = `${ASSETS}/email-lockup.png`;
 
 // Only font declarations: a universal font rule would override the button's descendants.
 const FACES = `
@@ -35,16 +36,13 @@ export function EmailHead(): React.ReactElement {
 export function EmailBrand(): React.ReactElement {
   return (
     <Section style={styles.logoSection}>
-      <Row>
-        <Column style={{ width: "48px", verticalAlign: "middle" }}>
-          <Img src={`${ASSETS}/bastion-mark.png`} alt="" width="32" height="32" />
-        </Column>
-        <Column style={{ verticalAlign: "middle" }}>
-          <Text style={styles.logoText}>
-            CYBERLEARN<span style={{ color: tokens.brandBlue }}>.</span>
-          </Text>
-        </Column>
-      </Row>
+      <Img
+        src={EMAIL_BRAND_IMAGE}
+        alt="CYBERLEARN."
+        width="200"
+        height="40"
+        style={{ display: "block", maxWidth: "100%", height: "auto" }}
+      />
     </Section>
   );
 }

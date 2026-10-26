@@ -43,14 +43,6 @@ export const styles = {
     backgroundColor: tokens.paper,
     padding: "18px 24px",
   } satisfies React.CSSProperties,
-  logoText: {
-    fontFamily: fonts.display,
-    fontSize: "28px",
-    lineHeight: "32px",
-    fontWeight: "600",
-    color: tokens.ink,
-    margin: "0",
-  } satisfies React.CSSProperties,
   card: {
     backgroundColor: tokens.bgElevated,
     border: `1px solid ${tokens.borderDefault}`,

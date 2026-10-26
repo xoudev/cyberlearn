@@ -189,7 +189,8 @@ describe("the mail's brand and typography", () => {
     const interfaceRuns = html.match(/Space Grotesk/gu) ?? [];
     // One @font-face, plus every element that names it.
     expect(interfaceRuns.length).toBeGreaterThanOrEqual(5);
-    expect(html).toContain("https://cyberlearn.fr/brand/bastion-mark.png");
+    expect(html).toContain("https://cyberlearn.fr/brand/email-lockup.png");
+    expect(html).toContain('alt="CYBERLEARN."');
     expect(html).toContain('lang="fr"');
     expect(html).not.toMatch(/#(?:0024ff|0affd4|030219|0a0826|110f33|7f7ba9)/iu);
   });

@@ -1,4 +1,5 @@
 import { render } from "@react-email/components";
+import { EMAIL_BRAND_IMAGE } from "./shell.js";
 import { AccountDeletedEmail } from "./templates/account-deleted.js";
 import { AccountDeletionConfirmEmail } from "./templates/account-deletion-confirm.js";
 import { BanNoticeEmail } from "./templates/ban-notice.js";
@@ -79,7 +80,18 @@ export const EMAIL_SAMPLES: EmailSample[] = [
 ];
 
 /** The rendered HTML for one sample, or null for a key nothing matches. */
-export async function renderEmailSample(key: string): Promise<string | null> {
+export async function renderEmailSample(
+  key: string,
+  options: { localAssets?: boolean } = {},
+): Promise<string | null> {
+  const html = await renderSample(key);
+  // The console serves the same image locally, without widening its CSP to the public site.
+  return options.localAssets && html !== null
+    ? html.replaceAll(EMAIL_BRAND_IMAGE, "/brand/email-lockup.png")
+    : html;
+}
+
+async function renderSample(key: string): Promise<string | null> {
   switch (key) {
     case "magic-link":
       return render(MagicLinkEmail({ magicLink: `${SITE}/auth/callback?token=exemple` }));

@@ -49,7 +49,7 @@ export default async function AccessDeniedPage(): Promise<React.JSX.Element> {
   const site = siteUrl();
   return (
     <AdminAuthShell
-      eyebrow="Console d'administration"
+      eyebrow="Autorisation requise"
       title="Accès réservé aux administrateurs"
       description="Ce compte n'a pas le rôle ADMIN : la console ne lui est pas ouverte. Déconnecte-toi pour revenir à la connexion avec un compte administrateur."
     >

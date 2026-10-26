@@ -41,12 +41,8 @@ export function AdminAuthShell({
       </header>
       <aside className="a-auth-brand">
         <div>
-          <div className="a-auth-admin">
-            <BastionLogo size={44} />
-            <span>BASTION · Administration</span>
-          </div>
           <h2 className="a-auth-tagline">
-            La console qui pilote
+            Piloter
             <br />
             <em>cyberlearn.fr</em>
           </h2>

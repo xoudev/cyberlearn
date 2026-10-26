@@ -48,8 +48,9 @@ export const metadata: Metadata = {
   },
   // No `icons` block on purpose: it used to point every icon at
   // /icon_app.png, which is 1565x1537. Google requires a square favicon and
-  // showed the generic globe instead. Next now picks up app/icon.png,
-  // app/apple-icon.png and app/favicon.ico, which are square.
+  // showed the generic globe instead. Next now picks up app/icon.svg,
+  // app/apple-icon.png and app/favicon.ico. The SVG tab icon is transparent
+  // and uses the full mark; launcher icons keep their maskable safe zone.
 };
 
 export default async function RootLayout({

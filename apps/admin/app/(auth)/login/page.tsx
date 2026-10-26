@@ -58,7 +58,7 @@ export default async function AdminLoginPage({
 
   return (
     <AdminAuthShell
-      eyebrow="Console d'administration"
+      eyebrow="Connexion sécurisée"
       title="Accès restreint"
       description="Mot de passe et double authentification obligatoires pour chaque session administrative."
     >
