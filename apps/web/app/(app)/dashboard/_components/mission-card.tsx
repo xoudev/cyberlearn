@@ -77,8 +77,9 @@ function RouteView({
   route: ModuleRoute;
   path: MissionCardProps["path"];
 }): React.JSX.Element {
-  // Five lessons at most, around the current one: a fifteen-lesson module drawn
-  // whole made the card three screens tall. The others are counted.
+  // Three lessons at most: the one behind, the current one and the next. A
+  // long module drawn whole made the card taller than the page; the others
+  // are counted on a line.
   const view = routeWindow(route.nodes);
   return (
     <div
