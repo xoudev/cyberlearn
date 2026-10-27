@@ -14,13 +14,13 @@ import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 import { useSettingsReload } from "../../_components/settings-reload";
 
 const AVATARS = [
-  { path: "/avatars/av-1.svg", label: "CYBER" },
-  { path: "/avatars/av-2.svg", label: "CIRCUIT" },
-  { path: "/avatars/av-3.svg", label: "ALERT" },
-  { path: "/avatars/av-4.svg", label: "ORBIT" },
-  { path: "/avatars/av-5.svg", label: "SIGNAL" },
-  { path: "/avatars/av-6.svg", label: "SHIELD" },
-  { path: "/avatars/av-7.svg", label: "NODE" },
+  { path: "/avatars/av-1.svg", label: "Cyber" },
+  { path: "/avatars/av-2.svg", label: "Circuit" },
+  { path: "/avatars/av-3.svg", label: "Alert" },
+  { path: "/avatars/av-4.svg", label: "Orbit" },
+  { path: "/avatars/av-5.svg", label: "Signal" },
+  { path: "/avatars/av-6.svg", label: "Shield" },
+  { path: "/avatars/av-7.svg", label: "Node" },
   { path: "/avatars/av-8.svg", label: "CL" },
 ] as const;
 
@@ -48,22 +48,19 @@ function labelStyle(): React.CSSProperties {
   };
 }
 
+/** A field: carbon, a plain outline; the focus ring is the drawer's own (settings-bastion.css). */
 function inputStyle(focused: boolean): React.CSSProperties {
   return {
     width: "100%",
     background: S.base,
-    border: `1px solid ${focused ? S.turq : S.border}`,
+    border: `1px solid ${focused ? S.accentText : S.borderStrong}`,
     color: S.fg,
-    fontFamily: MONO,
+    fontFamily: SANS,
     fontSize: 14,
     padding: "0 14px",
     height: 46,
-    outline: "none",
     boxSizing: "border-box",
-    boxShadow: focused
-      ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 14px color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
-      : "none",
-    transition: `all 200ms ${EASE}`,
+    transition: `border-color 150ms ${EASE}`,
   };
 }
 
@@ -195,16 +192,13 @@ export function ProfileForm({
                 onClick={() => {
                   setAvatar(path);
                 }}
+                // The choice passes on chalk, as in the onboarding's collection;
+                // the picture keeps its own carbon tile.
                 style={{
                   position: "relative",
                   aspectRatio: "1 / 1",
-                  background: selected
-                    ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
-                    : S.base,
-                  border: `1px solid ${selected ? S.turq : S.border}`,
-                  boxShadow: selected
-                    ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 20px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
-                    : "none",
+                  background: selected ? S.chalk : S.base,
+                  border: `1px solid ${selected ? S.chalk : S.borderStrong}`,
                   cursor: "pointer",
                   padding: 0,
                   display: "flex",
@@ -212,7 +206,7 @@ export function ProfileForm({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  transition: `all 200ms ${EASE}`,
+                  transition: `background-color 150ms ${EASE}, border-color 150ms ${EASE}`,
                 }}
               >
                 <Image
@@ -225,11 +219,10 @@ export function ProfileForm({
                 />
                 <span
                   style={{
-                    fontFamily: MONO,
-                    fontSize: 9,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: selected ? S.turq : S.muted,
+                    fontFamily: SANS,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: selected ? S.ink : S.muted,
                   }}
                 >
                   {label}
@@ -247,7 +240,7 @@ export function ProfileForm({
                 width: 44,
                 height: 44,
                 flexShrink: 0,
-                border: `1px solid ${S.turq}`,
+                border: `1px solid ${S.borderStrong}`,
                 overflow: "hidden",
                 display: "inline-block",
               }}
@@ -277,18 +270,16 @@ export function ProfileForm({
             onClick={() => fileInputRef.current?.click()}
             title="JPEG, PNG ou WebP, 2 Mo maximum"
             style={{
-              height: 40,
+              minHeight: 44,
               padding: "0 16px",
               background: "transparent",
-              border: `1px dashed ${S.muted}`,
+              border: `1px solid ${S.borderStrong}`,
               color: uploading ? S.muted : S.fg,
-              fontFamily: MONO,
+              fontFamily: SANS,
               fontWeight: 600,
-              fontSize: 10.5,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
+              fontSize: 13,
               cursor: uploading ? "not-allowed" : "pointer",
-              transition: `all 200ms ${EASE}`,
+              transition: `border-color 150ms ${EASE}`,
             }}
           >
             {uploading ? "Envoi…" : hasCustomAvatar ? "Remplacer la photo" : "Importer une photo"}
@@ -311,7 +302,7 @@ export function ProfileForm({
               display: "flex",
               alignItems: "stretch",
               background: S.base,
-              border: `1px solid ${S.border}`,
+              border: `1px solid ${S.borderSoft}`,
             }}
           >
             <span
@@ -320,11 +311,11 @@ export function ProfileForm({
                 display: "grid",
                 placeItems: "center",
                 padding: "0 14px",
-                fontFamily: MONO,
+                fontFamily: SANS,
                 fontSize: 15,
                 color: S.muted,
                 borderRight: `1px solid ${S.borderSoft}`,
-                background: "rgba(5,4,26,0.5)",
+                background: S.panel,
               }}
             >
               @
@@ -341,7 +332,7 @@ export function ProfileForm({
                 background: "transparent",
                 border: 0,
                 color: S.muted,
-                fontFamily: MONO,
+                fontFamily: SANS,
                 fontSize: 14,
                 padding: "0 14px",
                 height: 46,
@@ -405,11 +396,10 @@ export function ProfileForm({
         <div
           style={{
             fontFamily: MONO,
-            fontSize: 10,
+            fontSize: 12,
             color: bio.length >= MAX_BIO ? S.warning : S.muted,
             marginTop: 6,
             textAlign: "right",
-            letterSpacing: "0.06em",
           }}
         >
           {bio.length} / {MAX_BIO}

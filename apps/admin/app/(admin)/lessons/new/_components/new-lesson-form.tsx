@@ -14,13 +14,13 @@ import { MultiSelect, Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
 import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-
-const BORDER = "var(--a-border-2)";
-const DANGER = "var(--a-danger)";
-const TURQ = "var(--a-accent)";
-const MONO = "var(--font-sans)";
-const BODY_F = "var(--font-sans)";
+/**
+ * The lesson creation form: the lesson's fields across the page, in the grid
+ * the studio uses (.a-studio-fields), then the editor and its preview at the
+ * page's full width. The fields used to stack in pairs down a narrow column
+ * above an editor that split the rest; they now take the width they need and
+ * leave the editor all of it.
+ */
 
 // ── MDX starter template ──────────────────────────────────────────────────────
 
@@ -52,20 +52,7 @@ echo "hello"
 />
 `;
 
-// ── Shared input styles ───────────────────────────────────────────────────────
-
-const BASE_INPUT: React.CSSProperties = {
-  width: "100%",
-  background: "var(--a-surface)",
-  border: `1px solid ${BORDER}`,
-  color: "var(--a-fg)",
-  fontFamily: MONO,
-  fontSize: 13,
-  letterSpacing: "0.01em",
-  padding: "12px 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
+// ── Field chrome ──────────────────────────────────────────────────────────────
 
 function Label({
   children,
@@ -79,50 +66,25 @@ function Label({
   req?: boolean;
 }) {
   return (
-    <label
-      htmlFor={htmlFor}
-      style={{
-        fontFamily: MONO,
-        fontWeight: 700,
-        fontSize: 12,
-        color: "var(--a-fg-2)",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-      }}
-    >
+    <label htmlFor={htmlFor} className="a-label">
       {children}
-      {req && <span style={{ color: "var(--a-danger)", fontWeight: 700 }}>*</span>}
-      {hint && (
-        <span
-          style={{
-            fontWeight: 500,
-            letterSpacing: "0.04em",
-            textTransform: "none",
-            fontSize: 10.5,
-            color: "var(--a-muted)",
-            marginLeft: "auto",
-          }}
-        >
-          {hint}
+      {req && (
+        <span className="a-studio-field-error" aria-hidden="true">
+          {" "}
+          *
         </span>
       )}
+      {hint && <span className="a-label-optional"> · {hint}</span>}
     </label>
   );
 }
 
 function Help({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>{children}</span>
-  );
+  return <span className="a-field-hint">{children}</span>;
 }
 
 function FieldErr({ msg }: { msg?: string | undefined }) {
-  return msg ? (
-    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)", marginTop: 2 }}>
-      {msg}
-    </span>
-  ) : null;
+  return msg ? <span className="a-field-hint a-studio-field-error">{msg}</span> : null;
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -185,30 +147,19 @@ export function NewLessonForm({
     <>
       {/* Global error */}
       {state.error && (
-        <div
-          style={{
-            padding: "13px 16px",
-            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid var(--a-danger)",
-            borderLeft: `3px solid ${DANGER}`,
-            fontFamily: MONO,
-            fontSize: 11,
-            color: "var(--a-danger)",
-            marginBottom: 24,
-          }}
-        >
+        <div className="a-form-error" role="alert" style={{ marginBottom: 24 }}>
           {state.error}
         </div>
       )}
 
-      <form action={action} onReset={keepFormInput} style={{ display: "grid", gap: 22 }}>
+      <form action={action} onReset={keepFormInput} className="a-lesson-form">
         {/* Hidden MDX content */}
         <input type="hidden" name="contentMdx" value={mdx} />
 
-        {/* Paths + prerequisites: the first path names the refCode below. */}
-        <div className="admin-form-grid-2" style={{ alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// le premier donne le ref code">Parcours</Label>
+        <div className="a-studio-fields" role="group" aria-label="Fiche de la leçon">
+          {/* Paths + prerequisites: the first path names the refCode below. */}
+          <div className="a-field a-studio-span-2">
+            <Label hint="le premier donne le ref code">Parcours</Label>
             <MultiSelect
               aria-label="Parcours"
               name="pathIds"
@@ -228,8 +179,8 @@ export function NewLessonForm({
             </Help>
             <FieldErr msg={state.fieldErrors?.pathIds} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// leçons à suivre avant celle-ci">Prérequis</Label>
+          <div className="a-field a-studio-span-2">
+            <Label hint="leçons à suivre avant celle-ci">Prérequis</Label>
             <MultiSelect
               aria-label="Prérequis"
               name="prerequisiteIds"
@@ -246,12 +197,10 @@ export function NewLessonForm({
             </Help>
             <FieldErr msg={state.fieldErrors?.prerequisiteIds} />
           </div>
-        </div>
 
-        {/* Row 1: refCode + slug */}
-        <div className="admin-form-grid-2">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label htmlFor="admin-editor-refCode" req hint="Auto-généré, modifiable">
+          {/* refCode + slug */}
+          <div className="a-field a-studio-span-2">
+            <Label htmlFor="admin-editor-refCode" req hint="auto-généré, modifiable">
               Ref code
             </Label>
             {refCodeOpen ? (
@@ -266,21 +215,12 @@ export function NewLessonForm({
                   setRefCode(event.target.value);
                   setRefCodeTyped(true);
                 }}
-                className="le-input"
-                style={BASE_INPUT}
+                className="a-input"
               />
             ) : (
-              <div
-                style={{
-                  ...BASE_INPUT,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
-              >
+              <div className="a-studio-code">
                 <input type="hidden" name="refCode" value={refCode} />
-                <span>{refCode === "" ? "Calcul…" : refCode}</span>
+                <span className="a-mono">{refCode === "" ? "Calcul…" : refCode}</span>
                 <button
                   type="button"
                   className="a-btn a-btn--ghost a-btn--sm"
@@ -318,42 +258,19 @@ export function NewLessonForm({
             </Help>
             <Help>
               Format :{" "}
-              <b style={{ color: "var(--a-accent)" }}>
+              <b className="a-mono">
                 CL-LSN-{"{NNN}"}-V{"{NN}"} ou CL-LSN-{"{PPNNN}"}-V{"{NN}"}
               </b>{" "}
               · doit être unique
             </Help>
             <FieldErr msg={state.fieldErrors?.refCode} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label htmlFor="admin-editor-slug" req hint="Utilisé dans l’URL">
+          <div className="a-field a-studio-span-2">
+            <Label htmlFor="admin-editor-slug" req hint="utilisé dans l’URL">
               Slug
             </Label>
-            <div
-              className="le-prefix"
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                background: "var(--a-surface)",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-              }}
-            >
-              <span
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  width: 36,
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  color: "var(--a-muted)",
-                  borderRight: `1px solid ${BORDER}`,
-                  background: "var(--a-bg)",
-                }}
-              >
-                /
-              </span>
+            <div className="a-lesson-affix">
+              <span aria-hidden="true">/</span>
               <input
                 id="admin-editor-slug"
                 name="slug"
@@ -364,126 +281,104 @@ export function NewLessonForm({
                 pattern={LESSON_SLUG_PATTERN}
                 title={LESSON_SLUG_HINT}
                 placeholder="introduction-au-sujet"
-                className="le-input"
-                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
+                className="a-input"
               />
             </div>
             <Help>
               {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
-              <b style={{ color: "var(--a-accent)" }}>votre-slug</b>
+              <b>votre-slug</b>
             </Help>
             <FieldErr msg={state.fieldErrors?.slug} />
           </div>
-        </div>
 
-        {/* Title */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label
-            htmlFor="admin-editor-title"
-            req
-            hint={`// ${String(LESSON_LIMITS.titleMin)}–${String(LESSON_LIMITS.titleMax)} caractères`}
-          >
-            Titre
-          </Label>
-          <input
-            id="admin-editor-title"
-            name="title"
-            type="text"
-            required
-            minLength={LESSON_LIMITS.titleMin}
-            maxLength={LESSON_LIMITS.titleMax}
-            placeholder="Titre de la leçon"
-            className="le-input"
-            style={{ ...BASE_INPUT, fontSize: 15, padding: "14px 16px" }}
-          />
-          <FieldErr msg={state.fieldErrors?.title} />
-        </div>
+          {/* Title */}
+          <div className="a-field a-studio-span-full">
+            <Label
+              htmlFor="admin-editor-title"
+              req
+              hint={`${String(LESSON_LIMITS.titleMin)}–${String(LESSON_LIMITS.titleMax)} caractères`}
+            >
+              Titre
+            </Label>
+            <input
+              id="admin-editor-title"
+              name="title"
+              type="text"
+              required
+              minLength={LESSON_LIMITS.titleMin}
+              maxLength={LESSON_LIMITS.titleMax}
+              placeholder="Titre de la leçon"
+              className="a-input"
+            />
+            <FieldErr msg={state.fieldErrors?.title} />
+          </div>
 
-        {/* Description */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label
-            htmlFor="admin-editor-description"
-            req
-            hint={`// ${String(LESSON_LIMITS.descriptionMin)}–${String(LESSON_LIMITS.descriptionMax)} caractères · affichée dans le catalogue`}
-          >
-            Description
-          </Label>
-          <textarea
-            id="admin-editor-description"
-            name="description"
-            required
-            minLength={LESSON_LIMITS.descriptionMin}
-            maxLength={LESSON_LIMITS.descriptionMax}
-            rows={3}
-            placeholder="Description complète de la leçon…"
-            className="le-textarea"
-            style={{ ...BASE_INPUT, resize: "vertical", minHeight: 90, lineHeight: 1.55 }}
-          />
-          <FieldErr msg={state.fieldErrors?.description} />
-        </div>
+          {/* Description */}
+          <div className="a-field a-studio-span-full">
+            <Label
+              htmlFor="admin-editor-description"
+              req
+              hint={`${String(LESSON_LIMITS.descriptionMin)}–${String(LESSON_LIMITS.descriptionMax)} caractères · affichée dans le catalogue`}
+            >
+              Description
+            </Label>
+            <textarea
+              id="admin-editor-description"
+              name="description"
+              required
+              minLength={LESSON_LIMITS.descriptionMin}
+              maxLength={LESSON_LIMITS.descriptionMax}
+              rows={3}
+              placeholder="Description complète de la leçon…"
+              className="a-textarea"
+              style={{ minHeight: 90 }}
+            />
+            <FieldErr msg={state.fieldErrors?.description} />
+          </div>
 
-        {/* Category + Difficulty */}
-        <div className="admin-form-grid-2">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Category, difficulty, duration, XP: one line where there is room */}
+          <div className="a-field">
             <Label htmlFor="admin-editor-category" req>
               Catégorie
             </Label>
-            <div style={{ position: "relative" }}>
-              <Select
-                placeholder="Choisir…"
-                id="admin-editor-category"
-                name="category"
-                required
-                defaultValue=""
-                options={[
-                  { value: "CYBERSEC", label: "Cybersécurité" },
-                  { value: "NETWORK", label: "Réseau" },
-                  { value: "DEV", label: "Développement" },
-                ]}
-              />
-            </div>
+            <Select
+              placeholder="Choisir…"
+              id="admin-editor-category"
+              name="category"
+              required
+              defaultValue=""
+              options={[
+                { value: "CYBERSEC", label: "Cybersécurité" },
+                { value: "NETWORK", label: "Réseau" },
+                { value: "DEV", label: "Développement" },
+              ]}
+            />
             <FieldErr msg={state.fieldErrors?.category} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="a-field">
             <Label htmlFor="admin-editor-difficulty" req>
               Difficulté
             </Label>
-            <div style={{ position: "relative" }}>
-              <Select
-                placeholder="Choisir…"
-                id="admin-editor-difficulty"
-                name="difficulty"
-                required
-                defaultValue=""
-                options={[
-                  { value: "BEGINNER", label: "◆ ◇ ◇ ◇ Débutant" },
-                  { value: "INTERMEDIATE", label: "◆ ◆ ◇ ◇ Intermédiaire" },
-                  { value: "ADVANCED", label: "◆ ◆ ◆ ◇ Avancé" },
-                  { value: "EXPERT", label: "◆ ◆ ◆ ◆ Expert" },
-                ]}
-              />
-            </div>
+            <Select
+              placeholder="Choisir…"
+              id="admin-editor-difficulty"
+              name="difficulty"
+              required
+              defaultValue=""
+              options={[
+                { value: "BEGINNER", label: "◆ ◇ ◇ ◇ Débutant" },
+                { value: "INTERMEDIATE", label: "◆ ◆ ◇ ◇ Intermédiaire" },
+                { value: "ADVANCED", label: "◆ ◆ ◆ ◇ Avancé" },
+                { value: "EXPERT", label: "◆ ◆ ◆ ◆ Expert" },
+              ]}
+            />
             <FieldErr msg={state.fieldErrors?.difficulty} />
           </div>
-        </div>
-
-        {/* Duration + XP */}
-        <div className="admin-form-grid-2">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="a-field">
             <Label htmlFor="admin-editor-estimatedMinutes" req>
-              Durée estimée (minutes)
+              Durée estimée
             </Label>
-            <div
-              className="le-num"
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                background: "var(--a-surface)",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-              }}
-            >
+            <div className="a-lesson-affix">
               <input
                 id="admin-editor-estimatedMinutes"
                 name="estimatedMinutes"
@@ -492,46 +387,19 @@ export function NewLessonForm({
                 min={1}
                 max={LESSON_LIMITS.minutesMax}
                 defaultValue="20"
-                className="le-input"
-                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
+                className="a-input"
               />
-              <span
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  padding: "0 14px",
-                  fontFamily: MONO,
-                  fontSize: 10.5,
-                  letterSpacing: "0.18em",
-                  color: "var(--a-muted)",
-                  borderLeft: `1px solid ${BORDER}`,
-                  background: "var(--a-bg)",
-                  textTransform: "uppercase",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                MIN
-              </span>
+              <span>min</span>
             </div>
             <Help>
-              Médiane catalogue · <b style={{ color: "var(--a-accent)" }}>15 min</b>
+              Médiane catalogue · <b>15 min</b>
             </Help>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="a-field">
             <Label htmlFor="admin-editor-xpReward" req>
               Récompense XP
             </Label>
-            <div
-              className="le-num"
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                background: "var(--a-surface)",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-              }}
-            >
+            <div className="a-lesson-affix">
               <input
                 id="admin-editor-xpReward"
                 name="xpReward"
@@ -541,42 +409,25 @@ export function NewLessonForm({
                 max={LESSON_LIMITS.xpMax}
                 step={10}
                 defaultValue="100"
-                className="le-input"
-                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
+                className="a-input"
               />
-              <span
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  padding: "0 14px",
-                  fontFamily: MONO,
-                  fontSize: 10.5,
-                  letterSpacing: "0.18em",
-                  color: "var(--a-muted)",
-                  borderLeft: `1px solid ${BORDER}`,
-                  background: "var(--a-bg)",
-                  textTransform: "uppercase",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                XP
-              </span>
+              <span>XP</span>
             </div>
             <Help>
-              Recommandé · <b style={{ color: "var(--a-accent)" }}>100–200 XP</b> pour intermédiaire
+              Recommandé · <b>100–200 XP</b> pour intermédiaire
             </Help>
+          </div>
+
+          {/* Cover image */}
+          <div className="a-field a-studio-span-full">
+            <Label hint="bucket privé · URL signée">Image de couverture</Label>
+            <CoverUploadField initialMarker={null} initialPreview={null} />
           </div>
         </div>
 
-        {/* Cover image */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label hint="// bucket privé · URL signée">Image de couverture</Label>
-          <CoverUploadField initialMarker={null} initialPreview={null} />
-        </div>
-
-        {/* MDX Editor - Monaco + toolbar + split preview */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label req hint="// blocs ou MDX · aperçu du site">
+        {/* MDX Editor - blocks or Monaco, the site's preview beside it or behind a tab */}
+        <div className="a-field">
+          <Label req hint="blocs ou MDX · aperçu du site">
             Contenu MDX
           </Label>
           <MdxEditorPanel
@@ -589,76 +440,14 @@ export function NewLessonForm({
         </div>
 
         {/* Publish toggle */}
-        <label
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 14,
-            padding: "16px 18px",
-            background: "var(--a-surface)",
-            border: `1px solid ${BORDER}`,
-            cursor: "pointer",
-            transition: "border-color 150ms ease",
-          }}
-        >
-          <input
-            name="publishNow"
-            type="checkbox"
-            value="true"
-            style={{
-              width: 18,
-              height: 18,
-              accentColor: "var(--a-accent)",
-              cursor: "pointer",
-              marginTop: 1,
-            }}
-          />
+        <label className="a-lesson-publish">
+          <input name="publishNow" type="checkbox" value="true" />
           <div>
-            <div
-              style={{
-                fontFamily: MONO,
-                fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "var(--a-fg)",
-                marginBottom: 4,
-              }}
-            >
+            <div className="a-lesson-publish-title">
               Publier immédiatement
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontWeight: 700,
-                  fontSize: 10,
-                  color: "var(--a-accent)",
-                  marginLeft: 8,
-                  letterSpacing: "0.12em",
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    background: TURQ,
-                    boxShadow: `0 0 6px ${TURQ}`,
-                    display: "inline-block",
-                  }}
-                />
-                live
-              </span>
+              <span className="a-lesson-publish-live">en ligne</span>
             </div>
-            <p
-              style={{
-                fontFamily: BODY_F,
-                fontSize: 12.5,
-                color: "var(--a-muted)",
-                lineHeight: 1.5,
-                margin: 0,
-              }}
-            >
+            <p className="a-field-hint" style={{ margin: 0 }}>
               La leçon sera visible dans le catalogue dès sa création. Sinon elle reste en
               brouillon.
             </p>
@@ -666,59 +455,13 @@ export function NewLessonForm({
         </label>
 
         {/* Actions */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            paddingTop: 24,
-            borderTop: "1px solid var(--a-border-2)",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
-          <Link
-            href="/lessons"
-            className="adm-btn-ghost"
-            style={{
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              padding: "13px 22px",
-              background: "transparent",
-              color: "var(--a-muted)",
-              border: `1px solid ${BORDER}`,
-              transition: "all 150ms ease",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
+        <div className="a-lesson-actions">
+          <Link href="/lessons" className="a-btn a-btn--ghost">
             Annuler
           </Link>
-          <button
-            type="submit"
-            disabled={isPending}
-            style={{
-              position: "relative",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 12,
-              padding: "13px 22px",
-              background: "var(--a-accent)",
-              color: "var(--a-ink)",
-              border: 0,
-              cursor: isPending ? "not-allowed" : "pointer",
-              opacity: isPending ? 0.6 : 1,
-            }}
-          >
+          <button type="submit" disabled={isPending} className="a-btn a-btn--primary">
             {isPending ? "Création…" : "Créer la leçon"}
-            <span style={{ fontWeight: 400 }}>→</span>
+            <span aria-hidden="true">→</span>
           </button>
         </div>
       </form>

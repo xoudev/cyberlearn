@@ -29,7 +29,7 @@ export const CRON_COLUMNS: readonly GridColumn[] = [
 ];
 
 export const CRON_HEALTH_META: Record<CronHealth, { label: string; tone: Tone }> = {
-  ok: { label: "En ordre", tone: "accent" },
+  ok: { label: "En ordre", tone: "success" },
   failed: { label: "En échec", tone: "danger" },
   late: { label: "En retard", tone: "warning" },
   never: { label: "Jamais vue", tone: "neutral" },

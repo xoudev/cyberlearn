@@ -14,10 +14,20 @@
 /* ─── Light theme (:root) ─────────────────────────────────────────────────── */
 
 :root {
-  /* Brand (Cuivre Signal in Atelier Carbone & Cuivre) */
-  --color-brand-blue: #ff6b2b;
-  --color-brand-turquoise: #ff6b2b;
-  --color-brand-hover: #ff864f;
+  /* Brand (Cuivre Signal in Atelier Carbone & Cuivre). The copper values are
+     the default accent only: every surface that draws "the brand colour" reads
+     the accent the learner equipped (--cosmetic-accent and its hover and ink
+     shades, below), so equipping Bleu turns the logo, the buttons and the
+     active page blue together. The historical names --color-brand-blue and
+     --color-brand-turquoise are aliases of that accent, declared again on
+     [data-accent] further down. */
+  --color-copper: #ff6b2b;
+  --color-copper-hover: #ff864f;
+  /* The copper dark enough to be read on chalk (#EAE7DF): 6.6:1. */
+  --color-copper-ink: #923200;
+  --color-brand-blue: var(--cosmetic-accent);
+  --color-brand-turquoise: var(--cosmetic-accent);
+  --color-brand-hover: var(--cosmetic-accent-hover);
   --color-paper: #eae7df;
   --color-ink: #141518;
   --color-interface-secondary: #c2bfb8;
@@ -119,16 +129,18 @@
   --color-bg-overlay: #191c22;
   --color-bg-sunken: #0d0e12;
 
-  /* Borders */
-  --color-border-subtle: #1e222a;
-  --color-border-default: #282c35;
+  /* Borders: the separator of the DA, and a firmer warm grey for frames
+     (the field outline #74767D is reserved for inputs). */
+  --color-border-subtle: #303137;
+  --color-border-default: #44454a;
 
-  /* Text */
+  /* Text: chalk, then the DA's secondary and metadata greys. Muted text was
+     #6E6B64, 3.3:1 on a panel: below what small text needs. */
   --color-text-primary: #f4f2ed;
-  --color-text-secondary: #9e9b93;
-  --color-text-muted: #6e6b64;
-  --color-text-disabled: #4a4843;
-  --color-text-faint: #848078;
+  --color-text-secondary: #c2bfb8;
+  --color-text-muted: #aaa79f;
+  --color-text-disabled: #5d5b56;
+  --color-text-faint: #9e9b93;
 
   /* Semantic */
   --color-success: #34d399;
@@ -155,12 +167,12 @@
   --muted-foreground: var(--color-text-muted);
   /* Sidebar - Atelier Carbone & Cuivre */
   --sidebar: #0b0c0e;
-  --sidebar-foreground: #9e9b93;
+  --sidebar-foreground: #c2bfb8;
   --sidebar-primary: var(--cosmetic-accent);
   --sidebar-primary-foreground: #0b0c0e;
   --sidebar-accent: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
   --sidebar-accent-foreground: var(--cosmetic-accent);
-  --sidebar-border: #1e222a;
+  --sidebar-border: #303137;
   --sidebar-ring: var(--cosmetic-accent);
 }
 
@@ -170,8 +182,12 @@
  * Components read the var(--cosmetic-*) values so equipping changes the UI live. */
 
 :root {
-  /* Accent: brand turquoise by default; overridden by the equipped accent. */
-  --cosmetic-accent: var(--color-brand-turquoise);
+  /* Accent: copper by default; overridden by the equipped accent. Three
+   * shades travel together: the signal itself, its hover, and its ink (the
+   * same hue dark enough for text on chalk, 4.5:1 at least). */
+  --cosmetic-accent: var(--color-copper);
+  --cosmetic-accent-hover: var(--color-copper-hover);
+  --cosmetic-accent-ink: var(--color-copper-ink);
   /* Hexagon motif. A style is more than a glow: how solid the shape is, how
    * thick its outline, and whether that outline is broken are what tell Contour
    * from Circuit from Prisme at a glance. Named to match apps/mobile's
@@ -185,7 +201,12 @@
   --cosmetic-hex-stroke: 2.5;
   /* A dash pattern for the outline; 0 draws it unbroken. */
   --cosmetic-hex-dash: 0;
-  --cosmetic-hex-glow: 0.35;
+  /* The same idea for a CSS border, which takes a keyword, not a pattern: the
+   * site draws the avatar square and this style as its contour. */
+  --cosmetic-hex-line: solid;
+  /* No halo by default: the Bastion surfaces are mate. A contour that glows
+   * is one the learner chose. */
+  --cosmetic-hex-glow: 0;
   /* Profile frame accent + glow (around the avatar). */
   --cosmetic-frame-accent: var(--color-border-default);
   --cosmetic-frame-glow: 0;
@@ -194,25 +215,58 @@
   --cosmetic-terminal-fg: var(--color-text-secondary);
 }
 
-/* Accent color cosmetics. Turquoise restates the brand value rather than
- * leaving it to inherit - see the note on the hexagons. */
+/* Accent color cosmetics. The default (code accent-turquoise, a name kept
+ * from the first brand: it is the key stored in loadouts) restates the copper
+ * rather than leaving it to inherit - see the note on the hexagons. Each ink
+ * is checked against the chalk surface (#EAE7DF) at 5:1 or more. */
 [data-accent="accent-turquoise"] {
-  --cosmetic-accent: var(--color-brand-turquoise);
+  --cosmetic-accent: var(--color-copper);
+  --cosmetic-accent-hover: var(--color-copper-hover);
+  --cosmetic-accent-ink: var(--color-copper-ink);
 }
 [data-accent="accent-blue"] {
   --cosmetic-accent: #4d8bff;
+  --cosmetic-accent-hover: #74a5ff;
+  --cosmetic-accent-ink: #1f4fbf;
 }
 [data-accent="accent-amber"] {
   --cosmetic-accent: #ffb547;
+  --cosmetic-accent-hover: #ffc670;
+  --cosmetic-accent-ink: #7a4a00;
 }
 [data-accent="accent-magenta"] {
   --cosmetic-accent: #ff4dd2;
+  --cosmetic-accent-hover: #ff75dc;
+  --cosmetic-accent-ink: #9c1279;
 }
 [data-accent="accent-violet"] {
   --cosmetic-accent: #b14dff;
+  --cosmetic-accent-hover: #c274ff;
+  --cosmetic-accent-ink: #6420b0;
 }
 [data-accent="accent-acid"] {
   --cosmetic-accent: #39ff14;
+  --cosmetic-accent-hover: #6bff4f;
+  --cosmetic-accent-ink: #1d6b00;
+}
+
+/* The aliases of the accent, declared again where an accent is set. A custom
+ * property is computed on the element that declares it, so an alias written
+ * only on :root (or on .dark, the <html> class) would freeze the copper and
+ * ignore the accent equipped further down. The cosmetics wrapper and <html>
+ * both carry data-accent (cosmetics-provider.tsx). Kept after .dark, which has
+ * the same specificity. */
+[data-accent] {
+  --color-brand-blue: var(--cosmetic-accent);
+  --color-brand-turquoise: var(--cosmetic-accent);
+  --color-brand-hover: var(--cosmetic-accent-hover);
+  --primary: var(--cosmetic-accent);
+  --accent: var(--cosmetic-accent);
+  --ring: var(--cosmetic-accent);
+  --sidebar-primary: var(--cosmetic-accent);
+  --sidebar-accent: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+  --sidebar-accent-foreground: var(--cosmetic-accent);
+  --sidebar-ring: var(--cosmetic-accent);
 }
 
 /* Hexagon style cosmetics.
@@ -225,37 +279,43 @@
   --cosmetic-hex-fill: 0.16;
   --cosmetic-hex-stroke: 2.5;
   --cosmetic-hex-dash: 0;
-  --cosmetic-hex-glow: 0.35;
+  --cosmetic-hex-glow: 0;
+  --cosmetic-hex-line: solid;
 }
 [data-hex="hex-outline"] {
   --cosmetic-hex-fill: 0;
   --cosmetic-hex-stroke: 2.5;
   --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0;
+  --cosmetic-hex-line: solid;
 }
 [data-hex="hex-neon"] {
   --cosmetic-hex-fill: 0.08;
   --cosmetic-hex-stroke: 3.2;
   --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0.7;
+  --cosmetic-hex-line: solid;
 }
 [data-hex="hex-circuit"] {
   --cosmetic-hex-fill: 0.1;
   --cosmetic-hex-stroke: 2.4;
   --cosmetic-hex-dash: 5 3;
   --cosmetic-hex-glow: 0.12;
+  --cosmetic-hex-line: dashed;
 }
 [data-hex="hex-glitch"] {
   --cosmetic-hex-fill: 0.08;
   --cosmetic-hex-stroke: 3;
   --cosmetic-hex-dash: 9 2;
   --cosmetic-hex-glow: 0.5;
+  --cosmetic-hex-line: dashed;
 }
 [data-hex="hex-prisme"] {
   --cosmetic-hex-fill: 0.18;
   --cosmetic-hex-stroke: 3.4;
   --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0.6;
+  --cosmetic-hex-line: double;
 }
 
 /* Profile frame cosmetics. Standard is the plain border: it needs its own rule

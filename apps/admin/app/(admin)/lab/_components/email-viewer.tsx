@@ -35,6 +35,7 @@ export function EmailViewer({
             }}
             style={{
               textAlign: "left",
+              minHeight: 44,
               padding: "8px 10px",
               background: s.key === active ? "var(--a-surface-2)" : "transparent",
               border: `1px solid ${s.key === active ? "var(--a-border-2)" : "transparent"}`,
@@ -47,7 +48,7 @@ export function EmailViewer({
             <span
               style={{
                 display: "block",
-                font: "400 11px var(--font-mono)",
+                font: "400 12px var(--font-sans)",
                 color: "var(--a-muted)",
               }}
             >

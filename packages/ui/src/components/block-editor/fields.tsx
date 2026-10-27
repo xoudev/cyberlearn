@@ -31,7 +31,8 @@ const inputStyle = (invalid: boolean, mono: boolean): React.CSSProperties => ({
   fontFamily: mono ? MONO : "inherit",
   fontSize: mono ? 12 : 13,
   lineHeight: 1.5,
-  padding: "5px 8px",
+  minHeight: 44,
+  padding: "10px 12px",
   outline: "none",
 });
 
@@ -53,18 +54,17 @@ export function Field({
       <label
         htmlFor={htmlFor}
         style={{
-          fontFamily: MONO,
-          fontSize: 9,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: error === undefined ? MUTED : DANGER,
+          fontFamily: "var(--font-sans, system-ui, sans-serif)",
+          fontSize: 12,
+          fontWeight: 600,
+          color: error === undefined ? "var(--color-text-secondary)" : DANGER,
         }}
       >
         {label}
       </label>
       {children}
       {error !== undefined ? (
-        <span role="alert" style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>
+        <span role="alert" style={{ fontSize: 12, color: DANGER }}>
           {error}
         </span>
       ) : (
@@ -263,15 +263,15 @@ export function SmallButton({
       onClick={onClick}
       disabled={disabled}
       style={{
-        height: 22,
-        padding: "0 7px",
+        minHeight: 44,
+        minWidth: 44,
+        padding: "0 10px",
         border: `1px solid ${disabled ? "var(--color-border-subtle)" : BORDER}`,
         background: "transparent",
         color: disabled ? "var(--color-text-disabled)" : color,
-        fontFamily: MONO,
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: "0.06em",
+        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        fontSize: 13,
+        fontWeight: 600,
         cursor: disabled ? "default" : "pointer",
         flexShrink: 0,
       }}
@@ -529,10 +529,8 @@ export function RowsInput({
                 key={column.key}
                 style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 120, flex: 1 }}
               >
-                <span
-                  style={{ fontFamily: MONO, fontSize: 8.5, color: MUTED, letterSpacing: "0.1em" }}
-                >
-                  {column.label.toUpperCase()}
+                <span style={{ fontSize: 12, fontWeight: 600, color: MUTED }}>
+                  {column.label}
                   {column.required === true ? " *" : ""}
                 </span>
                 {column.kind === "select" ? (
@@ -720,7 +718,7 @@ export function JsonInput({
         }}
       />
       {broken && (
-        <span role="alert" style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>
+        <span role="alert" style={{ fontSize: 12, color: DANGER }}>
           JSON incomplet ou mal formé : la valeur précédente est gardée en attendant.
         </span>
       )}

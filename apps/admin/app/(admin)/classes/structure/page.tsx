@@ -47,7 +47,7 @@ export default async function AdminStructurePage(): Promise<React.ReactElement> 
 
       <div className="a-kpi-grid">
         <KpiCard label={STRUCTURE_KPI_LABELS[0]} value={String(liveEstablishments)} tone="info" />
-        <KpiCard label={STRUCTURE_KPI_LABELS[1]} value={String(livePromotions)} tone="purple" />
+        <KpiCard label={STRUCTURE_KPI_LABELS[1]} value={String(livePromotions)} tone="info" />
         <KpiCard label={STRUCTURE_KPI_LABELS[2]} value={String(classCount)} tone="accent" />
         <KpiCard
           label={STRUCTURE_KPI_LABELS[3]}

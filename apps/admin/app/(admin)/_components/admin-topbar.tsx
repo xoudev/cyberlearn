@@ -6,9 +6,13 @@ import { usePathname } from "next/navigation";
 import { breadcrumbOf } from "@/lib/console-nav";
 import { useAdminMobileSidebar } from "./admin-shell-client";
 import { QuickSearch } from "./quick-search";
+import { UserAvatar } from "./admin-ui";
 
 interface AdminTopbarProps {
-  initials: string;
+  /** The signed-in admin's picture, resolved on the server (lib/avatar.ts). */
+  avatarSrc: string | null;
+  /** The name the initials come from when there is no picture. */
+  name: string;
   handle: string;
   siteUrl: string;
 }
@@ -18,7 +22,12 @@ interface AdminTopbarProps {
  * logo, where one is (the breadcrumb, named from lib/console-nav.ts like the
  * sidebar and the quick search), the quick search, and who is signed in.
  */
-export function AdminTopbar({ initials, handle, siteUrl }: AdminTopbarProps): React.ReactElement {
+export function AdminTopbar({
+  avatarSrc,
+  name,
+  handle,
+  siteUrl,
+}: AdminTopbarProps): React.ReactElement {
   const { open: sidebarOpen, toggle } = useAdminMobileSidebar();
   const pathname = usePathname();
   const crumbs = breadcrumbOf(pathname);
@@ -89,63 +98,10 @@ export function AdminTopbar({ initials, handle, siteUrl }: AdminTopbarProps): Re
             <path d="M14 4h6v6M20 4l-9 9M10 4H4v16h16v-6" />
           </svg>
         </a>
-        <Link
-          href="/account"
-          className="a-topbar-account"
-          aria-label={`Mon compte : ${handle}`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            height: 34,
-            padding: "0 5px",
-            border: "1px solid var(--a-border)",
-            background: "var(--a-surface-2)",
-          }}
-        >
-          <span
-            style={{
-              width: 24,
-              height: 24,
-              display: "grid",
-              placeItems: "center",
-              background: "var(--a-overlay)",
-              border: "1px solid var(--a-border-2)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 10,
-              color: "var(--a-fg-2)",
-            }}
-          >
-            {initials}
-          </span>
-          <span
-            className="admin-navbar-handle"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11.5,
-              color: "var(--a-fg-2)",
-              letterSpacing: "0.03em",
-            }}
-          >
-            {handle}
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 9,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "var(--a-accent)",
-              border: "1px solid color-mix(in srgb, var(--a-accent) 40%, transparent)",
-              background: "color-mix(in srgb, var(--a-accent) 8%, transparent)",
-              padding: "3px 8px",
-              marginRight: 3,
-            }}
-          >
-            Admin
-          </span>
+        <Link href="/account" className="a-topbar-account" aria-label={`Mon compte : ${handle}`}>
+          <UserAvatar src={avatarSrc} name={name} size={30} />
+          <span className="admin-navbar-handle">{handle}</span>
+          <span className="a-admin-mark">Admin</span>
         </Link>
       </div>
     </header>

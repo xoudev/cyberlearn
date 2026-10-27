@@ -23,6 +23,7 @@ import {
   CAT,
   FOLDER_DEFAULT_COLOR,
   FOLDER_DEFAULT_ICON,
+  FOLDER_ICON_LABELS,
   FOLDER_ICON_NAMES,
   FOLDER_PALETTE,
   type FolderIconName,
@@ -618,7 +619,7 @@ export function NotesLibrary({
         label: "Icône",
         options: FOLDER_ICON_NAMES.map((name) => ({
           key: name,
-          label: `Icône ${name}`,
+          label: `Icône ${FOLDER_ICON_LABELS[name]}`,
           active: (folder.icon ?? FOLDER_DEFAULT_ICON) === name,
           render: (
             <FolderGlyph name={name} color={folder.color ?? FOLDER_DEFAULT_COLOR} size={14} />
@@ -753,7 +754,7 @@ export function NotesLibrary({
             aria-hidden="true"
           >
             <circle cx="7" cy="7" r="5" />
-            <path d="M11 11l3 3" strokeLinecap="round" />
+            <path d="M11 11l3 3" strokeLinecap="square" />
           </svg>
           <input
             ref={searchRef}
@@ -769,7 +770,7 @@ export function NotesLibrary({
               width: "100%",
               height: 44,
               padding: "0 14px 0 38px",
-              background: "rgba(5,4,26,0.6)",
+              background: "#0b0c0e",
               border: "1px solid var(--color-border-default)",
               color: "var(--color-text-primary)",
               fontFamily: "var(--font-mono)",
@@ -856,7 +857,7 @@ export function NotesLibrary({
           }}
           style={{
             fontWeight: 700,
-            color: manageOpen ? "var(--color-bg-sunken)" : "#8B88A8",
+            color: manageOpen ? "var(--color-bg-sunken)" : "#c2bfb8",
             background: manageOpen ? "var(--cosmetic-accent)" : "transparent",
             border: "1px dashed var(--color-border-default)",
             padding: "8px 12px",
@@ -908,7 +909,7 @@ export function NotesLibrary({
                 minWidth: 0,
                 height: 38,
                 padding: "0 12px",
-                background: "rgba(3,2,25,0.6)",
+                background: "#0b0c0e",
                 border: "1px solid var(--color-border-default)",
                 color: "var(--color-text-primary)",
                 fontFamily: "var(--font-mono)",
@@ -989,7 +990,7 @@ export function NotesLibrary({
                     minWidth: 0,
                     height: 34,
                     padding: "0 10px",
-                    background: "rgba(3,2,25,0.6)",
+                    background: "#0b0c0e",
                     border: "1px solid var(--color-border-default)",
                     color: "var(--color-text-primary)",
                     fontFamily: "var(--font-mono)",
@@ -1065,7 +1066,7 @@ export function NotesLibrary({
                     gap: 10,
                     padding: 18,
                     textAlign: "left",
-                    background: "rgba(5,4,26,0.5)",
+                    background: "#121418",
                     border: "1px solid var(--color-border-subtle)",
                     borderLeft: `3px solid ${cat.color}`,
                     cursor: "pointer",
@@ -1106,7 +1107,7 @@ export function NotesLibrary({
                       flex: 1,
                       fontFamily: "var(--font-body)",
                       fontSize: 13,
-                      color: "#8B88A8",
+                      color: "var(--color-text-secondary)",
                       lineHeight: 1.5,
                     }}
                   >
@@ -1195,7 +1196,7 @@ export function NotesLibrary({
                     />
                   </svg>
                   <span className={styles.folderBadge}>
-                    <FolderGlyph name={folder.icon} color="currentColor" size={22} />
+                    <FolderGlyph name={folder.icon} color="currentColor" size={28} />
                   </span>
                 </span>
                 <strong>{folder.name}</strong>
@@ -1275,7 +1276,7 @@ export function NotesLibrary({
                           gap: 10,
                           padding: 18,
                           textAlign: "left",
-                          background: "rgba(5,4,26,0.5)",
+                          background: "#121418",
                           border: "1px solid var(--color-border-subtle)",
                           borderLeft: `3px solid ${cat.color}`,
                           cursor: draggingId === n.id ? "grabbing" : "grab",
@@ -1328,7 +1329,7 @@ export function NotesLibrary({
                             flex: 1,
                             fontFamily: "var(--font-body)",
                             fontSize: 13,
-                            color: "#8B88A8",
+                            color: "var(--color-text-secondary)",
                             lineHeight: 1.5,
                           }}
                         >
@@ -1564,9 +1565,9 @@ function IconDots({
             onClick={() => {
               onPick(name);
             }}
-            aria-label={`Icône ${name}`}
+            aria-label={`Icône ${FOLDER_ICON_LABELS[name]}`}
             aria-pressed={active}
-            title={name}
+            title={FOLDER_ICON_LABELS[name]}
             style={{
               display: "grid",
               placeItems: "center",
@@ -1578,7 +1579,7 @@ function IconDots({
               padding: 0,
             }}
           >
-            <FolderGlyph name={name} color={color} size={14} />
+            <FolderGlyph name={name} color={color} size={20} />
           </button>
         );
       })}

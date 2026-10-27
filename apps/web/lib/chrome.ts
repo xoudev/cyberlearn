@@ -57,7 +57,7 @@ export const STICKY_TOP = NAVBAR_HEIGHT + STICKY_GAP;
  * below both with the usual air: STICKY_TOP + LESSON_TOOLBAR_HEIGHT, which
  * globals.css carries a copy of.
  */
-export const LESSON_TOOLBAR_HEIGHT = 48;
+export const LESSON_TOOLBAR_HEIGHT = 56;
 
 /**
  * The `top` a rail this tall sticks at. One that can be read whole below the

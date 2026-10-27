@@ -6,8 +6,8 @@ import { cn } from "../lib/utils.js";
  * loading state with these, so neither keeps a shimmer of its own. The styles
  * are in skeleton.css, which each app's globals.css imports.
  *
- * Square, as both apps are: the only rounding is "circle", for an element
- * that is round itself (a ring, a dot).
+ * Square, as both apps are, the Bastion way: even a placeholder for a dot or
+ * an avatar is a square block, since what it stands in for is square too.
  */
 
 type Radius = "circle";
@@ -22,7 +22,10 @@ export interface SkeletonProps extends React.HTMLAttributes<HTMLElement> {
   w?: number | string;
   /** Convenience height - number is treated as px, string as a CSS length. */
   h?: number | string;
-  /** "circle" for a round element; every other block is square, as the apps are. */
+  /**
+   * Accepted for the callers that still pass it, and ignored: Bastion has no
+   * round element left for a placeholder to imitate.
+   */
   radius?: Radius;
   /**
    * "span" to stand in for text where a <div> would break the markup: inside
@@ -40,7 +43,10 @@ function Skeleton({
   className,
   w,
   h,
-  radius,
+  // Taken out of `props` so it never reaches the DOM element, then set aside:
+  // the block is always square.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- see above
+  radius: _radius,
   style,
   ...props
 }: SkeletonProps): React.ReactElement {
@@ -50,7 +56,6 @@ function Skeleton({
       style={{
         width: toLength(w),
         height: toLength(h),
-        borderRadius: radius === "circle" ? "50%" : undefined,
         ...style,
       }}
       {...props}

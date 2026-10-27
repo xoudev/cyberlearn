@@ -53,11 +53,11 @@ export default async function ReferenceCosmeticsPage({
         <Tag key="r" color={rarity.color}>
           {rarity.label}
         </Tag>,
-        <span key="c" className="mono" style={{ whiteSpace: "nowrap" }}>
+        <span key="c" style={{ whiteSpace: "nowrap" }}>
           {criterionText(c.criterionType, c.criterionData)}
         </span>,
         c._count.unlocks.toLocaleString("fr-FR"),
-        <Tag key="s" tone={c.isActive ? "accent" : "neutral"}>
+        <Tag key="s" tone={c.isActive ? "success" : "neutral"}>
           {c.isActive ? "Actif" : "Retiré"}
         </Tag>,
       ],

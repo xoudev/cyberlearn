@@ -67,35 +67,14 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
 
   return (
     <section>
-      {/* Section header */}
-      <div
-        className="mono-label"
-        style={{
-          color: "var(--cosmetic-accent)",
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          paddingBottom: 14,
-          borderBottom: "1px dashed var(--color-border-subtle)",
-          marginBottom: 20,
-        }}
-      >
-        <h2 className="hint-title">Indices</h2>
-        <span
-          style={{
-            marginLeft: "auto",
-            color: "var(--color-text-muted)",
-            fontWeight: 500,
-            fontSize: 10,
-            letterSpacing: "0.12em",
-          }}
-        >
+      <div className="hints-head">
+        <h2>Indices</h2>
+        <span>
           {String(hints.length)} disponible{hints.length > 1 ? "s" : ""}
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="hints-list">
         {hints.map((hint, idx) => {
           const content: string | undefined = revealed[hint.id];
           const isRevealed = content !== undefined;
@@ -122,42 +101,12 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                 aria-label={`Indice ${num} révélé`}
                 aria-describedby={contentId}
                 className="hint-revealed"
-                style={{
-                  display: "block",
-                  borderLeft: "3px solid var(--cosmetic-accent)",
-                  background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
-                  border: "1px solid var(--color-border-subtle)",
-                  borderLeftColor: "var(--cosmetic-accent)",
-                  borderLeftWidth: 3,
-                  padding: "16px 18px",
-                }}
               >
-                <div
-                  className="mono-label"
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 10,
-                  }}
-                >
-                  <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
-                    › Indice {num} · révélé
-                  </span>
-                  <span style={{ color: "var(--color-text-muted)" }}>
-                    {hint.xpCost === 0 ? "Gratuit" : `−${String(hint.xpCost)} XP`}
-                  </span>
+                <div className="hint-revealed__head">
+                  <span>Indice {num} · révélé</span>
+                  <span>{hint.xpCost === 0 ? "Gratuit" : `−${String(hint.xpCost)} XP`}</span>
                 </div>
-                <div
-                  id={contentId}
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 13,
-                    color: "var(--color-text-primary)",
-                    lineHeight: 1.55,
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
+                <div id={contentId} className="hint-revealed__text">
                   {content}
                 </div>
               </div>
@@ -170,10 +119,10 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
           // the call runs it is only aria-disabled: the focus is on it, and a
           // disabled button would drop it on the page.
           return (
-            <div key={hint.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div key={hint.id} className="hint-item">
               <button
                 type="button"
-                className="card card--sunken hint-row"
+                className="hint-row"
                 disabled={!canAfford}
                 aria-disabled={isPending || undefined}
                 aria-busy={isPending}
@@ -181,59 +130,17 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   if (isPending) return;
                   handleReveal(hint.id);
                 }}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "36px 1fr auto",
-                  alignItems: "center",
-                  gap: 14,
-                  width: "100%",
-                  padding: "14px 16px",
-                  font: "inherit",
-                  color: "inherit",
-                  textAlign: "left",
-                  cursor: canAfford && !isPending ? "pointer" : "not-allowed",
-                  transition: "border-color 200ms ease, background 200ms ease",
-                }}
               >
-                {/* Number box */}
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 700,
-                    fontSize: 12,
-                    letterSpacing: "0.1em",
-                    color: "var(--color-text-muted)",
-                    display: "grid",
-                    placeItems: "center",
-                    width: 36,
-                    height: 36,
-                    border: "1px dashed var(--color-border-default)",
-                  }}
-                >
-                  {num}
-                </span>
+                <span className="hint-row__num">{num}</span>
 
                 {/* Body: spans, so the row stays valid inside a button. */}
-                <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span
-                    className="mono-label"
-                    style={{
-                      fontWeight: 600,
-                      color: "var(--color-text-primary)",
-                    }}
-                  >
-                    {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
+                <span className="hint-row__body">
+                  <span className="hint-row__title">
+                    {isPending ? "Révélation…" : `Révéler l'indice ${num}`}
                   </span>
                   <span
-                    className="mono-label"
-                    style={{
-                      color:
-                        hint.xpCost === 0
-                          ? "var(--cosmetic-accent)"
-                          : canAfford
-                            ? "var(--color-warning)"
-                            : "var(--color-danger)",
-                    }}
+                    className="hint-row__cost"
+                    data-cost={hint.xpCost === 0 ? "free" : canAfford ? "paid" : "short"}
                   >
                     {hint.xpCost === 0
                       ? "Gratuit"
@@ -243,30 +150,13 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   </span>
                 </span>
 
-                {/* Chevron */}
-                <span
-                  aria-hidden="true"
-                  style={{
-                    color: "var(--color-text-muted)",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 16,
-                    transition: "transform 200ms ease, color 200ms ease",
-                    opacity: isPending ? 0.3 : 1,
-                  }}
-                >
+                <span className="hint-row__chev" aria-hidden="true">
                   ›
                 </span>
               </button>
               {/* Outside the button, so a screen reader hears it when it lands. */}
               {errorMsg !== undefined && (
-                <span
-                  role="alert"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "var(--color-danger)",
-                  }}
-                >
+                <span role="alert" className="hint-error">
                   {errorMsg}
                 </span>
               )}

@@ -1,42 +1,539 @@
-/* A lesson quiz's layout. Colours stay inline in quiz.tsx; what changes with
-   the width it is given lives here, where a container query can reach it.
-   The container is the quiz's lesson block, or its group's (quiz-block.tsx). */
+/* A lesson quiz (quiz.tsx) and a group of them (quiz-group.tsx), in the
+   Bastion direction: square corners, carbon panels, the equipped accent for
+   what the learner picks and does next, the state colours for right and
+   wrong, each said in words too. What changes with the width they are given
+   lives in a container query: the container is the quiz's lesson block, or
+   its group's (quiz-block.tsx). */
 
 .cl-quiz {
-  padding: 32px 32px 28px;
+  position: relative;
+  margin: 56px 0 0;
+  padding: 28px 28px 20px;
+  border: 1px solid var(--color-interface-separator);
+  border-top: 3px solid var(--cosmetic-accent);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-family: var(--font-interface), sans-serif;
+}
+
+.cl-quiz[data-grouped] {
+  margin: 0;
+}
+
+.cl-quiz-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-bottom: 10px;
+}
+
+.cl-quiz-kicker {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-interface-muted);
+}
+
+.cl-quiz-verdict {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cl-quiz-verdict[data-tone="right"] {
+  color: var(--color-state-success);
+}
+
+.cl-quiz-verdict[data-tone="wrong"] {
+  color: var(--color-state-danger);
 }
 
 .cl-quiz-question {
-  font-size: 24px;
+  margin: 0 0 22px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-text-primary);
+}
+
+/* Focus is moved here by the group: the reader's place, not a control. */
+.cl-quiz-question:focus,
+.cl-quiz-result-title:focus {
+  outline: none;
+}
+
+.cl-quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .cl-quiz-option {
   display: grid;
-  grid-template-columns: 40px 24px minmax(0, 1fr) auto;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 14px;
+  min-height: 52px;
+  padding: 8px 16px 8px 8px;
+  border: 1px solid var(--color-interface-separator);
+  background: transparent;
+  color: var(--color-interface-secondary);
+  font-size: 15px;
+  line-height: 1.45;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
 }
 
-/* In a narrow block, a phone's, the four columns left the option text a word
-   wide, squeezed by the "Bonne réponse" label. The label goes under the text
-   instead. */
+.cl-quiz-option[data-state="idle"]:hover {
+  border-color: var(--color-interface-outline);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-primary);
+}
+
+.cl-quiz-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.cl-quiz-option:has(input:disabled) {
+  cursor: default;
+}
+
+.cl-quiz-letter {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-interface-separator);
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-interface-muted);
+}
+
+.cl-quiz-choice {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cl-quiz-state {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cl-quiz-option[data-state="picked"] {
+  border-color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+  color: var(--color-text-primary);
+}
+
+.cl-quiz-option[data-state="picked"] .cl-quiz-letter {
+  border-color: var(--cosmetic-accent);
+  background: var(--cosmetic-accent);
+  color: #0b0c0e;
+}
+
+.cl-quiz-option[data-state="right"] {
+  border-color: var(--color-state-success);
+  background: color-mix(in srgb, var(--color-state-success) 9%, transparent);
+  color: var(--color-text-primary);
+}
+
+.cl-quiz-option[data-state="right"] .cl-quiz-letter {
+  border-color: var(--color-state-success);
+  background: var(--color-state-success);
+  color: #0b0c0e;
+}
+
+.cl-quiz-option[data-state="right"] .cl-quiz-state {
+  color: var(--color-state-success);
+}
+
+.cl-quiz-option[data-state="wrong"] {
+  border-color: var(--color-state-danger);
+  background: color-mix(in srgb, var(--color-state-danger) 9%, transparent);
+  color: var(--color-text-primary);
+}
+
+.cl-quiz-option[data-state="wrong"] .cl-quiz-letter {
+  border-color: var(--color-state-danger);
+  background: var(--color-state-danger);
+  color: #0b0c0e;
+}
+
+.cl-quiz-option[data-state="wrong"] .cl-quiz-state {
+  color: var(--color-state-danger);
+}
+
+.cl-quiz-option[data-state="other"] {
+  color: var(--color-interface-muted);
+}
+
+.cl-quiz-explanation {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--color-state-success);
+  background: var(--color-bg-overlay);
+}
+
+.cl-quiz-explanation[data-tone="wrong"] {
+  border-left-color: var(--color-state-danger);
+}
+
+.cl-quiz-explanation-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-state-success);
+}
+
+.cl-quiz-explanation[data-tone="wrong"] .cl-quiz-explanation-title {
+  color: var(--color-state-danger);
+}
+
+.cl-quiz-explanation-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-interface-secondary);
+}
+
+/* The quiz's one action: validate, then go on. */
+.cl-quiz-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 16px;
+  padding: 12px 20px;
+  border: 1px solid var(--cosmetic-accent);
+  background: var(--cosmetic-accent);
+  color: #0b0c0e;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.cl-quiz-button:hover:not(:disabled) {
+  border-color: var(--cosmetic-accent-hover);
+  background: var(--cosmetic-accent-hover);
+}
+
+.cl-quiz-button:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.cl-quiz-button:disabled {
+  border-color: var(--color-interface-separator);
+  background: transparent;
+  color: var(--color-interface-muted);
+  cursor: not-allowed;
+}
+
+.cl-quiz-button[aria-busy="true"] {
+  cursor: progress;
+}
+
+.cl-quiz-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-interface-muted);
+}
+
+.cl-quiz-note[data-error] {
+  color: var(--color-state-danger);
+}
+
+/* ── A group: one question at a time ───────────────────────────────────── */
+
+.cl-quiz-group {
+  margin: 56px 0 0;
+}
+
+.cl-quiz-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.cl-quiz-steps {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-quiz-steps > li {
+  display: flex;
+  flex: 1 1 44px;
+  min-width: 44px;
+}
+
+.cl-quiz-steps > li.cl-quiz-steps-result {
+  flex: 0 0 auto;
+}
+
+/* A square segment: its state in the colour of its bar, and in a mark beside
+   its number (✓, ✗); the one on screen is raised. The bar is an inset shadow,
+   not a bottom border: a border meeting the transparent sides is mitred into
+   a trapezoid. */
+.cl-quiz-step {
+  --cl-quiz-step-bar: var(--color-interface-separator);
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px 4px;
+  border: 1px solid transparent;
+  box-shadow: inset 0 -4px 0 var(--cl-quiz-step-bar);
+  background: transparent;
+  color: var(--color-interface-muted);
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.cl-quiz-step:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.cl-quiz-step:hover:not(:disabled) {
+  background: var(--color-bg-overlay);
+}
+
+.cl-quiz-step:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.cl-quiz-step[data-state="right"] {
+  --cl-quiz-step-bar: var(--color-state-success);
+  color: var(--color-state-success);
+}
+
+.cl-quiz-step[data-state="wrong"] {
+  --cl-quiz-step-bar: var(--color-state-danger);
+  color: var(--color-state-danger);
+}
+
+.cl-quiz-step[data-state="current"] {
+  --cl-quiz-step-bar: var(--cosmetic-accent);
+  color: var(--color-text-primary);
+}
+
+.cl-quiz-step[data-state="result"] {
+  --cl-quiz-step-bar: var(--cosmetic-accent);
+  color: var(--color-text-primary);
+  font-family: var(--font-interface), sans-serif;
+  font-size: 14px;
+}
+
+.cl-quiz-step[aria-current="step"] {
+  border-color: var(--color-interface-separator);
+  background: var(--color-bg-overlay);
+}
+
+.cl-quiz-count {
+  flex: 0 0 auto;
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-interface-muted);
+  white-space: nowrap;
+}
+
+.cl-quiz-count strong {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* A question takes the place of the one before: a short fade, not a slide
+   that would move the target of the focus. Only after a move the learner
+   asked for: what is on screen when the lesson opens is not played again. */
+.cl-quiz-stage[data-enter] {
+  animation: cl-quiz-enter 180ms ease-out;
+}
+
+@keyframes cl-quiz-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cl-quiz-result {
+  padding: 28px;
+  border: 1px solid var(--color-interface-separator);
+  border-top: 3px solid var(--cosmetic-accent);
+  background: var(--color-bg-elevated);
+  font-family: var(--font-interface), sans-serif;
+}
+
+.cl-quiz-result-title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+.cl-quiz-score {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin: 12px 0 0;
+  font-size: 16px;
+  color: var(--color-interface-secondary);
+}
+
+.cl-quiz-score strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--cosmetic-accent);
+}
+
+.cl-quiz-result-text {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-interface-secondary);
+}
+
+.cl-quiz-missed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-quiz-missed button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-interface-separator);
+  border-left: 3px solid var(--color-state-danger);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-interface), sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cl-quiz-missed button:hover {
+  background: var(--color-bg-overlay);
+}
+
+.cl-quiz-missed button:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.cl-quiz-missed-number {
+  font-weight: 700;
+  color: var(--color-state-danger);
+  white-space: nowrap;
+}
+
+.cl-quiz-missed-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* In a narrow block, a phone's, the option text kept a word's width beside
+   the letter and the "Bonne réponse" label. The label goes under the text,
+   and the count under the segments. */
 @container lesson-block (max-width: 560px) {
-  .cl-quiz {
-    padding: 20px 16px 18px;
+  .cl-quiz,
+  .cl-quiz-result {
+    padding: 20px 16px 16px;
   }
 
-  .cl-quiz-question {
-    font-size: 19px;
+  .cl-quiz-question,
+  .cl-quiz-result-title {
+    font-size: 21px;
   }
 
   .cl-quiz-option {
-    grid-template-columns: 14px 16px minmax(0, 1fr);
+    grid-template-columns: 32px minmax(0, 1fr);
     gap: 10px;
-    padding: 12px;
+    padding: 8px 12px 8px 6px;
+  }
+
+  .cl-quiz-letter {
+    width: 32px;
+    height: 32px;
   }
 
   .cl-quiz-state {
-    grid-column: 3;
+    grid-column: 2;
+    white-space: normal;
+  }
+
+  .cl-quiz-progress {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .cl-quiz-count {
+    align-self: flex-end;
+  }
+
+  .cl-quiz-missed button {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-quiz-stage[data-enter] {
+    animation: none;
+  }
+
+  .cl-quiz-option,
+  .cl-quiz-button,
+  .cl-quiz-step {
+    transition: none;
   }
 }

@@ -52,7 +52,7 @@
   color: #141518;
 }
 .app-frame .sidebar-wordmark em {
-  color: #d4430d;
+  color: var(--cosmetic-accent-ink);
 }
 .app-frame .sidebar-scroll {
   min-height: 0;
@@ -74,14 +74,14 @@
   padding: 0 10px 10px;
   color: #aaa79f;
   font:
-    500 10px / 1.4 var(--font-mono),
-    monospace;
+    600 12px / 1.4 var(--font-interface),
+    sans-serif;
   letter-spacing: 0;
   text-transform: none;
 }
 .app-frame .sidebar-group-label > span {
   color: #aaa79f;
-  font-size: 9px;
+  font-size: 12px;
 }
 .app-frame .sidebar-nav-item {
   position: relative;
@@ -214,7 +214,7 @@
   min-width: 135px;
 }
 .chrome-location > span {
-  font-size: 9px;
+  font-size: 11px;
   color: #aaa79f;
 }
 .chrome-location > strong {
@@ -329,9 +329,10 @@
 }
 .app-frame .gs-group-label {
   font:
-    500 10px var(--font-mono),
-    monospace;
+    600 12px var(--font-interface),
+    sans-serif;
   letter-spacing: 0;
+  text-transform: none;
 }
 .app-frame .fp-head-label,
 .app-frame .chrome-panel-title {
@@ -354,7 +355,7 @@
   box-shadow: none;
 }
 .app-frame :is(.sidebar-wrapper, .navbar-header) :is(a, button, input):focus-visible {
-  outline: 2px solid #ff9b71;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: -2px;
 }
 .app-frame .sidebar-logo:focus-visible {
@@ -473,10 +474,15 @@
     margin-left: 0;
   }
 }
-@media (max-width: 360px) {
+/* The bar holds six buttons on a phone since the day's recall joined it (seven
+   with the year's recap in December). Below 400px the logo beside the menu
+   gives way: the drawer the menu opens starts with it. */
+@media (max-width: 400px) {
   .chrome-mobile-brand {
     display: none;
   }
+}
+@media (max-width: 430px) {
   /* The seasonal recap replaces the duplicate profile shortcut; the sidebar still opens the profile. */
   .chrome-actions:has(.wr-chip) .navbar-me {
     display: none;

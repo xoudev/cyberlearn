@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   POSTS_PER_PAGE,
@@ -23,7 +24,6 @@ import { PostCard } from "../../_components/post-card";
 import { ReplyBox } from "../../_components/reply-box";
 import { TopicTools } from "../../_components/topic-tools";
 import "../../community-forum.css";
-import { EmptyState } from "@/components/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -148,10 +148,13 @@ export default async function ForumTopicPage({
       {/* A closed thread keeps its messages and loses its box: the alternative
           is a form that accepts input and then refuses it. */}
       {view.locked ? (
-        <EmptyState
-          message="Ce sujet est fermé. Il reste lisible, mais on n'y répond plus."
-          style={{ marginTop: 24 }}
-        />
+        <section className="fo-closed" aria-labelledby="fo-closed-title">
+          <Lock size={22} strokeWidth={1.75} aria-hidden="true" />
+          <div>
+            <h2 id="fo-closed-title">Sujet fermé</h2>
+            <p>Il reste lisible, mais on n&apos;y répond plus.</p>
+          </div>
+        </section>
       ) : (
         <ReplyBox topicId={view.id} />
       )}

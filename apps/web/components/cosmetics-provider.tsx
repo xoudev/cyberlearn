@@ -67,6 +67,21 @@ export function CosmeticsProvider({
     setAttrs((prev) => ({ ...prev, [attr]: code ?? undefined }));
   }, []);
 
+  // The same attributes on <html>: dialogs, drawers, menus and toasts are
+  // portalled to <body>, outside the wrapper below, and drew the default
+  // copper whatever accent was equipped. Removed again when the shell leaves
+  // (signing out lands on pages that wear the default).
+  useEffect(() => {
+    const root = document.documentElement;
+    for (const [name, value] of Object.entries(attrs)) {
+      if (value === undefined) root.removeAttribute(name);
+      else root.setAttribute(name, value);
+    }
+    return () => {
+      for (const name of Object.keys(attrs)) root.removeAttribute(name);
+    };
+  }, [attrs]);
+
   return (
     <CosmeticsContext.Provider value={{ setCosmetic }}>
       <div {...attrs} style={{ display: "contents" }}>

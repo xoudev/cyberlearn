@@ -43,7 +43,7 @@
   line-height: 0.9;
 }
 .fo-title > span {
-  color: #ff6b2b;
+  color: var(--cosmetic-accent);
 }
 .fo-lede {
   max-width: 650px;
@@ -90,7 +90,7 @@
   transition: background-color 150ms;
 }
 .fo-cat:first-child {
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .fo-cat:hover {
   background: #212329;
@@ -123,7 +123,7 @@
   font-size: 11px;
 }
 .fo-cat__go {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font-size: 22px;
   transition: transform 150ms;
 }
@@ -161,7 +161,7 @@
   text-decoration: none;
 }
 .fo-topic:hover .fo-topic-title {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .fo-topic-title {
   display: flex;
@@ -209,13 +209,64 @@
     sans-serif;
 }
 .fo-tag--pinned {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
 }
+/* Closed: said in the warning amber, frame included, so the tag reads as a
+   state and not as one more grey label. */
 .fo-tag--locked {
-  color: #fbbf24;
+  color: #ffc36e;
+  border-color: #ffc36e;
+  background: color-mix(in srgb, #ffc36e 10%, transparent);
 }
 .fo-tag--hidden {
   color: #ff8b96;
+  border-color: #ff8b96;
+}
+/* On chalk (the forum home's featured topic), the same states in inks dark
+   enough to be read: the amber and the copper vanished on #EAE7DF. */
+.fo-topic--featured .fo-tag {
+  border-color: #6f6c66;
+  color: #141518;
+}
+.fo-topic--featured .fo-tag--pinned {
+  border-color: var(--cosmetic-accent-ink);
+  color: var(--cosmetic-accent-ink);
+}
+.fo-topic--featured .fo-tag--locked {
+  border-color: #7a4a00;
+  color: #7a4a00;
+  background: color-mix(in srgb, #ffc36e 35%, transparent);
+}
+.fo-topic--featured .fo-tag--hidden {
+  border-color: #9c1c2b;
+  color: #9c1c2b;
+}
+/* The end of a closed thread: where the reply box would be. */
+.fo-closed {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 20px 24px;
+  background: #191c22;
+  border: 1px solid #303137;
+  border-left: 4px solid #ffc36e;
+  color: #ffc36e;
+}
+.fo-closed h2 {
+  margin: 0 0 6px;
+  font:
+    600 26px / 1.05 var(--font-display),
+    sans-serif;
+  text-transform: uppercase;
+  color: #f4f2ed;
+}
+.fo-closed p {
+  margin: 0;
+  color: #c2bfb8;
+  font-size: 14px;
+  line-height: 1.6;
 }
 .fo-post {
   display: grid;
@@ -257,7 +308,7 @@
   overflow-wrap: anywhere;
 }
 .fo-post-role {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font-size: 11px;
 }
 .fo-post-level {
@@ -269,7 +320,7 @@
   --color-text-secondary: #55524d;
   --color-text-muted: #55524d;
   --color-border-subtle: #bdbab3;
-  --cosmetic-accent: #923200;
+  --cosmetic-accent: var(--cosmetic-accent-ink);
   min-width: 0;
   padding: 24px;
   background: #eae7df;
@@ -281,7 +332,7 @@
   --color-text-primary: #f4f2ed;
   --color-text-secondary: #c2bfb8;
   --color-text-muted: #aaa79f;
-  --cosmetic-accent: #ff864f;
+  --cosmetic-accent: var(--cosmetic-accent-hover);
 }
 .fo-post .note-md {
   color: inherit;
@@ -326,7 +377,7 @@
   color: #aaa79f;
 }
 .fo-post[data-hidden="true"] .fo-post-body :is(button, a):focus-visible {
-  outline-color: #ff864f;
+  outline-color: var(--cosmetic-accent-hover);
 }
 .fo-form {
   display: grid;
@@ -411,7 +462,7 @@
     border-top: 0;
   }
   .fo-grid {
-    border-top: 4px solid #ff6b2b;
+    border-top: 4px solid var(--cosmetic-accent);
   }
 }
 @media (max-width: 620px) {

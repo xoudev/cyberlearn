@@ -48,6 +48,8 @@ export interface ContentAuthor {
   id: string;
   username: string | null;
   displayName: string;
+  /** The stored avatar, a marker or a path: the console resolves it to show the picture. */
+  avatarUrl: string | null;
 }
 
 /** One piece of published content, as the console and the reports read it. */
@@ -155,7 +157,9 @@ export async function closeReportsOfRemoved(
   return closed;
 }
 
-const AUTHOR = { select: { id: true, username: true, displayName: true } } as const;
+const AUTHOR = {
+  select: { id: true, username: true, displayName: true, avatarUrl: true },
+} as const;
 
 const contains = (q: string): Prisma.StringFilter => ({ contains: q, mode: "insensitive" });
 

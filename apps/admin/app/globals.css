@@ -321,19 +321,21 @@ input {
 }
 .import-dropzone-text {
   margin: 0 0 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--a-fg-2);
 }
 .import-dropzone-browse {
-  display: inline-block;
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
   border: 1px solid var(--a-border-2);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--a-info);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--a-fg);
 }
 
 /* An error's field and line; the line puts the editor's cursor there. */
@@ -341,8 +343,8 @@ input {
   display: flex;
   gap: 6px;
   margin-bottom: 2px;
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-danger);
 }
 .import-error-place button {
@@ -399,19 +401,24 @@ input {
   border: 1px solid var(--a-border);
 }
 .import-view-toggle button {
-  padding: 3px 10px;
+  min-height: 44px;
+  padding: 0 14px;
   border: none;
   background: none;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--a-muted);
   cursor: pointer;
 }
+.import-view-toggle button:hover {
+  color: var(--a-fg);
+}
+/* The view on screen: the raised surface and the copper rule of an active item. */
 .import-view-toggle button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--a-info) 14%, transparent);
-  color: var(--a-info);
+  background: var(--a-overlay);
+  color: var(--a-fg);
+  box-shadow: inset 0 -2px 0 var(--a-accent);
 }
 
 /* Classes: the three creation forms sit side by side because setting a school

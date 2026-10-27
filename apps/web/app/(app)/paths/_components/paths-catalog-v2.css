@@ -118,7 +118,7 @@
   vertical-align: middle;
 }
 .pc2-root .rating__star {
-  color: #ff6b2b;
+  color: var(--cosmetic-accent);
 }
 .pc2-root .sep {
   color: #77746e;
@@ -126,8 +126,8 @@
 .pc2-root .btn {
   min-height: 46px;
   padding: 12px 18px;
-  border: 1px solid #ff6b2b;
-  background: #ff6b2b;
+  border: 1px solid var(--cosmetic-accent);
+  background: var(--cosmetic-accent);
   box-shadow: none;
   color: #0b0c0e;
   font:
@@ -145,8 +145,8 @@
     border-color 180ms;
 }
 .pc2-root .btn:hover {
-  background: #ff864f;
-  border-color: #ff864f;
+  background: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
   transform: none;
   box-shadow: none;
 }
@@ -168,7 +168,7 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr);
   background: #eae7df;
   color: #141518;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .pc2-root .hero-path__main {
   padding: 30px 32px;
@@ -207,7 +207,7 @@
   flex-basis: 100%;
   color: #55524d;
   font:
-    10px var(--font-mono),
+    12px var(--font-mono),
     monospace;
 }
 .pc2-root .refcode b {
@@ -319,7 +319,7 @@
   color: #f4f2ed;
   text-decoration: none;
   border-top: 1px solid #44454a;
-  border-left: 3px solid #ff6b2b;
+  border-left: 3px solid var(--cosmetic-accent);
   transition: background-color 180ms;
 }
 .pc2-root .hero-next:hover {
@@ -341,12 +341,12 @@
   flex-wrap: wrap;
   gap: 12px;
   font:
-    11px var(--font-mono),
+    12px var(--font-mono),
     monospace;
   color: #c2bfb8;
 }
 .pc2-root .hero-next__meta .go {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .pc2-root .pc2-discover,
 .pc2-root .pc2-duo {
@@ -390,14 +390,14 @@
   position: absolute;
   background: #121418;
   padding: 7px 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: #c2bfb8;
 }
 .pc2-root .game-card__cat {
   left: 12px;
   top: 12px;
   color: #f4f2ed;
-  border-left: 3px solid #ff6b2b;
+  border-left: 3px solid var(--cosmetic-accent);
 }
 .pc2-root .game-card__diff {
   right: 12px;
@@ -410,7 +410,7 @@
   left: 12px;
   bottom: 12px;
   font:
-    9px var(--font-mono),
+    12px var(--font-mono),
     monospace;
 }
 .pc2-root .game-card__id b {
@@ -453,7 +453,7 @@
   color: #c2bfb8;
 }
 .pc2-root .game-card__stats .xp {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .pc2-root .game-card__foot {
   padding: 0 24px 24px;
@@ -466,8 +466,8 @@
 }
 .pc2-root .game-card:hover .btn {
   background: transparent;
-  color: #ff864f;
-  border-color: #ff864f;
+  color: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
 }
 .pc2-root .game-card .btn svg {
   transition: transform 180ms;
@@ -498,7 +498,7 @@
   background: #121418;
 }
 .pc2-root .active-card {
-  border-top: 3px solid #ff6b2b;
+  border-top: 3px solid var(--cosmetic-accent);
 }
 .pc2-root .active-card__body,
 .pc2-root .trophy-card__body {
@@ -522,7 +522,7 @@
 .pc2-root .trophy-card__refcode {
   color: #aaa79f;
   font:
-    10px var(--font-mono),
+    12px var(--font-mono),
     monospace;
 }
 .pc2-root .active-card__title,
@@ -560,7 +560,7 @@
   gap: 14px;
   min-height: 44px;
   margin-top: 12px;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font-size: 13px;
   text-decoration: none;
 }
@@ -597,7 +597,7 @@
 }
 .pc2-root .game-card:focus-visible,
 .pc2-root .hero-next:focus-visible {
-  outline: 2px solid #ff6b2b;
+  outline: 2px solid var(--cosmetic-accent);
   outline-offset: 4px;
 }
 @media (max-width: 1180px) {
@@ -698,7 +698,7 @@
   flex-wrap: wrap;
   gap: 10px 16px;
   color: #aaa79f;
-  font-size: 11px;
+  font-size: 12px;
 }
 .pc2-root .game-card__labels > span {
   display: inline-flex;

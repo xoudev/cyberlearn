@@ -50,8 +50,8 @@ export function AvatarView({
           fill="none"
           stroke={glyphColor}
           strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
           aria-hidden="true"
         >
           {d !== null ? <path d={d} /> : <circle cx="12" cy="12" r="8" />}

@@ -37,7 +37,7 @@ describe("navGroupsFor('web')", () => {
   it("puts each page in the group the plan gives it, in order", () => {
     expect(web.map((group) => group.entries.map((entry) => entry.label))).toEqual([
       ["Tableau de bord"],
-      ["Parcours", "Leçons", "Révisions", "Bloc-notes", "Glossaire"],
+      ["Parcours", "Leçons", "Bloc-notes", "Glossaire"],
       ["Défis", "Duels"],
       ["Mon profil", "Classement", "Casier"],
       ["Forum", "Mes classes", "Aide"],
@@ -49,6 +49,11 @@ describe("navGroupsFor('web')", () => {
     expect(keys).not.toContain("tournaments");
     expect(keys).not.toContain("settings");
     expect(web.map((group) => group.key)).not.toContain("account");
+  });
+
+  it("leaves the day's recall to the top bar: a window over the page, not a page", () => {
+    const keys = web.flatMap((group) => group.entries.map((entry) => entry.key));
+    expect(keys).not.toContain("revisions");
   });
 });
 

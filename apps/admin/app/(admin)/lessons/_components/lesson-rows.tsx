@@ -26,7 +26,7 @@ export function lessonGridRows(lessons: readonly ConsoleLessonRow[]): GridRowBas
             </span>
           </Link>
           <div className="mono" style={{ fontSize: 11.5, color: "var(--a-muted)", marginTop: 3 }}>
-            <span style={{ color: "var(--a-info)" }}>{lesson.refCode}</span> · {lesson.slug} ·{" "}
+            <span style={{ color: "var(--a-fg-2)" }}>{lesson.refCode}</span> · {lesson.slug} ·{" "}
             {String(lesson.estimatedMinutes)} min
           </div>
           {/* Otherwise an admin scanning this list finds a lesson they did
@@ -34,7 +34,7 @@ export function lessonGridRows(lessons: readonly ConsoleLessonRow[]): GridRowBas
               tell apart from one that has gone missing. */}
           {origin !== "new" && (
             <div style={{ marginTop: 5 }}>
-              <Tag tone={origin === "first" ? "warning" : "purple"}>
+              <Tag tone={origin === "first" ? "warning" : "info"}>
                 {origin === "first" ? "Ancien catalogue" : "Leçon de classe"}
               </Tag>
             </div>
@@ -42,11 +42,8 @@ export function lessonGridRows(lessons: readonly ConsoleLessonRow[]): GridRowBas
         </div>,
         <span
           key="c"
-          className="mono"
           style={{
-            fontSize: 12,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
+            fontSize: 12.5,
             color: "var(--a-fg-2)",
             whiteSpace: "nowrap",
           }}
@@ -56,7 +53,7 @@ export function lessonGridRows(lessons: readonly ConsoleLessonRow[]): GridRowBas
         <Tag key="d" tone={difficulty.tone}>
           {difficulty.label}
         </Tag>,
-        <b key="x" style={{ color: "var(--a-accent)" }}>
+        <b key="x" className="a-mono" style={{ color: "var(--a-fg)" }}>
           {String(lesson.xpReward)}
         </b>,
         String(lesson._count.progress),

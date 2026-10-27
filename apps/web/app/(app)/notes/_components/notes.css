@@ -12,7 +12,7 @@
   -webkit-backdrop-filter: none;
 }
 .note-reader .modal-shell__eyebrow > span {
-  color: #ff864f !important;
+  color: var(--cosmetic-accent-hover) !important;
 }
 .note-reader .note-md {
   color: #f4f2ed;
@@ -52,7 +52,7 @@
   outline-offset: 3px;
 }
 .notes-workspace :is(.notes-icon-options, .notes-color-options) button:focus-visible {
-  outline: 3px solid #ff864f;
+  outline: 3px solid var(--cosmetic-accent-hover);
   outline-offset: 4px;
 }
 .notes-document > span:last-child > span:first-child {
@@ -99,7 +99,7 @@
   --color-border-subtle: #bdbab3;
   background: #eae7df !important;
   border: 0 !important;
-  border-top: 4px solid #ff6b2b !important;
+  border-top: 4px solid var(--cosmetic-accent) !important;
   padding: 24px !important;
   min-width: 0;
   color: #141518 !important;
@@ -122,7 +122,7 @@
 }
 .notes-document__category {
   flex-wrap: wrap;
-  color: #923200 !important;
+  color: var(--cosmetic-accent-ink) !important;
   font-family: var(--font-interface), sans-serif !important;
   letter-spacing: 0;
   text-transform: none;
@@ -134,11 +134,11 @@
   margin-top: 30px;
   padding: 38px;
   border: 1px solid #44454a;
-  border-left: 4px solid #ff6b2b;
+  border-left: 4px solid var(--cosmetic-accent);
   background: #121418;
 }
 .notes-empty > svg {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   margin-bottom: 24px;
 }
 .notes-empty h2 {
@@ -166,7 +166,7 @@
   --color-text-muted: #aaa79f;
   --color-text-secondary: #c2bfb8;
   border-color: #44454a !important;
-  border-top-color: #ff6b2b !important;
+  border-top-color: var(--cosmetic-accent) !important;
   background: #121418 !important;
   font-family: var(--font-interface), sans-serif;
 }
@@ -191,7 +191,7 @@
   color: #f4f2ed !important;
 }
 .note-reader :is(a, button, input, textarea, [role="combobox"]):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 @media (max-width: 600px) {

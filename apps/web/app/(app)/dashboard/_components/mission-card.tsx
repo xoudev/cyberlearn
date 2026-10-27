@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import type { ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
+import { routeWindow, type ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import { ArrowUpRight } from "lucide-react";
 import { BastionLogo } from "@/components/bastion-logo";
 
@@ -77,6 +77,9 @@ function RouteView({
   route: ModuleRoute;
   path: MissionCardProps["path"];
 }): React.JSX.Element {
+  // Five lessons at most, around the current one: a fifteen-lesson module drawn
+  // whole made the card three screens tall. The others are counted.
+  const view = routeWindow(route.nodes);
   return (
     <div
       className="dash-route"
@@ -97,7 +100,12 @@ function RouteView({
         />
       </div>
       <div className="dash-route-nodes">
-        {route.nodes.map((node, index) => (
+        {view.hiddenBefore > 0 && (
+          <span className="dash-route-more">
+            {view.hiddenBefore} leçon{view.hiddenBefore > 1 ? "s" : ""} avant
+          </span>
+        )}
+        {view.nodes.map(({ node, position: index }) => (
           <Link
             key={node.id}
             href={`/lessons/${node.slug}`}
@@ -152,6 +160,11 @@ function RouteView({
             </span>
           </Link>
         ))}
+        {view.hiddenAfter > 0 && (
+          <span className="dash-route-more">
+            Encore {view.hiddenAfter} leçon{view.hiddenAfter > 1 ? "s" : ""} dans ce module
+          </span>
+        )}
       </div>
       {path !== null && (
         <div className="dash-route-foot">

@@ -41,7 +41,7 @@
   text-wrap: balance;
 }
 .path-hero h1 > span {
-  color: #ff6b2b;
+  color: var(--cosmetic-accent);
 }
 .path-hero__description {
   margin: 24px 0 14px;
@@ -52,7 +52,7 @@
 }
 .path-hero .workspace-link {
   gap: 30px;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .path-hero .catalogue-artwork {
   min-height: 320px;
@@ -195,8 +195,8 @@
 }
 .path-module__head p {
   margin: 0 0 10px;
-  color: #ff864f;
-  font-size: 11px;
+  color: var(--cosmetic-accent-hover);
+  font-size: 12px;
 }
 .path-module__head h3 {
   margin: 0;
@@ -256,8 +256,8 @@
   font-size: 12px;
 }
 .path-module__download:hover {
-  border-color: #ff864f;
-  color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
+  color: var(--cosmetic-accent-hover);
 }
 .path-module__missions {
   list-style: none;
@@ -281,7 +281,7 @@
   background: #74767d;
 }
 .path-map-row[data-state="completed"]::before {
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 .path-map-row[data-state="locked"]::before {
   background: none;
@@ -313,10 +313,10 @@
   color: #141518;
 }
 .path-map-row[data-current="true"] .path-map-node {
-  background: #ff6b2b;
-  border-color: #ff6b2b;
+  background: var(--cosmetic-accent);
+  border-color: var(--cosmetic-accent);
   color: #141518;
-  outline: 1px solid #ff864f;
+  outline: 1px solid var(--cosmetic-accent-hover);
   outline-offset: 5px;
 }
 .path-mission {
@@ -357,7 +357,7 @@
 }
 .path-map-row[data-state="completed"] .path-mission::after,
 .path-map-row[data-current="true"] .path-mission::after {
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 .path-mission__state {
   display: flex;
@@ -366,7 +366,7 @@
   gap: 8px 16px;
   margin: 0 0 18px;
   color: #aaa79f;
-  font-size: 11px;
+  font-size: 12px;
 }
 .path-mission h4 {
   font:
@@ -393,7 +393,7 @@
   padding-top: 12px;
   border-top: 1px solid #44454a;
   font-size: 12px;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   text-decoration: none;
 }
 .path-mission__action > span {
@@ -428,7 +428,7 @@ a.path-mission:focus-visible .path-mission__action > span {
   outline-offset: -5px;
 }
 a.path-mission:hover {
-  border-color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
 }
 .path-map-row[data-state="locked"] .path-mission {
   background: #121418;
@@ -517,7 +517,7 @@ a.path-mission:hover {
 }
 .path-workspace .ablock__eyebrow {
   color: #aaa79f;
-  font-size: 11px;
+  font-size: 12px;
   margin: 0 0 18px;
 }
 .path-workspace .ablock__title {
@@ -561,7 +561,7 @@ a.path-mission:hover {
   gap: 4px !important;
 }
 .path-aside textarea:focus-visible {
-  outline: 2px solid #ff864f !important;
+  outline: 2px solid var(--cosmetic-accent-hover) !important;
   outline-offset: 3px;
 }
 .path-aside :is(p, span) {
@@ -589,10 +589,10 @@ a.path-mission:hover {
   margin-block: 32px;
 }
 .path-workspace .cp-boss.is-unlocked {
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .path-workspace .cp-boss__eyebrow {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   color: #aaa79f;
 }
@@ -600,7 +600,7 @@ a.path-mission:hover {
   display: flex;
   gap: 12px;
   align-items: center;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   margin-block: 22px;
 }
 .path-workspace .cp-boss__mark {
@@ -638,8 +638,8 @@ a.path-mission:hover {
   padding: 12px 20px;
   min-height: 44px;
   color: #141518;
-  background: #ff6b2b;
-  border: 1px solid #ff6b2b;
+  background: var(--cosmetic-accent);
+  border: 1px solid var(--cosmetic-accent);
   font:
     600 13px var(--font-interface),
     sans-serif;
@@ -647,8 +647,8 @@ a.path-mission:hover {
   cursor: pointer;
 }
 .path-workspace .cp-boss__cta:hover {
-  background: #ff864f;
-  border-color: #ff864f;
+  background: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
 }
 .path-workspace .cp-boss__cta:disabled {
   opacity: 0.6;

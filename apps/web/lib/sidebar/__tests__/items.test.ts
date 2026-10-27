@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isActiveHref, sidebarGroups, type SidebarInput } from "../items";
 
-const BASE: SidebarInput = { hasClasses: false, showRevisions: true, duelInvitations: 0 };
+const BASE: SidebarInput = { hasClasses: false, duelInvitations: 0 };
 
 function hrefs(input: SidebarInput): string[] {
   return sidebarGroups(input).flatMap((group) => group.items.map((item) => item.href));
@@ -38,14 +38,8 @@ describe("sidebarGroups", () => {
     ]);
   });
 
-  it("learns from the paths, the lessons, the revisions, the notes and the glossary", () => {
-    expect(group(BASE, "Apprendre")).toEqual([
-      "/paths",
-      "/lessons",
-      "/revisions",
-      "/notes",
-      "/glossaire",
-    ]);
+  it("learns from the paths, the lessons, the notes and the glossary", () => {
+    expect(group(BASE, "Apprendre")).toEqual(["/paths", "/lessons", "/notes", "/glossaire"]);
   });
 
   it("practises with the challenges and the duels", () => {
@@ -66,17 +60,6 @@ describe("sidebarGroups", () => {
     ]);
   });
 
-  it("leaves the revisions out once they are switched off", () => {
-    expect(hrefs(BASE)).toContain("/revisions");
-    expect(hrefs({ ...BASE, showRevisions: false })).not.toContain("/revisions");
-  });
-
-  it("opens the day's recall in its window, and counts nothing waiting", () => {
-    const revisions = item(BASE, "/revisions");
-    expect(revisions?.opens).toEqual({ query: "rappel", value: "1" });
-    expect(revisions?.count).toBeNull();
-  });
-
   it("counts the duel invitations waiting on the reader, and says what they are", () => {
     expect(item({ ...BASE, duelInvitations: 1 }, "/duels")).toMatchObject({
       count: 1,
@@ -93,7 +76,7 @@ describe("sidebarGroups", () => {
   });
 
   it("counts nothing but the duels", () => {
-    const counted = sidebarGroups({ hasClasses: true, showRevisions: true, duelInvitations: 2 })
+    const counted = sidebarGroups({ hasClasses: true, duelInvitations: 2 })
       .flatMap((g) => g.items)
       .filter((i) => i.count !== null)
       .map((i) => i.href);
@@ -119,8 +102,10 @@ describe("sidebarGroups", () => {
   });
 
   it("keeps the windows out of the list: they are reached from the navbar", () => {
+    // The day's recall included: a window over the page, not a page, its
+    // button sits in the top bar beside the bell (components/navbar.tsx).
     const listed = hrefs({ ...BASE, hasClasses: true });
-    for (const href of ["/settings", "/changelog", "/review"]) {
+    for (const href of ["/settings", "/changelog", "/review", "/revisions"]) {
       expect(listed).not.toContain(href);
     }
   });

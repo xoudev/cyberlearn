@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { resolveAvatarSrc } from "@/lib/avatar";
 import { contentReportRepository, prisma, ticketRepository } from "@cyberlearn/db";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminTopbar } from "./_components/admin-topbar";
@@ -45,25 +46,37 @@ export default async function AdminLayout({
   // not a gate, since a client navigation can render a page without it.
   const admin = await requireAdminPage();
   const [dbUser, counts] = await Promise.all([
-    prisma.user.findUnique({ where: { id: admin.id }, select: { username: true } }),
+    prisma.user.findUnique({
+      where: { id: admin.id },
+      select: { username: true, displayName: true, avatarUrl: true },
+    }),
     getSidebarCounts(),
   ]);
 
   const emailPrefix = (admin.email ?? "admin").split("@")[0] ?? "admin";
   const displayHandle = dbUser?.username ?? emailPrefix;
-  const initials = displayHandle.slice(0, 2).toUpperCase();
   const handle = `@${displayHandle}`;
+  // The name the initials come from when there is no picture to show.
+  const displayName = dbUser?.displayName.trim() ?? "";
+  const name = displayName !== "" ? displayName : displayHandle;
+  const avatarSrc = await resolveAvatarSrc(dbUser?.avatarUrl);
 
   return (
     <div className="admin-console" style={{ background: "var(--a-bg)", minHeight: "100vh" }}>
       <AdminShellClient>
-        <AdminTopbar initials={initials} handle={handle} siteUrl={env.NEXT_PUBLIC_SITE_URL} />
+        <AdminTopbar
+          avatarSrc={avatarSrc}
+          name={name}
+          handle={handle}
+          siteUrl={env.NEXT_PUBLIC_SITE_URL}
+        />
         <Toaster />
         <Suspense fallback={null}>
           <SavedNoticeToast />
         </Suspense>
         <AdminSidebar
-          initials={initials}
+          avatarSrc={avatarSrc}
+          name={name}
           handle={handle}
           email={admin.email ?? ""}
           counts={counts}

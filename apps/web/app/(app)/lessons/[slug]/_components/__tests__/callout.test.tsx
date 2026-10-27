@@ -20,7 +20,7 @@ type Edge = (typeof EDGES)[number];
 
 /** Each edge's width once the root's inline declarations apply, in order. */
 function borderWidths(markup: string): Partial<Record<Edge, string>> {
-  const style = /^<div style="([^"]*)"/u.exec(markup)?.[1] ?? "";
+  const style = /^<div[^>]*? style="([^"]*)"/u.exec(markup)?.[1] ?? "";
   const widths: Partial<Record<Edge, string>> = {};
   for (const declaration of style.split(";")) {
     const colon = declaration.indexOf(":");

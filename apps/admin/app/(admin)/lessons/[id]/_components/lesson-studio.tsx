@@ -47,8 +47,11 @@ import {
 } from "@/lib/lesson-limits";
 
 /**
- * The lesson studio: the lesson's fields down a rail, the editor and the
- * site's preview beside them, the whole width of the window.
+ * The lesson studio: the lesson's fields folded above the editor (open them
+ * to edit, a refused publish opens them on its error), then the editor and the
+ * site's preview, the whole width of the window. Fields are a disclosure and
+ * not a column: beside the editor and its preview they were a third column,
+ * and on a laptop each of the three was squeezed under 350px.
  *
  * What is typed goes to the lesson's draft after each pause (useDraftAutosave)
  * or at once on ⌘S, never to the lesson: learners keep reading what was
@@ -175,6 +178,8 @@ export function LessonStudio({
   const [hasDraft, setHasDraft] = useState(draft !== null);
   const [problems, setProblems] = useState<readonly LessonEditorProblem[] | undefined>(undefined);
   const [editingRefCode, setEditingRefCode] = useState(false);
+  // The lesson's fields, folded by default: the studio is mostly writing.
+  const [fieldsOpen, setFieldsOpen] = useState(false);
   // Remounts the cover field when its cover is replaced from outside it.
   const [coverEpoch, setCoverEpoch] = useState(0);
   // Previews of covers the page signed none for: uploaded here, or those of a
@@ -302,6 +307,10 @@ export function LessonStudio({
         return;
       }
       if (result.problems !== undefined) setProblems(result.problems);
+      // A field the publish refused is shown, not left folded away.
+      if (Object.keys(result.fieldErrors ?? {}).some((field) => field !== "contentMdx")) {
+        setFieldsOpen(true);
+      }
       dispatch({
         type: "refused",
         error: result.error,
@@ -393,6 +402,7 @@ export function LessonStudio({
     error: autosave.error,
   });
   const refCodeOpen = editingRefCode || fieldErrors.refCode !== undefined;
+  const fieldsInError = Object.keys(fieldErrors).some((field) => field !== "contentMdx");
 
   return (
     <div className="a-studio">
@@ -497,217 +507,239 @@ export function LessonStudio({
       )}
 
       <div className="a-studio-body">
-        <aside className="a-studio-rail" aria-label="Fiche de la leçon">
-          <div className="a-field">
-            <span className="a-label">Ref code</span>
-            {refCodeOpen ? (
-              <input
-                aria-label="Ref code"
-                className="a-input"
-                value={fields.refCode}
-                maxLength={LESSON_DRAFT_LIMITS.refCodeMax}
-                placeholder="CL-LSN-01001-V01"
-                onChange={(event) => {
-                  edit("refCode", event.target.value);
-                }}
-              />
-            ) : (
-              <div className="a-studio-code">
-                <span className="a-mono">{fields.refCode}</span>
-                <button
-                  type="button"
-                  className="a-btn a-btn--ghost a-btn--sm"
-                  onClick={() => {
-                    setEditingRefCode(true);
-                  }}
-                >
-                  Modifier
-                </button>
+        <details
+          className="a-disclosure a-studio-fold"
+          open={fieldsOpen}
+          onToggle={(event) => {
+            setFieldsOpen(event.currentTarget.open);
+          }}
+        >
+          <summary className="a-disclosure-head">
+            <span className="a-disclosure-title">Fiche de la leçon</span>
+            <span className="a-disclosure-meta">
+              {fields.title} · <span className="a-mono">/{fields.slug}</span>
+              {fieldsInError ? " · un champ à corriger" : ""}
+            </span>
+          </summary>
+          <div className="a-disclosure-body">
+            <div className="a-studio-fields" role="group" aria-label="Fiche de la leçon">
+              <div className="a-field a-studio-span-2">
+                <span className="a-label">Ref code</span>
+                {refCodeOpen ? (
+                  <input
+                    aria-label="Ref code"
+                    className="a-input"
+                    value={fields.refCode}
+                    maxLength={LESSON_DRAFT_LIMITS.refCodeMax}
+                    placeholder="CL-LSN-01001-V01"
+                    onChange={(event) => {
+                      edit("refCode", event.target.value);
+                    }}
+                  />
+                ) : (
+                  <div className="a-studio-code">
+                    <span className="a-mono">{fields.refCode}</span>
+                    <button
+                      type="button"
+                      className="a-btn a-btn--ghost a-btn--sm"
+                      onClick={() => {
+                        setEditingRefCode(true);
+                      }}
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                )}
+                {refCodeSuggestion !== null && refCodeSuggestion.refCode !== fields.refCode && (
+                  <span className="a-field-hint">
+                    Code proposé d&apos;après le parcours {refCodeSuggestion.pathTitle}, position{" "}
+                    {refCodeSuggestion.position} : <b>{refCodeSuggestion.refCode}</b>{" "}
+                    <button
+                      type="button"
+                      className="a-btn a-btn--ghost a-btn--sm"
+                      onClick={() => {
+                        edit("refCode", refCodeSuggestion.refCode);
+                      }}
+                    >
+                      Utiliser ce code
+                    </button>
+                  </span>
+                )}
+                {fields.refCode !== state.published.refCode && (
+                  <span className="a-field-hint">
+                    En ligne : <b>{state.published.refCode}</b> jusqu&apos;à la publication. Le
+                    fichier de la leçon et les manifestes de parcours qui citent l&apos;ancien code
+                    sont à mettre à jour dans le dépôt.
+                  </span>
+                )}
+                <FieldError message={fieldErrors.refCode} />
               </div>
-            )}
-            {refCodeSuggestion !== null && refCodeSuggestion.refCode !== fields.refCode && (
-              <span className="a-field-hint">
-                Code proposé d&apos;après le parcours {refCodeSuggestion.pathTitle}, position{" "}
-                {refCodeSuggestion.position} : <b>{refCodeSuggestion.refCode}</b>{" "}
-                <button
-                  type="button"
-                  className="a-btn a-btn--ghost a-btn--sm"
-                  onClick={() => {
-                    edit("refCode", refCodeSuggestion.refCode);
+
+              <label className="a-field a-studio-span-2">
+                <span className="a-label">Slug</span>
+                <input
+                  className="a-input"
+                  value={fields.slug}
+                  maxLength={LESSON_LIMITS.slugMax}
+                  pattern={LESSON_SLUG_PATTERN}
+                  title={LESSON_SLUG_HINT}
+                  placeholder="mon-slug"
+                  onChange={(event) => {
+                    edit("slug", event.target.value);
                   }}
-                >
-                  Utiliser ce code
-                </button>
-              </span>
-            )}
-            {fields.refCode !== state.published.refCode && (
-              <span className="a-field-hint">
-                En ligne : <b>{state.published.refCode}</b> jusqu&apos;à la publication. Le fichier
-                de la leçon et les manifestes de parcours qui citent l&apos;ancien code sont à
-                mettre à jour dans le dépôt.
-              </span>
-            )}
-            <FieldError message={fieldErrors.refCode} />
-          </div>
+                />
+                <span className="a-field-hint a-studio-url">
+                  {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
+                  <b>{fields.slug}</b>
+                </span>
+                <FieldError message={fieldErrors.slug} />
+              </label>
 
-          <label className="a-field">
-            <span className="a-label">Slug</span>
-            <input
-              className="a-input"
-              value={fields.slug}
-              maxLength={LESSON_LIMITS.slugMax}
-              pattern={LESSON_SLUG_PATTERN}
-              title={LESSON_SLUG_HINT}
-              placeholder="mon-slug"
-              onChange={(event) => {
-                edit("slug", event.target.value);
-              }}
-            />
-            <span className="a-field-hint a-studio-url">
-              {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
-              <b>{fields.slug}</b>
-            </span>
-            <FieldError message={fieldErrors.slug} />
-          </label>
+              <label className="a-field a-studio-span-full">
+                <span className="a-label">
+                  Titre{" "}
+                  <span className="a-label-optional">
+                    {LESSON_LIMITS.titleMin}–{LESSON_LIMITS.titleMax} caractères
+                  </span>
+                </span>
+                <input
+                  className="a-input"
+                  value={fields.title}
+                  maxLength={LESSON_LIMITS.titleMax}
+                  onChange={(event) => {
+                    edit("title", event.target.value);
+                  }}
+                />
+                <FieldError message={fieldErrors.title} />
+              </label>
 
-          <label className="a-field">
-            <span className="a-label">
-              Titre{" "}
-              <span className="a-label-optional">
-                {LESSON_LIMITS.titleMin}–{LESSON_LIMITS.titleMax} caractères
-              </span>
-            </span>
-            <input
-              className="a-input"
-              value={fields.title}
-              maxLength={LESSON_LIMITS.titleMax}
-              onChange={(event) => {
-                edit("title", event.target.value);
-              }}
-            />
-            <FieldError message={fieldErrors.title} />
-          </label>
+              <label className="a-field a-studio-span-full">
+                <span className="a-label">
+                  Description{" "}
+                  <span className="a-label-optional">
+                    {LESSON_LIMITS.descriptionMin}–{LESSON_LIMITS.descriptionMax} caractères
+                  </span>
+                </span>
+                <textarea
+                  className="a-textarea"
+                  rows={4}
+                  value={fields.description}
+                  maxLength={LESSON_LIMITS.descriptionMax}
+                  onChange={(event) => {
+                    edit("description", event.target.value);
+                  }}
+                />
+                <FieldError message={fieldErrors.description} />
+              </label>
 
-          <label className="a-field">
-            <span className="a-label">
-              Description{" "}
-              <span className="a-label-optional">
-                {LESSON_LIMITS.descriptionMin}–{LESSON_LIMITS.descriptionMax} caractères
-              </span>
-            </span>
-            <textarea
-              className="a-textarea"
-              rows={4}
-              value={fields.description}
-              maxLength={LESSON_LIMITS.descriptionMax}
-              onChange={(event) => {
-                edit("description", event.target.value);
-              }}
-            />
-            <FieldError message={fieldErrors.description} />
-          </label>
+              <div className="a-field">
+                <span className="a-label">Catégorie</span>
+                <Select
+                  aria-label="Catégorie"
+                  value={fields.category}
+                  options={CATEGORY_OPTIONS}
+                  onChange={(value) => {
+                    if (isCategory(value)) edit("category", value);
+                  }}
+                />
+                <FieldError message={fieldErrors.category} />
+              </div>
+              <div className="a-field">
+                <span className="a-label">Difficulté</span>
+                <Select
+                  aria-label="Difficulté"
+                  value={fields.difficulty}
+                  options={DIFFICULTY_OPTIONS}
+                  onChange={(value) => {
+                    if (isDifficulty(value)) edit("difficulty", value);
+                  }}
+                />
+                <FieldError message={fieldErrors.difficulty} />
+              </div>
 
-          <div className="a-studio-pair">
-            <div className="a-field">
-              <span className="a-label">Catégorie</span>
-              <Select
-                aria-label="Catégorie"
-                value={fields.category}
-                options={CATEGORY_OPTIONS}
-                onChange={(value) => {
-                  if (isCategory(value)) edit("category", value);
-                }}
-              />
-              <FieldError message={fieldErrors.category} />
+              <label className="a-field">
+                <span className="a-label">Durée (min)</span>
+                <input
+                  className="a-input"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={LESSON_LIMITS.minutesMax}
+                  value={fields.estimatedMinutes}
+                  onChange={(event) => {
+                    edit("estimatedMinutes", event.target.value);
+                  }}
+                />
+                <FieldError message={fieldErrors.estimatedMinutes} />
+              </label>
+              <label className="a-field">
+                <span className="a-label">Récompense XP</span>
+                <input
+                  className="a-input"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={LESSON_LIMITS.xpMax}
+                  step={10}
+                  value={fields.xpReward}
+                  onChange={(event) => {
+                    edit("xpReward", event.target.value);
+                  }}
+                />
+                <FieldError message={fieldErrors.xpReward} />
+              </label>
+
+              <div className="a-field a-studio-span-2">
+                <span className="a-label">
+                  Couverture <span className="a-label-optional">bucket privé · URL signée</span>
+                </span>
+                <CoverUploadField
+                  key={coverEpoch}
+                  initialMarker={fields.coverImageUrl === "" ? null : fields.coverImageUrl}
+                  initialPreview={
+                    coverPreviews[fields.coverImageUrl] ??
+                    knownPreviews[fields.coverImageUrl] ??
+                    null
+                  }
+                  keepPrevious
+                  onChange={(marker, coverPreview) => {
+                    if (marker !== "" && coverPreview !== null) {
+                      setKnownPreviews((known) => ({ ...known, [marker]: coverPreview }));
+                    }
+                    edit("coverImageUrl", marker);
+                  }}
+                />
+                <FieldError message={fieldErrors.coverImageUrl} />
+              </div>
+
+              <div className="a-field a-studio-span-2">
+                <span className="a-label">Statut de la leçon</span>
+                <Select
+                  aria-label="Statut de la leçon"
+                  value={lessonStatus}
+                  options={CONTENT_STATUS_OPTIONS}
+                  disabled={busy}
+                  onChange={changeStatus}
+                />
+                <span className="a-field-hint">
+                  Appliqué tout de suite, à la version en ligne : le brouillon reste un brouillon
+                  jusqu&apos;à « Publier les changements ».
+                </span>
+              </div>
             </div>
-            <div className="a-field">
-              <span className="a-label">Difficulté</span>
-              <Select
-                aria-label="Difficulté"
-                value={fields.difficulty}
-                options={DIFFICULTY_OPTIONS}
-                onChange={(value) => {
-                  if (isDifficulty(value)) edit("difficulty", value);
-                }}
-              />
-              <FieldError message={fieldErrors.difficulty} />
-            </div>
           </div>
+        </details>
 
-          <div className="a-studio-pair">
-            <label className="a-field">
-              <span className="a-label">Durée (min)</span>
-              <input
-                className="a-input"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={LESSON_LIMITS.minutesMax}
-                value={fields.estimatedMinutes}
-                onChange={(event) => {
-                  edit("estimatedMinutes", event.target.value);
-                }}
-              />
-              <FieldError message={fieldErrors.estimatedMinutes} />
-            </label>
-            <label className="a-field">
-              <span className="a-label">Récompense XP</span>
-              <input
-                className="a-input"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={LESSON_LIMITS.xpMax}
-                step={10}
-                value={fields.xpReward}
-                onChange={(event) => {
-                  edit("xpReward", event.target.value);
-                }}
-              />
-              <FieldError message={fieldErrors.xpReward} />
-            </label>
-          </div>
-
-          <div className="a-field">
-            <span className="a-label">
-              Couverture <span className="a-label-optional">bucket privé · URL signée</span>
+        <details className="a-disclosure a-studio-fold">
+          <summary className="a-disclosure-head">
+            <span className="a-disclosure-title">Versions</span>
+            <span className="a-disclosure-meta">
+              {versions.length === 0
+                ? "aucune gardée"
+                : `${String(versions.length)} gardée${versions.length > 1 ? "s" : ""} · en ligne : v${String(currentVersion)}`}
             </span>
-            <CoverUploadField
-              key={coverEpoch}
-              initialMarker={fields.coverImageUrl === "" ? null : fields.coverImageUrl}
-              initialPreview={
-                coverPreviews[fields.coverImageUrl] ?? knownPreviews[fields.coverImageUrl] ?? null
-              }
-              keepPrevious
-              onChange={(marker, coverPreview) => {
-                if (marker !== "" && coverPreview !== null) {
-                  setKnownPreviews((known) => ({ ...known, [marker]: coverPreview }));
-                }
-                edit("coverImageUrl", marker);
-              }}
-            />
-            <FieldError message={fieldErrors.coverImageUrl} />
-          </div>
-
-          <div className="a-field">
-            <span className="a-label">Statut de la leçon</span>
-            <Select
-              aria-label="Statut de la leçon"
-              value={lessonStatus}
-              options={CONTENT_STATUS_OPTIONS}
-              disabled={busy}
-              onChange={changeStatus}
-            />
-            <span className="a-field-hint">
-              Appliqué tout de suite, à la version en ligne : le brouillon reste un brouillon
-              jusqu&apos;à « Publier les changements ».
-            </span>
-          </div>
-
-          <section className="a-studio-versions" aria-labelledby="studio-versions">
-            <h2 id="studio-versions" className="a-label">
-              Versions
-            </h2>
+          </summary>
+          <div className="a-disclosure-body">
             {versions.length === 0 ? (
               <p className="a-field-hint">
                 Aucune version gardée : la première publication depuis le studio gardera aussi ce
@@ -744,8 +776,8 @@ export function LessonStudio({
                 ))}
               </ol>
             )}
-          </section>
-        </aside>
+          </div>
+        </details>
 
         <div className="a-studio-editor">
           <MdxEditorPanel

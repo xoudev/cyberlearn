@@ -7,14 +7,18 @@ import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Check, LayoutGrid, Lock, Route } from "lucide-react";
 import { equipCosmeticAction } from "../_actions/cosmetic-actions";
 import { useCosmetics } from "@/components/cosmetics-provider";
 import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
+import { AvatarView } from "@/components/avatar-view";
+import { BastionLogo } from "@/components/bastion-logo";
 import { StatTile } from "@/components/stat-tile";
-import { BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
+import { BADGE_RARITY_LABELS, BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
+import { CodeBlock } from "../../lessons/[slug]/_components/code-block";
 import "./locker.css";
 import { ProgressionHeading } from "@/components/progression-heading";
 
@@ -38,16 +42,23 @@ export interface LockerProfile {
   username: string | null;
   displayName: string;
   initial: string;
+  /** Already resolved (signed URL, built-in path, glyph marker), or null. */
+  avatarSrc: string | null;
   level: number;
   badgesCount: number;
   streakDays: number;
 }
 
+/**
+ * The four slots. HEXAGON_STYLE keeps its stored name, but the site no longer
+ * draws a hexagon: the style is the contour of the square avatar (weight,
+ * line, tint, glow), so that is what the locker calls it.
+ */
 const SLOTS: { type: CosmeticType; label: string }[] = [
-  { type: "TERMINAL_THEME", label: "Thèmes" },
-  { type: "HEXAGON_STYLE", label: "Hexagones" },
-  { type: "PROFILE_FRAME", label: "Cadres" },
   { type: "ACCENT_COLOR", label: "Accents" },
+  { type: "HEXAGON_STYLE", label: "Contours" },
+  { type: "PROFILE_FRAME", label: "Cadres" },
+  { type: "TERMINAL_THEME", label: "Terminaux" },
 ];
 
 const SLOT_ATTR: Record<CosmeticType, keyof CosmeticAttrs> = {
@@ -58,10 +69,31 @@ const SLOT_ATTR: Record<CosmeticType, keyof CosmeticAttrs> = {
 };
 
 const SLOT_LABEL: Record<CosmeticType, string> = {
-  TERMINAL_THEME: "Thème",
-  HEXAGON_STYLE: "Hexagone",
-  PROFILE_FRAME: "Cadre",
   ACCENT_COLOR: "Accent",
+  HEXAGON_STYLE: "Contour d’avatar",
+  PROFILE_FRAME: "Cadre d’avatar",
+  TERMINAL_THEME: "Thème du terminal",
+};
+
+/** Where each slot shows on the site, said under the slot's tabs. */
+const SLOT_HINT: Record<CosmeticType, string> = {
+  ACCENT_COLOR:
+    "L’accent remplace le cuivre partout : logo, page active, boutons, progression et repères.",
+  HEXAGON_STYLE: "Le contour habille ton avatar : barre latérale, barre du haut, profil et forum.",
+  PROFILE_FRAME: "Le cadre entoure ton avatar d’un second liseré, sur les mêmes surfaces.",
+  TERMINAL_THEME: "Le thème colore les blocs de code et les terminaux des leçons.",
+};
+
+/**
+ * What a slot wears when the learner never chose: the catalogue's first,
+ * level-1 cosmetic of each slot, which tokens.css draws as the default. Shown
+ * as equipped, so the card of the look on screen says so.
+ */
+const DEFAULT_CODE: Record<CosmeticType, string> = {
+  ACCENT_COLOR: "accent-turquoise",
+  HEXAGON_STYLE: "hex-solid",
+  PROFILE_FRAME: "frame-standard",
+  TERMINAL_THEME: "theme-midnight-ops",
 };
 
 function initialEquipped(items: LockerItem[]): Record<CosmeticType, string | null> {
@@ -76,105 +108,37 @@ function initialEquipped(items: LockerItem[]): Record<CosmeticType, string | nul
 }
 
 /**
- * The equipped hexagon, drawn as itself.
- *
- * It used to be a clip-path over a coloured box. A clip-path has no stroke, so
- * every style came out as the same solid shape and only the glow told them
- * apart - which at swatch size told nobody anything. As an outline, Contour is
- * hollow, Circuit and Glitch are broken lines and Prisme is thick and bright.
- *
- * The values are read from the --cosmetic-hex-* custom properties, so this
- * follows whichever hexagon is scoped above it: the loadout on the app shell,
- * or one card's own data-hex in the locker.
+ * A cosmetic shown as itself, on the surface it changes: scoped with its own
+ * data-attribute, so the swatch draws that cosmetic whatever is equipped.
  */
-function CosmeticHexagon({
-  width,
-  height,
-  glowPx,
+function Swatch({
+  type,
+  code,
+  initial,
 }: {
-  width: number;
-  height: number;
-  /** Blur radius at full glow, tuned to the size it is drawn at. */
-  glowPx: number;
+  type: CosmeticType;
+  code: string;
+  initial: string;
 }): React.ReactElement {
+  const scope: Record<string, string> = { [SLOT_ATTR[type]]: code };
   return (
-    <svg
-      viewBox="-5 -5 110 110"
-      width={width}
-      height={height}
-      aria-hidden="true"
-      style={{
-        filter: `drop-shadow(0 0 calc(var(--cosmetic-hex-glow) * ${String(glowPx)}px) color-mix(in srgb, var(--cosmetic-hex-accent, var(--cosmetic-accent)) 70%, transparent))`,
-      }}
-    >
-      <polygon
-        points="50,0 100,25 100,75 50,100 0,75 0,25"
-        style={{
-          fill: "var(--cosmetic-hex-accent, var(--cosmetic-accent))",
-          fillOpacity: "var(--cosmetic-hex-fill)",
-          stroke: "var(--cosmetic-hex-accent, var(--cosmetic-accent))",
-          strokeWidth: "var(--cosmetic-hex-stroke)",
-          strokeDasharray: "var(--cosmetic-hex-dash)",
-          strokeLinejoin: "round",
-        }}
-      />
-    </svg>
-  );
-}
-
-/** Mini preview of a single cosmetic, scoped with its own data-attribute so the
- *  swatch shows that cosmetic's look regardless of what is equipped. */
-function Swatch({ type, code }: { type: CosmeticType; code: string }): React.ReactElement {
-  const wrap: Record<string, string> = { [SLOT_ATTR[type]]: code };
-  return (
-    <div
-      className="card card--sunken"
-      {...wrap}
-      style={{
-        height: 56,
-        display: "grid",
-        placeItems: "center",
-        overflow: "hidden",
-      }}
-    >
+    <div className="locker-swatch" data-slot={type} {...scope} aria-hidden="true">
       {type === "ACCENT_COLOR" && (
-        <div
-          style={{
-            width: "70%",
-            height: 8,
-            background: "var(--cosmetic-accent)",
-            boxShadow: "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-          }}
-        />
+        <>
+          <BastionLogo size={40} className="locker-swatch__logo" />
+          <span className="locker-swatch__accent" />
+        </>
       )}
       {type === "TERMINAL_THEME" && (
-        <div
-          style={{
-            width: "78%",
-            height: 38,
-            background: "var(--cosmetic-terminal-bg)",
-            padding: 6,
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--cosmetic-terminal-fg)",
-          }}
-        >
-          $ ./run
-          <br />
-          <span style={{ opacity: 0.7 }}>ok ✓</span>
-        </div>
+        <span className="locker-swatch__terminal">
+          <span>$ ./run</span>
+          <span>ok ✓</span>
+        </span>
       )}
-      {type === "HEXAGON_STYLE" && <CosmeticHexagon width={32} height={36} glowPx={12} />}
-      {type === "PROFILE_FRAME" && (
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            border: "2px solid var(--cosmetic-frame-accent)",
-            boxShadow:
-              "0 0 14px color-mix(in srgb, var(--cosmetic-frame-accent) calc(var(--cosmetic-frame-glow) * 100%), transparent)",
-          }}
-        />
+      {(type === "HEXAGON_STYLE" || type === "PROFILE_FRAME") && (
+        <span className="cl-avatar-frame locker-swatch__avatar" style={cosmeticAvatarFilter(0.4)}>
+          <span>{initial}</span>
+        </span>
       )}
     </div>
   );
@@ -182,147 +146,184 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
 
 function Card({
   item,
+  initial,
   onEquip,
   busy,
 }: {
   item: LockerItem;
+  initial: string;
   onEquip: (i: LockerItem) => void;
   busy: boolean;
 }): React.ReactElement {
-  const rarityColor = BADGE_RARITY_VAR[toBadgeRarity(item.rarity)];
+  const rarity = toBadgeRarity(item.rarity);
+  // A custom property is a valid inline style that CSSProperties does not list.
+  const rarityStyle: React.CSSProperties & { "--rarity": string } = {
+    "--rarity": BADGE_RARITY_VAR[rarity],
+  };
   const pct =
     item.progressTotal > 0
       ? Math.min(100, Math.round((item.progressDone / item.progressTotal) * 100))
       : 0;
   return (
-    <div
-      className="locker-item"
+    <article
+      className="locker-card"
       data-equipped={item.equipped}
       data-locked={!item.unlocked}
-      style={{
-        border: `1px solid ${item.equipped ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
-        background: "rgba(5,4,26,0.5)",
-        padding: 14,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        opacity: item.unlocked ? 1 : 0.7,
-      }}
+      aria-label={item.label}
     >
-      <div style={{ position: "relative" }}>
-        <Swatch type={item.type} code={item.code} />
+      <div className="locker-card__swatch">
+        <Swatch type={item.type} code={item.code} initial={initial} />
         {!item.unlocked && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "grid",
-              placeItems: "center",
-              background: "rgba(3,2,25,0.6)",
-              color: "var(--color-text-muted)",
-              fontSize: 18,
-            }}
-            aria-hidden="true"
-          >
-            🔒
-          </div>
+          <span className="locker-card__lock" aria-hidden="true">
+            <Lock size={18} strokeWidth={1.75} />
+          </span>
         )}
       </div>
 
-      <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--color-text-primary)",
-          }}
-        >
-          {item.label}
-        </span>
-        <span
-          className="mono-label mono-label--xs"
-          style={{
-            color: rarityColor,
-          }}
-        >
-          {item.rarity}
+      <div className="locker-card__head">
+        <h3>{item.label}</h3>
+        <span className="locker-card__rarity" style={rarityStyle}>
+          {BADGE_RARITY_LABELS[rarity]}
         </span>
       </div>
+      {item.description !== null && item.description !== "" && (
+        <p className="locker-card__description">{item.description}</p>
+      )}
 
       {item.equipped ? (
-        <span
-          className="mono-label"
-          style={{
-            color: "var(--cosmetic-accent)",
-            textAlign: "center",
-            padding: "8px 0",
-            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
-          }}
-        >
-          ✓ Équipé
+        <span className="locker-card__equipped" role="status">
+          <Check size={16} strokeWidth={2.25} aria-hidden="true" />
+          Équipé
         </span>
       ) : item.unlocked ? (
         <button
-          className="mono-label"
+          className="btn btn--ghost locker-card__equip"
           type="button"
           disabled={busy}
           onClick={() => {
             onEquip(item);
           }}
-          style={{
-            fontWeight: 700,
-            color: "var(--color-text-primary)",
-            background: "var(--color-bg-elevated)",
-            border: "1px solid var(--color-border-default)",
-            padding: "8px 0",
-            cursor: busy ? "not-allowed" : "pointer",
-            opacity: busy ? 0.6 : 1,
-          }}
         >
           Équiper
         </button>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span
-            className="mono-label mono-label--xs"
-            style={{
-              color: "var(--cosmetic-accent)",
-            }}
-          >
-            À débloquer
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11.5,
-              letterSpacing: "0.02em",
-              color: "var(--color-text-secondary)",
-              lineHeight: 1.45,
-            }}
-          >
-            {item.condition}
-          </span>
+        <div className="locker-card__locked">
+          <span>À débloquer · {item.condition}</span>
           {item.progressTotal > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="locker-card__progress">
               <ProgressBar value={pct} style={{ flex: 1 }} label={item.condition} />
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "var(--color-text-muted)",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <span>
                 {item.progressDone}/{item.progressTotal}
               </span>
             </div>
           )}
         </div>
       )}
-    </div>
+    </article>
+  );
+}
+
+/**
+ * The live preview: the site's own pieces, not a drawing of them. The logo,
+ * the active page, the accent button and the progress bar read the accent;
+ * the avatar wears the contour and the frame; the lesson code block wears the
+ * terminal theme. The attributes are set on the rail, so it shows what this
+ * page has equipped even before the server has answered.
+ */
+function LivePreview({
+  attrs,
+  profile,
+  equippedLabel,
+}: {
+  attrs: Record<string, string>;
+  profile: LockerProfile;
+  equippedLabel: (type: CosmeticType) => string;
+}): React.ReactElement {
+  const name = profile.username ? `@${profile.username}` : profile.displayName;
+  return (
+    <StickyRail as="aside" {...attrs} className="locker-preview" aria-label="Aperçu sur le site">
+      <header className="locker-preview__head">
+        <span>Aperçu sur le site</span>
+        <span>En direct</span>
+      </header>
+
+      <figure className="locker-specimen">
+        <figcaption>Navigation</figcaption>
+        <div className="locker-nav">
+          <div className="locker-nav__brand">
+            <BastionLogo size={26} />
+            <b>
+              CYBERLEARN<span>.</span>
+            </b>
+          </div>
+          <span className="locker-nav__item locker-nav__item--active">
+            <LayoutGrid size={15} aria-hidden="true" />
+            Tableau de bord
+          </span>
+          <span className="locker-nav__item">
+            <Route size={15} aria-hidden="true" />
+            Parcours
+          </span>
+          <div className="locker-nav__account">
+            <span className="cl-avatar-frame locker-nav__avatar" style={cosmeticAvatarFilter(0.35)}>
+              <AvatarView src={profile.avatarSrc} name={profile.displayName} glyphSize={16} />
+            </span>
+            <span>
+              <b>{profile.displayName || name}</b>
+              <small>Niveau {profile.level}</small>
+            </span>
+          </div>
+        </div>
+      </figure>
+
+      <figure className="locker-specimen">
+        <figcaption>Leçon</figcaption>
+        <div className="locker-mission">
+          <span className="locker-mission__kicker">Prochaine mission</span>
+          <strong>Le terminal, pas à pas</strong>
+          <ProgressBar value={60} label="Progression de l’exemple" />
+          <span className="btn btn--accent btn--sm locker-mission__cta" aria-hidden="true">
+            Reprendre la leçon
+          </span>
+        </div>
+        <div className="locker-code">
+          <CodeBlock filename="~/casier.sh">
+            <code>{`$ whoami\n${name}\n$ level --show\n${String(profile.level)} ✓`}</code>
+          </CodeBlock>
+        </div>
+      </figure>
+
+      <figure className="locker-specimen">
+        <figcaption>Profil</figcaption>
+        <div className="locker-profile">
+          <span
+            className="cl-avatar-frame locker-profile__avatar"
+            style={cosmeticAvatarFilter(0.8)}
+          >
+            <AvatarView src={profile.avatarSrc} name={profile.displayName} glyphSize={36} />
+          </span>
+          <b>{name}</b>
+        </div>
+        <div className="locker-profile__stats">
+          {[
+            { label: "Niveau", value: profile.level },
+            { label: "Badges", value: profile.badgesCount },
+            { label: "Série", value: profile.streakDays },
+          ].map((s) => (
+            <StatTile key={s.label} size="sm" align="center" label={s.label} value={s.value} />
+          ))}
+        </div>
+      </figure>
+
+      <dl className="locker-preview__loadout">
+        {SLOTS.map((slot) => (
+          <div key={slot.type}>
+            <dt>{SLOT_LABEL[slot.type]}</dt>
+            <dd>{equippedLabel(slot.type)}</dd>
+          </div>
+        ))}
+      </dl>
+    </StickyRail>
   );
 }
 
@@ -336,13 +337,15 @@ export function LockerClient({
   const router = useRouter();
   const { setCosmetic } = useCosmetics();
   const [busy, start] = useTransition();
-  const [activeTab, setActiveTab] = useState<CosmeticType>("TERMINAL_THEME");
+  const [activeTab, setActiveTab] = useState<CosmeticType>("ACCENT_COLOR");
   const [equipped, setEquipped] = useState<Record<CosmeticType, string | null>>(() =>
     initialEquipped(items),
   );
 
+  const wearing = (type: CosmeticType): string => equipped[type] ?? DEFAULT_CODE[type];
+
   function equip(item: LockerItem): void {
-    if (!item.unlocked || busy || equipped[item.type] === item.code) return;
+    if (!item.unlocked || busy || wearing(item.type) === item.code) return;
     const previous = equipped[item.type];
     // Optimistic: local state drives this page's cards + preview, and setCosmetic
     // applies the equipped look to the whole app shell instantly (no reload).
@@ -360,8 +363,8 @@ export function LockerClient({
     });
   }
 
-  // Reflect local equipment in the list (so the active card shows ✓ Équipé live).
-  const liveItems = items.map((i) => ({ ...i, equipped: equipped[i.type] === i.code }));
+  // Reflect local equipment in the list (so the active card shows Équipé live).
+  const liveItems = items.map((i) => ({ ...i, equipped: wearing(i.type) === i.code }));
   const tabItems = liveItems.filter((i) => i.type === activeTab);
 
   const previewAttrs: Record<string, string> = {};
@@ -369,18 +372,15 @@ export function LockerClient({
     const code = equipped[slot.type];
     if (code) previewAttrs[SLOT_ATTR[slot.type]] = code;
   }
-  const equippedLabel = (type: CosmeticType): string => {
-    const code = equipped[type];
-    const found = items.find((i) => i.code === code);
-    return found?.label ?? "Défaut";
-  };
+  const equippedLabel = (type: CosmeticType): string =>
+    items.find((i) => i.code === wearing(type))?.label ?? "Par défaut";
 
   return (
     <div className="page-container learning-catalogue learning-workspace progression-workspace locker-workspace">
       <ProgressionHeading
         eyebrow="Progression / Ta signature personnelle"
         title="Le casier"
-        description="Tes succès débloquent de nouveaux détails. À toi de choisir ta signature."
+        description="Tes succès débloquent de nouveaux détails. À toi de choisir ta signature : elle s’applique à tout le site dès que tu l’équipes."
       />
       <div className="catalogue-ledger">
         <span>
@@ -392,7 +392,6 @@ export function LockerClient({
         <span className="catalogue-ledger__total">{SLOTS.length} emplacements à personnaliser</span>
       </div>
       <div className="casier-layout">
-        {/* Left: tabs + grid */}
         <div>
           <Tabs
             label="Emplacements du casier"
@@ -408,6 +407,7 @@ export function LockerClient({
             value={activeTab}
             onChange={setActiveTab}
           />
+          <p className="locker-slot-hint">{SLOT_HINT[activeTab]}</p>
 
           {tabItems.length === 0 && (
             <section className="locker-empty">
@@ -421,155 +421,20 @@ export function LockerClient({
               </Link>
             </section>
           )}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
-              gap: 14,
-            }}
-          >
+          <div className="locker-grid">
             {tabItems.map((item) => (
-              <Card key={item.id} item={item} onEquip={equip} busy={busy} />
+              <Card
+                key={item.id}
+                item={item}
+                initial={profile.initial}
+                onEquip={equip}
+                busy={busy}
+              />
             ))}
           </div>
         </div>
 
-        {/* Right: live preview */}
-        <StickyRail
-          as="div"
-          {...previewAttrs}
-          className="casier-preview card"
-          style={{
-            padding: 24,
-          }}
-        >
-          <div
-            className="mono-label"
-            style={{
-              color: "var(--color-text-muted)",
-              marginBottom: 16,
-              display: "flex",
-              justifyContent: "space-between",
-            }}
-          >
-            <span>Aperçu en direct</span>
-            <span style={{ color: "var(--cosmetic-accent)" }}>Ton profil</span>
-          </div>
-
-          <div style={{ display: "grid", placeItems: "center", gap: 12, marginBottom: 18 }}>
-            <span
-              style={{
-                position: "relative",
-                width: 84,
-                height: 94,
-                display: "grid",
-                placeItems: "center",
-                // layered hexagon + profile-frame aura, so equipping a frame is visible here too
-                ...cosmeticAvatarFilter(1),
-              }}
-            >
-              <span aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
-                <CosmeticHexagon width={84} height={94} glowPx={26} />
-              </span>
-              <span
-                style={{
-                  position: "relative",
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 800,
-                  fontSize: 28,
-                  color: "var(--cosmetic-accent)",
-                }}
-              >
-                {profile.initial}
-              </span>
-            </span>
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                {profile.username ? `@${profile.username}` : profile.displayName}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-            {[
-              { label: "Niveau", value: profile.level },
-              { label: "Badges", value: profile.badgesCount },
-              { label: "Série", value: profile.streakDays },
-            ].map((s) => (
-              <StatTile
-                key={s.label}
-                size="sm"
-                align="center"
-                label={s.label}
-                value={s.value}
-                style={{ flex: 1 }}
-              />
-            ))}
-          </div>
-
-          {/* Mini terminal, so the equipped terminal-theme reads at a glance */}
-          <div
-            aria-label="Aperçu des couleurs du terminal"
-            style={{
-              border: "1px solid var(--color-border-subtle)",
-              background: "var(--cosmetic-terminal-bg)",
-              color: "var(--cosmetic-terminal-fg)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              lineHeight: 1.6,
-              padding: "10px 12px",
-              marginBottom: 18,
-              overflow: "hidden",
-            }}
-          >
-            <div>
-              <span style={{ color: "var(--cosmetic-accent)" }}>$</span> whoami
-            </div>
-            <div style={{ opacity: 0.85 }}>
-              {profile.username ? `@${profile.username}` : profile.displayName}
-            </div>
-            <div>
-              <span style={{ color: "var(--cosmetic-accent)" }}>$</span> level --show{" "}
-              <span style={{ opacity: 0.6 }}>›</span> {profile.level} ✓
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {SLOTS.map((slot) => (
-              <div
-                key={slot.type}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  padding: "7px 0",
-                  borderTop: "1px solid var(--color-border-subtle)",
-                }}
-              >
-                <span
-                  style={{
-                    color: "var(--color-text-muted)",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {SLOT_LABEL[slot.type]}
-                </span>
-                <span style={{ color: "var(--color-text-secondary)" }}>
-                  {equippedLabel(slot.type)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </StickyRail>
+        <LivePreview attrs={previewAttrs} profile={profile} equippedLabel={equippedLabel} />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 # CyberLearn : direction artistique Bastion
 
-Référence du rework visuel, mise à jour le 24 octobre 2026.
+Référence du rework visuel, mise à jour le 27 octobre 2026.
 
 Cette direction associe le logo Bastion à trois matières : **carbone, craie et cuivre**. Elle donne à CyberLearn le caractère d'un espace où l'on apprend en pratiquant : des titres francs, une progression lisible, des surfaces mates et une action principale facile à repérer.
 
@@ -50,7 +50,15 @@ Les nuances de gris restent subordonnées à ces rôles. Les bordures indiquent 
 
 Les couleurs sémantiques de succès, d'erreur, de rareté et de domaine conservent leur sens. Le bleu du développement et le vert des réseaux ne deviennent pas des accents décoratifs concurrents.
 
-Les noms historiques `--color-brand-blue` et `--color-brand-turquoise` existent encore pour compatibilité ; leurs valeurs de marque sont désormais cuivre. Respecter `--cosmetic-accent` lorsqu'une surface suit la personnalisation choisie par l'apprenant. Éviter de réintroduire les anciennes valeurs violettes codées en dur dans les nouveaux composants.
+Le cuivre est l'accent par défaut, pas une couleur fixe : l'accent équipé dans le casier le remplace partout, logo compris. Une surface ne code donc jamais `#FF6B2B` en dur ; elle lit l'une des trois teintes de l'accent, déclarées ensemble pour chaque accent dans `tokens.css` :
+
+| Variable | Rôle |
+| --- | --- |
+| `--cosmetic-accent` | Le signal : action principale, page active, progression, logo |
+| `--cosmetic-accent-hover` | La teinte plus claire : survol, texte d'accent sur carbone |
+| `--cosmetic-accent-ink` | La teinte sombre, lisible sur craie (5:1 au moins) |
+
+Les noms historiques `--color-brand-blue`, `--color-brand-turquoise` et `--color-brand-hover` sont des alias de cet accent, redéclarés sur `[data-accent]` : une variable est calculée là où elle est déclarée, et un alias posé seulement sur `:root` garderait le cuivre. Le fournisseur des cosmétiques pose aussi les attributs sur `<html>`, pour que les fenêtres, menus et toasts rendus hors du cadre suivent l'accent. Les e-mails, les PDF et les images de partage, rendus hors du navigateur de l'apprenant, gardent le cuivre littéral. Éviter de réintroduire les anciennes valeurs violettes, turquoise ou bleu nuit dans les nouveaux composants.
 
 ## 3. Typographie
 
@@ -78,6 +86,7 @@ La géométrie interne du logo et des icônes conserve son sens : un cercle dess
 - Réserver l'ombre aux éléments réellement superposés, comme un panneau de recherche. Les blocs du contenu restent plats.
 - Utiliser les icônes pour nommer une fonction ou une destination, avec un tracé cohérent. Les icônes de la sidebar reprennent des traits angulaires.
 - Conserver les personnalisations équipées par l'utilisateur ; les effets cosmétiques ne définissent pas la signature visuelle par défaut.
+- Les avatars sont carrés, sans hexagone. L'image ou les initiales reposent sur carbone, jamais sur l'accent : une photo orange sur une tuile orange disparaissait. Le style de contour équipé (l'emplacement `HEXAGON_STYLE`, nommé d'après sa forme d'origine) donne au cadre son épaisseur, son trait (plein, pointillé, double) et sa teinte ; le cadre de profil ajoute un second liseré. Les règles communes sont dans `globals.css` (« Avatar frames ») ; chaque surface ne fixe que sa taille et `--avatar-scale`. Le contour par défaut n'a pas de halo.
 - Donner aux actions un libellé précis : « Reprendre la leçon », « Voir la démo », « Créer mon compte ».
 
 ## 5. Organisation des surfaces principales
@@ -94,7 +103,7 @@ Les domaines sont organisés en lignes. La méthode utilise une bande craie. Les
 
 La mission craie rassemble contexte, titre, explication, durée, XP et action principale. Le logo en grand sert de signature en arrière-plan. À droite, l'itinéraire sombre situe la leçon dans son module avec des états textuels : « En cours », « À suivre », « Validée ».
 
-Les quêtes et la série restent sous la mission. Les révisions et le bilan complètent la page avec moins de poids visuel. Les règles de sélection de leçon, de progression et de révision restent côté serveur.
+L'itinéraire montre cinq leçons au plus (`routeWindow`) : celle d'avant, la leçon en cours et les suivantes ; le reste du module est compté sur une ligne, pour que la carte garde la hauteur de la mission. Les quêtes et la série restent sous la mission. Les révisions et le bilan complètent la page avec moins de poids visuel. Les règles de sélection de leçon, de progression et de révision restent côté serveur.
 
 ### Navigation
 
@@ -119,6 +128,8 @@ Le mouvement sert l'ordre de lecture et le retour d'action. Il ne doit ni retard
 | Réponse HTTP | Feedback de 180 ms, avec espace réservé pour conserver la hauteur du panneau |
 | Dashboard | Arrivée séquencée du titre, de la mission et des étapes du module |
 | Navigation | Survol bref et ouverture du plateau de compte ; pas d'animation d'entrée de toute la sidebar à chaque changement de page |
+
+Le reste du site partage [motion.css](../../apps/web/components/motion.css) : la page entre par une montée de 10 px en 360 ms, les principales listes arrivent dans l’ordre (40 ms d’écart, huit éléments au plus), les cartes se soulèvent de 2 px au survol, un bouton s’enfonce de 1 px à l’appui et sa flèche avance, l’icône d’un lien de la sidebar se décale au survol et une barre de progression se remplit depuis son début à l’affichage. Toutes les entrées utilisent un remplissage `backwards` : une fois jouées, rien ne reste transformé.
 
 La home utilise [HomeMotion](../../apps/web/app/_components/home-motion.tsx), un petit composant client qui observe les sections. Après leur première entrée, `unobserve` empêche une nouvelle animation au scroll inverse. Les contenus déjà visibles au chargement ne sont pas dissimulés pour les rejouer.
 
@@ -217,7 +228,7 @@ Les pages partagent un titre franc et des chiffres réels, mais ne se réduisent
 
 - **Badges** : bilan sur craie, filtre par rareté et collection par groupes. Les médaillons existants et leurs couleurs de rareté restent utiles au repérage ; la surface autour devient mate, le nom gagne en présence et les conditions restent lisibles même pour un badge non obtenu.
 - **Certificats** : des documents sur craie, avec référence, date, examen et empreinte existants. Le PDF et la vérification gardent leurs destinations ; un certificat révoqué conserve son état et son motif, sans les actions du certificat valide. L’état vide explique le parcours et son examen sans dessiner un faux certificat.
-- **Casier** : une sélection de cosmétiques et un aperçu qui réagit à l’équipement. La neutralité du cadre permet de comparer les vraies couleurs et formes ; les effets propres aux cosmétiques restent visibles dans leur aperçu. Le mini-terminal est explicitement un aperçu du thème, pas une console interactive. Un emplacement vide est expliqué.
+- **Casier** : une sélection de cosmétiques et un aperçu qui réagit à l’équipement. Chaque carte montre le cosmétique sur la surface qu’il change (le logo et un aplat pour un accent, l’avatar pour un contour ou un cadre, un bloc de code pour un terminal) ; « Équipé » remplace « Équiper » à la même taille. L’aperçu « Sur le site » est fait des vrais composants : la navigation avec le logo et la page active, la mission avec sa barre de progression et son bouton, le bloc de code des leçons et l’avatar du profil. Équiper s’applique aussitôt à tout le site. Sans choix, le cosmétique par défaut de chaque emplacement est affiché comme équipé. Un emplacement vide est expliqué.
 - **Classement** : une liste de joueurs, avec rang, identité autorisée, XP et série. La position personnelle est sur craie ; le podium distingue le premier lorsqu’au moins trois joueurs sont disponibles. Global, Amis, Ligue, périodes et confidentialité conservent leurs règles. La poule de ligue se recompose sur téléphone, sans masquer les XP, le niveau ou la zone.
 
 L’arrivée du titre reste brève. Les panneaux de notation, de gestion de dossiers et d’explication apparaissent par une variation d’opacité de 180 ms, sans déplacer leurs boutons. Pas de boucle d’activité décorative. Les chargements réservent titre, bilan, contrôles et contenu ; les états vides gardent une action adaptée. La réduction des mouvements coupe animations et transitions.
@@ -272,13 +283,15 @@ Barlow Condensed sert les titres ; Space Grotesk sert les formulaires et explica
 
 Le détail d’un parcours prolonge son affiche de catalogue : titre, domaine et objectif d’un côté, logo et couverture existants de l’autre. Le plateau craie regroupe progression réelle, durée, XP des missions, certificat ou mention de classe et accès à la reprise. L’ancien itinéraire alterné est repris : missions de part et d’autre d’une ligne centrale, jalons carrés et portes de module. Le jalon de la prochaine mission est cuivre et sa carte craie ; les autres missions accessibles restent nommées « Disponible ». Les étapes terminées portent une coche et permettent la relecture, les étapes verrouillées un cadenas et le nom du prérequis. Chaque module garde son titre, son compte de leçons réellement terminées et sa fiche PDF. Quand la zone devient trop étroite, la ligne passe à gauche et les cartes dans une colonne ; l’ordre des leçons reste identique dans le document. Objectifs et avis occupent le rail de bureau, puis rejoignent le flux sur téléphone. Voir [le retour de l’itinéraire et ses contrôles](path-itinerary-review.md).
 
-Le cadre d’une leçon utilise la largeur disponible avec les mêmes marges que les autres pages : 16 px sur téléphone, 28 px à partir de 768 px, 36 px à partir de 1280 px. Titres, prose, tableaux, médias et exercices partagent son bord gauche ; les paragraphes et listes gardent une mesure de 90 caractères typographiques (`90ch`), sans recentrage séparé entre deux exercices. Tableaux et citations utilisent toute la largeur, comme l’en-tête, les exercices et la suite de leçon. Les éditeurs Monaco ont un fond carbone et une coloration lisible, avec l’accent équipé conservé sur le curseur. Les boutons Python, SQL et quiz gardent leurs comportements, avec texte lisible et cibles tactiles ; les indications lumineuses décoratives sont retirées. Voir [la correction et ses contrôles](activity-and-lesson-review.md), puis [l’élargissement et la vitrine locale](lesson-showcase-review.md).
+Le cadre d’une leçon utilise la largeur disponible avec les mêmes marges que les autres pages : 16 px sur téléphone, 28 px à partir de 768 px, 36 px à partir de 1280 px. Titres, prose, tableaux, médias et exercices partagent son bord gauche ; les paragraphes et listes, en 17 px avec un interligne de 1,75, prennent la largeur du cadre jusqu’à `--lesson-measure` (95rem, environ 140 caractères), sans recentrage séparé entre deux exercices ni bloc de prose décalé vers la droite. Tableaux et citations utilisent toute la largeur, comme l’en-tête, les exercices et la suite de leçon. Les éditeurs Monaco ont un fond carbone et une coloration lisible, avec l’accent équipé conservé sur le curseur. Les boutons Python, SQL et quiz gardent leurs comportements, avec texte lisible et cibles tactiles ; les indications lumineuses décoratives sont retirées. Voir [la correction et ses contrôles](activity-and-lesson-review.md), puis [l’élargissement et la vitrine locale](lesson-showcase-review.md).
 
 Les cadres des pages partagent `--page-gutter`, `--page-space-top` et `--page-space-bottom` dans `globals.css`. Le haut vaut respectivement 24, 28 et 32 px aux trois tailles ; le bas 80, 96 et 110 px. Les composants de chargement utilisent les mêmes conteneurs. Les styles locaux composent l’intérieur des pages sans réécrire ces marges. Les en-têtes de catalogue connectés n’ajoutent plus un second padding supérieur ; les pages de défis et de forum n’ont plus leur ancien plafond de largeur indépendant.
 
-La leçon garde la lecture au centre. Son titre condensé précède une ligne de métadonnées courtes et la barre d’outils mate. Le plan et les notes reprennent les mêmes polices et angles droits. La section active passe sur craie, les étapes à venir restent nommées et verrouillées. Les notes restent ancrées à côté du texte à partir de 1440 px, avec le comportement mobile existant en tiroir. Les sections conservent leurs exercices, quiz et conditions de progression ; les blocs de code gardent leur propre défilement horizontal.
+Son titre condensé précède une ligne de métadonnées courtes et la barre d’outils mate : une barre plate de 56 px, sans flou, avec le compteur de section en Barlow, le nom de la section, un segment par section (terminée, en cours dans l’accent, atteinte, verrouillée ; un clic ouvre une section déjà permise), « Précédente » en contour, « Suivante » ou « Terminer » sur l’accent et trois outils carrés (plan, notes, mode focus) qui passent sur craie quand ils sont ouverts. Les liens « Pour aller plus loin » sont des rangées mates : domaine, titre, description et une flèche qui avance au survol. Le plan et les notes reprennent les mêmes polices et angles droits. La section active passe sur craie, les étapes à venir restent nommées et verrouillées. Les notes restent ancrées à côté du texte à partir de 1440 px, avec le comportement mobile existant en tiroir. Les sections conservent leurs exercices, quiz et conditions de progression ; les blocs de code gardent leur propre défilement horizontal.
 
-Le bilan de fin présente les XP crédités sur craie, le score réel du quiz lorsqu’il existe, le nouveau niveau et les badges gagnés. Le décompte des XP ne rejoue pas de lueur ; il affiche immédiatement le résultat en réduction des mouvements. Le panneau suivant nomme la prochaine leçon ou le retour au parcours, avec son vrai verrou. Aucun bouton ne termine une leçon à la place de l’action finale de sa dernière section.
+Le bilan de fin présente les XP crédités sur craie, le score réel du quiz lorsqu’il existe, le nouveau niveau et les badges gagnés. Le décompte des XP ne rejoue pas de lueur ; il affiche immédiatement le résultat en réduction des mouvements. « Voir la suite » mène au panneau suivant, qui nomme la prochaine leçon ou le retour au parcours, avec son vrai verrou.
+
+Le QCM de fin de leçon pose une question à la fois : la réponse confirmée garde son verdict et son explication, « Question suivante » remplace la carte par un fondu bref, et des segments carrés (juste, faux, en cours, à venir) rouvrent une question déjà répondue. Le verdict s’affiche aussitôt, puis la réponse enregistrée par le serveur fait foi. La dernière réponse du quiz final (`findFinalQuizStep` : la dernière section qui contient un quiz, sans exercice de code après elle) valide la leçon par le même chemin que « Terminer » et ouvre le bilan ; « À retenir », qui le suit souvent, reste lisible. Les leçons sans quiz final se terminent par « Terminer », au bout de leur dernière section.
 
 Voir [les vérifications des détails d’apprentissage](learning-detail-review.md).
 

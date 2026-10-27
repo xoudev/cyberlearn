@@ -206,11 +206,10 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
         <header className="pp-hero">
           <span className="pp-hero__strip" aria-hidden="true" />
 
+          {/* Square, framed by the owner's equipped contour and frame
+              (globals.css, Avatar frames). */}
           <div className="pp-avatar" style={cosmeticAvatarFilter(0.6)}>
-            <div className="pp-avatar__ring" aria-hidden="true" />
-            <div className="pp-avatar__face">
-              <AvatarView src={avatarSrc} name={name} className="pp-avatar__img" glyphSize={44} />
-            </div>
+            <AvatarView src={avatarSrc} name={name} className="pp-avatar__img" glyphSize={44} />
           </div>
 
           <div className="pp-identity">

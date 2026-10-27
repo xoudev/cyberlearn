@@ -39,8 +39,8 @@
   text-transform: none;
 }
 .progression-workspace .tabs__tab[data-active="true"] {
-  color: #ff864f;
-  border-bottom-color: #ff864f;
+  color: var(--cosmetic-accent-hover);
+  border-bottom-color: var(--cosmetic-accent-hover);
   box-shadow: none;
 }
 .progression-workspace .tabs__count {
@@ -57,7 +57,7 @@
   background: #eae7df;
   color: #141518;
   margin-bottom: 28px;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .progression-summary__count {
   display: flex;
@@ -116,7 +116,7 @@
   margin-top: 30px;
 }
 .progression-empty > svg {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .progression-empty h2 {
   font:
@@ -138,13 +138,6 @@
   box-shadow: none !important;
   opacity: 1 !important;
   filter: none !important;
-}
-.badges-workspace .badge-card > span[aria-hidden="true"] {
-  background: #44454a !important;
-  box-shadow: none !important;
-}
-.badges-workspace .badge-card > div[aria-hidden="true"] {
-  background: none !important;
 }
 .badges-workspace .badge-card h3 {
   font:

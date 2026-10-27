@@ -17,9 +17,8 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(3, 2, 25, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* A matt veil: no blur, no tint. The frame is what floats. */
+  background: #000b;
   animation: modal-shell-fade 180ms ease;
 }
 .modal-shell--bare {
@@ -34,11 +33,11 @@
   max-height: calc(100vh - 48px);
   /* The visible height, not the one with the browser bars away (iOS Safari). */
   max-height: calc(100dvh - 48px);
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
+  background: #121418;
+  border: 1px solid var(--color-interface-outline, #74767d);
+  box-shadow: 0 12px 30px #0006;
   outline: none;
-  animation: modal-shell-rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: modal-shell-fade 160ms ease-out;
 }
 .modal-shell__head {
   flex-shrink: 0;
@@ -46,50 +45,48 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 20px 24px;
+  background: #191c22;
+  border-bottom: 1px solid var(--color-interface-separator, #303137);
 }
 .modal-shell__eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cosmetic-accent);
+  font-family: var(--font-interface, var(--font-sans));
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cosmetic-accent-hover, var(--cosmetic-accent));
 }
 .modal-shell__eyebrow + .modal-shell__title {
   margin-top: 6px;
 }
 .modal-shell__title {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--color-text-primary);
+  font-family: var(--font-display, var(--font-sans));
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.05;
+  color: #f4f2ed;
 }
 .modal-shell__meta {
   margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-interface, var(--font-sans));
+  font-size: 13px;
   line-height: 1.5;
-  color: var(--color-text-muted);
+  color: #aaa79f;
 }
 .modal-shell__close {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   background: transparent;
-  border: 1px solid var(--color-border-default);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-interface-outline, #74767d);
+  color: #c2bfb8;
   cursor: pointer;
 }
 .modal-shell__close:hover {
-  border-color: var(--color-text-muted);
-  color: var(--color-text-primary);
+  border-color: var(--cosmetic-accent-hover, var(--cosmetic-accent));
+  color: #f4f2ed;
 }
 .modal-shell__body {
   min-height: 0;
@@ -102,8 +99,8 @@
   gap: 12px;
   align-items: center;
   justify-content: flex-end;
-  padding: 16px 20px;
-  border-top: 1px solid var(--color-border-subtle);
+  padding: 20px 24px;
+  border-top: 1px solid var(--color-interface-separator, #303137);
 }
 @keyframes modal-shell-fade {
   from {
@@ -111,16 +108,6 @@
   }
   to {
     opacity: 1;
-  }
-}
-@keyframes modal-shell-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -149,8 +136,7 @@
 .side-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(3, 2, 25, 0.6);
-  backdrop-filter: blur(2px);
+  background: #000b;
   animation: modal-shell-fade 180ms ease;
 }
 .side-drawer {
@@ -160,10 +146,10 @@
   bottom: 0;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-elevated);
-  border-left: 1px solid var(--color-border-default);
-  box-shadow: -24px 0 60px rgba(3, 2, 25, 0.6);
-  animation: side-drawer-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  background: #121418;
+  border-left: 1px solid var(--color-interface-outline, #74767d);
+  box-shadow: 0 12px 30px #0006;
+  animation: modal-shell-fade 180ms ease-out;
 }
 /* Under the navbar, not over it. The navbar is a stacking context of its own
    (sticky, z-index 40, a backdrop filter), so the panels it opens - friends,
@@ -177,16 +163,6 @@
   z-index: 39;
   outline: none;
 }
-@keyframes side-drawer-in {
-  from {
-    transform: translateX(24px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .side-drawer,
   .side-drawer__backdrop {
@@ -197,38 +173,32 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 72px;
   padding: 14px 20px;
-  border-bottom: 1px solid var(--color-border-subtle);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-interface-separator, #303137);
+  font-family: var(--font-interface, var(--font-sans));
+  font-size: 13px;
+  color: #f4f2ed;
   flex-shrink: 0;
 }
+/* The old blinking marker before the title: Bastion names the panel without it. */
 .side-drawer__dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--cosmetic-accent);
-  box-shadow: 0 0 6px var(--cosmetic-accent);
+  display: none;
 }
 /* The meta, or the close button when there is none, pushed to the end. */
 .side-drawer__meta {
   margin-left: auto;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.08em;
-  text-transform: none;
+  color: #c2bfb8;
 }
 .side-drawer__close {
   margin-left: auto;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-interface-outline, #74767d);
   background: transparent;
-  color: var(--color-text-muted);
+  color: #c2bfb8;
   cursor: pointer;
   transition:
     color 150ms ease,
@@ -238,8 +208,8 @@
   margin-left: 0;
 }
 .side-drawer__close:hover {
-  color: var(--color-text-primary);
-  border-color: #3d3785;
+  color: #f4f2ed;
+  border-color: var(--cosmetic-accent-hover, var(--cosmetic-accent));
 }
 /* The content's own: no padding, a column it can fill or scroll. */
 .side-drawer__body {
@@ -254,11 +224,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px;
-  border-top: 1px solid var(--color-border-subtle);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-interface-separator, #303137);
+  font-family: var(--font-interface, var(--font-sans));
+  font-size: 13px;
+  color: #aaa79f;
   flex-shrink: 0;
 }

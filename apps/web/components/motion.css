@@ -1,0 +1,180 @@
+/* ─── Motion ────────────────────────────────────────────────────────────────
+   The site's shared movement, in one place: a page arrives, its lists come in
+   one after the other, what can be pressed answers the pointer, bars fill.
+   Rules from docs/design/direction-artistique.md §6 hold here:
+   - short (120 to 420ms), opacity and a few pixels of travel, never a loop;
+   - what the server rendered stays readable without it: every entrance uses
+     `backwards` fill, so once played (or if it never plays) nothing is left
+     transformed, and nothing hides a sticky bar or a fixed layer;
+   - a focused target does not move (hover only, never :focus);
+   - prefers-reduced-motion turns all of it off (and the workspaces already
+     cut animations under that preference). */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A page arrives: its root, the first child of <main>, rises 10px. It is a
+     new element on each navigation, so the entrance plays once per page. */
+  #contenu > :first-child {
+    animation: cl-page-in 360ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  /* Lists arrive in order: the first items of the main collections, 40ms
+     apart, the rest with the eighth. */
+  :is(
+    .lessons-catalogue__grid > *,
+    .active-card,
+    .trophy-card,
+    .dfx-card,
+    .trn-card,
+    .dl-card,
+    .tk-row,
+    .fo-list > li,
+    .forum-home-directory li,
+    .badge-card,
+    .news-entry,
+    .cls-card,
+    .pp-row,
+    .notif-row,
+    .settings-card
+  ) {
+    animation: cl-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: 280ms;
+
+    &:nth-child(1) {
+      animation-delay: 0ms;
+    }
+    &:nth-child(2) {
+      animation-delay: 40ms;
+    }
+    &:nth-child(3) {
+      animation-delay: 80ms;
+    }
+    &:nth-child(4) {
+      animation-delay: 120ms;
+    }
+    &:nth-child(5) {
+      animation-delay: 160ms;
+    }
+    &:nth-child(6) {
+      animation-delay: 200ms;
+    }
+    &:nth-child(7) {
+      animation-delay: 240ms;
+    }
+  }
+
+  /* Cards answer the pointer: a 2px lift and a firmer border. The catalogue
+     artwork's logo leans toward the reader. */
+  :is(
+    .catalogue-lesson,
+    .active-card,
+    .trophy-card,
+    .dfx-card,
+    .trn-card,
+    .dl-card,
+    .fo-topic,
+    .badge-card,
+    .cls-card,
+    .locker-card
+  ) {
+    transition:
+      transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 200ms ease,
+      background-color 200ms ease,
+      box-shadow 200ms ease;
+  }
+  @media (hover: hover) {
+    :is(
+        .catalogue-lesson,
+        .active-card,
+        .trophy-card,
+        .dfx-card,
+        .trn-card,
+        .dl-card,
+        .fo-topic,
+        .badge-card,
+        .cls-card,
+        .locker-card
+      ):hover {
+      transform: translateY(-2px);
+    }
+    .catalogue-artwork__brand svg {
+      transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    :is(a, button, article):hover .catalogue-artwork__brand svg {
+      transform: translate(4px, -4px);
+    }
+  }
+
+  /* Buttons: colours ease, a press sinks 1px, and an arrow points further. */
+  .btn {
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease,
+      transform 120ms ease;
+  }
+  .btn:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(1px);
+  }
+  :is(.btn, a) :is(.lucide-arrow-up-right, .lucide-arrow-right, .lucide-chevron-right) {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (hover: hover) {
+    :is(.btn, a):hover .lucide-arrow-up-right {
+      transform: translate(2px, -2px);
+    }
+    :is(.btn, a):hover :is(.lucide-arrow-right, .lucide-chevron-right) {
+      transform: translateX(3px);
+    }
+  }
+
+  /* The sidebar: the icon of a link steps aside under the pointer, and the
+     active page's fill eases in when it changes. */
+  .sidebar-nav-item {
+    transition:
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+  .sidebar-nav-item svg {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (hover: hover) {
+    .sidebar-nav-item:hover:not([aria-current="page"]) svg {
+      transform: translateX(3px);
+    }
+  }
+
+  /* Tabs: the selected one's colours ease instead of jumping. */
+  .tabs__tab {
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  /* Progress fills from its start the first time it is drawn; later changes
+     of value glide (the width transition the bar already has). */
+  .pbar__fill {
+    transform-origin: left center;
+    animation: cl-fill 700ms 150ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+}
+
+@keyframes cl-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes cl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes cl-fill {
+  from {
+    transform: scaleX(0);
+  }
+}

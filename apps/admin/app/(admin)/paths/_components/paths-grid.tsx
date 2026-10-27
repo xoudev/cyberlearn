@@ -9,10 +9,10 @@ import { updatePathStatusAction } from "../_actions/path-actions";
 import type { PathFolder, PathListRow } from "@/lib/services/path-list.service";
 
 const DIFF_META: Record<string, { tone: Tone; label: string }> = {
-  BEGINNER: { tone: "accent", label: "Débutant" },
+  BEGINNER: { tone: "success", label: "Débutant" },
   INTERMEDIATE: { tone: "info", label: "Intermédiaire" },
-  ADVANCED: { tone: "purple", label: "Avancé" },
-  EXPERT: { tone: "warning", label: "Expert" },
+  ADVANCED: { tone: "warning", label: "Avancé" },
+  EXPERT: { tone: "danger", label: "Expert" },
 };
 
 /** The paths of one folder, as a searchable, sortable grid. */
@@ -62,29 +62,20 @@ export function PathsGrid({
             {p.title}
           </span>
           <span className="mono" style={{ fontSize: 12, color: "var(--a-muted)" }}>
-            <span style={{ color: "var(--a-info)" }}>{p.refCode}</span> · {p.slug}
+            <span style={{ color: "var(--a-fg-2)" }}>{p.refCode}</span> · {p.slug}
             {p.origin === "first" ? (
               <span style={{ color: "var(--a-warning)" }}> · ancien catalogue</span>
             ) : null}
           </span>
         </Link>,
-        <span
-          key="c"
-          className="mono"
-          style={{
-            fontSize: 12,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--a-fg-2)",
-          }}
-        >
+        <span key="c" style={{ color: "var(--a-fg-2)" }}>
           {cat}
         </span>,
         <Tag key="d" tone={diff.tone}>
           {diff.label}
         </Tag>,
         String(p.lessons),
-        <b key="p" style={{ color: "var(--a-accent)" }}>
+        <b key="p" className="mono" style={{ color: "var(--a-fg)" }}>
           {String(p.completions)}
         </b>,
         String(p.certificates),

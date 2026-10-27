@@ -25,14 +25,20 @@
  * expressions so it can run on every keystroke without the remark/rehype
  * chain. It is what the panel has without a `preview`, and a switch away with.
  *
- * The separator between the editor and the preview moves, by pointer or by
- * arrow key, and the browser remembers where it was left (mdx-editor-layout).
- * The panel is 620px high unless told otherwise; `fill` hands it its
- * container's height, which is how the console's studio gives it the window.
+ * Side by side only where both halves keep a width worth writing in
+ * (SPLIT_MIN_PANEL_WIDTH, measured on the panel itself, so whatever sits
+ * beside it - a sidebar, a gutter - is counted). Narrower, the editor
+ * takes the whole width and a pair of tabs, « Éditeur » and « Aperçu », shows
+ * one or the other; both stay mounted, so Monaco keeps its undo history and
+ * the site's frame its page. The separator between the halves moves, by
+ * pointer or by arrow key, and the browser remembers where it was left
+ * (mdx-editor-layout). The panel is 620px high unless told otherwise; `fill`
+ * hands it its container's height, which is how the console's studio gives it
+ * the window.
  */
 
 import { ACCENT, BORDER, MONO } from "../lib/palette.js";
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useState, useEffect, useCallback, useId, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount, BeforeMount } from "@monaco-editor/react";
 import { lessonComponent } from "@cyberlearn/lib/mdx-components";
@@ -687,18 +693,18 @@ function TBtn({
         setHov(false);
       }}
       style={{
-        height: 26,
-        minWidth: 28,
-        padding: "0 7px",
+        height: 44,
+        minWidth: 44,
+        padding: "0 10px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: active || hov ? "rgba(255,255,255,0.06)" : "transparent",
+        background: active || hov ? "var(--color-bg-overlay)" : "transparent",
         border: active ? `1px solid ${BORDER}` : "1px solid transparent",
         color: active ? ACCENT : hov ? "var(--color-text-primary)" : "var(--color-text-muted)",
-        fontFamily: mono ? MONO : "inherit",
-        fontWeight: mono ? 700 : 400,
-        fontSize: 12,
+        fontFamily: mono ? MONO : "var(--font-sans, system-ui, sans-serif)",
+        fontWeight: mono ? 700 : 600,
+        fontSize: 13,
         cursor: "pointer",
         transition: "all 120ms ease",
         flexShrink: 0,
@@ -711,9 +717,22 @@ function TBtn({
 
 function Sep() {
   return (
-    <span style={{ width: 1, height: 14, background: BORDER, flexShrink: 0, margin: "0 4px" }} />
+    <span style={{ width: 1, height: 20, background: BORDER, flexShrink: 0, margin: "0 4px" }} />
   );
 }
+
+/** The language or variant beside a toolbar button: a control, so 44px like one. */
+const TOOL_SELECT: React.CSSProperties = {
+  height: 44,
+  background: "var(--color-bg-elevated)",
+  border: `1px solid ${BORDER}`,
+  color: "var(--color-text-secondary)",
+  fontFamily: MONO,
+  fontSize: 12,
+  cursor: "pointer",
+  padding: "0 6px",
+  outline: "none",
+};
 
 // ── MDX Authoring Guide ─────────────────────────────────────────────────────────
 
@@ -777,8 +796,9 @@ function GuideRow({
           }}
           style={{
             flexShrink: 0,
-            height: 20,
-            padding: "0 8px",
+            minHeight: 44,
+            minWidth: 44,
+            padding: "0 10px",
             border: `1px solid ${
               done
                 ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)"
@@ -791,11 +811,10 @@ function GuideRow({
               : hov
                 ? `color-mix(in srgb, ${accent} 7%, transparent)`
                 : "transparent",
-            color: done ? ACCENT : hov ? accent : "var(--color-text-muted)",
+            color: done ? ACCENT : hov ? accent : "var(--color-text-secondary)",
             fontFamily: MONO,
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: 700,
-            letterSpacing: "0.08em",
             cursor: "pointer",
             transition: "all 120ms ease",
           }}
@@ -806,10 +825,10 @@ function GuideRow({
       {entry.description && (
         <div
           style={{
-            fontFamily: MONO,
-            fontSize: 9,
+            fontFamily: "var(--font-sans, system-ui, sans-serif)",
+            fontSize: 12,
+            lineHeight: 1.5,
             color: "var(--color-text-muted)",
-            letterSpacing: "0.04em",
             marginTop: 2,
           }}
         >
@@ -843,7 +862,7 @@ function GuideGroupBlock({
           >
             &lt;{group.name}&gt;
           </code>
-          <span style={{ fontSize: 10.5, color: "var(--color-text-muted)" }}>{group.label}</span>
+          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{group.label}</span>
           {group.docUrl !== undefined && (
             <a
               href={group.docUrl}
@@ -852,15 +871,14 @@ function GuideGroupBlock({
               title="Sa section du guide de rédaction"
               style={{
                 marginLeft: "auto",
-                fontFamily: MONO,
-                fontSize: 9,
-                letterSpacing: "0.08em",
+                fontFamily: "var(--font-sans, system-ui, sans-serif)",
+                fontSize: 12,
+                fontWeight: 600,
                 color: accent,
                 textDecoration: "none",
-                opacity: 0.8,
               }}
             >
-              GUIDE ↗
+              Guide ↗
             </a>
           )}
         </div>
@@ -869,7 +887,7 @@ function GuideGroupBlock({
         <p
           style={{
             margin: "0 0 4px",
-            fontSize: 10.5,
+            fontSize: 12,
             lineHeight: 1.5,
             color: "var(--color-text-muted)",
           }}
@@ -908,28 +926,18 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
       >
         <div
           style={{
-            fontFamily: MONO,
-            fontSize: 9,
+            fontFamily: "var(--font-sans, system-ui, sans-serif)",
+            fontSize: 12,
             color: "var(--color-text-muted)",
-            letterSpacing: "0.12em",
             padding: "10px 16px 6px",
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 8,
+            flexWrap: "wrap",
           }}
         >
-          <span
-            style={{
-              width: 4,
-              height: 4,
-              background: ACCENT,
-              display: "inline-block",
-            }}
-          />
-          GUIDE MDX
-          <span style={{ marginLeft: "auto", color: "var(--color-border-default)" }}>
-            {componentCount} composants · clic → insérer
-          </span>
+          <b style={{ color: "var(--color-text-secondary)", fontWeight: 600 }}>Guide MDX</b>
+          <span style={{ marginLeft: "auto" }}>{componentCount} composants · clic → insérer</span>
         </div>
         <div style={{ padding: "0 16px 8px" }}>
           <input
@@ -943,13 +951,13 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
             style={{
               width: "100%",
               boxSizing: "border-box",
-              height: 26,
+              height: 44,
               background: "var(--color-bg-base)",
               border: `1px solid ${BORDER}`,
-              color: "var(--color-text-secondary)",
-              fontFamily: MONO,
-              fontSize: 10.5,
-              padding: "0 8px",
+              color: "var(--color-text-primary)",
+              fontFamily: "var(--font-sans, system-ui, sans-serif)",
+              fontSize: 13,
+              padding: "0 12px",
               outline: "none",
             }}
           />
@@ -960,9 +968,8 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
           <p
             style={{
               margin: "16px 0",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-text-muted)",
-              fontFamily: MONO,
             }}
           >
             Rien ne correspond à « {query.trim()} ».
@@ -981,10 +988,10 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
               />
               <span
                 style={{
-                  fontFamily: MONO,
-                  fontSize: 9,
+                  fontFamily: "var(--font-display, sans-serif)",
+                  fontSize: 15,
                   fontWeight: 700,
-                  letterSpacing: "0.14em",
+                  letterSpacing: "0.01em",
                   color: section.accent,
                   textTransform: "uppercase",
                 }}
@@ -1004,6 +1011,98 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── The two panes, one at a time ───────────────────────────────────────────────
+
+interface PaneIds {
+  editor: string;
+  preview: string;
+  editorTab: string;
+  previewTab: string;
+}
+
+/**
+ * « Éditeur » and « Aperçu » where the panel is too narrow for both: a tablist
+ * as WAI-ARIA describes it, the arrow keys, Home and End moving the selection
+ * and the focus together, only the selected tab in the Tab order.
+ */
+function PaneTabs({
+  ids,
+  pane,
+  secondLabel,
+  onSelect,
+}: {
+  ids: PaneIds;
+  pane: "editor" | "preview";
+  /** « Aperçu », or « Guide » while the guide is what the second pane holds. */
+  secondLabel: string;
+  onSelect: (pane: "editor" | "preview") => void;
+}): React.ReactElement {
+  const tabs = [
+    { pane: "editor", id: ids.editorTab, controls: ids.editor, label: "Éditeur" },
+    { pane: "preview", id: ids.previewTab, controls: ids.preview, label: secondLabel },
+  ] as const;
+  const choose = (next: "editor" | "preview"): void => {
+    onSelect(next);
+    document.getElementById(next === "editor" ? ids.editorTab : ids.previewTab)?.focus();
+  };
+  return (
+    <div
+      role="tablist"
+      aria-label="Éditeur ou aperçu"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        background: "var(--color-bg-elevated)",
+        borderBottom: `1px solid ${BORDER}`,
+        flexShrink: 0,
+      }}
+    >
+      {tabs.map((tab) => {
+        const selected = tab.pane === pane;
+        return (
+          <button
+            key={tab.pane}
+            type="button"
+            role="tab"
+            id={tab.id}
+            aria-selected={selected}
+            aria-controls={tab.controls}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => {
+              onSelect(tab.pane);
+            }}
+            onKeyDown={(event) => {
+              const next =
+                event.key === "ArrowLeft" || event.key === "Home"
+                  ? "editor"
+                  : event.key === "ArrowRight" || event.key === "End"
+                    ? "preview"
+                    : null;
+              if (next === null) return;
+              event.preventDefault();
+              choose(next);
+            }}
+            style={{
+              minHeight: 44,
+              padding: "0 16px",
+              border: 0,
+              borderBottom: `2px solid ${selected ? ACCENT : "transparent"}`,
+              background: "transparent",
+              color: selected ? "var(--color-text-primary)" : "var(--color-text-muted)",
+              fontFamily: "var(--font-sans, system-ui, sans-serif)",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1065,6 +1164,16 @@ export function MdxEditorPanel({
     if (problems !== undefined) setShown(problems);
   }
   const [split, setSplit] = useState(true);
+  const baseId = useId();
+  const ids = useMemo(
+    () => ({
+      editor: `${baseId}-editor`,
+      preview: `${baseId}-preview`,
+      editorTab: `${baseId}-editor-tab`,
+      previewTab: `${baseId}-preview-tab`,
+    }),
+    [baseId],
+  );
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
   const [sandboxLang, setSandboxLang] = useState<"python" | "javascript" | "c" | "asm">("python");
@@ -1087,13 +1196,36 @@ export function MdxEditorPanel({
     const stored = readStoredSplit();
     if (stored !== null) setSplitPct(stored);
   }, []);
-  // A narrow panel (a phone, a tablet upright) opens on the editor alone: the
-  // two side by side are a sliver each. Measured once, as it mounts; the SPLIT
-  // button is still there for whoever wants both.
+  // Whether the panel is wide enough for both halves: measured as it mounts,
+  // then again whenever it is resized (a window, a sidebar, a disclosure
+  // opening above it). Until it is measured (null), laid out as the server
+  // renders it: both.
+  const [wide, setWide] = useState<boolean | null>(null);
   useEffect(() => {
-    const width = gridRef.current?.getBoundingClientRect().width ?? 0;
-    if (!opensSplit(width)) setSplit(false);
+    const panel = panelRef.current;
+    if (!panel) return;
+    const measure = (): void => {
+      setWide(opensSplit(panel.getBoundingClientRect().width));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(panel);
+    return () => {
+      observer.disconnect();
+    };
   }, []);
+  // Side by side, or one pane at a time behind the tabs: on a narrow panel,
+  // or on a wide one whose author turned the split off.
+  const sideBySide = (wide ?? true) && split;
+  const [pane, setPane] = useState<"editor" | "preview">("editor");
+  const showsEditor = sideBySide || pane === "editor";
+  const showsPreview = sideBySide || pane === "preview";
+  // The preview is mounted the first time it is seen, once the panel has been
+  // measured, and kept from then on: a phone that never opens it sends
+  // nothing to the site, and switching tabs does not reload the frame.
+  const [previewMounted, setPreviewMounted] = useState(false);
+  if (wide !== null && showsPreview && !previewMounted) setPreviewMounted(true);
   const moveSplit = useCallback((next: number, keep: boolean) => {
     const clamped = clampSplit(next);
     setSplitPct(clamped);
@@ -1158,6 +1290,8 @@ export function MdxEditorPanel({
 
   const openProblem = useCallback(
     (problem: MdxProblem) => {
+      // Behind the tabs, the editor is shown first: the line is in it.
+      setPane("editor");
       if (editorMode === "code") {
         revealProblem(problem);
         return;
@@ -1257,15 +1391,15 @@ export function MdxEditorPanel({
           gap: 2,
           background: "var(--color-bg-elevated)",
           borderBottom: `1px solid ${BORDER}`,
-          height: 40,
-          padding: "0 10px",
+          minHeight: 52,
+          padding: "4px 10px",
           overflowX: "auto",
           flexShrink: 0,
         }}
       >
         {/* Blocks or code: the same lesson, two views */}
         <TBtn
-          label="BLOCS"
+          label="Blocs"
           title="Éditer par blocs : un champ pour chaque chose"
           active={editorMode === "blocks"}
           onClick={() => {
@@ -1277,17 +1411,15 @@ export function MdxEditorPanel({
               setBlocksProblem(parsed.error);
             }
           }}
-          mono
         />
         <TBtn
-          label="CODE"
+          label="Code"
           title="Éditer le MDX"
           active={editorMode === "code"}
           onClick={() => {
             setBlocksProblem(null);
             setEditorMode("code");
           }}
-          mono
         />
 
         <Sep />
@@ -1446,17 +1578,7 @@ export function MdxEditorPanel({
                 onChange={(e) => {
                   setCodeLang(e.target.value);
                 }}
-                style={{
-                  height: 22,
-                  background: "var(--color-bg-elevated)",
-                  border: `1px solid ${BORDER}`,
-                  color: "var(--color-text-muted)",
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  cursor: "pointer",
-                  padding: "0 4px",
-                  outline: "none",
-                }}
+                style={TOOL_SELECT}
               >
                 {[
                   "bash",
@@ -1508,17 +1630,7 @@ export function MdxEditorPanel({
                 onChange={(e) => {
                   setCalloutType(e.target.value as "info" | "warning" | "danger" | "success");
                 }}
-                style={{
-                  height: 22,
-                  background: "var(--color-bg-elevated)",
-                  border: `1px solid ${BORDER}`,
-                  color: "var(--color-text-muted)",
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  cursor: "pointer",
-                  padding: "0 4px",
-                  outline: "none",
-                }}
+                style={TOOL_SELECT}
               >
                 {(["info", "warning", "danger", "success"] as const).map((t) => (
                   <option key={t} value={t} style={{ background: "var(--color-bg-elevated)" }}>
@@ -1588,17 +1700,7 @@ export function MdxEditorPanel({
                 onChange={(e) => {
                   setSandboxLang(e.target.value as "python" | "javascript" | "c" | "asm");
                 }}
-                style={{
-                  height: 22,
-                  background: "var(--color-bg-elevated)",
-                  border: `1px solid ${BORDER}`,
-                  color: "var(--color-text-muted)",
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  cursor: "pointer",
-                  padding: "0 4px",
-                  outline: "none",
-                }}
+                style={TOOL_SELECT}
               >
                 {(["python", "javascript", "c", "asm"] as const).map((l) => (
                   <option key={l} value={l} style={{ background: "var(--color-bg-elevated)" }}>
@@ -1637,17 +1739,7 @@ export function MdxEditorPanel({
                 onChange={(e) => {
                   setTerminalShell(e.target.value as "bash" | "powershell");
                 }}
-                style={{
-                  height: 22,
-                  background: "var(--color-bg-elevated)",
-                  border: `1px solid ${BORDER}`,
-                  color: "var(--color-text-muted)",
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  cursor: "pointer",
-                  padding: "0 4px",
-                  outline: "none",
-                }}
+                style={TOOL_SELECT}
               >
                 {(["bash", "powershell"] as const).map((s) => (
                   <option key={s} value={s} style={{ background: "var(--color-bg-elevated)" }}>
@@ -1688,7 +1780,8 @@ export function MdxEditorPanel({
             type="button"
             onClick={() => {
               const next = !showGuide;
-              if (next && !split) setSplit(true);
+              // One pane at a time: the guide is in the second one, shown at once.
+              if (next) setPane("preview");
               setShowGuide(next);
             }}
             title={showGuide ? "Masquer le guide" : "Guide MDX · référence des composants"}
@@ -1696,15 +1789,15 @@ export function MdxEditorPanel({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 5,
-              height: 26,
-              padding: "0 9px",
+              gap: 6,
+              height: 44,
+              padding: "0 12px",
               background: showGuide ? "var(--color-bg-overlay)" : "transparent",
-              border: `1px solid ${showGuide ? "var(--color-info)" : BORDER}`,
-              color: showGuide ? "var(--color-info)" : "var(--color-text-muted)",
-              fontFamily: MONO,
-              fontSize: 9,
-              letterSpacing: "0.1em",
+              border: `1px solid ${showGuide ? ACCENT : BORDER}`,
+              color: showGuide ? ACCENT : "var(--color-text-secondary)",
+              fontFamily: "var(--font-sans, system-ui, sans-serif)",
+              fontSize: 13,
+              fontWeight: 600,
               cursor: "pointer",
               transition: "all 140ms ease",
               flexShrink: 0,
@@ -1723,58 +1816,57 @@ export function MdxEditorPanel({
               <path d="M3.5 4 C3.5 3 6.5 3 6.5 5 C6.5 6 5 6 5 7" />
               <circle cx="5" cy="8.2" r="0.5" fill="currentColor" stroke="none" />
             </svg>
-            GUIDE
+            Guide
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSplit((v) => !v);
-            }}
-            title={split ? "Vue éditeur seul" : "Vue scindée"}
-            aria-pressed={split}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              height: 26,
-              padding: "0 9px",
-              background: split
-                ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
-                : "transparent",
-              border: `1px solid ${
-                split ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : BORDER
-              }`,
-              color: split ? ACCENT : "var(--color-text-muted)",
-              fontFamily: MONO,
-              fontSize: 9,
-              letterSpacing: "0.1em",
-              cursor: "pointer",
-              transition: "all 140ms ease",
-              flexShrink: 0,
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <rect
-                x="0.5"
-                y="0.5"
-                width="5"
-                height="11"
-                rx="0.5"
-                stroke="currentColor"
-                strokeWidth={1.2}
-              />
-              <rect
-                x="6.5"
-                y="0.5"
-                width="5"
-                height="11"
-                rx="0.5"
-                stroke="currentColor"
-                strokeWidth={1.2}
-              />
-            </svg>
-            SPLIT
-          </button>
+          {/* Only where both halves fit: narrower, the tabs below take its place. */}
+          {wide !== false && (
+            <button
+              type="button"
+              onClick={() => {
+                setSplit((v) => !v);
+              }}
+              title={split ? "Vue éditeur seul" : "Vue scindée"}
+              aria-pressed={split}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                height: 44,
+                padding: "0 12px",
+                background: "transparent",
+                border: `1px solid ${split ? ACCENT : BORDER}`,
+                color: split ? ACCENT : "var(--color-text-secondary)",
+                fontFamily: "var(--font-sans, system-ui, sans-serif)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 140ms ease",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect
+                  x="0.5"
+                  y="0.5"
+                  width="5"
+                  height="11"
+                  rx="0.5"
+                  stroke="currentColor"
+                  strokeWidth={1.2}
+                />
+                <rect
+                  x="6.5"
+                  y="0.5"
+                  width="5"
+                  height="11"
+                  rx="0.5"
+                  stroke="currentColor"
+                  strokeWidth={1.2}
+                />
+              </svg>
+              Côte à côte
+            </button>
+          )}
         </div>
       </div>
 
@@ -1791,9 +1883,7 @@ export function MdxEditorPanel({
             lineHeight: 1.5,
           }}
         >
-          <b style={{ color: DANGER, fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em" }}>
-            PAS DE BLOCS ·{" "}
-          </b>
+          <b style={{ color: DANGER, fontWeight: 700 }}>Pas de blocs · </b>
           Le MDX ne se découpe pas en blocs : {blocksProblem}. Corrige-le ici, puis réessaie.
         </p>
       )}
@@ -1803,7 +1893,7 @@ export function MdxEditorPanel({
           role="region"
           aria-label="Problèmes du contenu"
           style={{
-            maxHeight: 112,
+            maxHeight: 168,
             overflowY: "auto",
             padding: "6px 14px",
             borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
@@ -1812,14 +1902,12 @@ export function MdxEditorPanel({
             lineHeight: 1.5,
           }}
         >
-          <b style={{ color: DANGER, fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em" }}>
-            À CORRIGER · {listed.length}
-          </b>
+          <b style={{ color: DANGER, fontWeight: 700 }}>À corriger · {listed.length}</b>
           <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0 }}>
             {listed.map((problem, index) => (
               <li
                 key={`${String(problem.line)}:${String(problem.column)}:${String(index)}`}
-                style={{ display: "flex", gap: 8, alignItems: "baseline" }}
+                style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}
               >
                 <button
                   type="button"
@@ -1829,12 +1917,14 @@ export function MdxEditorPanel({
                   }}
                   style={{
                     flexShrink: 0,
-                    padding: "0 6px",
+                    minHeight: 44,
+                    minWidth: 44,
+                    padding: "0 8px",
                     border: `1px solid ${BORDER}`,
                     background: "transparent",
                     color: "var(--color-text-secondary)",
                     fontFamily: MONO,
-                    fontSize: 10,
+                    fontSize: 12,
                     cursor: "pointer",
                   }}
                 >
@@ -1847,21 +1937,47 @@ export function MdxEditorPanel({
         </div>
       )}
 
+      {/* ── One pane at a time: the tabs ─────────────────────────────── */}
+      {!sideBySide && (
+        <PaneTabs
+          ids={ids}
+          pane={pane}
+          secondLabel={showGuide ? "Guide" : "Aperçu"}
+          onSelect={setPane}
+        />
+      )}
+
       {/* ── Editor + Preview ──────────────────────────────────────────── */}
       <div
         ref={gridRef}
         className="mdx-editor-panes"
-        data-split={split}
+        data-split={sideBySide}
         style={{
           display: "grid",
-          gridTemplateColumns: split ? `${String(splitPct)}% 7px minmax(0, 1fr)` : "minmax(0, 1fr)",
+          gridTemplateColumns: sideBySide
+            ? `${String(splitPct)}% 7px minmax(0, 1fr)`
+            : "minmax(0, 1fr)",
           gridTemplateRows: "minmax(0, 1fr)",
           ...(fill ? { flex: 1, minHeight: 0 } : { height, flexShrink: 0 }),
           userSelect: dragging ? "none" : undefined,
         }}
       >
-        {/* Blocks, or the Monaco editor */}
-        <div style={{ overflow: "hidden", height: "100%", minHeight: 0, minWidth: 0 }}>
+        {/* Blocks, or the Monaco editor. Hidden rather than unmounted behind
+            the tabs: Monaco keeps its history, and lays itself out again when
+            it is shown (automaticLayout). */}
+        <div
+          id={ids.editor}
+          {...(sideBySide
+            ? {}
+            : { role: "tabpanel", "aria-labelledby": ids.editorTab, tabIndex: -1 })}
+          style={{
+            display: showsEditor ? "block" : "none",
+            overflow: "hidden",
+            height: "100%",
+            minHeight: 0,
+            minWidth: 0,
+          }}
+        >
           {editorMode === "blocks" ? (
             <BlockEditor value={value} onChange={onChange} />
           ) : (
@@ -1903,7 +2019,7 @@ export function MdxEditorPanel({
         </div>
 
         {/* The separator: dragged, or moved with the arrow keys once focused */}
-        {split && (
+        {sideBySide && (
           <div
             role="separator"
             aria-orientation="vertical"
@@ -1963,9 +2079,14 @@ export function MdxEditorPanel({
 
         {/* Guide / the site's preview / the quick preview. Deaf to the pointer
             while the separator moves: the site's frame would take the drag. */}
-        {split && (
+        {previewMounted && (
           <div
+            id={ids.preview}
+            {...(sideBySide
+              ? {}
+              : { role: "tabpanel", "aria-labelledby": ids.previewTab, tabIndex: -1 })}
             style={{
+              display: showsPreview ? "block" : "none",
               height: "100%",
               minWidth: 0,
               minHeight: 0,
@@ -1994,28 +2115,20 @@ export function MdxEditorPanel({
               >
                 <div
                   style={{
-                    fontFamily: MONO,
-                    fontSize: 9,
+                    fontFamily: "var(--font-sans, system-ui, sans-serif)",
+                    fontSize: 12,
                     color: "var(--color-text-muted)",
-                    letterSpacing: "0.12em",
                     marginBottom: 16,
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 8,
+                    flexWrap: "wrap",
                   }}
                 >
-                  <span
-                    style={{
-                      width: 4,
-                      height: 4,
-                      background: ACCENT,
-                      display: "inline-block",
-                    }}
-                  />
-                  APERÇU RAPIDE
-                  <span style={{ marginLeft: "auto", color: "var(--color-border-default)" }}>
-                    approximation · 350 ms
-                  </span>
+                  <b style={{ color: "var(--color-text-secondary)", fontWeight: 600 }}>
+                    Aperçu rapide
+                  </b>
+                  <span style={{ marginLeft: "auto" }}>approximation · 350 ms</span>
                   {preview !== undefined && (
                     <PaneButton
                       title="L'aperçu du site : la leçon rendue par le site, avec ses vrais composants"
@@ -2023,7 +2136,7 @@ export function MdxEditorPanel({
                         setPreviewMode("site");
                       }}
                     >
-                      SITE
+                      Site
                     </PaneButton>
                   )}
                 </div>
@@ -2041,36 +2154,24 @@ export function MdxEditorPanel({
           display: "flex",
           alignItems: "center",
           gap: 14,
-          padding: "5px 14px",
+          padding: "6px 14px",
           background: "var(--color-bg-elevated)",
           borderTop: `1px solid ${BORDER}`,
-          fontFamily: MONO,
-          fontSize: 9.5,
-          letterSpacing: "0.08em",
+          fontFamily: "var(--font-sans, system-ui, sans-serif)",
+          fontSize: 12,
           color: "var(--color-text-muted)",
-          textTransform: "uppercase",
           flexShrink: 0,
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: 5, color: ACCENT }}>
-          <span
-            style={{
-              width: 4,
-              height: 4,
-              background: ACCENT,
-              display: "inline-block",
-            }}
-          />
-          MDX
-        </span>
-        <span>UTF-8</span>
-        <span>LF</span>
+        <span>MDX · UTF-8 · LF</span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 14 }}>
           <span>
-            <b style={{ color: "var(--color-text-secondary)" }}>{lineCount}</b> lignes
+            <b style={{ color: "var(--color-text-secondary)", fontFamily: MONO }}>{lineCount}</b>{" "}
+            lignes
           </span>
           <span>
-            <b style={{ color: "var(--color-text-secondary)" }}>{charCount}</b> car.
+            <b style={{ color: "var(--color-text-secondary)", fontFamily: MONO }}>{charCount}</b>{" "}
+            car.
           </span>
         </span>
       </div>

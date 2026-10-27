@@ -580,7 +580,7 @@ function LegalTable({ headers, rows }: { headers: string[]; rows: string[][] }):
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "rgba(10,8,38,0.4)" }}>
+            <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "#121418" }}>
               {row.map((cell, j) => (
                 <td
                   key={j}

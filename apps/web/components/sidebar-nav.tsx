@@ -10,7 +10,6 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { AvatarView } from "@/components/avatar-view";
 import { BastionLogo } from "@/components/bastion-logo";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import { useQueryDialog } from "@/hooks/use-query-dialog";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import {
   isActiveHref,
@@ -22,8 +21,6 @@ import {
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
   hasClasses: boolean;
-  /** False once someone has switched spaced repetition off in their settings. */
-  showRevisions: boolean;
   /** Duel invitations waiting on the reader's answer, counted beside « Duels ». */
   duelInvitations: number;
   level: number;
@@ -72,14 +69,6 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
         <svg {...STROKE}>
           <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5Z" />
           <path d="M8 7h8M8 11h5" />
-        </svg>
-      );
-    case "review":
-      return (
-        <svg {...STROKE}>
-          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-          <path d="M3 3v5h5" />
-          <path d="M12 7v5l3 2" />
         </svg>
       );
     case "flash":
@@ -198,45 +187,10 @@ function NavItemInside({ item }: { item: SidebarItem }): React.ReactElement {
   );
 }
 
-/**
- * An entry that opens a window over the page rather than leading to one: the
- * day's recall, under "Révisions". A button, since nothing is navigated to;
- * on a phone the drawer closes so the window is not drawn behind it.
- */
-function DialogNavItem({
-  item,
-  opens,
-  collapsed,
-  active,
-}: {
-  item: SidebarItem;
-  opens: { query: string; value: string };
-  collapsed: boolean;
-  active: boolean;
-}): React.ReactElement {
-  const dialog = useQueryDialog(opens.query);
-  const { isMobile, setOpenMobile } = useSidebar();
-  return (
-    <button
-      type="button"
-      title={collapsed ? item.label : undefined}
-      aria-current={active ? "page" : undefined}
-      className="sidebar-nav-item"
-      onClick={() => {
-        if (isMobile) setOpenMobile(false);
-        dialog.open(opens.value);
-      }}
-    >
-      <NavItemInside item={item} />
-    </button>
-  );
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function SidebarNav({
   hasClasses,
-  showRevisions,
   duelInvitations,
   level,
   rankName,
@@ -261,7 +215,7 @@ export function SidebarNav({
     void handleSignOut();
   };
 
-  const groups = sidebarGroups({ hasClasses, showRevisions, duelInvitations });
+  const groups = sidebarGroups({ hasClasses, duelInvitations });
   const accountIdentity = (
     <>
       <span className="sidebar-avatar-frame" style={cosmeticAvatarFilter(0.35)}>
@@ -326,17 +280,6 @@ export function SidebarNav({
             )}
             {group.items.map((item) => {
               const active = isActiveHref(pathname, item.href);
-              if (item.opens !== undefined) {
-                return (
-                  <DialogNavItem
-                    key={item.href}
-                    item={item}
-                    opens={item.opens}
-                    collapsed={collapsed}
-                    active={active}
-                  />
-                );
-              }
               return (
                 <Link
                   key={item.href}

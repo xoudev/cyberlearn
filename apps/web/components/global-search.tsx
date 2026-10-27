@@ -18,14 +18,16 @@ import { flatten } from "@/lib/search/results";
  * Ctrl+K) from anywhere, arrows to walk the list, ↵ to open, esc to dismiss.
  */
 
+/** The domain's own colour, for its meaning: never the accent. */
 const CAT_COLORS: Record<string, string> = {
   CYBERSEC: "var(--color-category-cybersec)",
-  DEV: "var(--color-rarity-rare)",
-  NETWORK: "var(--color-brand-turquoise)",
+  DEV: "var(--color-category-dev)",
+  NETWORK: "var(--color-category-network)",
 };
 
 const KIND_MARK: Record<SearchKind, string> = {
-  path: "M2 4 L7 1 L12 4 L12 10 L7 13 L2 10 Z",
+  // A flag, the destination: the hexagon it used to be was the old art direction.
+  path: "M3 13V2h8l-2 3 2 3H3",
   lesson: "M3 2h7l3 3v9H3z",
   note: "M3 2h9v12H3zM5 5h5M5 8h5M5 11h3",
 };
@@ -204,12 +206,12 @@ export function GlobalSearch(): React.ReactElement {
           width: "100%",
           height: 40,
           padding: "0 60px 0 36px",
-          background: "var(--color-bg-elevated)",
-          border: "1px solid var(--color-border-default)",
+          background: "#121418",
+          border: "1px solid #303137",
           borderRadius: 0,
-          color: "var(--color-text-primary)",
-          fontFamily: "var(--font-sans)",
-          fontSize: 12,
+          color: "#f4f2ed",
+          fontFamily: "var(--font-interface)",
+          fontSize: 13,
           outline: "none",
         }}
         aria-label="Rechercher"
@@ -230,9 +232,9 @@ export function GlobalSearch(): React.ReactElement {
           top: 20,
           transform: "translateY(-50%)",
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          color: "var(--color-text-secondary)",
-          border: "1px solid var(--color-border-default)",
+          fontSize: 12,
+          color: "#aaa79f",
+          border: "1px solid #303137",
           padding: "1px 5px",
           borderRadius: 0,
           pointerEvents: "none",

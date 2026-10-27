@@ -27,7 +27,7 @@ export function UsersKpis({
       <KpiCard
         label={USER_KPI_LABELS[2]}
         value={counts.activeWeek.toLocaleString("fr-FR")}
-        tone="accent"
+        tone="success"
       />
       <KpiCard
         label={USER_KPI_LABELS[3]}
@@ -36,7 +36,7 @@ export function UsersKpis({
             ? `${String(Math.round((counts.activeWeek / counts.total) * 100))}%`
             : "n.d."
         }
-        tone="purple"
+        tone="success"
       />
     </div>
   );

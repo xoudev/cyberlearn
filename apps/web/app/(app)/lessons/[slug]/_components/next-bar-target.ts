@@ -24,6 +24,13 @@ export interface NextBarTarget {
   hint: string | null;
 }
 
+/**
+ * The bar's id: the recap of a finished lesson (lesson-complete-modal.tsx)
+ * goes on to it, focus and all. Here rather than in either component, so the
+ * server's bar and the client's recap read the same string.
+ */
+export const LESSON_NEXT_ID = "lesson-next";
+
 /** What the bar says while the next lesson waits for this one. */
 export const NEXT_LOCKED_HINT = "Termine cette leçon pour ouvrir la suivante.";
 

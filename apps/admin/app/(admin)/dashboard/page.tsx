@@ -18,11 +18,11 @@ import {
   CardLink,
   GhostLink,
   KpiCard,
-  Monogram,
   PageHeader,
   PrimaryLink,
   Tag,
   toneColor,
+  UserAvatar,
   type CssWithVars,
   type Tone,
 } from "../_components/admin-ui";
@@ -34,6 +34,7 @@ import {
 } from "./_components/dashboard-head";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Aperçu" };
 
@@ -52,9 +53,9 @@ function weeklySeries(dates: Date[], now: number): number[] {
 }
 
 const ACTION_TONE: Record<string, Tone> = {
-  create: "accent",
-  import: "accent",
-  publish: "accent",
+  create: "success",
+  import: "success",
+  publish: "success",
   update: "warning",
   delete: "danger",
   revoke: "danger",
@@ -147,12 +148,23 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       where: WITHOUT_CRON_RUNS,
       take: 8,
       orderBy: { createdAt: "desc" },
-      include: { actor: { select: { username: true, displayName: true, email: true } } },
+      include: {
+        actor: { select: { username: true, displayName: true, email: true, avatarUrl: true } },
+      },
     }),
     prisma.user.findMany({
       take: 6,
       orderBy: { createdAt: "desc" },
-      select: { id: true, username: true, email: true, role: true, level: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        avatarUrl: true,
+        role: true,
+        level: true,
+        createdAt: true,
+      },
     }),
     // Never fatal: it returns a state rather than throwing, so a Sentry
     // outage cannot take the console's dashboard with it.
@@ -162,6 +174,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   const statusCount = (status: string): number =>
     lessonsByStatus.find((s) => s.status === status)?._count._all ?? 0;
   const lessonTotal = lessonsByStatus.reduce((sum, s) => sum + s._count._all, 0);
+  const [recentAvatars, actorAvatars] = await Promise.all([
+    resolveAvatarSrcs(recentUsers.map((u) => u.avatarUrl)),
+    resolveAvatarSrcs(recentLogs.map((log) => log.actor?.avatarUrl)),
+  ]);
 
   return (
     <main className="a-page">
@@ -230,7 +246,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
               <b>+{certThisWeek}</b> cette semaine
             </>
           }
-          tone="purple"
+          tone="info"
         />
         <KpiCard
           label={DASHBOARD_KPI_LABELS[3]}
@@ -275,9 +291,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         title={DASHBOARD_CARDS.errors}
         action={
           sentry.state === "ok" && sentry.issues.length > 0 ? (
-            <span
-              style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--a-danger)" }}
-            >
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-danger)" }}>
               {sentry.issues.length} non résolue{sentry.issues.length > 1 ? "s" : ""}
             </span>
           ) : undefined
@@ -297,8 +311,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                 margin: 0,
                 padding: "40px 18px",
                 textAlign: "center",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11.5,
+                fontSize: 13,
                 color: "var(--a-muted)",
               }}
             >
@@ -306,7 +319,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             </p>
           ) : (
             <div className="a-feed">
-              {recentLogs.map((log) => {
+              {recentLogs.map((log, index) => {
                 // Named as /audit names it: an erased account is "compte
                 // supprimé", not "@system", and a job that ran alone "système".
                 const actor = log.actor?.username ? `@${log.actor.username}` : auditActorName(log);
@@ -321,12 +334,23 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       <span className="a-feed-line" />
                     </span>
                     <div className="a-feed-body">
-                      <b style={{ color: "var(--a-fg)" }}>{actor}</b>{" "}
+                      <span className="a-person" style={{ verticalAlign: "middle" }}>
+                        <UserAvatar
+                          src={actorAvatars[index] ?? null}
+                          name={
+                            log.actor !== null && log.actor.displayName !== ""
+                              ? log.actor.displayName
+                              : actor
+                          }
+                          size={22}
+                        />
+                        <b style={{ color: "var(--a-fg)" }}>{actor}</b>
+                      </span>{" "}
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5 }}>
                         {log.action}
                       </span>
                       <div className="a-feed-meta">
-                        <span style={{ color: "var(--a-accent)" }}>{log.targetType}</span>
+                        <span style={{ color: "var(--a-fg-2)" }}>{log.targetType}</span>
                         {log.targetId ? ` · ${log.targetId.slice(0, 8)}` : null}
                       </div>
                     </div>
@@ -355,23 +379,28 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentUsers.map((u) => {
+                  {recentUsers.map((u, index) => {
                     const uname = u.username ?? u.email.split("@")[0] ?? "anon";
                     return (
                       <tr key={u.id}>
                         <td>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-                            <Monogram text={uname} size={22} tone={roleTone(u.role)} />
-                            <span className="mono">@{uname}</span>
-                          </span>
+                          <Link href={`/users/${u.id}`} className="a-row-link">
+                            <UserAvatar
+                              src={recentAvatars[index] ?? null}
+                              name={u.displayName || uname}
+                              size={28}
+                              tone={roleTone(u.role)}
+                            />
+                            <span className="a-row-link-title a-mono">@{uname}</span>
+                          </Link>
                         </td>
                         <td>
                           <Tag tone={roleTone(u.role)}>{roleLabel(u.role)}</Tag>
                         </td>
                         <td className="num">
-                          <span style={{ color: "var(--a-muted)" }}>LVL·</span>
-                          <b style={{ color: "var(--a-accent)" }}>
-                            {String(u.level).padStart(2, "0")}
+                          <span style={{ color: "var(--a-muted)" }}>Niv. </span>
+                          <b className="a-mono" style={{ color: "var(--a-fg)" }}>
+                            {String(u.level)}
                           </b>
                         </td>
                         <td className="num" style={{ color: "var(--a-muted)" }}>
@@ -399,7 +428,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   {
                     label: "Publiées",
                     value: statusCount("PUBLISHED"),
-                    tone: "accent",
+                    tone: "success",
                     href: "/lessons?status=PUBLISHED",
                   },
                   {
@@ -423,11 +452,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10.5,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--a-muted)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: "var(--a-fg-2)",
                     }}
                   >
                     <span>{row.label}</span>
@@ -449,8 +477,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   justifyContent: "space-between",
                   paddingTop: 4,
                   borderTop: "1px solid var(--a-border)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10.5,
+                  fontSize: 12.5,
                   color: "var(--a-muted)",
                 }}
               >

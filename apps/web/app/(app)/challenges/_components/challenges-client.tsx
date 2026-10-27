@@ -156,7 +156,7 @@ function Peek({ item }: { item: ChallengeItem }): React.JSX.Element {
     );
   }
   if (hasListing(item)) return <Listing item={item} />;
-  return <p className="dfx-card__file">{item.supplied}</p>;
+  return <p className="dfx-card__supplied">{item.supplied}</p>;
 }
 
 // ── The week's challenge ──────────────────────────────────────────────────────
@@ -171,13 +171,13 @@ function WeekAction({ item }: { item: ChallengeItem }): React.JSX.Element {
       );
     case "IN_PROGRESS":
       return (
-        <Link href={href(item.slug)} className="btn btn--danger btn--lg">
+        <Link href={href(item.slug)} className="btn btn--lg">
           Reprendre le défi <span aria-hidden="true">→</span>
         </Link>
       );
     case "LOCKED":
       return item.prerequisiteSlug !== null && item.lockedByTitle !== null ? (
-        <Link href={href(item.prerequisiteSlug)} className="btn btn--danger btn--ghost btn--lg">
+        <Link href={href(item.prerequisiteSlug)} className="btn btn--ghost btn--lg">
           Termine d&apos;abord « {item.lockedByTitle} » <span aria-hidden="true">→</span>
         </Link>
       ) : (
@@ -187,7 +187,7 @@ function WeekAction({ item }: { item: ChallengeItem }): React.JSX.Element {
       );
     case "AVAILABLE":
       return (
-        <Link href={href(item.slug)} className="btn btn--danger btn--lg">
+        <Link href={href(item.slug)} className="btn btn--lg">
           Relever le défi <span aria-hidden="true">→</span>
         </Link>
       );

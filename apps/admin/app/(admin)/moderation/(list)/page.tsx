@@ -8,13 +8,22 @@ import {
   noteReportRepository,
 } from "@cyberlearn/db";
 import { banRefusal } from "@/lib/account-guards";
-import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../../_components/admin-ui";
+import {
+  Card,
+  EmptyState,
+  GhostLink,
+  KpiCard,
+  PageHeader,
+  Tag,
+  UserAvatar,
+} from "../../_components/admin-ui";
 import { MODERATION_HEADER, MODERATION_KPI_LABELS } from "../_components/moderation-head";
 import { ReviewButtons } from "../_components/review-buttons";
 import { ReviewOutcomes } from "../_components/review-outcomes";
 import { SURFACE_LABEL } from "../surface-labels";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 import { consoleDateFormat } from "@/lib/console-time";
 
 export const metadata: Metadata = { title: "Modération" };
@@ -78,6 +87,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
   const overturned = counts.OVERTURNED ?? 0;
   const upheld = counts.UPHELD ?? 0;
   const judged = overturned + upheld;
+  const pendingAvatars = await resolveAvatarSrcs(pending.map((event) => event.user?.avatarUrl));
 
   return (
     <main className="a-page">
@@ -106,7 +116,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
           value={String(counts.PENDING ?? 0)}
           tone="warning"
         />
-        <KpiCard label={MODERATION_KPI_LABELS[1]} value={String(upheld)} tone="accent" />
+        <KpiCard label={MODERATION_KPI_LABELS[1]} value={String(upheld)} tone="success" />
         <KpiCard label={MODERATION_KPI_LABELS[2]} value={String(overturned)} tone="danger" />
         <KpiCard
           label={MODERATION_KPI_LABELS[3]}
@@ -127,7 +137,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
             />
           ) : (
             <div className="a-mod-queue">
-              {pending.map((event) => {
+              {pending.map((event, index) => {
                 const findings = readFindings(event.findings);
                 const surface = SURFACE_LABEL[event.surface] ?? event.surface;
                 const author = event.user;
@@ -141,17 +151,20 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                       <Tag tone={event.verdict === "BLOCK" ? "danger" : "warning"}>
                         {event.verdict === "BLOCK" ? "Refusé" : "Signalé"}
                       </Tag>
-                      <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
-                        {surface}
-                      </span>
-                      <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
+                      <span style={{ fontSize: 12, color: "var(--a-muted)" }}>{surface}</span>
+                      <span className="a-person" style={{ fontSize: 12, color: "var(--a-muted)" }}>
                         {/* The account, one click away: a repeat author is
                             dealt with from there, its bans and history in
                             view. */}
+                        <UserAvatar
+                          src={pendingAvatars[index] ?? null}
+                          name={author?.displayName ?? "?"}
+                          size={24}
+                        />
                         {author === null ? (
                           authorName
                         ) : (
-                          <Link href={`/users/${author.id}`} style={{ color: "var(--a-accent)" }}>
+                          <Link href={`/users/${author.id}`} style={{ color: "var(--a-fg)" }}>
                             {authorName}
                           </Link>
                         )}

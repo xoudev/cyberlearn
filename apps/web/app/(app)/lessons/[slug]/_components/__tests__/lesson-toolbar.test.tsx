@@ -80,10 +80,51 @@ describe("where the reader is", () => {
     expect(document.querySelector(".lesson-toolbar__count")?.textContent).toBe("Section 03/04");
   });
 
-  it("fills its bar as far as the section on screen", () => {
-    toolbar({ currentStep: 1 });
-    const fill = document.querySelector<HTMLElement>(".lesson-toolbar__bar > span");
-    expect(fill?.style.width).toBe("50%");
+  it("draws a segment per section: read, on screen, still to read", () => {
+    toolbar({ currentStep: 1, doneSteps: new Set([0]) });
+    const segments = Array.from(
+      document.querySelectorAll<HTMLElement>(".lesson-toolbar__segments > *"),
+    );
+    expect(segments.map((segment) => segment.dataset.state)).toEqual([
+      "done",
+      "current",
+      "ahead",
+      "ahead",
+    ]);
+  });
+
+  it("opens a section read before from its segment, and no section still shut", () => {
+    toolbar({ currentStep: 1, doneSteps: new Set([0]) });
+    const segments = Array.from(
+      document.querySelectorAll<HTMLElement>(".lesson-toolbar__segments > *"),
+    );
+    // A button where canOpenSection says so; the section on screen and the
+    // ones ahead are drawn, not pressed.
+    expect(segments.map((segment) => segment.tagName)).toEqual(["BUTTON", "SPAN", "SPAN", "SPAN"]);
+    fireEvent.click(segments[0] ?? document.body);
+    expect(onJump).toHaveBeenCalledWith(0);
+  });
+
+  it("opens a section reached before, after going back from it", () => {
+    toolbar({ currentStep: 0, doneSteps: new Set([0]), furthestStep: 2 });
+    const segments = Array.from(
+      document.querySelectorAll<HTMLElement>(".lesson-toolbar__segments > *"),
+    );
+    expect(segments.map((segment) => segment.tagName)).toEqual([
+      "SPAN",
+      "BUTTON",
+      "BUTTON",
+      "SPAN",
+    ]);
+  });
+
+  it("keeps its segments to the pointer: the plan says the same to everyone", () => {
+    toolbar({ currentStep: 2, doneSteps: new Set([0, 1]) });
+    const track = document.querySelector<HTMLElement>(".lesson-toolbar__segments");
+    expect(track?.getAttribute("aria-hidden")).toBe("true");
+    for (const segment of Array.from(track?.querySelectorAll("button") ?? [])) {
+      expect(segment.tabIndex).toBe(-1);
+    }
   });
 
   it("names the section on screen", () => {
@@ -98,12 +139,11 @@ describe("where the reader is", () => {
     expect(bar?.style.height).toBe(`${String(LESSON_TOOLBAR_HEIGHT)}px`);
   });
 
-  it("gives a touch screen 44px buttons, which the bar holds as it is", () => {
+  it("gives its buttons 44px at every width, which the bar holds as it is", () => {
     const css = readFileSync(path.resolve(__dirname, "../../../../../globals.css"), "utf8");
-    const rule =
-      /@media \(pointer: coarse\) \{\s*\.lesson-toolbar \.btn \{\s*height: (\d+)px;\s*min-width: (\d+)px;/.exec(
-        css,
-      );
+    const rule = /\n\.lesson-toolbar__btn \{[^}]*?\sheight: (\d+)px;\s*min-width: (\d+)px;/.exec(
+      css,
+    );
     expect(rule).not.toBeNull();
     const [height, minWidth] = [Number(rule?.[1]), Number(rule?.[2])];
     expect(height).toBeGreaterThanOrEqual(44);
@@ -152,7 +192,12 @@ describe("the steps either side", () => {
 
   it("does not finish twice while the lesson is being saved", () => {
     toolbar({ currentStep: 3, isPending: true });
-    expect(button("Terminer la leçon").disabled).toBe(true);
+    const finish = button("Terminer la leçon");
+    expect(finish.disabled).toBe(true);
+    // Square and still with reduced motion (globals.css), not a spinning ring.
+    expect(finish.querySelector(".lesson-toolbar__busy")).not.toBeNull();
+    expect(finish.querySelector(".animate-spin")).toBeNull();
+    expect(finish.textContent).toContain("Validation…");
   });
 
   it("has nothing to finish in an administrator's preview", () => {
@@ -175,11 +220,12 @@ describe("the plan", () => {
     const plan = openPlan();
     const items = within(plan).getAllByRole<HTMLButtonElement>("button", { name: /^\d\d/ });
     expect(items.map((item) => item.textContent)).toEqual([
-      "01Introduction✓",
-      "02Les ports~",
-      "03Les pare-feu-",
-      "04Bilan-",
+      "01Introduction, terminée",
+      "02Les ports, en cours",
+      "03Les pare-feu, à venir",
+      "04Bilan, à venir",
     ]);
+    expect(items.map((item) => item.dataset.state)).toEqual(["done", "current", "ahead", "ahead"]);
     expect(items.map((item) => item.disabled)).toEqual([false, false, true, true]);
     expect(items[1]?.getAttribute("aria-current")).toBe("step");
     expect(within(plan).getByText("Glossaire de la leçon")).toBeTruthy();

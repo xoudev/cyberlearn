@@ -106,7 +106,7 @@ export default async function TournamentFlagsPage({
             </span>
           </span>
         ) : (
-          <Tag key="s" tone="accent">
+          <Tag key="s" tone="success">
             Compte
           </Tag>
         ),

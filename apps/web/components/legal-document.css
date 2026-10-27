@@ -15,7 +15,7 @@
   border-radius: 0 !important;
 }
 .legal-page a:focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 4px;
 }
 .legal-layout {
@@ -65,7 +65,7 @@
   --color-text-primary: #141518;
   --color-text-secondary: #55524d;
   --color-text-muted: #55524d;
-  --color-info: #923200;
+  --color-info: var(--cosmetic-accent-ink);
   --color-border-subtle: #bdbab3;
   min-width: 0;
   padding: 40px;
@@ -110,12 +110,12 @@
   font-size: 15px !important;
 }
 .legal-document a {
-  color: #923200 !important;
+  color: var(--cosmetic-accent-ink) !important;
   text-decoration: underline !important;
   text-underline-offset: 4px;
 }
 .legal-document :is(a, [tabindex]):focus-visible {
-  outline: 2px solid #923200;
+  outline: 2px solid var(--cosmetic-accent-ink);
   outline-offset: 4px;
 }
 .legal-document table {
@@ -173,4 +173,24 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Signed in, the legal texts are pages of the app (legal-document-layout.tsx):
+   the shell draws the bar, 56px high, and the footer, and its pages keep the
+   app's margins. */
+.legal-page--member {
+  flex: 1;
+  min-height: 0;
+}
+.legal-page--member .legal-layout {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--page-space-top, 32px) var(--page-gutter, 36px) var(--page-space-bottom, 48px);
+}
+.legal-page--member .legal-navigation {
+  top: 80px;
+}
+.legal-page--member .legal-document section {
+  scroll-margin-top: 80px;
 }

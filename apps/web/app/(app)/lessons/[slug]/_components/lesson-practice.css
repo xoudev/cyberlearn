@@ -48,13 +48,13 @@
   gap: 10px;
   padding: 12px 20px;
   border: 0;
-  background: #ff6b2b;
+  background: var(--cosmetic-accent);
   color: #141518;
   font-weight: 600;
   cursor: pointer;
 }
 .lesson-run-button:hover:not(:disabled) {
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 .lesson-run-button:disabled {
   background: #44454a;
@@ -63,7 +63,7 @@
 }
 .lesson-practice button:focus-visible,
 .lesson-practice textarea:focus-visible {
-  outline: 2px solid #ff864f !important;
+  outline: 2px solid var(--cosmetic-accent-hover) !important;
   outline-offset: -3px;
 }
 @media (max-width: 600px) {

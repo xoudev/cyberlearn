@@ -74,7 +74,6 @@ export function SplashScreen({ nonce }: { nonce?: string }): React.ReactElement 
 
       <div aria-hidden="true" data-splash="true">
         <div className="cl-splash-mark">
-          <span className="cl-splash-ring" />
           <BastionLogo size={64} />
         </div>
 

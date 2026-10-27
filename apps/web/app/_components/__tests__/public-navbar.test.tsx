@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 /**
  * The public navbar is the only way to sign in from the landing, the
- * catalogue, the glossary and /download. It hid "Connexion" under 480px, so a
+ * catalogue, the glossary and the legal pages. It hid "Connexion" under 480px, so a
  * learner whose session had expired, on a phone, had no way to sign in short of
  * "Commencer" and the small link at the end of the sign-up form.
  */
@@ -55,7 +55,15 @@ describe("PublicNavbar", () => {
     expect(renderToStaticMarkup(<PublicNavbar />)).toContain("home-wordmark");
   });
 
-  it("keeps the app link a finger's height", () => {
+  it("keeps the secondary links a finger's height", () => {
     expect(declarationsOf(".home-nav-links a").join(" ")).toMatch(/min-height:\s*44px/u);
+  });
+
+  it("no longer promotes the mobile app", () => {
+    // Taken off the site on 27 October 2026; /download redirects to the home page.
+    const html = renderToStaticMarkup(<PublicNavbar />);
+    expect(html).not.toContain('href="/download"');
+    expect(html).not.toContain("application");
+    expect(html).toMatch(/<a[^>]*href="\/catalogue"[^>]*>Les parcours<\/a>/u);
   });
 });

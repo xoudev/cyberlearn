@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { InfoTip } from "@/components/info-tip";
 import { SaveBar, Switch, ToggleRow } from "../../_components/SettingsControls";
 import { SettingsCard } from "../../_components/SettingsPrimitives";
-import { EASE, MONO, S, SANS } from "../../_components/tokens";
+import { EASE, S, SANS } from "../../_components/tokens";
 import { updatePrivacyAction } from "../_actions/update-privacy";
 
 type Visibility = "HIDDEN" | "ANONYMOUS" | "PUBLIC";
@@ -39,7 +39,7 @@ function VisibilityDetail(): React.JSX.Element {
         color: S.fg2,
       }}
     >
-      <span aria-hidden="true" style={{ position: "absolute", left: 0, color: S.turq }}>
+      <span aria-hidden="true" style={{ position: "absolute", left: 0, color: S.accentText }}>
         ›
       </span>
       <strong style={{ color: S.fg, fontWeight: 600 }}>{term}</strong> - {body}
@@ -150,22 +150,18 @@ export function PrivacyForm({
                 onClick={() => {
                   setVisibility(o.id);
                 }}
+                // The choice passes on chalk; the others stay on carbon.
                 style={{
                   position: "relative",
                   textAlign: "left",
-                  background: selected
-                    ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
-                    : S.base,
-                  border: `1px solid ${selected ? S.turq : o.recommended ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : S.border}`,
-                  boxShadow: selected
-                    ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 24px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
-                    : "none",
+                  background: selected ? S.chalk : S.base,
+                  border: `1px solid ${selected ? S.chalk : S.borderStrong}`,
                   padding: "18px 16px 16px",
                   cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
                   gap: 8,
-                  transition: `all 200ms ${EASE}`,
+                  transition: `background-color 150ms ${EASE}, border-color 150ms ${EASE}`,
                 }}
               >
                 {o.recommended ? (
@@ -174,13 +170,12 @@ export function PrivacyForm({
                       position: "absolute",
                       top: 12,
                       right: 12,
-                      fontFamily: MONO,
-                      fontSize: 8.5,
-                      fontWeight: 700,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: S.base,
-                      background: S.turq,
+                      fontFamily: SANS,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      color: S.onAccent,
+                      background: S.accent,
                       padding: "2px 7px",
                     }}
                   >
@@ -194,8 +189,7 @@ export function PrivacyForm({
                       width: 16,
                       height: 16,
                       flexShrink: 0,
-                      borderRadius: "50%",
-                      border: `1.5px solid ${selected ? S.turq : S.muted}`,
+                      border: `1.5px solid ${selected ? S.ink : S.muted}`,
                       position: "relative",
                     }}
                   >
@@ -203,28 +197,31 @@ export function PrivacyForm({
                       style={{
                         position: "absolute",
                         inset: 3,
-                        borderRadius: "50%",
-                        background: S.turq,
-                        transform: selected ? "scale(1)" : "scale(0)",
-                        boxShadow: selected ? `0 0 8px ${S.turq}` : "none",
-                        transition: `transform 200ms ${EASE}`,
+                        background: S.accentInk,
+                        opacity: selected ? 1 : 0,
+                        transition: `opacity 150ms ${EASE}`,
                       }}
                     />
                   </span>
                   <span
                     style={{
-                      fontFamily: MONO,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      color: selected ? S.turq : S.fg,
+                      fontFamily: SANS,
+                      fontWeight: 600,
+                      fontSize: 15,
+                      color: selected ? S.ink : S.fg,
                     }}
                   >
                     {o.name}
                   </span>
                 </span>
-                <span style={{ fontFamily: SANS, fontSize: 12.5, lineHeight: 1.45, color: S.fg2 }}>
+                <span
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    color: selected ? "#55524d" : S.fg2,
+                  }}
+                >
                   {o.desc}
                 </span>
               </button>

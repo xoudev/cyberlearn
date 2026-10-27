@@ -24,29 +24,6 @@ interface Props {
   paths: PathOption[];
 }
 
-const BORDER = "var(--a-border-2)";
-const DANGER = "var(--a-danger)";
-
-const LABEL_STYLE: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  color: "var(--a-muted)",
-  marginBottom: 6,
-};
-
-const INPUT_STYLE: React.CSSProperties = {
-  width: "100%",
-  background: "var(--a-surface)",
-  border: `1px solid ${BORDER}`,
-  color: "var(--a-fg)",
-  fontFamily: "var(--font-sans)",
-  fontSize: 13,
-  padding: "11px 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
 function Field({
   label,
   error,
@@ -59,33 +36,15 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label style={LABEL_STYLE}>{label}</label>
+    <div className="a-field">
+      <label className="a-label">{label}</label>
       {hint && (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-muted)",
-            margin: "0 0 6px",
-          }}
-        >
+        <p className="a-field-hint" style={{ margin: 0 }}>
           {hint}
         </p>
       )}
       {children}
-      {error && (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-danger)",
-            margin: "4px 0 0",
-          }}
-        >
-          {error}
-        </p>
-      )}
+      {error && <p style={{ margin: 0, fontSize: 12, color: "var(--a-danger)" }}>{error}</p>}
     </div>
   );
 }
@@ -117,16 +76,7 @@ function CriterionFields({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {criterionError && (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-danger)",
-            margin: 0,
-          }}
-        >
-          {criterionError}
-        </p>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--a-danger)" }}>{criterionError}</p>
       )}
 
       {type === "LESSON_COMPLETED" && (
@@ -140,7 +90,7 @@ function CriterionFields({
             min={1}
             max={9999}
             required
-            style={INPUT_STYLE}
+            className="a-input"
             placeholder="10"
           />
         </Field>
@@ -149,7 +99,15 @@ function CriterionFields({
       {type === "PATH_COMPLETED" && (
         <>
           <Field label="Condition">
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 44,
+                cursor: "pointer",
+              }}
+            >
               <input
                 name="criterion_withCertificate"
                 type="checkbox"
@@ -173,7 +131,7 @@ function CriterionFields({
               min={1}
               max={999}
               defaultValue={1}
-              style={INPUT_STYLE}
+              className="a-input"
             />
           </Field>
         </>
@@ -187,7 +145,7 @@ function CriterionFields({
             min={1}
             max={1000000}
             required
-            style={INPUT_STYLE}
+            className="a-input"
             placeholder="1000"
           />
         </Field>
@@ -204,7 +162,7 @@ function CriterionFields({
             min={1}
             max={365}
             required
-            style={INPUT_STYLE}
+            className="a-input"
             placeholder="7"
           />
         </Field>
@@ -231,7 +189,7 @@ function CriterionFields({
               min={1}
               max={9999}
               required
-              style={INPUT_STYLE}
+              className="a-input"
               placeholder="5"
             />
           </Field>
@@ -265,7 +223,7 @@ function CriterionFields({
               type="text"
               required
               placeholder="UUID de la leçon"
-              style={INPUT_STYLE}
+              className="a-input"
             />
           )}
         </Field>
@@ -283,7 +241,7 @@ function CriterionFields({
             max={999}
             required
             defaultValue={1}
-            style={INPUT_STYLE}
+            className="a-input"
           />
         </Field>
       )}
@@ -299,7 +257,7 @@ function CriterionFields({
             required
             maxLength={100}
             placeholder="placement_test_passed"
-            style={INPUT_STYLE}
+            className="a-input"
           />
         </Field>
       )}
@@ -316,20 +274,9 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
   return (
     <>
       {state.error && (
-        <div
-          style={{
-            padding: "13px 16px",
-            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid var(--a-danger)",
-            borderLeft: `3px solid ${DANGER}`,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--a-danger)",
-            marginBottom: 24,
-          }}
-        >
+        <p className="a-form-error" style={{ marginBottom: 24 }}>
           {state.error}
-        </div>
+        </p>
       )}
 
       <form action={action} onReset={keepFormInput}>
@@ -341,7 +288,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
               type="text"
               required
               placeholder="CL-BDG-042"
-              style={INPUT_STYLE}
+              className="a-input"
             />
           </Field>
           <Field label="Nom *" error={state.fieldErrors?.name}>
@@ -351,7 +298,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
               required
               maxLength={100}
               placeholder="Premier pas"
-              style={INPUT_STYLE}
+              className="a-input"
             />
           </Field>
           <div style={{ gridColumn: "1 / -1" }}>
@@ -363,7 +310,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
                 maxLength={500}
                 rows={3}
                 placeholder="Description visible par l'utilisateur…"
-                style={{ ...INPUT_STYLE, resize: "vertical" }}
+                className="a-textarea"
               />
             </Field>
           </div>
@@ -374,7 +321,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
                 type="url"
                 required
                 placeholder="https://…/badge.svg"
-                style={INPUT_STYLE}
+                className="a-input"
               />
             </Field>
           </div>
@@ -403,7 +350,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
               min={0}
               max={10000}
               defaultValue="0"
-              style={INPUT_STYLE}
+              className="a-input"
             />
           </Field>
 
@@ -435,18 +382,9 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
                 padding: "18px 20px",
               }}
             >
-              <p
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "var(--a-muted)",
-                  margin: "0 0 14px",
-                }}
-              >
+              <h2 className="a-section-title" style={{ marginBottom: 14 }}>
                 Paramètres de la condition
-              </p>
+              </h2>
               <CriterionFields
                 type={criterionType}
                 lessons={lessons}
@@ -462,36 +400,15 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
           <button
             type="submit"
             disabled={isPending}
+            className="a-btn a-btn--primary"
             style={{
-              padding: "13px 28px",
-              background: "var(--a-accent)",
-              border: "1px solid var(--a-accent)",
-              color: "var(--a-ink)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
             }}
           >
             {isPending ? "Création…" : "Créer le badge"}
           </button>
-          <Link
-            href="/badges"
-            style={{
-              padding: "13px 24px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              background: "transparent",
-              border: `1px solid ${BORDER}`,
-              color: "var(--a-muted)",
-            }}
-          >
+          <Link href="/badges" className="a-btn a-btn--ghost">
             Annuler
           </Link>
         </div>

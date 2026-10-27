@@ -18,7 +18,7 @@
   border-radius: 0 !important;
 }
 .verification-page :is(a, button, input):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .verification-header {
@@ -43,7 +43,7 @@
   text-decoration: none;
 }
 .verification-brand b {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .verification-header > a:last-child {
   display: inline-flex;
@@ -78,7 +78,7 @@
   letter-spacing: -0.025em;
 }
 .verification-entry h1 span {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .verification-entry header > p:last-child {
   margin: 0;
@@ -149,12 +149,12 @@
 }
 .verification-page .btn:not(.btn--ghost) {
   color: #141518;
-  background: #ff6b2b;
-  border: 1px solid #ff6b2b;
+  background: var(--cosmetic-accent);
+  border: 1px solid var(--cosmetic-accent);
 }
 .verification-page .btn:not(.btn--ghost):hover:not(:disabled) {
-  background: #ff864f;
-  border-color: #ff864f;
+  background: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
 }
 .verification-page .btn--ghost {
   color: #f4f2ed;
@@ -233,7 +233,7 @@
     sans-serif;
 }
 .verification-document__brand b {
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .verification-document__brand small {
   display: block;
@@ -270,7 +270,7 @@
 .verification-document__username {
   margin: 0 0 32px;
   font-size: 13px;
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .verification-document h2 {
   margin: 0 0 32px;

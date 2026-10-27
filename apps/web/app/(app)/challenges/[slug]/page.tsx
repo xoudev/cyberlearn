@@ -36,6 +36,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 import { Crumb } from "@/components/crumb";
 import "./challenge-detail.css";
 
+/** A type as the catalogue names it (challenges-client.tsx), not its enum. */
+const TYPE_LABEL: Record<"CTF" | "PUZZLE" | "LAB" | "SCRIPT", string> = {
+  CTF: "CTF",
+  PUZZLE: "Puzzle",
+  LAB: "Lab",
+  SCRIPT: "Script",
+};
+
 function SectionHead({ label, meta }: { label: string; meta?: string }): React.ReactElement {
   return (
     <div className="challenge-section-head">
@@ -125,7 +133,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
         <div className="challenge-hero__meta">
           <span>{catLabel}</span>
           <span>{difficultyMeta(challenge.difficulty).label}</span>
-          <span>{challenge.type}</span>
+          <span>{TYPE_LABEL[challenge.type]}</span>
           <strong>{statusLabel}</strong>
         </div>
         <h1>
@@ -229,7 +237,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   files={machineFiles}
                 />
               ) : (
-                <p role="note" style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
+                <p role="note" className="challenge-note">
                   La machine de ce défi est indisponible pour le moment.
                 </p>
               )}
@@ -254,38 +262,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           {challenge.resourceUrl !== null && (
             <div style={{ marginBottom: 32 }}>
               <SectionHead label="Connexion" />
-              <div
-                className="card"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "12px 16px",
-                  borderLeft: "3px solid var(--cosmetic-accent)",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    color: "var(--cosmetic-accent)",
-                    flexShrink: 0,
-                  }}
-                >
-                  $
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    color: "var(--color-text-primary)",
-                    flex: 1,
-                    wordBreak: "break-all",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {challenge.resourceUrl}
-                </span>
+              <div className="challenge-connection">
+                <span className="challenge-connection__prompt">$</span>
+                <span className="challenge-connection__url">{challenge.resourceUrl}</span>
                 <CopyButton text={challenge.resourceUrl} />
               </div>
             </div>
@@ -296,22 +275,11 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             <div style={{ marginBottom: 32 }}>
               <SectionHead label="Pièces jointes" />
               <a
-                className="mono-label"
+                className="challenge-download"
                 href={challenge.attachmentUrl}
                 download
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "9px 18px",
-                  background: "transparent",
-                  border: "1px solid rgba(77,139,255,0.3)",
-                  color: "var(--color-info)",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
               >
                 ↓ Télécharger le fichier
               </a>
@@ -350,88 +318,25 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
       ) : null}
 
       {/* ── Bottom nav ────────────────────────────────────────────────────────── */}
-      <nav
-        className="challenge-neighbours"
-        aria-label="Autres défis"
-        style={{
-          marginTop: 64,
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          border: "1px solid var(--color-border-subtle)",
-          background: "rgba(10,8,38,0.5)",
-        }}
-      >
+      <nav className="challenge-neighbours" aria-label="Autres défis">
         {adjacent.prev !== null ? (
-          <Link
-            className="mono-label mono-label--md"
-            href={`/challenges/${adjacent.prev.slug}`}
-            style={{
-              display: "inline-flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: 4,
-              padding: "22px 24px",
-              fontWeight: 700,
-              color: "var(--color-text-secondary)",
-              textDecoration: "none",
-              transition: "color 200ms ease, background 200ms ease",
-              minHeight: 70,
-            }}
-          >
+          <Link className="challenge-neighbours__link" href={`/challenges/${adjacent.prev.slug}`}>
             ← Défi précédent
-            <span
-              style={{
-                fontSize: 9,
-                color: "var(--color-text-muted)",
-                fontWeight: 500,
-                letterSpacing: "0.16em",
-              }}
-            >
-              {adjacent.prev.title}
-            </span>
+            <span>{adjacent.prev.title}</span>
           </Link>
         ) : (
-          <div style={{ padding: "22px 24px", minHeight: 70 }} />
+          <div className="challenge-neighbours__empty" />
         )}
 
         {adjacent.next !== null ? (
           <Link
-            className="mono-label mono-label--md"
+            className="challenge-neighbours__link challenge-neighbours__link--next"
             href={`/challenges/${adjacent.next.slug}`}
-            style={{
-              display: "inline-flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 4,
-              padding: "22px 24px",
-              fontWeight: 700,
-              color: "var(--color-text-secondary)",
-              textDecoration: "none",
-              borderLeft: "1px solid var(--color-border-subtle)",
-              transition: "color 200ms ease, background 200ms ease",
-              minHeight: 70,
-            }}
           >
-            Défi suivant →
-            <span
-              style={{
-                fontSize: 9,
-                color: "var(--color-text-muted)",
-                fontWeight: 500,
-                letterSpacing: "0.16em",
-              }}
-            >
-              {adjacent.next.title}
-            </span>
+            Défi suivant →<span>{adjacent.next.title}</span>
           </Link>
         ) : (
-          <div
-            style={{
-              padding: "22px 24px",
-              borderLeft: "1px solid var(--color-border-subtle)",
-              minHeight: 70,
-            }}
-          />
+          <div className="challenge-neighbours__empty" />
         )}
       </nav>
     </div>

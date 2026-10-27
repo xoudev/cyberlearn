@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { keepFormInput } from "@/lib/form-input";
 import { replyToTicketAction } from "../../_actions/ticket-actions";
+import { UserAvatar } from "../../_components/admin-ui";
 
 /**
  * The conversation on a ticket, and the box that adds to it.
@@ -21,11 +22,14 @@ export interface ThreadMessage {
   /** Pre-formatted by the server, which owns the locale. */
   stamp: string;
   authorName: string | null;
+  /** The author's picture, resolved on the server (lib/avatar.ts). */
+  authorAvatar: string | null;
 }
 
 export function TicketThread({
   ticketId,
   requesterName,
+  requesterAvatar,
   openingMessage,
   openingStamp,
   messages,
@@ -33,6 +37,8 @@ export function TicketThread({
 }: {
   ticketId: string;
   requesterName: string;
+  /** The requester's picture, resolved on the server; null for the initials. */
+  requesterAvatar: string | null;
   openingMessage: string;
   openingStamp: string;
   messages: ThreadMessage[];
@@ -64,11 +70,18 @@ export function TicketThread({
       <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
         {/* The ticket's own message is the first turn, not a header above the
             thread: a reply under a heading looks like it answers nothing. */}
-        <Bubble who={requesterName} stamp={openingStamp} body={openingMessage} staff={false} />
+        <Bubble
+          who={requesterName}
+          avatar={requesterAvatar}
+          stamp={openingStamp}
+          body={openingMessage}
+          staff={false}
+        />
         {messages.map((m) => (
           <Bubble
             key={m.id}
             who={m.fromStaff ? (m.authorName ?? "Équipe") : requesterName}
+            avatar={m.fromStaff ? m.authorAvatar : requesterAvatar}
             stamp={m.stamp}
             body={m.body}
             staff={m.fromStaff}
@@ -87,8 +100,7 @@ export function TicketThread({
             padding: "12px 14px",
             border: "1px solid var(--a-border)",
             background: "var(--a-surface)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11.5,
+            fontSize: 13,
             lineHeight: 1.6,
             color: "var(--a-muted)",
           }}
@@ -104,55 +116,19 @@ export function TicketThread({
             maxLength={5000}
             rows={5}
             placeholder="Répondre au demandeur…"
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "var(--a-surface)",
-              border: "1px solid var(--a-border)",
-              color: "var(--a-fg)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              lineHeight: 1.6,
-              outline: "none",
-              resize: "vertical",
-            }}
+            aria-label="Réponse au demandeur"
+            className="a-textarea"
           />
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button
-              type="submit"
-              disabled={pending}
-              style={{
-                justifySelf: "start",
-                padding: "9px 16px",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 700,
-                fontSize: 10,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "var(--a-fg)",
-                background: "var(--a-blue)",
-                border: "1px solid var(--a-blue)",
-                cursor: pending ? "default" : "pointer",
-                opacity: pending ? 0.5 : 1,
-              }}
-            >
-              {pending ? "…" : "Envoyer la réponse"}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <button type="submit" disabled={pending} className="a-btn a-btn--primary">
+              {pending ? "Envoi…" : "Envoyer la réponse"}
             </button>
-            <span
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--a-muted)" }}
-            >
+            <span className="a-field-hint">
               Part par e-mail et s&apos;affiche sur sa page. Un ticket ouvert passe en cours.
             </span>
           </div>
           {error !== null && (
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11.5,
-                color: "var(--a-danger)",
-              }}
-            >
+            <p className="a-form-error" role="alert">
               {error}
             </p>
           )}
@@ -164,11 +140,13 @@ export function TicketThread({
 
 function Bubble({
   who,
+  avatar,
   stamp,
   body,
   staff,
 }: {
   who: string;
+  avatar: string | null;
   stamp: string;
   body: string;
   staff: boolean;
@@ -182,17 +160,15 @@ function Bubble({
         borderLeft: `3px solid ${staff ? "var(--a-accent)" : "var(--a-border)"}`,
       }}
     >
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: staff ? "var(--a-accent)" : "var(--a-muted)",
-          marginBottom: 6,
-        }}
-      >
-        {who} · {stamp}
+      <div className="a-person" style={{ marginBottom: 8 }}>
+        <UserAvatar src={avatar} name={who} size={28} />
+        <span className="a-person-text">
+          <span className="a-person-name">
+            {who}
+            {staff ? <span className="a-person-meta"> · équipe</span> : null}
+          </span>
+          <span className="a-person-meta">{stamp}</span>
+        </span>
       </div>
       <p
         style={{

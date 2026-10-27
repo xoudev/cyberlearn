@@ -115,8 +115,7 @@ export function TournamentForm({
               rows={3}
               defaultValue={initial.description}
               placeholder="Ce que les élèves lisent en ouvrant le tournoi."
-              className="a-input"
-              style={{ resize: "vertical" }}
+              className="a-textarea"
             />
           </label>
           <div className="a-fields-grid">
@@ -182,7 +181,13 @@ export function TournamentForm({
                   {options.map((option) => (
                     <label
                       key={option.id}
-                      style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        minHeight: 44,
+                        cursor: "pointer",
+                      }}
                     >
                       <input
                         type="checkbox"
@@ -245,8 +250,8 @@ export function TournamentForm({
                   />
                   <span style={{ display: "grid", gap: 2 }}>
                     <span style={{ fontWeight: 600 }}>{option.title}</span>
-                    <span className="mono" style={{ fontSize: 12, color: "var(--a-muted)" }}>
-                      {option.refCode} · {option.type}
+                    <span style={{ fontSize: 12, color: "var(--a-muted)" }}>
+                      <span className="a-mono">{option.refCode}</span> · {option.type}
                       {option.isActive ? "" : " · réservé au tournoi"}
                       {solvedBefore > 0
                         ? ` · déjà résolu dans le catalogue par ${String(solvedBefore)} joueur${solvedBefore > 1 ? "s" : ""}`

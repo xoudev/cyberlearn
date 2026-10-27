@@ -383,7 +383,11 @@ export const ticketRepository = {
         userAgent: true,
         createdAt: true,
         updatedAt: true,
-        user: { select: { id: true, username: true, displayName: true, email: true } },
+        // The avatars: the console shows the requester and the authors of the
+        // thread with their picture.
+        user: {
+          select: { id: true, username: true, displayName: true, email: true, avatarUrl: true },
+        },
         assignee: { select: { id: true, username: true, displayName: true } },
         appealFor: {
           select: {
@@ -405,7 +409,7 @@ export const ticketRepository = {
             body: true,
             fromStaff: true,
             createdAt: true,
-            author: { select: { displayName: true } },
+            author: { select: { displayName: true, avatarUrl: true } },
           },
         },
       },
@@ -421,7 +425,7 @@ export const ticketRepository = {
         id: true,
         body: true,
         createdAt: true,
-        author: { select: { displayName: true } },
+        author: { select: { displayName: true, avatarUrl: true } },
       },
     });
   },

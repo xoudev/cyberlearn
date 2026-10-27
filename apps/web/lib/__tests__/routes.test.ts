@@ -126,27 +126,19 @@ describe("the registry names no page that is not there", () => {
 
 describe("the sidebar and the registry agree", () => {
   const listed = navGroupsFor("web").flatMap((group) => group.entries);
-  // The entries that open a window over the page rather than lead to one.
-  const windows = sidebarGroups({ hasClasses: true, showRevisions: true, duelInvitations: 0 })
-    .flatMap((group) => group.items)
-    .filter((item) => item.opens !== undefined)
-    .map((item) => item.href);
-  const pages = listed.map((entry) => entry.href).filter((href) => !windows.includes(href));
+  const pages = listed.map((entry) => entry.href);
 
   it.each(pages)("%s has a page and an icon", (href) => {
     expect(hasPage(href)).toBe(true);
     expect(sidebarIconOf(href)).not.toBeNull();
   });
 
-  it("finds the one entry that opens a window: the day's recall", () => {
-    expect(windows).toEqual(["/revisions"]);
-  });
-
-  it.each(windows)("%s has an icon, and only a redirect to its window behind it", (href) => {
-    expect(sidebarIconOf(href)).not.toBeNull();
-    expect(hasPage(href)).toBe(false);
-    expect(isProtectedRoute(href)).toBe(false);
-    expect(disallowed()).toContain(href);
+  it("lists only pages: the day's recall, a window, opens from the top bar", () => {
+    const drawn = sidebarGroups({ hasClasses: true, duelInvitations: 0 })
+      .flatMap((group) => group.items)
+      .map((item) => item.href);
+    expect(drawn).not.toContain("/revisions");
+    expect(sidebarIconOf("/revisions")).toBeNull();
   });
 
   it("gives an icon to the pages the sidebar lists, and to no other", () => {

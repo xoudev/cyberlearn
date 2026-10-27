@@ -722,7 +722,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           gap: "8px 14px",
           padding: "11px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.7)",
+          background: "#121418",
         }}
       >
         <div style={{ display: "inline-flex", gap: 7, flexShrink: 0 }}>
@@ -1022,7 +1022,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           style={{
             borderTop: "1px solid var(--color-border-subtle)",
             padding: "14px 18px",
-            background: "rgba(5,4,26,0.5)",
+            background: "#121418",
           }}
         >
           <div

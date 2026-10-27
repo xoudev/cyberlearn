@@ -9,7 +9,7 @@ import {
   LAST_TICKET_MESSAGE,
   prisma,
 } from "@cyberlearn/db";
-import { KpiCard, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
+import { KpiCard, PageHeader, Tag, UserAvatar, type Tone } from "../../_components/admin-ui";
 import { DataGrid, type GridRow } from "../../_components/data-grid";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
 import { TICKET_COLUMNS, TICKET_KPI_LABELS, TICKETS_HEADER } from "../_components/ticket-columns";
@@ -22,6 +22,7 @@ import {
 } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
+import { avatarSrcMap } from "@/lib/avatar";
 import { consoleDateFormat } from "@/lib/console-time";
 
 export const metadata: Metadata = { title: "Tickets" };
@@ -51,8 +52,8 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
       jiraIssueUrl: true,
       createdAt: true,
       updatedAt: true,
-      user: { select: { username: true, displayName: true } },
-      assignee: { select: { id: true, username: true, displayName: true } },
+      user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+      assignee: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
       messages: LAST_TICKET_MESSAGE,
     },
   });
@@ -75,6 +76,18 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
   const awaitingCount = tickets.filter((t) => t.awaiting).length;
   const resolvedCount = tickets.length - openCount - inProgressCount;
   const criticalCount = tickets.filter(isCriticalTicket).length;
+
+  // One lookup for the requesters and the assignees: the same few
+  // administrators hold most tickets, and each picture is signed once.
+  const people = [
+    ...tickets.flatMap((t) => (t.user !== null ? [t.user] : [])),
+    ...tickets.flatMap((t) => (t.assignee !== null ? [t.assignee] : [])),
+  ];
+  const avatars = await avatarSrcMap(
+    people,
+    (person) => person.id,
+    (person) => person.avatarUrl,
+  );
 
   const rows: GridRow[] = tickets.map((t) => {
     const theme = THEME_META[t.theme] ?? { label: t.theme, tone: "neutral" as Tone };
@@ -126,23 +139,33 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           >
             {t.subject}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: "var(--a-muted)" }}>
-            {t.id.slice(0, 8)} · lire le message →
+          <span style={{ fontSize: 11.5, color: "var(--a-muted)" }}>
+            <span className="mono">{t.id.slice(0, 8)}</span> · lire le message →
           </span>
         </Link>,
         <Tag key="th" tone={isActive ? theme.tone : "neutral"}>
           {theme.label}
         </Tag>,
-        <span key="u" className="mono" style={{ color: "var(--a-muted)" }}>
-          {userLabel}
+        <span key="u" className="a-person">
+          <UserAvatar
+            src={t.user !== null ? (avatars.get(t.user.id) ?? null) : null}
+            name={t.user !== null && t.user.displayName !== "" ? t.user.displayName : userLabel}
+            size={26}
+          />
+          <span className="mono" style={{ color: "var(--a-fg-2)" }}>
+            {userLabel}
+          </span>
         </span>,
         assigneeLabel !== null ? (
-          <span
-            key="a"
-            className="mono"
-            style={{ color: t.assignee?.id === viewer.id ? "var(--a-accent)" : "var(--a-fg-2)" }}
-          >
-            {t.assignee?.id === viewer.id ? `${assigneeLabel} (toi)` : assigneeLabel}
+          <span key="a" className="a-person">
+            <UserAvatar
+              src={t.assignee !== null ? (avatars.get(t.assignee.id) ?? null) : null}
+              name={assigneeLabel}
+              size={26}
+            />
+            <span className="mono" style={{ color: "var(--a-fg-2)" }}>
+              {t.assignee?.id === viewer.id ? `${assigneeLabel} (toi)` : assigneeLabel}
+            </span>
           </span>
         ) : (
           <span key="a" style={{ color: "var(--a-muted)" }}>
@@ -180,11 +203,8 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
               color: status.color,
             }}
           >

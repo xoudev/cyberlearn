@@ -20,7 +20,7 @@
   border-radius: 0 !important;
 }
 .glossary-page__main a:focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .glossary-page__hero {
@@ -44,7 +44,7 @@
   letter-spacing: -0.025em;
 }
 .glossary-page__hero h1 em {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font-style: normal;
 }
 .glossary-page__intro {

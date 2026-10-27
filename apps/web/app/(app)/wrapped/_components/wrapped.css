@@ -23,7 +23,7 @@
 }
 .wrapped-workspace :is(a, button):focus-visible,
 .ws-root :is(a, button):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .wrapped-workspace.wr-closed {
@@ -40,7 +40,7 @@
   gap: 12px;
   margin: 0;
   font:
-    500 12px / 1.5 var(--font-interface),
+    500 13px / 1.5 var(--font-interface),
     sans-serif;
 }
 .wr-closed__poster {
@@ -72,9 +72,9 @@
 }
 .wrapped-workspace .wr-closed__eyebrow {
   font:
-    12px / 1.5 var(--font-interface),
+    600 13px / 1.5 var(--font-interface),
     sans-serif;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -102,7 +102,7 @@
 .wrapped-workspace .wr-closed__hint {
   margin: 18px 0;
   font:
-    12px / 1.7 var(--font-interface),
+    13px / 1.7 var(--font-interface),
     sans-serif;
   letter-spacing: 0;
 }
@@ -127,7 +127,7 @@
 .wrapped-card .wrapped-brand {
   flex-wrap: wrap;
   color: #c2bfb8;
-  font-size: 11px;
+  font-size: 13px;
 }
 .wrapped-card h2 {
   margin: 22px 0 0;
@@ -138,7 +138,7 @@
   letter-spacing: -0.03em;
 }
 .wrapped-card__caption {
-  font-size: 12px;
+  font-size: 13px;
   color: #aaa79f;
   margin: 12px 0 24px;
 }
@@ -167,7 +167,7 @@
 }
 .wrapped-card__stats dt {
   font:
-    11px / 1.5 var(--font-interface),
+    13px / 1.5 var(--font-interface),
     sans-serif;
   color: #55524d;
 }
@@ -181,7 +181,7 @@
 .wrapped-card__domain,
 .wrapped-card__season {
   margin: 18px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.7;
   color: #c2bfb8;
   overflow-wrap: anywhere;
@@ -189,7 +189,7 @@
 .wrapped-card__season small {
   display: block;
   color: #aaa79f;
-  font-size: 11px;
+  font-size: 12px;
 }
 .wrapped-card footer {
   display: grid;
@@ -197,11 +197,11 @@
   margin-top: 22px;
   padding-top: 16px;
   border-top: 1px solid #44454a;
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 .wrapped-card footer span {
-  font-size: 11px;
+  font-size: 12px;
   color: #aaa79f;
 }
 .wrapped-export {
@@ -236,7 +236,7 @@
   cursor: progress;
 }
 .wrapped-export > small {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   color: #aaa79f;
 }

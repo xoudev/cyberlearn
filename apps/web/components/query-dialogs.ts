@@ -34,7 +34,7 @@ export const QUERY_DIALOGS: Readonly<Record<string, React.ComponentType<QueryDia
   // Challenge a friend to a duel, from /duels, a finished duel's rematch or a
   // friend's profile (/duels?ami=<id> lands on it).
   [DUEL_QUERY]: lazy(() => import("@/app/(app)/duels/_components/challenge-dialog")),
-  // The day's recall (the sidebar's Révisions, the dashboard, the reminder),
+  // The day's recall (the navbar's Révisions du jour, the dashboard, the reminder),
   // or a module's review (the path page).
   [RAPPEL_QUERY]: lazy(() => import("./rappel/rappel-dialog")),
 };

@@ -15,9 +15,13 @@ import {
 } from "@/lib/console-nav";
 import { signOut } from "../_actions/signout";
 import { useAdminMobileSidebar } from "./admin-shell-client";
+import { UserAvatar } from "./admin-ui";
 
 interface AdminSidebarProps {
-  initials: string;
+  /** The signed-in admin's picture, resolved on the server (lib/avatar.ts). */
+  avatarSrc: string | null;
+  /** The name the initials come from when there is no picture. */
+  name: string;
   handle: string;
   email: string;
   counts: Record<ConsoleCountKey, number>;
@@ -30,8 +34,8 @@ function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null 
     fill: "none",
     stroke: "currentColor",
     strokeWidth: 1.4,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
+    strokeLinecap: "square",
+    strokeLinejoin: "miter",
   };
   switch (name) {
     case "dash":
@@ -170,32 +174,16 @@ function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null 
 
 function SectionLabel({ text }: { text: string }): React.ReactElement {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "0 18px",
-        marginBottom: 8,
-        fontFamily: "var(--font-mono)",
-        fontSize: 9.5,
-        fontWeight: 600,
-        letterSpacing: "0.16em",
-        textTransform: "uppercase",
-        color: "var(--a-muted)",
-      }}
-    >
-      <span
-        style={{ width: 8, height: 1, background: "var(--a-faint-2)", flexShrink: 0 }}
-        aria-hidden="true"
-      />
+    <div className="a-side-section">
+      <span className="a-side-section-rule" aria-hidden="true" />
       {text}
     </div>
   );
 }
 
 export function AdminSidebar({
-  initials,
+  avatarSrc,
+  name,
   handle,
   email,
   counts,
@@ -293,110 +281,30 @@ export function AdminSidebar({
         <Link
           href="/account"
           onClick={close}
+          className="a-sidebar-me"
           aria-label={`Mon compte : ${handle}`}
           aria-current={pathname === "/account" ? "page" : undefined}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "30px minmax(0, 1fr) auto",
-            gap: 10,
-            alignItems: "center",
-            padding: "10px 11px",
-            background: "var(--a-surface)",
-            border: `1px solid ${pathname === "/account" ? "var(--a-accent)" : "var(--a-border)"}`,
-            marginBottom: 10,
-            color: "inherit",
-            textDecoration: "none",
-          }}
         >
-          <span
-            style={{
-              width: 30,
-              height: 30,
-              display: "grid",
-              placeItems: "center",
-              background: "var(--a-overlay)",
-              border: "1px solid var(--a-border-2)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 10.5,
-              color: "var(--a-fg-2)",
-            }}
-          >
-            {initials}
+          <UserAvatar src={avatarSrc} name={name} size={32} />
+          <span className="a-sidebar-me-text">
+            <span className="a-sidebar-me-handle">{handle}</span>
+            <span className="a-sidebar-me-email">{email}</span>
           </span>
-          <span style={{ minWidth: 0 }}>
-            <span
-              style={{
-                display: "block",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 700,
-                fontSize: 11.5,
-                color: "var(--a-fg)",
-              }}
-            >
-              {handle}
-            </span>
-            <span
-              style={{
-                display: "block",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9.5,
-                color: "var(--a-muted)",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {email}
-            </span>
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 8.5,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--a-accent)",
-              border: "1px solid color-mix(in srgb, var(--a-accent) 40%, transparent)",
-              padding: "2px 6px",
-            }}
-          >
-            Admin
-          </span>
+          <span className="a-admin-mark">Admin</span>
         </Link>
 
         <form action={signOut}>
-          <button
-            type="submit"
-            className="admin-signout"
-            style={{
-              width: "100%",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 9,
-              padding: "9px 12px",
-              background: "transparent",
-              border: "1px solid var(--a-border)",
-              color: "var(--a-muted)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-            }}
-          >
+          <button type="submit" className="a-btn a-btn--ghost admin-signout">
             <svg
-              width="12"
-              height="12"
+              width="14"
+              height="14"
               viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+              aria-hidden="true"
             >
               <path d="M9 3 H4 V13 H9" />
               <path d="M11 5 L14 8 L11 11 M14 8 H7" />

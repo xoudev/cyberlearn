@@ -179,7 +179,7 @@ export function ShareDialog({
                         border: `1px solid ${picked.has(p.id) ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
                         background: picked.has(p.id)
                           ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
-                          : "rgba(5,4,26,0.4)",
+                          : "#121418",
                       }}
                     >
                       <label

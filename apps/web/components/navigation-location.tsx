@@ -4,17 +4,25 @@
 import { usePathname } from "next/navigation";
 import { isActiveHref, sidebarGroups } from "@/lib/sidebar/items";
 
-const sections = sidebarGroups({
-  hasClasses: true,
-  showRevisions: true,
-  duelInvitations: 0,
-}).flatMap((group) => group.items);
+const sections = sidebarGroups({ hasClasses: true, duelInvitations: 0 }).flatMap(
+  (group) => group.items,
+);
+
+/** The public pages a signed-in reader is shown in the app's shell, by name. */
+function publicSectionOf(pathname: string): string | null {
+  if (pathname === "/catalogue") return "Catalogue";
+  if (pathname === "/glossaire") return "Glossaire";
+  if (pathname === "/legal" || pathname.startsWith("/legal/") || pathname === "/privacy") {
+    return "Informations";
+  }
+  if (pathname === "/contact") return "Contact";
+  return null;
+}
 
 export function NavigationLocation(): React.JSX.Element {
   const pathname = usePathname();
   const section = sections.find((item) => isActiveHref(pathname, item.href));
-  const publicSection =
-    pathname === "/catalogue" ? "Catalogue" : pathname === "/glossaire" ? "Glossaire" : null;
+  const publicSection = publicSectionOf(pathname);
   const label =
     section?.label ??
     publicSection ??

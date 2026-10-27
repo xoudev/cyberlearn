@@ -33,9 +33,7 @@ const vercelLive = {
  * the same editor (the teacher's) under this policy, the loader and its
  * modules being let in by 'strict-dynamic' from the nonce-trusted chunks.
  */
-/** The learner site's origin, the one thing the console frames: the lesson editor's preview. */
-function siteOrigin(): string | null {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL;
+function originOfEnv(raw: string | undefined): string | null {
   if (raw === undefined || raw === "") return null;
   try {
     return new URL(raw).origin;
@@ -44,9 +42,39 @@ function siteOrigin(): string | null {
   }
 }
 
+/**
+ * The learner site's origin. The console frames it (the lesson editor's
+ * preview) and shows images it serves (the eight built-in avatars).
+ */
+function siteOrigin(): string | null {
+  return originOfEnv(process.env.NEXT_PUBLIC_SITE_URL);
+}
+
+/**
+ * The storage's origin, for the signed URLs of uploaded avatars and covers.
+ * In production it is a *.supabase.co host, already allowed; the local stack
+ * answers on http://127.0.0.1:54321, which the wildcard does not cover.
+ */
+function supabaseOrigin(): string | null {
+  return originOfEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+}
+
 function buildSecurityHeaders(nonce: string): Record<string, string> {
   const frameSrc = ["'self'", siteOrigin(), isVercelPreview ? "https://vercel.live" : null]
     .filter((origin): origin is string => origin !== null)
+    .join(" ");
+  const imgSrc = [
+    "'self'",
+    "data:",
+    "blob:",
+    "https://*.supabase.co",
+    "https://avatars.githubusercontent.com",
+    siteOrigin(),
+    supabaseOrigin(),
+  ]
+    .filter(
+      (origin, index, all): origin is string => origin !== null && all.indexOf(origin) === index,
+    )
     .join(" ");
   return {
     "Content-Security-Policy": [
@@ -55,7 +83,7 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
         ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net${vercelLive.script}`
         : `script-src 'nonce-${nonce}' 'strict-dynamic'${vercelLive.script}`,
       `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net${vercelLive.style}`,
-      `img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com${vercelLive.img}`,
+      `img-src ${imgSrc}${vercelLive.img}`,
       `font-src 'self' data:${vercelLive.font}`,
       isDev
         ? `connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`

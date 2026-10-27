@@ -25,13 +25,16 @@ export const BADGE_RARITY_VAR: Record<BadgeRarity, string> = {
   LEGENDARY: "var(--color-rarity-legendary)",
 };
 
-/** The ring a rarity earns: the profile's avatar frame, a medallion's rim. */
+/**
+ * The ring a rarity earns: the profile's avatar frame, a medallion's rim.
+ * Flat, the Bastion way: one rarity, one colour, written as a gradient so the
+ * callers that paint it as a background-image keep working.
+ */
 export const BADGE_RARITY_GRADIENT: Record<BadgeRarity, string> = {
-  LEGENDARY:
-    "linear-gradient(135deg, var(--color-rarity-legendary) 0%, var(--color-category-cybersec) 50%, var(--color-brand-blue) 100%)",
-  EPIC: "linear-gradient(135deg, var(--cosmetic-accent) 0%, var(--color-brand-blue) 100%)",
-  RARE: "linear-gradient(135deg, var(--color-rarity-rare) 0%, #4A3FCC 100%)",
-  COMMON: "linear-gradient(135deg, var(--color-text-secondary) 0%, var(--color-text-muted) 100%)",
+  LEGENDARY: "linear-gradient(var(--color-rarity-legendary), var(--color-rarity-legendary))",
+  EPIC: "linear-gradient(var(--color-rarity-epic), var(--color-rarity-epic))",
+  RARE: "linear-gradient(var(--color-rarity-rare), var(--color-rarity-rare))",
+  COMMON: "linear-gradient(var(--color-rarity-common), var(--color-rarity-common))",
 };
 
 /** Narrow an arbitrary string (e.g. a serialized rarity) to a BadgeRarity. */

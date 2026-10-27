@@ -806,7 +806,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           gap: "8px 14px",
           padding: "11px 16px",
           borderBottom: `1px solid ${isPs ? "#1B2A4A" : "var(--color-border-subtle)"}`,
-          background: isPs ? "rgba(1,36,86,0.4)" : "rgba(5,4,26,0.7)",
+          background: isPs ? "rgba(1,36,86,0.4)" : "#121418",
         }}
       >
         {/* Traffic-light dots */}
@@ -936,7 +936,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           style={{
             borderTop: "1px solid var(--color-border-subtle)",
             padding: "14px 18px",
-            background: "rgba(5,4,26,0.5)",
+            background: "#121418",
           }}
         >
           <div

@@ -1,40 +1,34 @@
 /* The mock exam (/paths/[slug]/mock-exam, and its intro in a window on the
    path's page): the practice run of the final exam, in the final exam's
-   vocabulary (the framed intro, hexagon keys, the clock in a pinned bar, the
-   gauge, the review rows) drawn on the site's tokens, so it reads in the
-   light theme as well as the dark one. Square.
-   The page's accent is the learner's own; a verdict keeps the site's status
+   Bastion vocabulary. Carbon page and panels, the start conditions on chalk,
+   a selected answer on chalk, the score on chalk at the head of the result.
+   Square everywhere, no glow, no pulse.
+   The accent is the learner's own; a verdict keeps the site's status
    colours: acquis in the success tone, à consolider in the warning tone,
    à revoir in the danger tone. */
 
 .mkx {
   --mkx-accent: var(--cosmetic-accent);
-  /* The accent as text: pulled toward the text colour, so a turquoise or an
-     amber stays legible on the light theme's white too. */
-  --mkx-ink: color-mix(in srgb, var(--cosmetic-accent) 55%, var(--color-text-primary));
-  --mkx-soft: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
-  --mkx-wash: color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-base));
-  --bk-color: var(--mkx-accent);
+  /* The accent as text on carbon. */
+  --mkx-ink: var(--cosmetic-accent-hover);
 }
 
 /* A verdict, on whatever carries it: a row, a figure, a badge. */
 .mkx [data-tone="ok"] {
-  --mkx-tone: var(--color-success);
+  --mkx-tone: var(--color-state-success);
 }
 .mkx [data-tone="mid"] {
-  --mkx-tone: var(--color-warning);
+  --mkx-tone: var(--color-state-warning);
 }
 .mkx [data-tone="low"] {
-  --mkx-tone: var(--color-danger);
+  --mkx-tone: var(--color-state-danger);
 }
 /* A question left blank: neutral, so amber only ever means "à consolider". */
 .mkx [data-tone="none"] {
-  --mkx-tone: var(--color-text-muted);
+  --mkx-tone: #aaa79f;
 }
 .mkx [data-tone] {
-  --mkx-tone-ink: color-mix(in srgb, var(--mkx-tone) 75%, var(--color-text-primary));
-  --mkx-tone-soft: color-mix(in srgb, var(--mkx-tone) 40%, transparent);
-  --mkx-tone-wash: color-mix(in srgb, var(--mkx-tone) 8%, transparent);
+  --mkx-tone-wash: color-mix(in srgb, var(--mkx-tone) 10%, #121418);
 }
 
 /* A heading moved to when the stage changes: the focus lands, no ring. */
@@ -44,59 +38,28 @@
 
 /* ── Shared pieces ──────────────────────────────────────────────────────── */
 
-/* The exam's hexagon: an outline (::before) and a fill (::after), the
-   content above both. */
-.mkx-hex {
-  position: relative;
+/* A square frame for a key or a mark, the content centred in it. */
+.mkx-box {
   display: grid;
   flex-shrink: 0;
   place-items: center;
+  background: #121418;
+  border: 1px solid #74767d;
 }
-.mkx-hex::before,
-.mkx-hex::after {
-  content: "";
-  position: absolute;
-  clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
-  transition: background var(--dur-fast) ease;
-}
-.mkx-hex::before {
-  inset: 0;
-  background: var(--mkx-hex-line, var(--color-border-default));
-}
-.mkx-hex::after {
-  inset: 1.5px;
-  background: var(--mkx-hex-fill, var(--color-bg-elevated));
-}
-.mkx-hex > * {
-  position: relative;
-  z-index: 1;
-}
-.mkx-hex svg {
+.mkx-box svg {
   width: 16px;
   height: 16px;
 }
 
 .mkx-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin: 0 0 22px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--mkx-ink);
-}
-.mkx-eyebrow::before {
-  content: "";
-  flex-shrink: 0;
-  width: 26px;
-  height: 2px;
-  background: var(--mkx-accent);
+  margin: 0 0 20px;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 
-/* A section's head: a mono title, a meta on the right, a dashed rule. */
+/* A section's head: a condensed title, a meta on the right, a rule under. */
 .mkx-head {
   display: flex;
   flex-wrap: wrap;
@@ -105,27 +68,21 @@
   gap: 8px 20px;
   margin: 0 0 14px;
   padding-bottom: 12px;
-  border-bottom: 1px dashed var(--color-border-default);
+  border-bottom: 1px solid #303137;
 }
 .mkx-head h2 {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-text-primary);
-}
-.mkx-head h2 span {
-  color: var(--mkx-ink);
+  font:
+    600 24px / 1.1 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
 }
 .mkx-head__meta {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  color: var(--color-text-muted);
+  color: #aaa79f;
 }
 
 /* A score as a bar: the track, the fill in the verdict's colour. */
@@ -133,7 +90,7 @@
   position: relative;
   display: block;
   height: 6px;
-  background: color-mix(in srgb, var(--color-text-muted) 16%, transparent);
+  background: #303137;
 }
 .mkx-meter > i {
   position: absolute;
@@ -145,31 +102,31 @@
 
 .mkx-error {
   margin: 0 0 16px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--color-danger);
+  font:
+    13px / 1.6 var(--font-interface),
+    sans-serif;
+  color: var(--color-state-danger);
 }
 
 .mkx-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  min-height: 44px;
+  font:
+    13px var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  text-decoration: none;
-  color: var(--color-text-muted);
+  color: #c2bfb8;
+  text-decoration: underline;
+  text-underline-offset: 5px;
   transition: color var(--dur-base) ease;
 }
 .mkx-back:hover {
-  color: var(--color-text-primary);
+  color: #f4f2ed;
 }
 .mkx-back:focus-visible {
-  outline: 2px solid var(--mkx-accent);
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .mkx-back svg {
@@ -194,24 +151,24 @@
 
 /* The window (paths/[slug]/_components/mock-exam-dialog.tsx) is the frame
    and carries the path's name in its header: the intro is its two columns,
-   the brief and the modules with the attempts. */
+   the brief with its conditions on chalk, and the modules with the attempts. */
 .mkx-intro {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  background: var(--color-bg-elevated);
 }
 .mkx-intro__main {
   display: flex;
   flex-direction: column;
-  padding: 26px 28px 24px;
+  min-width: 0;
+  padding: 26px 28px 28px;
 }
 .mkx-intro__side {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 24px 24px 26px;
-  border-left: 1px solid var(--color-border-subtle);
-  background: var(--color-bg-sunken);
+  gap: 32px;
+  min-width: 0;
+  padding: 26px 28px 28px;
+  border-left: 1px solid #303137;
 }
 .mkx-intro .pg-lede {
   margin-bottom: 24px;
@@ -223,112 +180,108 @@
   padding: 26px 28px;
 }
 
-/* The figures and the rules stop about where the lede does (62ch). */
+/* The start conditions, on chalk: the figures, the rules, an attempt still
+   running. */
+.mkx-departure {
+  padding: 28px;
+  color: #141518;
+  background: #eae7df;
+}
+.mkx-departure :is(a, button):focus-visible {
+  outline-color: #141518;
+}
 .mkx-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  max-width: 640px;
-  margin: 0 0 26px;
+  margin: 0 0 24px;
   padding: 0;
   list-style: none;
 }
 .mkx-stat {
-  padding: 18px 10px 16px;
-  text-align: center;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-bg-sunken);
-}
-.mkx-stat__hex {
-  width: 36px;
-  height: 41px;
-  margin: 0 auto 12px;
-  color: var(--mkx-ink);
-  --mkx-hex-line: var(--mkx-soft);
-  --mkx-hex-fill: var(--color-bg-sunken);
-}
-.mkx-stat__val {
-  display: block;
-  font-family: var(--font-sans);
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary);
-}
-.mkx-stat__val small {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 .mkx-stat__lbl {
-  display: block;
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #55524d;
+}
+.mkx-stat__val {
+  font:
+    600 48px / 1 var(--font-display),
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #141518;
+}
+.mkx-stat__val small {
+  font-size: 24px;
+  font-weight: 600;
 }
 
 .mkx-rules {
-  max-width: 640px;
-  margin: 0 0 20px;
+  margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px dashed var(--color-border-subtle);
+  border-top: 1px solid #bdbab3;
 }
 .mkx-rules li {
   display: grid;
   grid-template-columns: 104px minmax(0, 1fr);
   gap: 16px;
   padding: 12px 0;
-  border-bottom: 1px dashed var(--color-border-subtle);
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--color-text-secondary);
+  border-bottom: 1px solid #bdbab3;
+  font:
+    13px / 1.65 var(--font-interface),
+    sans-serif;
+  color: #55524d;
 }
 .mkx-rules__k {
-  padding-top: 2px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-text-primary);
+  font:
+    600 13px / 1.65 var(--font-interface),
+    sans-serif;
+  color: #141518;
 }
 
-/* An attempt left running: the clock goes on, so the dot is live. */
+/* An attempt left running: the clock goes on, said with a still mark. */
 .mkx-live {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
-  margin: 0 0 16px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  line-height: 1.5;
-  color: var(--mkx-ink);
+  margin: 20px 0 0;
+  font:
+    13px / 1.65 var(--font-interface),
+    sans-serif;
+  color: #141518;
 }
 .mkx-live__dot {
   flex-shrink: 0;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
   background: var(--mkx-accent);
-  animation: mkx-pulse 1.8s ease-in-out infinite;
+}
+.mkx-departure .mkx-live__dot {
+  background: var(--cosmetic-accent-ink);
 }
 
 .mkx-note {
   margin: 0 0 24px;
   padding: 16px 18px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--color-text-secondary);
-  border: 1px dashed var(--color-border-default);
-  background: var(--color-bg-sunken);
+  font:
+    14px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #c2bfb8;
+  border: 1px solid #303137;
+  background: #121418;
+}
+.mkx-departure .mkx-note {
+  margin: 20px 0 0;
+  color: #55524d;
+  border-color: #bdbab3;
+  background: none;
 }
 
 /* The opening's way on (mock-exam-flow.tsx): try again, or back to the path. */
@@ -352,39 +305,41 @@
 }
 .mkx-mods > li {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 4px 12px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 12px 0;
+  border-bottom: 1px solid #303137;
   counter-increment: mkx-mod;
 }
 .mkx-mods > li::before {
   content: counter(mkx-mod, decimal-leading-zero);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
+  font:
+    600 18px / 1 var(--font-display),
+    sans-serif;
   color: var(--mkx-ink);
 }
 .mkx-mods__name {
   min-width: 0;
   overflow-wrap: break-word;
-  font-size: 14.5px;
-  color: var(--color-text-primary);
+  font:
+    14px / 1.5 var(--font-interface),
+    sans-serif;
+  color: #f4f2ed;
 }
 .mkx-mods__n {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font:
+    12px var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  color: var(--color-text-muted);
+  color: #aaa79f;
 }
 .mkx-mods__last {
   grid-column: 2 / -1;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  color: var(--mkx-tone-ink);
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: var(--mkx-tone);
 }
 
 /* The last attempts, the newest first. */
@@ -398,47 +353,47 @@
   grid-template-columns: 88px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 12px 0;
+  border-bottom: 1px solid #303137;
 }
 .mkx-hist__date {
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font:
+    13px var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  color: var(--color-text-secondary);
+  color: #c2bfb8;
 }
 .mkx-hist__score {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
+  font:
+    600 13px var(--font-mono),
+    monospace;
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
-  color: var(--mkx-tone-ink);
+  color: var(--mkx-tone);
 }
 .mkx-hist__late {
   margin-left: 8px;
-  font-size: 9.5px;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font:
+    12px var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 .mkx-empty {
   margin: 0;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--color-text-muted);
+  font:
+    13px / 1.7 var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 
 /* ── Opening: between the window's "Commencer" and the paper ───────────── */
 
 .mkx-open {
-  position: relative;
   max-width: 760px;
   padding: 40px 44px 38px;
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-elevated);
+  border: 1px solid #303137;
+  background: #121418;
 }
 .mkx-open .pg-title {
   margin-bottom: 20px;
@@ -449,14 +404,13 @@
 }
 .mkx-open__wait {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
   margin: 0 0 24px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  line-height: 1.5;
-  color: var(--mkx-ink);
+  font:
+    13px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #c2bfb8;
 }
 .mkx-open .mkx-error,
 .mkx-open .mkx-note {
@@ -473,15 +427,15 @@
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: var(--color-bg-base);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
+  background: #0b0c0e;
+  color: #f4f2ed;
+  font-family: var(--font-interface), sans-serif;
 }
 
 .mkx-bar {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--color-border-default);
-  background: var(--color-bg-elevated);
+  border-bottom: 1px solid #303137;
+  background: #121418;
 }
 .mkx-bar__inner {
   display: grid;
@@ -491,7 +445,7 @@
   gap: 12px 28px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 14px var(--page-gutter);
+  padding: 16px var(--page-gutter);
 }
 .mkx-bar__exam {
   grid-area: exam;
@@ -501,49 +455,42 @@
   min-width: 0;
 }
 .mkx-bar__mark {
-  width: 26px;
-  height: 30px;
-  color: var(--mkx-ink);
-  --mkx-hex-line: var(--mkx-soft);
-  --mkx-hex-fill: var(--color-bg-elevated);
-}
-.mkx-bar__mark svg {
-  width: 13px;
-  height: 13px;
+  width: 36px;
+  height: 36px;
+  color: #f4f2ed;
 }
 .mkx-bar__txt {
   min-width: 0;
 }
 .mkx-bar__label {
   display: block;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 .mkx-bar__name {
   margin: 0;
   overflow: hidden;
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
+  font:
+    600 24px / 1.1 var(--font-display),
+    sans-serif;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: var(--color-text-primary);
+  color: #f4f2ed;
 }
 .mkx-bar__progress {
   grid-area: progress;
   display: grid;
-  gap: 7px;
+  gap: 8px;
   width: 200px;
 }
 .mkx-bar__count {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font:
+    13px var(--font-interface),
+    sans-serif;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
+  color: #c2bfb8;
 }
 .mkx-bar__submit {
   grid-area: submit;
@@ -554,52 +501,45 @@
   padding: 0 var(--page-gutter) 12px;
 }
 
+/* The clock: data, so its figures stay tabular. Its last minute turns it to
+   the danger colour, without a pulse. */
 .mkx-timer {
   grid-area: timer;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-sunken);
-  transition:
-    border-color var(--dur-base) ease,
-    background var(--dur-base) ease;
+  border: 1px solid #74767d;
+  background: #191c22;
 }
 .mkx-timer__ico {
   display: grid;
-  color: var(--color-text-muted);
+  color: #aaa79f;
 }
 .mkx-timer__ico svg {
   width: 16px;
   height: 16px;
 }
 .mkx-timer__val {
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font:
+    600 36px / 1 var(--font-display),
+    sans-serif;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary);
+  color: #f4f2ed;
 }
 .mkx-timer__low {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-danger);
+  font:
+    600 12px / 1.4 var(--font-interface),
+    sans-serif;
+  color: var(--color-state-danger);
 }
 .mkx-timer--low {
-  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
-  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  border-color: var(--color-state-danger);
+  background: #291b20;
 }
 .mkx-timer--low .mkx-timer__val,
 .mkx-timer--low .mkx-timer__ico {
-  color: var(--color-danger);
-}
-.mkx-timer--low .mkx-timer__ico {
-  animation: mkx-pulse 1s ease-in-out infinite;
+  color: var(--color-state-danger);
 }
 
 .mkx-run__scroll {
@@ -624,21 +564,18 @@
 .mkx-part .mkx-head {
   margin-bottom: 4px;
 }
-.mkx-part .mkx-head h2 {
-  color: var(--mkx-ink);
-}
 
 /* A question: its number and whether it has an answer, the question, the
    options as keyed rows (real radios, drawn by their labels). */
 .mkx-q {
   padding: 20px 22px 22px;
   scroll-margin-top: 20px;
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-elevated);
+  border: 1px solid #303137;
+  background: #121418;
   transition: border-color var(--dur-base) ease;
 }
 .mkx-q[data-answered="true"] {
-  border-color: var(--mkx-soft);
+  border-color: #74767d;
 }
 .mkx-q__head {
   display: flex;
@@ -646,30 +583,29 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 .mkx-q__head b {
-  font-weight: 700;
-  color: var(--color-text-primary);
+  font-weight: 600;
+  color: #f4f2ed;
 }
 .mkx-q__state {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   white-space: nowrap;
 }
 .mkx-q__state::before {
   content: "";
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--color-text-muted);
+  width: 8px;
+  height: 8px;
+  border: 1px solid #aaa79f;
 }
 .mkx-q[data-answered="true"] .mkx-q__state {
-  color: var(--mkx-ink);
+  color: #f4f2ed;
 }
 .mkx-q[data-answered="true"] .mkx-q__state::before {
   border-color: var(--mkx-accent);
@@ -680,12 +616,10 @@
 .mkx-q__text {
   margin: 0 0 18px;
   overflow-wrap: anywhere;
-  font-family: var(--font-sans);
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-  color: var(--color-text-primary);
+  font:
+    600 clamp(24px, 3vw, 32px) / 1.15 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
   text-wrap: pretty;
 }
 .mkx-opts {
@@ -709,41 +643,40 @@
 }
 .mkx-opt__label {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
   align-items: center;
   gap: 14px;
-  padding: 10px 16px 10px 12px;
+  min-height: 64px;
+  padding: 14px 16px 14px 14px;
   cursor: pointer;
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-base);
-  color: var(--color-text-secondary);
+  border: 1px solid #74767d;
+  background: #191c22;
+  color: #f4f2ed;
   transition:
     border-color var(--dur-fast) ease,
     background var(--dur-fast) ease,
     color var(--dur-fast) ease;
 }
 .mkx-opt__label:hover {
-  border-color: var(--color-text-muted);
-  color: var(--color-text-primary);
+  border-color: var(--cosmetic-accent-hover);
 }
 .mkx-opt__input:focus-visible + .mkx-opt__label {
-  outline: 2px solid var(--mkx-accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
+/* A selected answer goes on chalk, its key in ink. */
 .mkx-opt__input:checked + .mkx-opt__label {
-  border-color: var(--mkx-accent);
-  background: var(--mkx-wash);
-  color: var(--color-text-primary);
+  border-color: #eae7df;
+  background: #eae7df;
+  color: #141518;
 }
 .mkx-opt__key {
-  width: 32px;
+  width: 36px;
   height: 36px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  --mkx-hex-line: var(--color-border-default);
-  --mkx-hex-fill: var(--color-bg-base);
+  font:
+    600 20px var(--font-display),
+    sans-serif;
+  color: #aaa79f;
 }
 /* The key letter is drawn, not written: the label's text, and so the radio's
    accessible name, stays the option alone ("Liste", not "AListe"). */
@@ -751,20 +684,21 @@
   content: attr(data-key);
 }
 .mkx-opt__input:checked + .mkx-opt__label .mkx-opt__key {
-  color: var(--mkx-ink);
-  --mkx-hex-line: var(--mkx-accent);
-  --mkx-hex-fill: var(--mkx-wash);
+  color: #eae7df;
+  background: #141518;
+  border-color: #141518;
 }
 .mkx-opt__text {
   min-width: 0;
   overflow-wrap: break-word;
-  font-size: 15px;
-  line-height: 1.45;
+  font:
+    15px / 1.6 var(--font-interface),
+    sans-serif;
 }
 .mkx-opt__check {
   display: grid;
   opacity: 0;
-  color: var(--mkx-ink);
+  color: #141518;
   transition: opacity var(--dur-fast) ease;
 }
 .mkx-opt__check svg {
@@ -783,11 +717,11 @@
   justify-content: space-between;
   gap: 18px 28px;
   padding: 22px 24px;
-  border: 1px dashed var(--color-border-default);
-  background: var(--color-bg-sunken);
+  border: 1px solid #303137;
+  background: #121418;
 }
 .mkx-handin[data-complete="true"] {
-  border-color: var(--mkx-soft);
+  border-color: #74767d;
 }
 .mkx-handin__txt {
   flex: 1 1 300px;
@@ -795,13 +729,14 @@
 }
 .mkx-handin__txt p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
+  font:
+    14px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #c2bfb8;
 }
 .mkx-handin__txt b {
-  font-weight: 700;
-  color: var(--color-text-primary);
+  font-weight: 600;
+  color: #f4f2ed;
 }
 .mkx-jump {
   display: flex;
@@ -810,28 +745,28 @@
   margin-top: 12px;
 }
 .mkx-jump__btn {
-  min-width: 38px;
-  height: 30px;
-  padding: 0 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-base);
+  font:
+    500 12px var(--font-mono),
+    monospace;
+  font-variant-numeric: tabular-nums;
+  color: #c2bfb8;
+  border: 1px solid #74767d;
+  background: #191c22;
   transition:
     border-color var(--dur-fast) ease,
     color var(--dur-fast) ease;
 }
 .mkx-jump__btn:hover {
-  border-color: var(--mkx-accent);
-  color: var(--color-text-primary);
+  border-color: var(--cosmetic-accent-hover);
+  color: #f4f2ed;
 }
 .mkx-jump__btn:focus-visible {
-  outline: 2px solid var(--mkx-accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 
 /* ── Result ─────────────────────────────────────────────────────────────── */
@@ -843,72 +778,39 @@
   max-width: 1320px;
 }
 
+/* The score first, on chalk, then the verdict and what to go back to. */
 .mkx-hero {
-  position: relative;
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  align-items: center;
-  gap: 44px;
-  padding: 36px 40px;
-  border: 1px solid var(--mkx-tone-soft);
-  background: var(--color-bg-elevated);
+  grid-template-columns: minmax(200px, 0.7fr) minmax(0, 1.5fr);
+  align-items: start;
+  gap: 32px;
+  padding: 24px 0;
 }
-.mkx-hero::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  left: -1px;
-  height: 2px;
-  background: var(--mkx-tone);
+.mkx-hero > div {
+  min-width: 0;
 }
-
-.mkx-gauge {
-  position: relative;
-  width: 200px;
-  height: 200px;
+.mkx-score {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  color: #141518;
+  background: #eae7df;
 }
-.mkx-gauge svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-.mkx-gauge__track {
-  fill: none;
-  stroke: var(--color-border-subtle);
-  stroke-width: 10;
-}
-.mkx-gauge__fill {
-  fill: none;
-  stroke: var(--mkx-tone);
-  stroke-width: 10;
-}
-.mkx-gauge__center {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  text-align: center;
-}
-.mkx-gauge__pct {
+.mkx-score__lbl {
   margin: 0;
-  font-family: var(--font-sans);
-  font-size: 54px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.04em;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #55524d;
+}
+.mkx-score__pct {
+  margin: 0;
+  font:
+    600 clamp(64px, 7vw, 104px) / 1 var(--font-display),
+    sans-serif;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: var(--color-text-primary);
-}
-.mkx-gauge__sub {
-  margin: 8px 0 0;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
 }
 
 .mkx-badge {
@@ -916,39 +818,33 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 16px;
-  padding: 5px 11px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--mkx-tone-ink);
-  border: 1px solid var(--mkx-tone-soft);
-  background: var(--mkx-tone-wash);
+  font:
+    600 13px / 1.6 var(--font-interface),
+    sans-serif;
+  color: var(--mkx-tone);
 }
 .mkx-badge::before {
   content: "";
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   background: var(--mkx-tone);
 }
 .mkx-hero__title {
   margin: 0 0 12px;
   overflow-wrap: anywhere;
-  font-family: var(--font-sans);
-  font-size: clamp(24px, 2.8vw, 36px);
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.025em;
-  color: var(--color-text-primary);
+  font:
+    600 clamp(38px, 4vw, 60px) / 1.05 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
   text-wrap: balance;
 }
 .mkx-hero__desc {
   max-width: 60ch;
   margin: 0 0 22px;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
+  font:
+    14px / 1.7 var(--font-interface),
+    sans-serif;
+  color: #c2bfb8;
 }
 
 .mkx-substats {
@@ -959,36 +855,35 @@
   margin: 0 0 26px;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--color-border-default);
+  background: #191c22;
+  border: 1px solid #303137;
 }
 .mkx-substats > li {
-  padding: 10px 20px;
+  padding: 14px 20px;
   text-align: center;
 }
 .mkx-substats > li + li {
-  border-left: 1px solid var(--color-border-default);
+  border-left: 1px solid #303137;
 }
 .mkx-substats__val {
   display: block;
-  font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.1;
+  font:
+    600 36px / 1 var(--font-display),
+    sans-serif;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary);
+  color: #f4f2ed;
 }
 .mkx-substats__val[data-tone] {
-  color: var(--mkx-tone-ink);
+  color: var(--mkx-tone);
 }
 .mkx-substats__lbl {
   display: block;
-  margin-top: 4px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin-top: 6px;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  color: var(--color-text-muted);
+  color: #aaa79f;
 }
 
 .mkx-actions {
@@ -1020,11 +915,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font:
+    12px var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 .mkx-legend > li {
   display: inline-flex;
@@ -1052,37 +946,35 @@
   align-items: baseline;
   gap: 10px 16px;
   padding: 14px 0 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid #303137;
 }
 .mkx-dom__name {
   grid-area: name;
   min-width: 0;
   overflow-wrap: break-word;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font:
+    600 15px / 1.5 var(--font-interface),
+    sans-serif;
+  color: #f4f2ed;
 }
 .mkx-dom__first {
   display: inline-block;
   margin-left: 10px;
-  padding: 2px 7px;
-  vertical-align: 2px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--mkx-tone-ink);
-  border: 1px solid var(--mkx-tone-soft);
+  padding: 2px 8px;
+  vertical-align: 1px;
+  font:
+    600 12px / 1.4 var(--font-interface),
+    sans-serif;
+  color: var(--mkx-tone);
+  border: 1px solid var(--mkx-tone);
 }
 .mkx-dom__score {
   grid-area: score;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font:
+    600 13px var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  color: var(--mkx-tone-ink);
+  color: var(--mkx-tone);
 }
 .mkx-dom .mkx-meter {
   grid-area: meter;
@@ -1098,18 +990,19 @@
   list-style: none;
 }
 .mkx-rev {
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-elevated);
+  border: 1px solid #303137;
+  background: #121418;
 }
 .mkx-rev[open] {
-  border-color: var(--mkx-tone-soft);
+  border-color: #74767d;
 }
 .mkx-rev__sum {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) 16px;
+  grid-template-columns: 28px minmax(0, 1fr) 16px;
   align-items: center;
   gap: 14px;
-  padding: 16px 20px;
+  min-height: 64px;
+  padding: 18px 20px;
   cursor: pointer;
   list-style: none;
 }
@@ -1117,17 +1010,16 @@
   display: none;
 }
 .mkx-rev__sum:focus-visible {
-  outline: 2px solid var(--mkx-accent);
-  outline-offset: -2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 .mkx-rev__mark {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  color: var(--mkx-tone-ink);
-  border: 1px solid var(--mkx-tone-soft);
-  background: var(--mkx-tone-wash);
+  width: 28px;
+  height: 28px;
+  color: var(--mkx-tone);
+  border: 1px solid var(--mkx-tone);
 }
 .mkx-rev__mark svg {
   width: 13px;
@@ -1136,27 +1028,26 @@
 .mkx-rev__num {
   display: block;
   margin-bottom: 4px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 .mkx-rev__num b {
-  font-weight: 700;
-  color: var(--mkx-tone-ink);
+  font-weight: 600;
+  color: var(--mkx-tone);
 }
 .mkx-rev__q {
   display: block;
   overflow-wrap: break-word;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--color-text-primary);
+  font:
+    500 15px / 1.6 var(--font-interface),
+    sans-serif;
+  color: #f4f2ed;
 }
 .mkx-rev__chev {
   display: grid;
-  color: var(--color-text-muted);
+  color: #aaa79f;
   transition: transform var(--dur-base) ease;
 }
 .mkx-rev__chev svg {
@@ -1167,7 +1058,7 @@
   transform: rotate(90deg);
 }
 .mkx-rev__body {
-  padding: 2px 20px 20px 60px;
+  padding: 2px 20px 20px 62px;
 }
 .mkx-answers {
   display: grid;
@@ -1182,23 +1073,26 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  font-size: 14px;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border-subtle);
+  font:
+    14px / 1.65 var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
+  background: #191c22;
+  border: 1px solid #303137;
 }
 .mkx-ans[data-tone] {
-  color: var(--color-text-primary);
-  border-color: var(--mkx-tone-soft);
+  color: #f4f2ed;
+  border-color: var(--mkx-tone);
   background: var(--mkx-tone-wash);
 }
 .mkx-ans__key {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-muted);
+  font:
+    600 13px var(--font-interface),
+    sans-serif;
+  color: #aaa79f;
 }
 .mkx-ans[data-tone] .mkx-ans__key {
-  color: var(--mkx-tone-ink);
+  color: var(--mkx-tone);
 }
 .mkx-ans__text {
   min-width: 0;
@@ -1206,58 +1100,45 @@
 }
 .mkx-ans__tag {
   padding: 2px 8px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
   white-space: nowrap;
-  color: var(--mkx-tone-ink);
-  border: 1px solid var(--mkx-tone-soft);
+  color: var(--mkx-tone);
+  border: 1px solid var(--mkx-tone);
 }
 .mkx-explain {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 11px;
   padding: 14px 16px;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-bg-sunken);
+  border: 1px solid #303137;
+  background: #191c22;
 }
 .mkx-explain > svg {
   width: 16px;
   height: 16px;
-  margin-top: 1px;
-  color: var(--color-info);
+  margin-top: 3px;
+  color: #c2bfb8;
 }
 .mkx-explain__txt {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
+  font:
+    13px / 1.7 var(--font-interface),
+    sans-serif;
+  color: #c2bfb8;
 }
 .mkx-explain__lbl {
   display: block;
-  margin-bottom: 5px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-info);
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #f4f2ed;
 }
 
 .mkx-end {
   padding-top: 22px;
-  border-top: 1px dashed var(--color-border-default);
-}
-
-@keyframes mkx-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
+  border-top: 1px solid #303137;
 }
 
 /* ── Narrow screens ─────────────────────────────────────────────────────── */
@@ -1272,7 +1153,7 @@
   }
   .mkx-intro__side {
     border-left: 0;
-    border-top: 1px solid var(--color-border-subtle);
+    border-top: 1px solid #303137;
   }
   .mkx-detail {
     grid-template-columns: 1fr;
@@ -1296,16 +1177,8 @@
     width: auto;
   }
   .mkx-hero {
-    grid-template-columns: 160px minmax(0, 1fr);
-    gap: 28px;
-    padding: 28px 26px;
-  }
-  .mkx-gauge {
-    width: 160px;
-    height: 160px;
-  }
-  .mkx-gauge__pct {
-    font-size: 42px;
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
 @media (max-width: 640px) {
@@ -1317,14 +1190,14 @@
   .mkx-window-wait {
     padding: 20px 16px 22px;
   }
+  .mkx-departure {
+    padding: 24px 20px;
+  }
   .mkx-stats {
     gap: 8px;
   }
-  .mkx-stat {
-    padding: 14px 6px 12px;
-  }
   .mkx-stat__val {
-    font-size: 24px;
+    font-size: 40px;
   }
   .mkx-rules li {
     grid-template-columns: 1fr;
@@ -1354,34 +1227,20 @@
     text-align: right;
   }
   .mkx-timer__val {
-    font-size: 18px;
+    font-size: 28px;
   }
   .mkx-q {
     padding: 16px 14px 18px;
   }
-  .mkx-q__text {
-    font-size: 16.5px;
-  }
   .mkx-opt__label {
     gap: 10px;
-    padding: 8px 12px 8px 8px;
+    padding: 12px;
   }
   .mkx-handin {
     padding: 18px 16px;
   }
   .mkx-handin .btn {
     width: 100%;
-  }
-  .mkx-hero {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    padding: 26px 18px;
-    text-align: center;
-  }
-  .mkx-hero__desc,
-  .mkx-substats {
-    margin-right: auto;
-    margin-left: auto;
   }
   .mkx-actions {
     flex-direction: column;
@@ -1392,7 +1251,7 @@
     width: 100%;
   }
   .mkx-substats > li {
-    padding: 10px 14px;
+    padding: 12px 14px;
   }
   .mkx-rev__sum {
     gap: 12px;
@@ -1403,14 +1262,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mkx-live__dot,
-  .mkx-timer--low .mkx-timer__ico {
-    animation: none;
-  }
-  .mkx-hex::before,
-  .mkx-hex::after,
   .mkx-back,
-  .mkx-timer,
   .mkx-q,
   .mkx-opt__label,
   .mkx-opt__check,

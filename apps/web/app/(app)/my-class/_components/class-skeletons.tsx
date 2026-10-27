@@ -9,9 +9,9 @@ import { Skeleton, SkeletonText } from "@cyberlearn/ui";
  */
 
 /**
- * PageHeader: the prompt (.pg-crumb), the eyebrow, the title (.pg-title) and
- * its lede (.pg-lede). The eyebrow is a bare bar with the eyebrow's line and
- * margin: .pg-eyebrow would print its "// " before it.
+ * PageHeader: the breadcrumb (.pg-crumb), the eyebrow, the title (.pg-title)
+ * and its lede (.pg-lede). The eyebrow is a bare bar with the eyebrow's line
+ * and margin, so a placeholder carries no text style of its own.
  */
 export function ClassHeaderSkeleton({
   crumb,

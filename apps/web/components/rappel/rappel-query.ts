@@ -1,7 +1,7 @@
 /**
  * The parameter that opens the review window over the page (registered in
  * components/query-dialogs.ts): `?rappel=1` for the day's recall, from the
- * dashboard, the sidebar's "Révisions" and the daily reminder;
+ * dashboard, the navbar's "Révisions du jour" and the daily reminder;
  * `?rappel=module-<n>-<path>` for "Réviser ce module", from the module's
  * header on the path page. One parameter for both, so one window at a time.
  */

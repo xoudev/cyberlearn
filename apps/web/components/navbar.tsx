@@ -8,11 +8,15 @@ import { wrappedWindow } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { friendshipRepository, notificationRepository } from "@cyberlearn/db";
+import { errorMessage, logger } from "@cyberlearn/lib/logger";
+import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { dailyRecallState } from "@/lib/revisions/daily-recall";
 import { AvatarView } from "./avatar-view";
 import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
 import { NewsButton } from "./news-button";
 import { NotificationPanel } from "./notification-panel";
+import { RevisionsButton } from "./revisions-button";
 import { WrappedChip } from "./wrapped-chip";
 import { NavigationLocation } from "./navigation-location";
 import { BastionLogo } from "./bastion-logo";
@@ -22,11 +26,29 @@ const headerStyle: React.CSSProperties & { "--chrome-panel-top": string } = {
   "--chrome-panel-top": `${String(NAVBAR_HEIGHT + 8)}px`,
 };
 
+/**
+ * The day's recall as the navbar offers it: null while spaced repetition is
+ * switched off in the settings (no button then),
+ * else whether it waits, as the window will find it (dailyRecallState draws the
+ * day on its first read with a card due, once, as the dashboard does). Never a
+ * count. A failure to read it costs the mark, not the navbar.
+ */
+async function recallEntry(userId: string): Promise<{ waiting: boolean } | null> {
+  if (!(await revisionsEnabled(userId))) return null;
+  try {
+    return { waiting: (await dailyRecallState(userId)) === "todo" };
+  } catch (err) {
+    logger.warn({ scope: "navbar.recall", err: errorMessage(err) }, "day's recall unreadable");
+    return { waiting: false };
+  }
+}
+
 export async function Navbar(): Promise<React.ReactElement> {
   let displayName = "";
   let avatarUrl: string | null = null;
   let unreadCount = 0;
   let friendRequestCount = 0;
+  let recall: { waiting: boolean } | null = null;
   let userId = "";
 
   try {
@@ -43,10 +65,12 @@ export async function Navbar(): Promise<React.ReactElement> {
     if (userId) {
       // Two counts, one round trip each, on the one component every signed-in
       // page already renders. The lists themselves are read when the panel is
-      // opened - nobody pays for friends they are not looking at.
-      [unreadCount, friendRequestCount] = await Promise.all([
+      // opened - nobody pays for friends they are not looking at. The day's
+      // recall reads its stored session (drawn once a day).
+      [unreadCount, friendRequestCount, recall] = await Promise.all([
         notificationRepository.findUnreadCount(userId),
         friendshipRepository.countIncoming(userId),
+        recallEntry(userId),
       ]);
     }
   } catch {
@@ -85,6 +109,8 @@ export async function Navbar(): Promise<React.ReactElement> {
         {/* The release notes: news, announced where the other news arrives. */}
         <NewsButton />
         {userId && <FriendsPanel initialRequestCount={friendRequestCount} />}
+        {/* The day's recall, a window over the page: not a page of the sidebar. */}
+        {userId && recall !== null && <RevisionsButton waiting={recall.waiting} />}
         {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
         {/* The settings, behind their icon: a section's address, which the

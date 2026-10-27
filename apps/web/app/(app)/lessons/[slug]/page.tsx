@@ -7,6 +7,7 @@ import { indexPlacements, isReadable } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { lessonTabTitle, readLesson } from "@/lib/lessons/read-lesson";
 import { NO_RESUME, lessonResume } from "@/lib/lessons/resume";
+import { findFinalQuizStep } from "@/lib/lessons/final-quiz";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import { sectionFromQuery } from "@cyberlearn/lib/revisions/passage";
 import {
@@ -178,6 +179,8 @@ export default async function LessonPage({
       initialStep={initialStep}
       initialDoneSteps={resume.doneSteps}
       initialExercisesDone={resume.exercisesDone}
+      // Answering the final quiz finishes the lesson; not one finished already.
+      finalQuizStep={settled ? null : findFinalQuizStep(mdxSections)}
       note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
       planExtra={
         <>
@@ -240,8 +243,9 @@ export default async function LessonPage({
 
       {/* ── Next bar ─────────────────────────────────────────────────────────
           Rendered even with no next lesson: it leads back to the path or the
-          catalogue. A lesson is finished from the toolbar's "Terminer", at
-          the end of its last section. Not in review: a draft is not something
+          catalogue. A lesson is finished by the last answer of its final
+          quiz, or from the toolbar's "Terminer" at the end of its last
+          section. Not in review: a draft is not something
           to finish, rate or ask about. */}
       {!reviewing && (
         <NextBar

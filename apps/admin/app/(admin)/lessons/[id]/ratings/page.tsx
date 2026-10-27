@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lessonRepository, ratingRepository, type ConsoleRatingRow } from "@cyberlearn/db";
-import { KpiCard, PageHeader } from "../../../_components/admin-ui";
+import { KpiCard, PageHeader, UserAvatar } from "../../../_components/admin-ui";
 import { DataGrid, type GridRowBase } from "../../../_components/data-grid";
 import {
   LESSON_CRUMBS,
@@ -22,6 +22,7 @@ import {
 import { routeIdOrNotFound } from "@/lib/route-id";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Avis d'une leçon" };
 
@@ -59,7 +60,9 @@ export default async function LessonRatingsPage({
   ]);
   if (lesson === null) notFound();
 
-  const rows: GridRowBase[] = slice.rows.map((r) => {
+  const avatars = await resolveAvatarSrcs(slice.rows.map((r) => r.user?.avatarUrl));
+
+  const rows: GridRowBase[] = slice.rows.map((r, index) => {
     const learner = learnerOf(r);
     return {
       id: r.id,
@@ -78,10 +81,16 @@ export default async function LessonRatingsPage({
         </span>,
         r.userId !== null ? (
           <Link key="u" href={`/users/${r.userId}`} className="a-row-link">
+            <UserAvatar
+              src={avatars[index] ?? null}
+              name={r.user?.displayName ?? learner}
+              size={26}
+            />
             <span className="a-row-link-title">{learner}</span>
           </Link>
         ) : (
-          <span key="u" style={{ color: "var(--a-muted)" }}>
+          <span key="u" className="a-person" style={{ color: "var(--a-muted)" }}>
+            <UserAvatar src={null} name="?" size={26} />
             {learner}
           </span>
         ),

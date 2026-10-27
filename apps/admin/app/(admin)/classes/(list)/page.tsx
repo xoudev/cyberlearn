@@ -61,7 +61,7 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
         <span key="e" style={{ color: "var(--a-fg-2)" }}>
           {establishment}
         </span>,
-        <span key="p" className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
+        <span key="p" style={{ color: "var(--a-fg-2)", whiteSpace: "nowrap" }}>
           {promotion}
           {c.promotion.startYear !== null && (
             <span style={{ color: "var(--a-muted)" }}> · {c.promotion.startYear}</span>
@@ -71,7 +71,7 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
         <span key="t" style={{ color: teachers.length === 0 ? "var(--a-faint)" : "var(--a-fg-2)" }}>
           {teachers.length === 0 ? "Aucun professeur" : teachers.join(", ")}
         </span>,
-        <Tag key="s" tone={isArchived ? "neutral" : "accent"}>
+        <Tag key="s" tone={isArchived ? "neutral" : "success"}>
           {isArchived ? "Archivée" : "Active"}
         </Tag>,
       ],
@@ -94,7 +94,7 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
 
       <div className="a-kpi-grid">
         <KpiCard label={CLASS_KPI_LABELS[0]} value={String(hierarchy.length)} tone="info" />
-        <KpiCard label={CLASS_KPI_LABELS[1]} value={String(totalPromotions)} tone="purple" />
+        <KpiCard label={CLASS_KPI_LABELS[1]} value={String(totalPromotions)} tone="info" />
         <KpiCard label={CLASS_KPI_LABELS[2]} value={String(classes.length - archived)} />
         <KpiCard label={CLASS_KPI_LABELS[3]} value={String(totalMembers)} tone="accent" />
       </div>

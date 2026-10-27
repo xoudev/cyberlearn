@@ -353,7 +353,8 @@ export const classRepository = {
           orderBy: { assignedAt: "asc" },
           select: {
             subject: true,
-            teacher: { select: { id: true, username: true, displayName: true } },
+            // avatarUrl: the console's roster shows each person's picture.
+            teacher: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
           },
         },
         promotion: {
@@ -368,7 +369,14 @@ export const classRepository = {
           select: {
             joinedAt: true,
             user: {
-              select: { id: true, username: true, displayName: true, email: true, role: true },
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                email: true,
+                role: true,
+                avatarUrl: true,
+              },
             },
           },
         },

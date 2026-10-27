@@ -58,8 +58,8 @@ describe("the surfaces that have to obey it", () => {
   const SURFACES = [
     // Fills the queue.
     "lib/lessons/complete.ts",
-    // The entry in the navigation.
-    "components/app-sidebar.tsx",
+    // The entry in the navigation: the navbar's "Révisions du jour".
+    "components/navbar.tsx",
     // The section on the dashboard.
     "app/(app)/dashboard/page.tsx",
     // The day's recall, its window and the app's route.

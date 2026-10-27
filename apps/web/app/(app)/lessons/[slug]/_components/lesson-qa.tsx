@@ -404,17 +404,16 @@ export function UserPill({
     >
       <span
         style={{
-          width: 16,
-          height: 16,
-          background: user
-            ? "linear-gradient(135deg, var(--color-brand-blue), var(--cosmetic-accent))"
-            : "linear-gradient(135deg, var(--color-text-disabled), var(--color-border-default))",
-          clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
+          width: 18,
+          height: 18,
+          background: "#191c22",
+          border: `1px solid ${user ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 8,
-          color: "var(--color-bg-base)",
+          fontFamily: "var(--font-display)",
+          fontSize: 10,
+          color: user ? "#f4f2ed" : "var(--color-text-muted)",
           fontWeight: 700,
           flexShrink: 0,
         }}

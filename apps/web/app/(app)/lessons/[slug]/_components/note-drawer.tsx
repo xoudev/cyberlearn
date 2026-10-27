@@ -239,40 +239,14 @@ export function NoteDrawer({
             strokeWidth={1.4}
             aria-hidden="true"
           >
-            <path
-              d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" strokeLinecap="square" />
           </svg>
         </button>
       }
       footer={
         <>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 7,
-              minWidth: 0,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                flexShrink: 0,
-                background:
-                  status === "error"
-                    ? "var(--color-danger)"
-                    : status === "saving"
-                      ? "var(--color-warning)"
-                      : "var(--cosmetic-accent)",
-              }}
-            />
+          <span className="lesson-notes__status">
+            <span className="lesson-notes__status-mark" data-status={status} aria-hidden="true" />
             <span
               role="status"
               style={status === "error" ? { color: "var(--color-danger)" } : undefined}
@@ -287,16 +261,16 @@ export function NoteDrawer({
             {status === "error" && saveError !== TOO_LONG ? (
               <button
                 type="button"
+                className="lesson-notes__retry"
                 onClick={() => {
                   save(content);
                 }}
-                style={retryBtn}
               >
                 Réessayer
               </button>
             ) : null}
           </span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+          <span className="lesson-notes__facts">
             {content.length >= COUNT_FROM ? (
               <span
                 style={
@@ -309,62 +283,20 @@ export function NoteDrawer({
             <span>
               {wordCount} mot{wordCount > 1 ? "s" : ""} · MD
             </span>
-            <Link
-              href="/notes"
-              style={{
-                color: "var(--cosmetic-accent)",
-                textDecoration: "none",
-              }}
-            >
-              Toutes mes notes →
+            <Link href="/notes" className="lesson-notes__all">
+              Toutes mes notes <span aria-hidden="true">→</span>
             </Link>
           </span>
         </>
       }
     >
-      {/* Linked-lesson badge */}
-      <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--color-border-subtle)" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "9px 12px",
-            background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--color-text-secondary)",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "var(--cosmetic-accent)",
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ minWidth: 0 }}>
-            Liée à cette leçon ·{" "}
-            <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{lessonTitle}</b>
-          </span>
-        </div>
-      </div>
+      {/* The lesson the note belongs to. */}
+      <p className="lesson-notes__lesson">
+        <span>Liée à cette leçon</span> <b>{lessonTitle}</b>
+      </p>
 
       {/* Formatting toolbar */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          padding: "8px 14px",
-          borderBottom: "1px solid var(--color-border-subtle)",
-          flexShrink: 0,
-        }}
-      >
+      <div className="lesson-notes__format">
         <ToolBtn
           label="Gras"
           onClick={() => {
@@ -389,15 +321,7 @@ export function NoteDrawer({
         >
           <b>H</b>
         </ToolBtn>
-        <span
-          style={{
-            width: 1,
-            height: 16,
-            background: "var(--color-border-default)",
-            margin: "0 6px",
-          }}
-          aria-hidden="true"
-        />
+        <span className="lesson-notes__format-sep" aria-hidden="true" />
         <ToolBtn
           label="Code"
           onClick={() => {
@@ -421,7 +345,7 @@ export function NoteDrawer({
             strokeWidth={1.4}
             aria-hidden="true"
           >
-            <path d="M6 4h8M6 8h8M6 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" strokeLinecap="round" />
+            <path d="M6 4h8M6 8h8M6 12h8M2 4h1.5M2 8h1.5M2 12h1.5" strokeLinecap="square" />
           </svg>
         </ToolBtn>
       </div>
@@ -439,34 +363,8 @@ export function NoteDrawer({
           "# Titre de la note\n\nÉcris tes notes en markdown…\n\n- **gras**, *italique*, `code`"
         }
         spellCheck={false}
-        style={{
-          flex: 1,
-          minHeight: 160,
-          width: "100%",
-          resize: "none",
-          background: "transparent",
-          border: "none",
-          outline: "none",
-          padding: "18px 18px",
-          color: "var(--color-text-primary)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 13.5,
-          lineHeight: 1.65,
-          letterSpacing: "0.01em",
-        }}
+        className="lesson-notes__editor"
       />
     </SideDrawer>
   );
 }
-
-const retryBtn: React.CSSProperties = {
-  padding: 0,
-  background: "transparent",
-  border: "none",
-  color: "var(--cosmetic-accent)",
-  font: "inherit",
-  letterSpacing: "inherit",
-  textTransform: "inherit",
-  textDecoration: "underline",
-  cursor: "pointer",
-};

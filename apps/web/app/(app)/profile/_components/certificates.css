@@ -24,7 +24,7 @@
   background: #eae7df;
   color: #141518;
   padding: 36px;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .certificate-next__body .workspace-kicker {
   color: #55524d;
@@ -63,7 +63,7 @@
   min-width: 0;
   color: #141518;
   background: #eae7df;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .certificate-record__top {
   display: flex;

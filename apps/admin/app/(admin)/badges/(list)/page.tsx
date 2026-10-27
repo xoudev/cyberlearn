@@ -96,11 +96,11 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
         <span key="c" style={{ fontSize: 11.5, color: "var(--a-muted)" }}>
           {criterion}
         </span>,
-        <b key="x" style={{ color: "var(--a-accent)" }}>
+        <b key="x" className="mono" style={{ color: "var(--a-fg)" }}>
           +{String(b.xpReward)}
         </b>,
         String(b._count.userBadges),
-        <Tag key="s" tone={b.isActive ? "accent" : "neutral"}>
+        <Tag key="s" tone={b.isActive ? "success" : "neutral"}>
           {b.isActive ? "Actif" : "Inactif"}
         </Tag>,
         <Link key="e" href={`/badges/${b.id}/edit`} className="a-btn a-btn--ghost a-btn--sm">

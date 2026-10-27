@@ -271,10 +271,10 @@ export function NotificationPanel({
               alignItems: "center",
               justifyContent: "space-between",
               padding: "14px 18px",
-              borderBottom: "1px solid var(--color-border-subtle)",
+              borderBottom: "1px solid #303137",
               position: "sticky",
               top: 0,
-              background: "var(--color-bg-elevated)",
+              background: "#121418",
               zIndex: 1,
             }}
           >
@@ -282,7 +282,7 @@ export function NotificationPanel({
               <span
                 className="mono-label chrome-panel-title"
                 style={{
-                  color: "var(--color-text-muted)",
+                  color: "#f4f2ed",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
@@ -301,11 +301,11 @@ export function NotificationPanel({
               {hasUnread && (
                 <span
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    color: "var(--cosmetic-accent)",
-                    background: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-                    border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
+                    fontFamily: "var(--font-interface)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#0b0c0e",
+                    background: "var(--cosmetic-accent)",
                     padding: "2px 6px",
                   }}
                 >
@@ -318,9 +318,10 @@ export function NotificationPanel({
                 type="button"
                 onClick={handleMarkAllRead}
                 disabled={isPending}
-                className="link-action mono-label mono-label--xs"
+                className="link-action mono-label"
                 style={{
-                  color: "var(--color-info)",
+                  minHeight: 44,
+                  color: "var(--cosmetic-accent-hover)",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -337,11 +338,11 @@ export function NotificationPanel({
               style={{
                 margin: 0,
                 padding: "12px 18px",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontFamily: "var(--font-interface)",
+                fontSize: 13,
                 lineHeight: 1.5,
-                color: "var(--color-danger)",
-                borderBottom: "1px solid var(--color-border-subtle)",
+                color: "var(--color-state-danger)",
+                borderBottom: "1px solid #303137",
               }}
             >
               {failure}
@@ -354,9 +355,9 @@ export function NotificationPanel({
               style={{
                 padding: "32px 18px",
                 textAlign: "center",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-text-muted)",
+                fontFamily: "var(--font-interface)",
+                fontSize: 13,
+                color: "#aaa79f",
               }}
             >
               Chargement…
@@ -368,7 +369,7 @@ export function NotificationPanel({
                 height="32"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--color-border-default)"
+                stroke="#74767d"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -380,9 +381,9 @@ export function NotificationPanel({
               <p
                 className="chrome-panel-empty"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "var(--color-text-muted)",
+                  fontFamily: "var(--font-interface)",
+                  fontSize: 13,
+                  color: "#aaa79f",
                   margin: 0,
                 }}
               >
@@ -408,17 +409,22 @@ export function NotificationPanel({
             style={{
               position: "sticky",
               bottom: 0,
-              padding: "10px 18px",
-              borderTop: "1px solid var(--color-border-subtle)",
-              background: "var(--color-bg-elevated)",
+              padding: "4px 18px",
+              borderTop: "1px solid #303137",
+              background: "#121418",
               textAlign: "center",
             }}
           >
             <Link
               href="/notifications"
               onClick={close}
-              className="link-action mono-label mono-label--xs"
-              style={{ color: "var(--color-info)" }}
+              className="link-action mono-label"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: 44,
+                color: "var(--cosmetic-accent-hover)",
+              }}
             >
               Tout voir
             </Link>
@@ -575,9 +581,7 @@ function NoticeRow({
   // Realtime carries the date as a string, which the helper reads too.
   const dateStr = notificationAge(item.createdAt, Date.now());
   const style: React.CSSProperties = {
-    background: isUnread
-      ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
-      : "transparent",
+    background: "transparent",
   };
 
   const content = (
@@ -590,10 +594,8 @@ function NoticeRow({
           style={{
             width: 32,
             height: 32,
-            background: isUnread
-              ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
-              : "var(--color-bg-overlay)",
-            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 26%, transparent)" : "var(--color-border-subtle)"}`,
+            background: "#191c22",
+            border: `1px solid ${isUnread ? "var(--cosmetic-accent)" : "#303137"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -608,10 +610,8 @@ function NoticeRow({
           style={{
             width: 32,
             height: 32,
-            background: isUnread
-              ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
-              : "var(--color-bg-overlay)",
-            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "var(--color-border-subtle)"}`,
+            background: "#191c22",
+            border: `1px solid ${isUnread ? "var(--cosmetic-accent)" : "#303137"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -628,10 +628,10 @@ function NoticeRow({
         <span
           style={{
             display: "block",
-            fontFamily: "var(--font-sans)",
-            fontSize: 13,
+            fontFamily: "var(--font-interface)",
+            fontSize: 14,
             fontWeight: isUnread ? 600 : 400,
-            color: isUnread ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+            color: isUnread ? "#f4f2ed" : "#c2bfb8",
             marginBottom: 3,
             lineHeight: 1.4,
           }}
@@ -640,9 +640,9 @@ function NoticeRow({
         </span>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--color-text-muted)",
+            fontFamily: "var(--font-interface)",
+            fontSize: 13,
+            color: "#aaa79f",
             lineHeight: 1.5,
             marginBottom: 4,
             display: "-webkit-box",
@@ -657,9 +657,8 @@ function NoticeRow({
           style={{
             display: "block",
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--color-text-faint)",
-            letterSpacing: "0.06em",
+            fontSize: 12,
+            color: "#aaa79f",
           }}
         >
           {dateStr}
@@ -671,13 +670,11 @@ function NoticeRow({
         <span
           aria-hidden="true"
           style={{
-            width: 6,
-            height: 6,
+            width: 8,
+            height: 8,
             background: "var(--cosmetic-accent)",
-            borderRadius: 0,
             marginTop: 6,
             flexShrink: 0,
-            boxShadow: "0 0 6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
           }}
         />
       )}

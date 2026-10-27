@@ -422,6 +422,15 @@
 .learning-dashboard .dash-chapter-node--done .dash-chapter-node-icon {
   color: var(--color-success);
 }
+/* The lessons of the module left out of the window (routeWindow): counted
+   on a quiet line, so the route stays the height of the mission beside it. */
+.learning-dashboard .dash-route-more {
+  display: block;
+  padding: 12px 10px;
+  border-bottom: 1px solid #383c44;
+  font-size: 11px;
+  color: var(--learning-quiet);
+}
 .learning-dashboard .dash-route-foot {
   margin-top: auto;
   padding-top: 24px;
@@ -692,7 +701,7 @@
   font-size: 11px;
 }
 .learning-dashboard a:focus-visible {
-  outline: 2px solid #ff9b71;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 4px;
 }
 .learning-dashboard .dash-now-main a:focus-visible {

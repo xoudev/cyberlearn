@@ -50,6 +50,25 @@ describe("the lesson's typography", () => {
     expect(lessonRules.length).toBeGreaterThan(20);
   });
 
+  it("runs the prose to the lesson's measure, at a reading size", () => {
+    // The paragraphs were held to 720px, then 90 characters: half of the
+    // column of a 1920px screen. The measure is the page's (--lesson-measure).
+    const measure = lessonRules.find((rule) =>
+      rule.selectors.some((s) => s.startsWith("article.lesson-content > :is(p, ul, ol,")),
+    );
+    expect(measure?.body).toMatch(/max-width: var\(--lesson-measure\);/u);
+    const paragraph = lessonRules.find((rule) =>
+      rule.selectors.includes("article.lesson-content > p"),
+    );
+    expect(paragraph?.body).toMatch(/font-size: 17px;/u);
+    expect(paragraph?.body).toMatch(/line-height: 1\.75;/u);
+    const page = rulesOf(sheet)
+      .filter((rule) => rule.selectors.includes(".lesson-page"))
+      .map((rule) => rule.body)
+      .join("");
+    expect(page).toMatch(/--lesson-measure: \d+rem;/u);
+  });
+
   it("starts at the article's own children, or at a Callout's body", () => {
     const anchored =
       /^(?:article\.lesson-content|:is\(article\.lesson-content, \.lesson-callout__body\)|\.lesson-callout__body) > /u;
@@ -90,18 +109,24 @@ describe("a component's block", () => {
   it("is a size container, named for the components' container queries", () => {
     const block = blockRules.find((rule) => rule.selectors.includes(".lesson-block"));
     expect(block?.body).toMatch(/container: lesson-block \/ inline-size;/u);
-    expect(block?.body).toMatch(/margin-inline: auto;/u);
   });
 
-  it("sits in the prose's measure, or wide up to the article's width in focus mode", () => {
+  it("starts on the prose's left edge, not centred in the article", () => {
+    // Centred, a block in the prose's measure stood to the right of the
+    // paragraph above it as soon as the article was wider than the measure.
+    const block = blockRules.find((rule) => rule.selectors.includes(".lesson-block"));
+    expect(block?.body).toMatch(/margin-inline: 0;/u);
+  });
+
+  it("sits in the prose's measure, or as wide as the article", () => {
     const prose = blockRules.find((rule) =>
       rule.selectors.includes('.lesson-block[data-width="prose"]'),
     );
     const wide = blockRules.find((rule) =>
       rule.selectors.includes('.lesson-block[data-width="wide"]'),
     );
-    expect(prose?.body).toMatch(/max-width: 720px;/u);
-    expect(wide?.body).toMatch(/max-width: 1200px;/u);
+    expect(prose?.body).toMatch(/max-width: var\(--lesson-measure\);/u);
+    expect(wide?.body).toMatch(/max-width: none;/u);
   });
 
   it("forces nothing on its component but the top and bottom margins", () => {

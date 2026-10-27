@@ -17,6 +17,26 @@ interface Props {
 
 const INITIAL_STATE: RequestDeletionState = {};
 
+/** Bastion's danger: what this dialog destroys, and the button that does it. */
+const DANGER = "var(--color-state-danger)";
+
+const ITEM: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.5,
+  color: "#c2bfb8",
+  display: "flex",
+  gap: 10,
+  alignItems: "baseline",
+};
+
+/** A square list mark, like every Bastion mark. */
+const MARK: React.CSSProperties = {
+  width: 6,
+  height: 6,
+  flexShrink: 0,
+  transform: "translateY(-2px)",
+};
+
 export function DeleteAccountSection({
   pendingExpiresAt,
   certificateCount,
@@ -53,7 +73,7 @@ export function DeleteAccountSection({
       onClose={() => {
         setOpen(false);
       }}
-      eyebrow="// RGPD · ART. 17 · ACTION IRRÉVERSIBLE"
+      eyebrow="RGPD, article 17 · action irréversible"
       title="Suppression définitive du compte"
       className="community-dialog account-delete-dialog"
       maxWidth={520}
@@ -63,13 +83,12 @@ export function DeleteAccountSection({
         <p
           style={{
             margin: "0 0 14px",
-            color: "var(--color-text-primary)",
+            color: "#f4f2ed",
             fontWeight: 500,
             fontSize: 14,
           }}
         >
-          Cette action est{" "}
-          <span style={{ color: "var(--color-danger)", fontWeight: 700 }}>irréversible</span>. Les
+          Cette action est <span style={{ color: DANGER, fontWeight: 700 }}>irréversible</span>. Les
           éléments suivants seront supprimés ou anonymisés :
         </p>
 
@@ -79,7 +98,7 @@ export function DeleteAccountSection({
             margin: "0 0 14px",
             display: "flex",
             flexDirection: "column",
-            gap: 6,
+            gap: 8,
             listStyle: "none",
           }}
         >
@@ -89,32 +108,13 @@ export function DeleteAccountSection({
             "Tes logs d'audit (pseudonymisés)",
             "Tu seras immédiatement déconnecté·e",
           ].map((item) => (
-            <li
-              key={item}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                color: "var(--color-text-muted)",
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-start",
-              }}
-            >
-              <span style={{ color: "var(--color-danger)", flexShrink: 0 }}>·</span>
+            <li key={item} style={ITEM}>
+              <span aria-hidden="true" style={{ ...MARK, background: DANGER }} />
               {item}
             </li>
           ))}
-          <li
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--color-text-muted)",
-              display: "flex",
-              gap: 8,
-              alignItems: "flex-start",
-            }}
-          >
-            <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>·</span>
+          <li style={ITEM}>
+            <span aria-hidden="true" style={{ ...MARK, background: "#aaa79f" }} />
             Tes certificats restent vérifiables publiquement, mais ne portent plus ton nom
           </li>
         </ul>
@@ -122,21 +122,21 @@ export function DeleteAccountSection({
         {certificateCount > 0 && (
           <div
             style={{
-              padding: "10px 14px",
-              background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 15%, transparent)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--cosmetic-accent)",
+              padding: "12px 14px",
+              background: "#121418",
+              border: "1px solid #74767d",
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: "#c2bfb8",
               marginBottom: 16,
               display: "flex",
               flexDirection: "column",
-              gap: 6,
+              gap: 8,
             }}
           >
             <span>
               Tu as{" "}
-              <b>
+              <b style={{ color: "#f4f2ed" }}>
                 {certificateCount} certificat{certificateCount > 1 ? "s" : ""}
               </b>
               . Télécharge-les avant la suppression.
@@ -149,9 +149,16 @@ export function DeleteAccountSection({
                 // pathname does not change, only the tab under it.
                 drawer?.leave();
               }}
-              style={{ color: "var(--color-info)", textDecoration: "none", fontSize: 11 }}
+              style={{
+                width: "fit-content",
+                color: "var(--cosmetic-accent-hover)",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                fontSize: 13,
+                fontWeight: 600,
+              }}
             >
-              ▶ Voir mes certificats →
+              Voir mes certificats →
             </Link>
           </div>
         )}
@@ -161,12 +168,11 @@ export function DeleteAccountSection({
           htmlFor="delete-confirm-input"
           style={{
             display: "block",
-            color: "var(--color-text-muted)",
+            color: "#c2bfb8",
             marginBottom: 6,
           }}
         >
-          Pour confirmer, tape{" "}
-          <b style={{ color: "var(--color-danger)", letterSpacing: "0.12em" }}>SUPPRIMER</b>
+          Pour confirmer, tape <b style={{ color: DANGER }}>SUPPRIMER</b>
         </label>
         <input
           id="delete-confirm-input"
@@ -180,14 +186,12 @@ export function DeleteAccountSection({
           placeholder="SUPPRIMER"
           style={{
             width: "100%",
+            minHeight: 44,
             padding: "8px 12px",
-            background: "var(--color-bg-sunken)",
-            border: `1px solid ${isConfirmed ? "var(--color-danger)" : "var(--color-border-default)"}`,
-            color: "var(--color-text-primary)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            letterSpacing: "0.08em",
-            outline: "none",
+            background: "#0b0c0e",
+            border: `1px solid ${isConfirmed ? DANGER : "#74767d"}`,
+            color: "#f4f2ed",
+            fontSize: 14,
             boxSizing: "border-box",
           }}
         />
@@ -197,10 +201,8 @@ export function DeleteAccountSection({
             role="alert"
             style={{
               marginTop: 8,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--color-danger)",
-              letterSpacing: "0.04em",
+              fontSize: 13,
+              color: DANGER,
             }}
           >
             {state.error}
@@ -227,13 +229,14 @@ export function DeleteAccountSection({
               type="submit"
               disabled={!isConfirmed || pending}
               style={{
+                minHeight: 44,
                 padding: "8px 20px",
                 fontWeight: 700,
-                background: isConfirmed && !pending ? "var(--color-danger)" : "transparent",
-                border: `1px solid ${isConfirmed && !pending ? "var(--color-danger)" : "#2A1B1B"}`,
-                color: isConfirmed && !pending ? "#ffffff" : "var(--color-text-disabled)",
+                background: isConfirmed && !pending ? DANGER : "transparent",
+                border: `1px solid ${isConfirmed && !pending ? DANGER : "#303137"}`,
+                color: isConfirmed && !pending ? "#141518" : "#aaa79f",
                 cursor: isConfirmed && !pending ? "pointer" : "not-allowed",
-                transition: "all 150ms ease",
+                transition: "background-color 150ms ease, border-color 150ms ease",
               }}
             >
               {pending ? "Envoi..." : "Envoyer la demande"}

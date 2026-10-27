@@ -8,6 +8,7 @@ import { ClassDetailsForm } from "../_components/class-details-form";
 import { ClassRoster } from "../_components/class-roster";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 import { consoleDateFormat } from "@/lib/console-time";
 import { routeIdOrNotFound } from "@/lib/route-id";
 
@@ -58,6 +59,11 @@ export default async function AdminClassPage({
   if (!klass) notFound();
 
   const archived = klass.archivedAt !== null;
+  // The roster's pictures: the teachers first, then the members, in order.
+  const avatars = await resolveAvatarSrcs([
+    ...klass.teachers.map((t) => t.teacher.avatarUrl),
+    ...klass.members.map((m) => m.user.avatarUrl),
+  ]);
   const memberIds = new Set(klass.members.map((m) => m.user.id));
 
   return (
@@ -96,14 +102,16 @@ export default async function AdminClassPage({
 
       <ClassRoster
         classId={klass.id}
-        teachers={klass.teachers.map((t) => ({
+        teachers={klass.teachers.map((t, index) => ({
           id: t.teacher.id,
           name: t.teacher.displayName || (t.teacher.username ?? "Sans nom"),
+          avatarSrc: avatars[index] ?? null,
           subject: t.subject,
         }))}
-        members={klass.members.map((m) => ({
+        members={klass.members.map((m, index) => ({
           id: m.user.id,
           name: m.user.displayName || (m.user.username ?? "Sans nom"),
+          avatarSrc: avatars[klass.teachers.length + index] ?? null,
           email: m.user.email,
           role: m.user.role,
           joinedAt: m.joinedAt.toISOString(),

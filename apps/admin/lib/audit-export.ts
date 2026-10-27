@@ -43,7 +43,10 @@ export function csvLine(cells: readonly string[]): string {
 }
 
 /** Who did it, as the export names them: the handle without its @, else the address. */
-export function auditActorName(row: Pick<AuditRow, "actor" | "anonymized">): string {
+export function auditActorName(row: {
+  actor: Pick<NonNullable<AuditRow["actor"]>, "username" | "email"> | null;
+  anonymized: boolean;
+}): string {
   if (row.actor !== null) return row.actor.username ?? row.actor.email;
   // No account behind the row: one deleted since, or a job that ran alone.
   return row.anonymized ? "compte supprimé" : "système";

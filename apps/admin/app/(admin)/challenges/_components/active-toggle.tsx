@@ -30,7 +30,7 @@ export function ActiveToggle({
     });
   }
 
-  const color = optimisticActive ? "var(--color-success)" : "var(--a-muted)";
+  const color = optimisticActive ? "var(--a-success)" : "var(--a-muted)";
 
   return (
     <button
@@ -42,15 +42,14 @@ export function ActiveToggle({
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "3px 8px",
+        minHeight: 44,
+        padding: "0 12px",
         background: "transparent",
-        border: `1px solid color-mix(in srgb, ${color} 27%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`,
         cursor: isPending ? "wait" : "pointer",
-        fontFamily: "var(--font-mono)",
-        fontSize: 9,
-        fontWeight: 700,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
+        fontFamily: "var(--font-sans)",
+        fontSize: 12,
+        fontWeight: 600,
         color: isPending ? "var(--a-muted)" : color,
         whiteSpace: "nowrap",
         transition: "all 120ms ease",

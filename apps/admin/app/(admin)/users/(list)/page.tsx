@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { userRepository } from "@cyberlearn/db";
-import { Monogram, PageHeader } from "../../_components/admin-ui";
+import { PageHeader, UserAvatar } from "../../_components/admin-ui";
 import { DataGrid, type GridRowBase } from "../../_components/data-grid";
 import type { RawParams } from "@/lib/grid-params";
 import {
@@ -22,6 +22,7 @@ import { formatDay, relativeDay } from "../_components/dates";
 import { UsersKpis, UsersTabs } from "../_components/users-head";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Utilisateurs" };
 
@@ -48,7 +49,9 @@ export default async function AdminUsersPage({
     userRepository.listForConsole(userQueryOf(params)),
   ]);
 
-  const rows: GridRowBase[] = slice.rows.map((u) => {
+  const avatars = await resolveAvatarSrcs(slice.rows.map((u) => u.avatarUrl));
+
+  const rows: GridRowBase[] = slice.rows.map((u, index) => {
     const isAdmin = u.role === "ADMIN";
     const handle = u.username ? `@${u.username}` : u.displayName || u.email;
     const recentlyActive = Date.now() - u.lastActiveAt.getTime() < WEEK_MS;
@@ -60,22 +63,25 @@ export default async function AdminUsersPage({
         // here: a misclick in a sorted table is cheap, and that action is not
         // undoable.
         <Link key="u" href={`/users/${u.id}`} className="a-row-link">
-          <Monogram
-            text={handle.replace("@", "")}
-            size={26}
+          <UserAvatar
+            src={avatars[index] ?? null}
+            name={u.displayName || handle}
+            size={30}
             tone={isAdmin ? "accent" : "neutral"}
           />
           <span className="a-row-link-title" style={{ whiteSpace: "nowrap" }}>
             {handle}
           </span>
         </Link>,
-        <span key="e" className="mono" style={{ color: "var(--a-muted)" }}>
+        <span key="e" className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
           {u.email}
         </span>,
         <RoleSelect key="r" userId={u.id} handle={handle} currentRole={u.role} />,
         <span key="l">
-          <span style={{ color: "var(--a-muted)" }}>LVL·</span>
-          <b style={{ color: "var(--a-accent)" }}>{String(u.level).padStart(2, "0")}</b>
+          <span style={{ color: "var(--a-muted)" }}>Niv. </span>
+          <b className="a-mono" style={{ color: "var(--a-fg)" }}>
+            {String(u.level)}
+          </b>
         </span>,
         u.xpTotal.toLocaleString("fr-FR"),
         <span key="s" style={{ color: u.streakDays > 0 ? "var(--a-warning)" : "var(--a-faint)" }}>
@@ -89,7 +95,7 @@ export default async function AdminUsersPage({
         <span
           key="a"
           style={{
-            color: recentlyActive ? "var(--a-accent)" : "var(--a-faint)",
+            color: recentlyActive ? "var(--a-success)" : "var(--a-muted)",
             whiteSpace: "nowrap",
           }}
         >

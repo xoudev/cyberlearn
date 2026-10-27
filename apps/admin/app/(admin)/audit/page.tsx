@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auditLogRepository } from "@cyberlearn/db";
-import { Monogram, PageHeader, Tag, type Tone } from "../_components/admin-ui";
+import { PageHeader, Tag, UserAvatar, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRowBase } from "../_components/data-grid";
 import { AuditFilters } from "./_components/audit-filters";
 import { AUDIT_COLUMNS, AUDIT_HEADER } from "./_components/columns";
@@ -18,13 +18,14 @@ import {
 } from "@/lib/list-params";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Audit log" };
 
 const ACTION_TONES: Record<string, Tone> = {
-  create: "accent",
-  import: "accent",
-  publish: "accent",
+  create: "success",
+  import: "success",
+  publish: "success",
   update: "warning",
   delete: "danger",
   revoke: "danger",
@@ -70,8 +71,12 @@ export default async function AdminAuditPage({
   const exportHref = gridHref("/audit/export", search, { page: null });
   const tooLarge = slice.total > AUDIT_EXPORT_MAX;
 
-  const rows: GridRowBase[] = slice.rows.map((log) => {
+  const avatars = await resolveAvatarSrcs(slice.rows.map((log) => log.actor?.avatarUrl));
+
+  const rows: GridRowBase[] = slice.rows.map((log, index) => {
     const actor = log.actor?.username ? `@${log.actor.username}` : auditActorName(log);
+    const actorName =
+      log.actor !== null && log.actor.displayName.trim() !== "" ? log.actor.displayName : actor;
     const metaStr = log.metadata !== null ? JSON.stringify(log.metadata) : null;
 
     return {
@@ -86,21 +91,21 @@ export default async function AdminAuditPage({
             key="ac"
             href={gridHref("/audit", search, { actor: log.actorId })}
             title="Voir les gestes de ce compte"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            className="a-person"
           >
-            <Monogram text={actor.replace("@", "")} size={22} />
+            <UserAvatar src={avatars[index] ?? null} name={actorName} size={26} />
             <span className="mono">{actor}</span>
           </Link>
         ) : (
-          <span key="ac" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Monogram text={actor} size={22} />
+          <span key="ac" className="a-person">
+            <UserAvatar src={null} name={actor} size={26} />
             <span className="mono" style={{ color: "var(--a-muted)" }}>
               {actor}
             </span>
           </span>
         ),
         <span key="t" className="mono">
-          <span style={{ color: "var(--a-accent)" }}>{log.targetType}</span>
+          <span style={{ color: "var(--a-fg-2)" }}>{log.targetType}</span>
           {log.targetId && (
             <Link
               href={gridHref("/audit", search, { target: log.targetId })}

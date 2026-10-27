@@ -249,7 +249,7 @@ export function WrappedStory({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
-                  strokeLinecap="round"
+                  strokeLinecap="square"
                 >
                   <path d="M3 3 L13 13 M13 3 L3 13" />
                 </svg>

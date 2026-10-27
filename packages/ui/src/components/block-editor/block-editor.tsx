@@ -212,15 +212,15 @@ function InsertPoint({
           aria-expanded={open}
           onClick={onToggle}
           style={{
-            width: 22,
-            height: 22,
+            width: 44,
+            height: 44,
             border: `1px solid ${open ? "var(--cosmetic-accent)" : BORDER}`,
             background: open
               ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
               : "var(--color-bg-base)",
             color: open ? "var(--cosmetic-accent)" : MUTED,
             fontFamily: MONO,
-            fontSize: 13,
+            fontSize: 16,
             lineHeight: 1,
             cursor: "pointer",
             flexShrink: 0,
@@ -329,12 +329,10 @@ function MenuGroup({
     <div>
       <div
         style={{
-          fontFamily: MONO,
-          fontSize: 9,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
+          fontSize: 12,
+          fontWeight: 600,
           color: MUTED,
-          marginBottom: 5,
+          marginBottom: 6,
         }}
       >
         {title}
@@ -363,18 +361,18 @@ function MenuButton({
       title={code ? `${title} (se remplit en MDX pour l'instant)` : title}
       onClick={onClick}
       style={{
-        height: 26,
-        padding: "0 10px",
+        minHeight: 44,
+        padding: "0 12px",
         border: `1px solid ${BORDER}`,
         background: "var(--color-bg-base)",
         color: TEXT,
-        fontSize: 12,
+        fontSize: 13,
         cursor: "pointer",
       }}
     >
       {children}
       {code && (
-        <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginLeft: 6 }}>MDX</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED, marginLeft: 6 }}>MDX</span>
       )}
     </button>
   );
@@ -452,19 +450,9 @@ function BlockCard({
             &lt;{block.name}&gt;
           </code>
         )}
-        <span
-          style={{
-            fontFamily: MONO,
-            fontSize: 9,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: MUTED,
-          }}
-        >
-          {label}
-        </span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: MUTED }}>{label}</span>
         {errorCount > 0 && (
-          <span style={{ fontFamily: MONO, fontSize: 9, color: DANGER }}>
+          <span style={{ fontSize: 12, color: DANGER }}>
             {errorCount === 1 ? "1 champ à revoir" : `${String(errorCount)} champs à revoir`}
           </span>
         )}
@@ -511,8 +499,7 @@ function BlockCard({
               padding: "6px 10px",
               border: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
               background: "color-mix(in srgb, var(--color-danger) 7%, transparent)",
-              fontFamily: MONO,
-              fontSize: 10.5,
+              fontSize: 12,
               lineHeight: 1.5,
               color: "var(--color-text-primary)",
             }}
@@ -667,7 +654,7 @@ function SourceBody({
           </a>
         </span>
       ) : (
-        <span role="alert" style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>
+        <span role="alert" style={{ fontSize: 12, color: DANGER }}>
           Composant inconnu de la leçon : il ne sera pas rendu.
         </span>
       )}

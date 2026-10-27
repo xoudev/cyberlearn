@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { badgeRepository, cosmeticRepository, prisma } from "@cyberlearn/db";
 import { buildBadgeCriterionStats, computeBadgeProgress, computeLevel } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { evaluateAndUnlockCosmetics } from "@/lib/cosmetics/unlock";
 import { LockerClient, type LockerItem } from "./_components/locker-client";
 
@@ -29,7 +30,13 @@ export default async function LockerPage(): Promise<React.ReactElement> {
     cosmeticRepository.findCatalogWithState(authUser.id),
     prisma.user.findUnique({
       where: { id: authUser.id },
-      select: { xpTotal: true, streakDays: true, username: true, displayName: true },
+      select: {
+        xpTotal: true,
+        streakDays: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+      },
     }),
     badgeRepository.findCriterionFacts(authUser.id),
   ]);
@@ -86,6 +93,7 @@ export default async function LockerPage(): Promise<React.ReactElement> {
   });
 
   const displayName = user?.displayName ?? "";
+  const avatarSrc = await resolveAvatarSrc(user?.avatarUrl ?? null);
   return (
     <LockerClient
       items={items}
@@ -93,6 +101,7 @@ export default async function LockerPage(): Promise<React.ReactElement> {
         username: user?.username ?? null,
         displayName,
         initial: (displayName.charAt(0) || "?").toUpperCase(),
+        avatarSrc,
         level: computeLevel(user?.xpTotal ?? 0).level,
         badgesCount: facts.earnedBadgeRefCodes.length,
         streakDays: user?.streakDays ?? 0,

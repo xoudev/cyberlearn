@@ -242,7 +242,7 @@ function PrivacySkeleton(): React.ReactElement {
                   <Skeleton w={86} h={17} style={{ position: "absolute", top: 12, right: 12 }} />
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <Skeleton w={16} h={16} radius="circle" />
+                  <Skeleton w={16} h={16} />
                   <Line w={option.name} h={12} style={{ margin: "3px 0" }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>

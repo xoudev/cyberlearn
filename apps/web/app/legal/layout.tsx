@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalDocumentLayout } from "@/components/legal-document-layout";
+import { appShellReaderId } from "@/lib/auth/app-shell-reader";
 
 export const metadata: Metadata = {
   title: {
@@ -8,10 +9,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function LegalLayout({
+/**
+ * Signed in, the app's shell around the text; signed out, or still owing the
+ * second-factor code, the public navbar and footer (components/legal-document-layout.tsx).
+ */
+export default async function LegalLayout({
   children,
 }: {
   children: React.ReactNode;
-}): React.JSX.Element {
-  return <LegalDocumentLayout>{children}</LegalDocumentLayout>;
+}): Promise<React.JSX.Element> {
+  return <LegalDocumentLayout readerId={await appShellReaderId()}>{children}</LegalDocumentLayout>;
 }

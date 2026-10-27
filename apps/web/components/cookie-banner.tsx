@@ -64,8 +64,8 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           left: 0,
           right: 0,
           zIndex: 45,
-          background: "var(--color-bg-elevated)",
-          borderTop: "1px solid var(--color-border-default)",
+          background: "#121418",
+          borderTop: "1px solid #74767d",
           padding: "14px 24px",
           display: "flex",
           alignItems: "center",
@@ -81,7 +81,7 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           style={{
             margin: 0,
             fontSize: "14px",
-            color: "var(--color-text-secondary)",
+            color: "#c2bfb8",
             fontFamily: "var(--font-interface)",
             maxWidth: "720px",
             lineHeight: "1.5",
@@ -90,19 +90,16 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           Ce site utilise uniquement des cookies strictement nécessaires à son fonctionnement
           (authentification, préférences de session). Ces cookies sont exemptés de consentement au
           titre de l&apos;article 82 de la loi Informatique et Libertés.{" "}
-          <Link href="/privacy#cookies" style={{ color: "#FF864F", textDecoration: "underline" }}>
+          <Link
+            href="/privacy#cookies"
+            style={{ color: "var(--cosmetic-accent-hover)", textDecoration: "underline" }}
+          >
             En savoir plus
           </Link>
         </p>
 
         <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-          <button
-            className="btn btn--sm"
-            onClick={handleAcknowledge}
-            style={{
-              borderRadius: "0px",
-            }}
-          >
+          <button className="btn" onClick={handleAcknowledge}>
             J&apos;ai compris
           </button>
         </div>

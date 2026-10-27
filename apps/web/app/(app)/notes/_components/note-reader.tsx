@@ -114,10 +114,7 @@ export function NoteReader({
 
   const eyebrow = (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: cat.color }}>
-      <span
-        aria-hidden="true"
-        style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
-      />
+      <span aria-hidden="true" style={{ width: 6, height: 6, background: cat.color }} />
       {cat.label}
       {note.pathTitle ? (
         <span style={{ color: "var(--color-text-muted)" }}>· {note.pathTitle}</span>
@@ -308,9 +305,9 @@ export function NoteReader({
                   width: "100%",
                   minHeight: 320,
                   resize: "vertical",
-                  background: "rgba(5,4,26,0.5)",
+                  background: "#0b0c0e",
                   border: "1px solid var(--color-border-default)",
-                  color: "#E6E4F0",
+                  color: "#f4f2ed",
                   fontFamily: "var(--font-mono)",
                   fontSize: 13.5,
                   lineHeight: 1.65,

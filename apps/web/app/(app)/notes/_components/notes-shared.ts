@@ -54,6 +54,20 @@ export const FOLDER_ICON_NAMES = [
 
 export type FolderIconName = (typeof FOLDER_ICON_NAMES)[number];
 
+/** What each icon is called on screen: the stored keys are English, the site is not. */
+export const FOLDER_ICON_LABELS: Record<FolderIconName, string> = {
+  folder: "Dossier",
+  shield: "Bouclier",
+  terminal: "Terminal",
+  book: "Livre",
+  bug: "Bug",
+  network: "Réseau",
+  key: "Clé",
+  flask: "Labo",
+  star: "Favori",
+  code: "Code",
+};
+
 /** Icon shown for a folder with no icon set. */
 export const FOLDER_DEFAULT_ICON: FolderIconName = "folder";
 

@@ -115,7 +115,7 @@ export function BossNode({
   if (pathCompleted && certificateRevoked) {
     // The download would answer 404: the profile's Certificats tab lists the
     // certificate as revoked, with the reason.
-    eyebrow = "// Certificat · révoqué";
+    eyebrow = "Certificat · révoqué";
     sub =
       "Tu as validé ce parcours, mais ton certificat a été révoqué. Le motif est dans l'onglet Certificats de ton profil.";
     body = (
@@ -124,7 +124,7 @@ export function BossNode({
       </Link>
     );
   } else if (pathCompleted) {
-    eyebrow = "// Récompense · débloquée";
+    eyebrow = "Récompense · débloquée";
     sub = "Tu as validé ce parcours. Ton certificat vérifiable est disponible.";
     body = certificateId ? (
       // A file from a route handler, as on the profile: a plain link that
@@ -154,7 +154,7 @@ export function BossNode({
       </Link>
     );
   } else if (lessonsComplete && hasQuiz) {
-    eyebrow = "// Examen final · débloqué";
+    eyebrow = "Examen final · débloqué";
     sub = "Passe l'examen final chronométré pour valider le parcours et débloquer ton certificat.";
     body = (
       <Link className="cp-boss__cta" href={`/paths/${pathSlug}/exam`}>
@@ -163,11 +163,11 @@ export function BossNode({
       </Link>
     );
   } else if (lessonsComplete) {
-    eyebrow = "// Récompense · à réclamer";
+    eyebrow = "Récompense · à réclamer";
     sub = "Tu as complété toutes les leçons de ce parcours. Récupère ton certificat vérifiable.";
     body = <ClaimCertificateButton pathSlug={pathSlug} />;
   } else {
-    eyebrow = "// Récompense finale · certificat";
+    eyebrow = "Récompense finale · certificat";
     sub = `Termine les ${String(totalLessons)} missions pour débloquer un certificat vérifiable, signé SHA-256 et partageable.`;
     body = (
       <div className="cp-boss__req">

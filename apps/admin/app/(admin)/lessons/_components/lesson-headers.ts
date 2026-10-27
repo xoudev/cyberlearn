@@ -67,22 +67,6 @@ export const LESSON_RATING_COLUMNS: readonly GridColumn[] = [
 ];
 
 /**
- * The shape of the studio's rail, for its loading state: reference, slug,
- * title, description, category and difficulty, duration and reward, the
- * cover, the status.
- */
-export const LESSON_STUDIO_RAIL_ROWS: readonly FormRow[] = [
-  1,
-  1,
-  1,
-  { height: 96 },
-  2,
-  2,
-  { height: 99 },
-  1,
-];
-
-/**
  * The shape of the lesson creation form, for its loading state: reference
  * and slug, title, description, category and difficulty, duration and
  * reward, the cover, the editor.

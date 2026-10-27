@@ -28,6 +28,8 @@ export interface ReportedNote {
   /** The author, named for the team only. Null once the account is erased. */
   authorUsername: string | null;
   authorDisplayName: string | null;
+  /** The author's stored avatar, a marker or a path, for the console to resolve. */
+  authorAvatarUrl: string | null;
   /** How many people still hold it. */
   shareCount: number;
   reports: {
@@ -121,7 +123,7 @@ export const noteReportRepository = {
           select: {
             content: true,
             lesson: { select: { title: true } },
-            user: { select: { username: true, displayName: true } },
+            user: { select: { username: true, displayName: true, avatarUrl: true } },
             _count: { select: { shares: true } },
           },
         },
@@ -137,6 +139,7 @@ export const noteReportRepository = {
           lessonTitle: r.note.lesson.title,
           authorUsername: r.note.user.username,
           authorDisplayName: r.note.user.displayName,
+          authorAvatarUrl: r.note.user.avatarUrl,
           shareCount: r.note._count.shares,
           reports: [],
         };

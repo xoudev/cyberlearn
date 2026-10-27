@@ -221,7 +221,12 @@ export default async function PathDetailPage({
             <span>/ {totalLessons} missions terminées</span>
             <b>{pct} %</b>
           </div>
-          <ProgressBar value={pct} size="md" color="#923200" label="Progression du parcours" />
+          <ProgressBar
+            value={pct}
+            size="md"
+            color="var(--cosmetic-accent-ink)"
+            label="Progression du parcours"
+          />
           <div className="path-departure__actions">
             {resumeSlug !== null && (
               <Link className="btn" href={`/lessons/${resumeSlug}`}>

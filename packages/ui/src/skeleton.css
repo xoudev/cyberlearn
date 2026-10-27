@@ -4,9 +4,9 @@
 
      @import "@cyberlearn/ui/skeleton.css";
 
-   Visual language: the hairline colour of the cards, with a subtle
-   turquoise -> blue accent sweep, in line with the brand tokens. Square, as
-   both apps are.
+   Visual language (Bastion): a matt block one step above the page, with a
+   faint chalk sweep. Neutral on purpose: the accent marks an action or a
+   progress, and a placeholder is neither. Square, as both apps are.
    ========================================================================== */
 
 @keyframes cl-skel-shimmer {
@@ -18,17 +18,14 @@
   }
 }
 
-/* Base placeholder block. The resting colour is the cards' hairline
-   (var(--color-border-subtle)); the moving highlight adds the brand
-   turquoise/blue accent on top. */
+/* Base placeholder block: the raised surface, with a faint chalk sweep. */
 .cl-skel {
-  background-color: var(--color-border-subtle);
+  background-color: #191c22;
   background-image: linear-gradient(
     90deg,
     transparent 0%,
     transparent 30%,
-    color-mix(in oklab, var(--cosmetic-accent) 16%, transparent) 46%,
-    color-mix(in oklab, var(--color-rarity-rare) 18%, transparent) 54%,
+    color-mix(in oklab, #f4f2ed 7%, transparent) 50%,
     transparent 70%,
     transparent 100%
   );
@@ -45,12 +42,12 @@
   max-width: 100%;
 }
 
-/* Standard card surface shared by the loading states (matches the real
-   cards: var(--color-bg-elevated) fill + var(--color-border-subtle) hairline),
-   square like them. A skeleton drawn on its page's own classes needs none. */
+/* Standard card surface shared by the loading states (the panel and the
+   separator of the real cards), square like them. A skeleton drawn on its
+   page's own classes needs none. */
 .cl-skel-card {
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
+  background: #121418;
+  border: 1px solid var(--color-interface-separator, #303137);
 }
 
 @media (prefers-reduced-motion: reduce) {

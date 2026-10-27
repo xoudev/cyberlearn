@@ -23,28 +23,6 @@ interface Props {
   hints: Hint[];
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 10px",
-  background: "var(--a-surface)",
-  border: "1px solid var(--a-border-2)",
-  color: "var(--a-fg)",
-  minHeight: 44,
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  fontWeight: 700,
-  color: "var(--a-muted)",
-  marginBottom: 4,
-};
-
 export function HintsManager({ challengeId, hints }: Props): React.ReactElement {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -125,50 +103,29 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
     <div>
       <div
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          color: "var(--a-muted)",
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
           marginBottom: 16,
           paddingBottom: 8,
           borderBottom: "1px solid var(--a-border)",
           display: "flex",
-          alignItems: "center",
+          alignItems: "baseline",
           justifyContent: "space-between",
+          gap: 12,
         }}
       >
-        <span>{"// INDICES"}</span>
-        <span style={{ color: "var(--a-muted)", fontSize: 12 }}>
+        <h2 className="a-section-title">Indices</h2>
+        <span className="a-meta-label">
           {String(hints.length)} indice{hints.length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {opError !== undefined && (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid var(--a-danger)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--a-danger)",
-            marginBottom: 12,
-          }}
-        >
+        <p className="a-form-error" style={{ marginBottom: 12 }}>
           {opError}
-        </div>
+        </p>
       )}
 
       {hints.length === 0 && !addingNew && (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--a-muted)",
-            marginBottom: 12,
-          }}
-        >
+        <p className="a-field-hint" style={{ margin: "0 0 12px" }}>
           Aucun indice. Ajoutez-en ci-dessous.
         </p>
       )}
@@ -186,19 +143,23 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
           {editingId === hint.id ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div>
-                <label style={labelStyle}>Contenu</label>
+                <label className="a-label" style={{ display: "block", marginBottom: 6 }}>
+                  Contenu
+                </label>
                 <textarea
                   value={editContent}
                   onChange={(e) => {
                     setEditContent(e.target.value);
                   }}
                   rows={3}
-                  style={{ ...inputStyle, resize: "vertical" }}
+                  className="a-textarea"
                 />
               </div>
               <div className="a-fields-grid">
                 <div>
-                  <label style={labelStyle}>Coût XP</label>
+                  <label className="a-label" style={{ display: "block", marginBottom: 6 }}>
+                    Coût XP
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -207,7 +168,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                     onChange={(e) => {
                       setEditXpCost(Number(e.target.value));
                     }}
-                    style={inputStyle}
+                    className="a-input"
                   />
                 </div>
               </div>
@@ -218,38 +179,11 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   onClick={() => {
                     handleSave(hint.id);
                   }}
-                  style={{
-                    padding: "6px 14px",
-                    minHeight: 44,
-                    background: "var(--a-accent)",
-                    color: "var(--a-ink)",
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 700,
-                    fontSize: 10,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    border: "none",
-                    cursor: savePending ? "not-allowed" : "pointer",
-                  }}
+                  className="a-btn a-btn--primary a-btn--sm"
                 >
                   {savePending ? "..." : "Enregistrer"}
                 </button>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  style={{
-                    padding: "6px 14px",
-                    background: "transparent",
-                    border: "1px solid var(--a-border-2)",
-                    color: "var(--a-muted)",
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 600,
-                    fontSize: 10,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                  }}
-                >
+                <button type="button" onClick={cancelEdit} className="a-btn a-btn--ghost a-btn--sm">
                   Annuler
                 </button>
               </div>
@@ -257,18 +191,13 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
           ) : (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    color: "var(--a-muted)",
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    marginBottom: 4,
-                  }}
-                >
-                  #{String(hint.orderIndex + 1)} ·{" "}
-                  {hint.xpCost > 0 ? `${String(hint.xpCost)} XP` : "gratuit"}
+                <div className="a-meta-label" style={{ marginBottom: 4 }}>
+                  <span className="a-mono">#{String(hint.orderIndex + 1)}</span> ·{" "}
+                  {hint.xpCost > 0 ? (
+                    <span className="a-mono">{String(hint.xpCost)} XP</span>
+                  ) : (
+                    "gratuit"
+                  )}
                 </div>
                 <div
                   style={{
@@ -289,18 +218,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   onClick={() => {
                     startEdit(hint);
                   }}
-                  style={{
-                    padding: "4px 10px",
-                    background: "transparent",
-                    border: "1px solid var(--a-border-2)",
-                    color: "var(--a-muted)",
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 600,
-                    fontSize: 9,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                  }}
+                  className="a-btn a-btn--ghost a-btn--sm"
                 >
                   Éditer
                 </button>
@@ -310,19 +228,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   onClick={() => {
                     handleDelete(hint.id);
                   }}
-                  style={{
-                    padding: "4px 10px",
-                    background: "transparent",
-                    border: "1px solid var(--a-danger)",
-                    color: "var(--a-danger)",
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 600,
-                    fontSize: 9,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    cursor: deletePending ? "not-allowed" : "pointer",
-                    opacity: deletePending ? 0.5 : 1,
-                  }}
+                  className="a-btn a-btn--danger a-btn--sm"
+                  style={{ opacity: deletePending ? 0.5 : 1 }}
                 >
                   ×
                 </button>
@@ -343,7 +250,9 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
-              <label style={labelStyle}>Contenu de l&apos;indice *</label>
+              <label className="a-label" style={{ display: "block", marginBottom: 6 }}>
+                Contenu de l&apos;indice *
+              </label>
               <textarea
                 value={newContent}
                 onChange={(e) => {
@@ -351,12 +260,14 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                 }}
                 rows={3}
                 placeholder="Regarde du côté des en-têtes HTTP..."
-                style={{ ...inputStyle, resize: "vertical" }}
+                className="a-textarea"
               />
             </div>
             <div className="a-fields-grid">
               <div>
-                <label style={labelStyle}>Coût XP</label>
+                <label className="a-label" style={{ display: "block", marginBottom: 6 }}>
+                  Coût XP
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -365,11 +276,13 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   onChange={(e) => {
                     setNewXpCost(Number(e.target.value));
                   }}
-                  style={inputStyle}
+                  className="a-input"
                 />
               </div>
               <div>
-                <label style={labelStyle}>Ordre d&apos;affichage</label>
+                <label className="a-label" style={{ display: "block", marginBottom: 6 }}>
+                  Ordre d&apos;affichage
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -377,7 +290,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   onChange={(e) => {
                     setNewOrderIndex(Number(e.target.value));
                   }}
-                  style={inputStyle}
+                  className="a-input"
                 />
               </div>
             </div>
@@ -386,19 +299,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                 type="button"
                 disabled={createPending}
                 onClick={handleCreate}
-                style={{
-                  padding: "6px 14px",
-                  minHeight: 44,
-                  background: "var(--a-accent)",
-                  color: "var(--a-ink)",
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 700,
-                  fontSize: 10,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  border: "none",
-                  cursor: createPending ? "not-allowed" : "pointer",
-                }}
+                className="a-btn a-btn--primary a-btn--sm"
               >
                 {createPending ? "..." : "Ajouter l'indice"}
               </button>
@@ -410,18 +311,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   setNewXpCost(0);
                   setOpError(undefined);
                 }}
-                style={{
-                  padding: "6px 14px",
-                  background: "transparent",
-                  border: "1px solid var(--a-border-2)",
-                  color: "var(--a-muted)",
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 600,
-                  fontSize: 10,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                }}
+                className="a-btn a-btn--ghost a-btn--sm"
               >
                 Annuler
               </button>
@@ -436,19 +326,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
             setNewOrderIndex(hints.length);
             setOpError(undefined);
           }}
-          style={{
-            marginTop: hints.length > 0 ? 4 : 0,
-            padding: "7px 16px",
-            background: "transparent",
-            border: "1px solid var(--a-accent)",
-            color: "var(--a-accent)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 10,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-          }}
+          className="a-btn a-btn--ghost a-btn--sm"
+          style={{ marginTop: hints.length > 0 ? 4 : 0 }}
         >
           + Ajouter un indice
         </button>

@@ -38,17 +38,6 @@ export const IconClock = (): React.ReactElement => (
     <path d="M8 6.6V9l1.8 1.3M6.2 2.5h3.6" />
   </Svg>
 );
-export const IconQuestion = (): React.ReactElement => (
-  <Svg>
-    <path d="M5.8 6a2.2 2.2 0 1 1 3.2 2c-.6.3-1 .8-1 1.5V10" />
-    <path d="M8 12.6v.4" />
-  </Svg>
-);
-export const IconModules = (): React.ReactElement => (
-  <Svg>
-    <path d="M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z" />
-  </Svg>
-);
 export const IconPaper = (): React.ReactElement => (
   <Svg>
     <path d="M3.5 1.8h6.2l2.8 2.8v9.6h-9zM5.8 7.5h4.4M5.8 10.2h4.4" />

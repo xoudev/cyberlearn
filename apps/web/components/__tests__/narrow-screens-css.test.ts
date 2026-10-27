@@ -131,12 +131,12 @@ describe("the drawers and windows on a phone's browser bars", () => {
 });
 
 describe("the day's recall window", () => {
-  it("holds its content in from the frame, on the header's 20px", () => {
+  it("holds its content in from the frame, on the header's 24px", () => {
     const body = rule(RAPPEL, ".rp");
-    expect(values(body, "padding")).toEqual(["18px 20px 20px"]);
+    expect(values(body, "padding")).toEqual(["20px 24px 24px"]);
     // The header and the action row of a window, which the body lines up with.
-    expect(values(rule(DIALOGS, ".modal-shell__head"), "padding")).toEqual(["16px 20px"]);
-    expect(values(rule(DIALOGS, ".modal-shell__actions"), "padding")).toEqual(["16px 20px"]);
+    expect(values(rule(DIALOGS, ".modal-shell__head"), "padding")).toEqual(["20px 24px"]);
+    expect(values(rule(DIALOGS, ".modal-shell__actions"), "padding")).toEqual(["20px 24px"]);
   });
 });
 

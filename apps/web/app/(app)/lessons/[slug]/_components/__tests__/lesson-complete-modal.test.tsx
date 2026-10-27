@@ -33,6 +33,51 @@ describe("LessonCompleteModal", () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
+  it("gives the quiz's real score as a share, and the level the reader is at", () => {
+    render(<LessonCompleteModal result={result} lessonTitle="Les protocoles" onClose={vi.fn()} />);
+    // A no-break space before the sign, which the matcher reads as a space.
+    expect(screen.getByText("67 %")).toBeTruthy();
+    expect(screen.getByText("Niv. 2")).toBeTruthy();
+    expect(screen.queryByText("Niveau 2 atteint")).toBeNull();
+  });
+
+  it("says nothing of a quiz the lesson does not have, and names a level reached", () => {
+    render(
+      <LessonCompleteModal
+        result={{ ...result, quizScore: null, leveledUp: true, newLevel: 3 }}
+        lessonTitle="Les protocoles"
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Quiz de la leçon")).toBeNull();
+    expect(screen.getByText("Niveau 3 atteint")).toBeTruthy();
+  });
+
+  it("goes on to the bar under the lesson, which names what comes next", () => {
+    const close = vi.fn();
+    const next = document.createElement("section");
+    next.id = "lesson-next";
+    next.tabIndex = -1;
+    const scrollIntoView = vi.fn();
+    next.scrollIntoView = scrollIntoView;
+    document.body.append(next);
+    vi.stubGlobal("requestAnimationFrame", (run: FrameRequestCallback) => {
+      run(0);
+      return 0;
+    });
+    try {
+      render(<LessonCompleteModal result={result} lessonTitle="Les protocoles" onClose={close} />);
+      fireEvent.click(screen.getByRole("button", { name: "Voir la suite" }));
+      expect(close).toHaveBeenCalledOnce();
+      expect(document.activeElement).toBe(next);
+      // Reduced motion (beforeEach): no glide to it.
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "center" });
+    } finally {
+      vi.unstubAllGlobals();
+      next.remove();
+    }
+  });
+
   it("keeps the total award unchanged while listing a badge and its own reward", () => {
     render(
       <LessonCompleteModal

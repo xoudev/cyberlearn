@@ -79,22 +79,33 @@ export interface SelectProps {
 
 /**
  * The palette, as custom properties so an app with its own can say so once.
- * The defaults are the web app's; the admin maps these to its --a-* scale.
+ * The defaults are the Bastion art direction shared by the site and the
+ * console: a carbon field with the outline grey, a panel one step up, the
+ * raised surface under the highlighted row, and the equipped accent for the
+ * chosen value. The admin maps a few of these to its --a-* scale.
  */
-const C = {
-  bg: "var(--cl-select-bg, var(--color-bg-sunken))",
-  fg: "var(--cl-select-fg, var(--color-text-primary))",
-  muted: "var(--cl-select-fg-muted, var(--color-text-muted))",
-  border: "var(--cl-select-border, var(--color-border-default))",
-  accent: "var(--cl-select-accent, var(--cosmetic-accent, var(--color-brand-turquoise)))",
-  panel: "var(--cl-select-panel-bg, var(--color-bg-elevated))",
-  option: "var(--cl-select-option-fg, var(--color-text-secondary))",
-  active: "var(--cl-select-option-active-bg, #141040)",
-  off: "var(--cl-select-option-disabled-fg, var(--color-text-faint))",
-  font: "var(--cl-select-font, var(--font-mono, ui-monospace, monospace))",
+export const SELECT_PALETTE = {
+  bg: "var(--cl-select-bg, var(--color-bg-base, #0b0c0e))",
+  fg: "var(--cl-select-fg, var(--color-text-primary, #f4f2ed))",
+  muted: "var(--cl-select-fg-muted, var(--color-interface-muted, #aaa79f))",
+  border: "var(--cl-select-border, var(--color-interface-outline, #74767d))",
+  accent: "var(--cl-select-accent, var(--cosmetic-accent, #ff6b2b))",
+  panel: "var(--cl-select-panel-bg, #121418)",
+  panelBorder: "var(--cl-select-panel-border, var(--color-interface-separator, #303137))",
+  option: "var(--cl-select-option-fg, var(--color-text-primary, #f4f2ed))",
+  active: "var(--cl-select-option-active-bg, #191c22)",
+  off: "var(--cl-select-option-disabled-fg, var(--color-text-faint, #848078))",
+  font: "var(--cl-select-font, var(--font-interface, var(--font-sans, system-ui, sans-serif)))",
+  /** Only a layer that really floats casts a shadow, and never a glow. */
+  shadow: "0 12px 30px #0006",
 } as const;
 
-const PANEL_MAX_HEIGHT = 280;
+const C = SELECT_PALETTE;
+
+/** A touch target: every option and the closed control are this tall. */
+export const SELECT_ROW_HEIGHT = 44;
+
+const PANEL_MAX_HEIGHT = 308;
 /** Air between the control and its list, and between the list and the screen. */
 const PANEL_GAP = 4;
 const VIEWPORT_MARGIN = 12;
@@ -353,12 +364,15 @@ export function Select({
           justifyContent: "space-between",
           gap: 10,
           width: "100%",
-          padding: "9px 12px",
+          minHeight: SELECT_ROW_HEIGHT,
+          padding: "0 14px",
           background: C.bg,
           border: `1px solid ${open ? (selected?.tone ?? C.accent) : selected?.tone === undefined ? C.border : `color-mix(in srgb, ${selected.tone} 40%, transparent)`}`,
+          borderRadius: 0,
           color: selected ? (selected.tone ?? C.fg) : C.muted,
           fontFamily: C.font,
-          fontSize: 12.5,
+          fontSize: 14,
+          lineHeight: 1.3,
           textAlign: "left",
           cursor: disabled === true ? "not-allowed" : "pointer",
           opacity: disabled === true ? 0.5 : 1,
@@ -433,11 +447,13 @@ export function Select({
                 maxHeight: box.maxHeight,
                 overflowY: "auto",
                 margin: 0,
-                padding: 4,
+                padding: 0,
                 listStyle: "none",
                 background: C.panel,
-                border: `1px solid ${C.border}`,
-                boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                border: `1px solid ${C.panelBorder}`,
+                borderRadius: 0,
+                boxShadow: C.shadow,
+                fontFamily: C.font,
                 zIndex: 9999,
               }}
             >
@@ -464,9 +480,13 @@ export function Select({
                       alignItems: "center",
                       justifyContent: "space-between",
                       gap: 10,
-                      padding: "7px 10px",
+                      boxSizing: "border-box",
+                      minHeight: SELECT_ROW_HEIGHT,
+                      padding: "0 14px 0 12px",
                       fontFamily: C.font,
-                      fontSize: 12.5,
+                      fontSize: 14,
+                      fontWeight: isSelected ? 600 : 400,
+                      lineHeight: 1.3,
                       color: isDisabled
                         ? C.off
                         : (option.tone ?? (isSelected ? C.accent : C.option)),
@@ -481,7 +501,7 @@ export function Select({
                       {option.label}
                     </span>
                     {option.hint !== undefined && (
-                      <span style={{ flexShrink: 0, fontSize: 10.5, color: C.muted }}>
+                      <span style={{ flexShrink: 0, fontSize: 12, color: C.muted }}>
                         {option.hint}
                       </span>
                     )}

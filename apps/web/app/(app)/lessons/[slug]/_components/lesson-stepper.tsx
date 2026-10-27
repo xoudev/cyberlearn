@@ -19,6 +19,7 @@ import type { CompleteLessonResult } from "../_actions/track-progress";
 import { LessonCompleteModal } from "./lesson-complete-modal";
 import { LessonToolbar, canOpenSection, pendingMessage } from "./lesson-toolbar";
 import { LESSON_ARTICLE_CLASS } from "./lesson-article";
+import { useLessonQuiz } from "./lesson-quiz-context";
 
 // ── Per-section exercise state ─────────────────────────────────────────────────
 
@@ -116,6 +117,13 @@ interface LessonStepperProps {
    */
   initialDoneSteps?: readonly number[];
   initialExercisesDone?: readonly { step: number; id: string }[];
+  /**
+   * The section whose quiz finishes the lesson (lib/lessons/final-quiz.ts):
+   * the learner's last answer in it, with nothing else left to do there,
+   * completes the lesson as "Terminer" does, and the completion opens. Null
+   * or absent: the lesson is finished from "Terminer" only.
+   */
+  finalQuizStep?: number | null;
   /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
   planExtra?: ReactNode;
   /** The reader's note on the lesson, as saved. */
@@ -138,6 +146,7 @@ export function LessonStepper({
   initialStep = 0,
   initialDoneSteps = [],
   initialExercisesDone = [],
+  finalQuizStep = null,
   planExtra,
   note,
 }: LessonStepperProps): React.ReactElement {
@@ -264,6 +273,90 @@ export function LessonStepper({
   const canAdvance = reviewing || isCompleted || stepComp.isAllComplete;
   const isLastStep = currentStep === totalSteps - 1;
 
+  // ── Finishing the lesson ──────────────────────────────────────────────────────
+
+  /**
+   * Completes the lesson: from "Terminer", or from the final quiz's last
+   * answer (below). One server path for both, so the XP, the badges and the
+   * score are the same whichever finished it, and finishing twice credits
+   * nothing more: the server answers `alreadyCompleted`.
+   */
+  const finishLesson = useCallback(() => {
+    setRefusal(null);
+    // A call that fails inside a transition goes to the nearest error
+    // boundary, the site's own, and the lesson just finished with it. It is
+    // said under the lesson instead. Finishing again is safe: if the server
+    // recorded the first one before the connection broke, it answers
+    // `alreadyCompleted` and the page is read again.
+    startTransition(async () => {
+      let res: Awaited<ReturnType<typeof completeLesson>>;
+      try {
+        res = await completeLesson(lessonId);
+      } catch {
+        setRefusal("La leçon n'a pas pu être validée, réessaie.");
+        return;
+      }
+      if (res.refusal !== null) {
+        // The page reads the lesson again: a lock it did not know about,
+        // say, shows as the locked lesson.
+        setRefusal(res.refusal);
+        router.refresh();
+      } else if (res.alreadyCompleted) {
+        router.refresh();
+      } else {
+        setCompletionResult(res);
+        // refresh on modal close
+      }
+    });
+  }, [lessonId, router]);
+
+  // The final quiz's last answer finishes the lesson. The learner used to
+  // answer it, then press "Suivante" to a last section with nothing to do
+  // ("À retenir"), then "Terminer". Now the answer that leaves the final
+  // quiz's section with nothing pending completes the lesson, once:
+  //
+  //  - an answer given here, confirmed by the server (answeredNow), not one
+  //    the record held when the page opened, so a reload finishes nothing;
+  //  - in that section, on screen, once the section has counted it done,
+  //    which its quiz does on the render after the answer: until then the
+  //    section's gate does not know it, and would look pending;
+  //  - not for a lesson finished already, nor in an administrator's preview,
+  //    which records nothing;
+  //  - once per page, whatever renders again: the ref outlives re-renders
+  //    and StrictMode's second run of effects.
+  //
+  // The sections after it stay open to read, as in any finished lesson.
+  const lessonQuiz = useLessonQuiz();
+  const answeredNow = lessonQuiz?.answeredNow;
+  const seenAnswersRef = useRef<ReadonlySet<string> | undefined>(answeredNow);
+  const armedAnswerRef = useRef<string | null>(null);
+  const autoFinishedRef = useRef(false);
+  useEffect(() => {
+    const seen = seenAnswersRef.current;
+    seenAnswersRef.current = answeredNow;
+    if (finalQuizStep === null || isCompleted || reviewing || autoFinishedRef.current) return;
+    for (const id of answeredNow ?? []) {
+      if (!seen?.has(id) && exerciseState.required.get(finalQuizStep)?.has(id)) {
+        armedAnswerRef.current = id;
+      }
+    }
+    const armed = armedAnswerRef.current;
+    if (armed === null || !exerciseState.done.get(finalQuizStep)?.has(armed)) return;
+    armedAnswerRef.current = null;
+    if (currentStep !== finalQuizStep || !getStepCompletion(finalQuizStep).isAllComplete) return;
+    autoFinishedRef.current = true;
+    finishLesson();
+  }, [
+    answeredNow,
+    exerciseState,
+    finalQuizStep,
+    isCompleted,
+    reviewing,
+    currentStep,
+    getStepCompletion,
+    finishLesson,
+  ]);
+
   // ── Navigation ────────────────────────────────────────────────────────────────
 
   function handlePrev() {
@@ -273,32 +366,7 @@ export function LessonStepper({
   function handleNext() {
     if (!canAdvance) return;
     if (isLastStep && !isCompleted && !reviewing) {
-      setRefusal(null);
-      // A call that fails inside a transition goes to the nearest error
-      // boundary, the site's own, and the lesson just finished with it. It is
-      // said under the lesson instead. Finishing again is safe: if the server
-      // recorded the first one before the connection broke, it answers
-      // `alreadyCompleted` and the page is read again.
-      startTransition(async () => {
-        let res: Awaited<ReturnType<typeof completeLesson>>;
-        try {
-          res = await completeLesson(lessonId);
-        } catch {
-          setRefusal("La leçon n'a pas pu être validée, réessaie.");
-          return;
-        }
-        if (res.refusal !== null) {
-          // The page reads the lesson again: a lock it did not know about,
-          // say, shows as the locked lesson.
-          setRefusal(res.refusal);
-          router.refresh();
-        } else if (res.alreadyCompleted) {
-          router.refresh();
-        } else {
-          setCompletionResult(res);
-          // refresh on modal close
-        }
-      });
+      finishLesson();
     } else if (!isLastStep) {
       setDoneSteps((prev) => new Set([...prev, currentStep]));
       setFurthestStep((f) => Math.max(f, currentStep + 1));
@@ -365,7 +433,7 @@ export function LessonStepper({
         </p>
       )}
 
-      {refusal !== null && isLastStep && (
+      {refusal !== null && (isLastStep || currentStep === finalQuizStep) && (
         <p className="lesson-pending" role="alert">
           <span aria-hidden="true">›</span>
           {refusal}

@@ -1,7 +1,8 @@
-/* The locker's layout: the cosmetics and the 320px preview side by side on
-   wide screens, stacked below 1024px (where the app sidebar becomes an
-   off-canvas drawer and the content area is too narrow for both). Shared by
-   LockerClient and the page's loading skeleton. */
+/* The locker: the cosmetics of the selected slot on the left, and on the
+   right a live preview built from the site's own pieces (logo, navigation,
+   accent button, progress bar, lesson code block, avatar frame). Side by side
+   on wide screens, stacked below 1024px where the app sidebar becomes a
+   drawer. Shared by LockerClient and the page's loading skeleton. */
 
 @import "../../../../components/progression-workspace.css";
 
@@ -22,56 +23,402 @@
 
 .casier-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 28px;
   align-items: start;
 }
 .locker-workspace .casier-layout {
   margin-top: 28px;
 }
-.locker-workspace .locker-item {
+.locker-slot-hint {
+  margin: 16px 0 20px;
+  max-width: 70ch;
+  color: #aaa79f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ─── Cards ─────────────────────────────────────────────────────────────── */
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 14px;
+}
+.locker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
-  padding: 20px !important;
-  background: #121418 !important;
-  border-color: #44454a !important;
-  opacity: 1 !important;
+  padding: 16px;
+  background: #121418;
+  border: 1px solid #303137;
+  border-top: 3px solid #303137;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
 }
-.locker-workspace .locker-item[data-equipped="true"] {
-  border-color: #ff864f !important;
-  border-top-width: 4px !important;
+.locker-card:hover {
+  border-color: #74767d;
+  background: #15171c;
 }
-.locker-workspace .locker-item > div:nth-child(2) > span:first-child {
+.locker-card[data-equipped="true"] {
+  border-color: var(--cosmetic-accent);
+  border-top-color: var(--cosmetic-accent);
+}
+.locker-card__swatch {
+  position: relative;
+}
+.locker-card[data-locked="true"] .locker-swatch {
+  filter: grayscale(0.85);
+  opacity: 0.45;
+}
+.locker-card__lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #c2bfb8;
+}
+.locker-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.locker-card__head h3 {
+  margin: 0;
+  min-width: 0;
   font:
-    600 28px / 1.05 var(--font-display),
-    sans-serif !important;
+    600 24px / 1.05 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
+  overflow-wrap: anywhere;
 }
-.locker-workspace .locker-item .mono-label {
-  font-family: var(--font-interface), sans-serif;
-  letter-spacing: 0;
-  text-transform: none;
+.locker-card__rarity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #c2bfb8;
 }
-.locker-workspace .locker-item button,
-.locker-workspace .locker-item > span {
+.locker-card__rarity::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--rarity, #aaa79f);
+}
+.locker-card__description {
+  margin: 0;
+  color: #aaa79f;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+/* Équiper and Équipé are the same size: the state replaces the button in
+   place, it does not shrink to a line of text. */
+.locker-card__equip,
+.locker-card__equipped {
+  margin-top: auto;
+  width: 100%;
   min-height: 44px;
+  justify-content: center;
 }
-.locker-workspace .casier-preview {
-  background: #191c22;
-  border-color: #44454a;
+.locker-card__equipped {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cosmetic-accent);
+  color: #0b0c0e;
+  font:
+    700 14px var(--font-interface),
+    sans-serif;
 }
-.locker-workspace .casier-preview > .mono-label {
-  font-family: var(--font-interface), sans-serif;
-  letter-spacing: 0;
-  text-transform: none;
+.locker-card__locked {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+  color: #c2bfb8;
+  font-size: 12px;
+  line-height: 1.45;
 }
-/* Its top comes from StickyRail: below the navbar, or by its bottom when too tall to fit. */
-.casier-preview {
+.locker-card__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.locker-card__progress > span {
+  font:
+    11px var(--font-mono),
+    monospace;
+  color: #aaa79f;
+  white-space: nowrap;
+}
+
+/* ─── Swatches: one cosmetic, drawn on the surface it changes ───────────── */
+.locker-swatch {
+  height: 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #0b0c0e;
+  border: 1px solid #25272d;
+}
+.locker-swatch[data-slot="ACCENT_COLOR"] {
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding-inline: 16px;
+}
+.locker-swatch__logo {
+  color: #eae7df;
+}
+.locker-swatch__accent {
+  height: 8px;
+  width: 100%;
+  background: var(--cosmetic-accent);
+}
+.locker-swatch__terminal {
+  display: grid;
+  gap: 2px;
+  width: 80%;
+  padding: 8px 10px;
+  background: var(--cosmetic-terminal-bg);
+  color: var(--cosmetic-terminal-fg);
+  border-left: 3px solid var(--cosmetic-accent);
+  font:
+    11px / 1.4 var(--font-mono),
+    monospace;
+}
+.locker-swatch__terminal > span:last-child {
+  opacity: 0.75;
+}
+.locker-swatch__avatar {
+  --avatar-scale: 0.7;
+  width: 46px;
+  height: 46px;
+  font:
+    700 18px / 1 var(--font-display),
+    sans-serif;
+}
+
+/* ─── The live preview ──────────────────────────────────────────────────── */
+.locker-preview {
   position: sticky;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  background: #121418;
+  border: 1px solid #303137;
 }
+.locker-preview__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #aaa79f;
+}
+.locker-preview__head > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cosmetic-accent);
+}
+.locker-preview__head > span:last-child::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+}
+.locker-specimen {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.locker-specimen figcaption {
+  font:
+    600 13px / 1 var(--font-display),
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #aaa79f;
+}
+/* Navigation: the sidebar's brand band, two links and the account row. */
+.locker-nav {
+  display: grid;
+  background: #0b0c0e;
+  border: 1px solid #25272d;
+}
+.locker-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #eae7df;
+  color: #141518;
+}
+.locker-nav__brand b {
+  font:
+    700 18px / 1 var(--font-display),
+    sans-serif;
+  letter-spacing: 0.01em;
+}
+.locker-nav__brand b span {
+  color: var(--cosmetic-accent-ink);
+}
+.locker-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 8px 0;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: #c2bfb8;
+}
+.locker-nav__item--active {
+  background: var(--cosmetic-accent);
+  color: #0b0c0e;
+  font-weight: 700;
+}
+.locker-nav__account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px;
+  border-top: 1px solid #25272d;
+}
+.locker-nav__avatar {
+  width: 34px;
+  height: 34px;
+  font:
+    700 14px / 1 var(--font-display),
+    sans-serif;
+}
+.locker-nav__account > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.locker-nav__account b {
+  font-size: 13px;
+  color: #f4f2ed;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.locker-nav__account small {
+  font-size: 11px;
+  color: #aaa79f;
+}
+/* A lesson: the mission card's kicker, title, progress and button. */
+.locker-mission {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: #eae7df;
+  color: #141518;
+}
+.locker-mission__kicker {
+  font-size: 11px;
+  color: var(--cosmetic-accent-ink);
+  font-weight: 700;
+}
+.locker-mission strong {
+  font:
+    700 24px / 1.05 var(--font-display),
+    sans-serif;
+  text-transform: uppercase;
+}
+.locker-mission__cta {
+  justify-self: start;
+  pointer-events: none;
+}
+.locker-code > div {
+  margin: 0 !important;
+}
+.locker-code pre {
+  font-size: 12px !important;
+  padding: 12px 14px !important;
+}
+.locker-profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.locker-profile__avatar {
+  --avatar-scale: 0.9;
+  width: 72px;
+  height: 72px;
+  font:
+    700 28px / 1 var(--font-display),
+    sans-serif;
+}
+.locker-profile b {
+  font:
+    700 24px / 1.05 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
+  overflow-wrap: anywhere;
+}
+.locker-profile__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.locker-preview__loadout {
+  margin: 0;
+  display: grid;
+}
+.locker-preview__loadout > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid #303137;
+  font-size: 12px;
+}
+.locker-preview__loadout dt {
+  color: #aaa79f;
+}
+.locker-preview__loadout dd {
+  margin: 0;
+  color: #f4f2ed;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .locker-card {
+    animation: locker-card-in 260ms ease-out both;
+  }
+  .locker-card:nth-child(2) {
+    animation-delay: 30ms;
+  }
+  .locker-card:nth-child(3) {
+    animation-delay: 60ms;
+  }
+  .locker-card:nth-child(4) {
+    animation-delay: 90ms;
+  }
+  .locker-card:nth-child(n + 5) {
+    animation-delay: 120ms;
+  }
+  @keyframes locker-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .locker-card {
+    transition: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .casier-layout {
     grid-template-columns: minmax(0, 1fr);
   }
-  .casier-preview {
+  .locker-preview {
     position: static;
   }
 }

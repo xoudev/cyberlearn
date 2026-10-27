@@ -19,7 +19,7 @@ import { moderate, moderationNotice, RULE_LABEL } from "@cyberlearn/lib";
  */
 
 const VERDICT_TONE: Record<string, string> = {
-  ALLOW: "var(--a-accent)",
+  ALLOW: "var(--a-success)",
   REVIEW: "var(--a-warning)",
   BLOCK: "var(--a-danger)",
 };

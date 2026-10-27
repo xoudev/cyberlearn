@@ -8,7 +8,7 @@ import {
   updateUserProfileAction,
   type ProfileActionState,
 } from "../../../_actions/profile-actions";
-import { Card } from "../../../_components/admin-ui";
+import { Card, UserAvatar } from "../../../_components/admin-ui";
 import { USER_CARDS } from "../../_components/columns";
 
 /**
@@ -31,6 +31,7 @@ export function ProfileForm({
   displayName,
   username,
   bio,
+  avatarSrc,
   avatarLabel,
   avatarIsUpload,
   hasAvatar,
@@ -39,6 +40,8 @@ export function ProfileForm({
   displayName: string;
   username: string | null;
   bio: string | null;
+  /** The picture itself, resolved on the server (lib/avatar.ts). */
+  avatarSrc: string | null;
   /** The avatar named for support (avatarLabel). */
   avatarLabel: string;
   /** A picture the learner uploaded: removing it removes the file too. */
@@ -78,7 +81,10 @@ export function ProfileForm({
     <Card title={USER_CARDS.profile} pad>
       <div className="a-defrow" style={{ padding: "0 0 12px" }}>
         <span className="a-defrow-label">Avatar</span>
-        <span className="mono a-field-hint">{avatarLabel}</span>
+        <span className="a-person">
+          <UserAvatar src={avatarSrc} name={displayName || handle} size={48} />
+          <span className="a-field-hint">{avatarLabel}</span>
+        </span>
       </div>
 
       {/* Remounted when the saved values change, so a field reset below

@@ -364,7 +364,7 @@ function SettingsLoadError({ onRetry }: { onRetry: () => void }): React.JSX.Elem
   return (
     <div className="card card--sunken" role="alert" style={{ padding: "22px 20px" }}>
       <p className="mono-label" style={{ color: "var(--color-text-muted)", margin: "0 0 10px" }}>
-        {"// Paramètres indisponibles"}
+        Paramètres indisponibles
       </p>
       <p style={{ margin: "0 0 16px", fontSize: 14, color: "var(--color-text-secondary)" }}>
         Les paramètres n&apos;ont pas pu être chargés. Vérifie ta connexion, puis réessaie.

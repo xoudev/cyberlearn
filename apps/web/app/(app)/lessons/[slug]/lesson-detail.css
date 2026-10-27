@@ -1,5 +1,11 @@
 @import "../../../../components/community-workspace.css";
 
+/* The lesson page in the Bastion direction (docs/design/direction-artistique.md,
+   section 13). globals.css draws the lesson's parts (header, toolbar, prose,
+   blocks, plan, notes) for this page and for the editor's preview; this sheet
+   sets the page's surfaces and what only the page has: the bar under the
+   lesson, the rating and the questions, the drawers' chrome and the recap of
+   a finished lesson. */
 .lesson-workspace,
 .lesson-tools,
 .lesson-complete-dialog {
@@ -24,100 +30,27 @@
   border-radius: 0 !important;
 }
 .lesson-workspace .lesson-head {
-  max-width: none;
-  margin-bottom: 30px;
   padding-block: 8px 0;
 }
 .lesson-workspace .lesson-head__domain {
   color: #aaa79f;
-  font-size: 11px;
+  font-size: 12px;
   margin: 26px 0 18px;
 }
-.lesson-workspace .lesson-head__title {
-  font:
-    700 clamp(42px, 4.8vw, 68px) / 1 var(--font-display),
-    sans-serif;
-  letter-spacing: -0.025em;
-  margin-bottom: 20px;
-}
 .lesson-workspace .lesson-head__title > span {
-  color: #ff6b2b;
+  color: var(--cosmetic-accent);
 }
-.lesson-workspace .lesson-head__lede {
-  color: #c2bfb8;
-  font-size: 15px;
-  line-height: 1.75;
-  max-width: 90ch;
-  margin-bottom: 24px;
-}
-.lesson-workspace .lesson-head__chips {
-  gap: 12px 24px;
-  padding-block: 16px;
-  border-block: 1px solid #303137;
-}
-.lesson-workspace .lesson-chip {
-  height: auto;
-  padding: 0;
-  border: 0;
-  color: #c2bfb8;
-  font:
-    12px / 1.6 var(--font-interface),
-    sans-serif;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.lesson-workspace .lesson-chip:last-child {
-  margin-left: auto;
-  color: #ff864f;
-}
-.lesson-workspace .lesson-toolbar {
-  background: #191c22;
-  border-color: #74767d;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  gap: 10px;
-}
-.lesson-workspace .lesson-toolbar__count {
-  color: #c2bfb8;
-  font-family: var(--font-interface), sans-serif;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.lesson-workspace .lesson-toolbar__count b {
-  color: #ff864f;
-}
-.lesson-workspace .lesson-toolbar__bar {
-  height: 4px;
-  background: #44454a;
-}
-.lesson-workspace .lesson-toolbar__bar > span {
-  background: #ff864f;
-  box-shadow: none;
-}
-.lesson-workspace .lesson-toolbar .btn {
-  min-width: 44px;
-  min-height: 44px;
-  padding-inline: 10px;
-}
-.lesson-workspace .lesson-toolbar .btn--ghost {
-  color: #f4f2ed;
-  border-color: #74767d;
-}
-.lesson-workspace .lesson-toolbar .btn[aria-expanded="true"],
-.lesson-workspace .lesson-toolbar .btn[aria-pressed="true"] {
-  background: #eae7df;
-  border-color: #eae7df;
-  color: #141518;
-}
+
+/* ─── The article ───────────────────────────────────────────────────────────
+   The column's width; its prose, in the lesson's measure (globals.css). Its
+   headings, quotes and tables span the column, like the header, the
+   exercises and the bar under the lesson. */
 .lesson-workspace article.lesson-content {
   max-width: none;
+  margin-inline: 0;
   color: #c2bfb8;
 }
-.lesson-workspace article.lesson-content > :is(p, ul, ol, dl) {
-  max-width: 90ch;
-}
-.lesson-workspace article.lesson-content > :is(h1, h2, h3, h4, h5, h6, blockquote, table, hr),
-.lesson-workspace :is(.lesson-end, .lesson-pending) {
+.lesson-workspace article.lesson-content > :is(h1, h2, h3, h4, h5, h6, blockquote, table, hr) {
   max-width: none;
 }
 .lesson-workspace article.lesson-content > h2 {
@@ -131,7 +64,7 @@
   font:
     600 28px / 1 var(--font-display),
     sans-serif;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .lesson-workspace article.lesson-content > h2::after {
   display: none;
@@ -143,60 +76,58 @@
   color: #f4f2ed;
 }
 .lesson-workspace article.lesson-content > h4 {
+  font-size: 16px;
   letter-spacing: 0;
   text-transform: none;
   color: #c2bfb8;
-}
-.lesson-workspace .lesson-code-copy {
-  min-width: 44px;
-  min-height: 44px;
-  font-family: var(--font-interface), sans-serif !important;
-  font-size: 12px !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
 }
 .lesson-workspace .card {
   background: #191c22;
   box-shadow: none;
 }
-.lesson-workspace .lesson-pending {
-  font:
-    13px / 1.6 var(--font-interface),
-    sans-serif;
-  color: #fbbf24;
-  letter-spacing: 0;
-}
+
+/* ─── The bar under the lesson (next-bar.tsx) ─────────────────────────────── */
 .lesson-workspace .lesson-next-bar {
   max-width: none;
-  margin-inline: auto;
   margin-top: 48px;
-  background: #191c22;
-  border-color: #74767d;
+  background: #121418;
+  border: 1px solid #303137;
+  border-left: 3px solid var(--cosmetic-accent);
   grid-template-columns: minmax(0, 1fr);
+}
+.lesson-workspace .lesson-next-bar:focus-visible {
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 .lesson-workspace .lesson-next-bar__preview {
   border-right: 0;
-  border-bottom: 1px solid #44454a;
+  border-bottom: 1px solid #303137;
   padding: 24px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 .lesson-next-bar__eyebrow {
-  font-size: 11px;
-  color: #ff864f;
   margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cosmetic-accent-hover);
 }
 .lesson-next-bar__path {
-  font-size: 12px;
+  font-size: 13px;
   color: #aaa79f;
   text-decoration: none;
   line-height: 1.6;
+}
+.lesson-next-bar__path:hover {
+  color: #f4f2ed;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .lesson-next-bar__facts {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
-  font-size: 12px;
+  font-size: 13px;
   color: #c2bfb8;
 }
 .lesson-workspace .lesson-next-bar h3 {
@@ -218,11 +149,23 @@
   max-width: none;
   flex: 1 1 180px;
   font:
-    12px / 1.6 var(--font-interface),
+    13px / 1.6 var(--font-interface),
     sans-serif;
   letter-spacing: 0;
   color: #aaa79f;
 }
+.lesson-workspace .lesson-next-bar .btn {
+  box-shadow: none;
+}
+/* The next lesson still shut: a raised grey, not a faded accent. */
+.lesson-workspace .lesson-next-bar .btn:disabled {
+  opacity: 1;
+  background: #191c22;
+  border-color: #303137;
+  color: #aaa79f;
+}
+
+/* ─── The rating and the questions (lesson-rating.tsx, lesson-qa.tsx) ─────── */
 .lesson-workspace .lesson-rating-qa-grid {
   max-width: none;
   margin-inline: auto;
@@ -252,9 +195,9 @@
   flex-wrap: wrap;
 }
 .lesson-workspace .lesson-rating-qa-grid form button[type="submit"] {
-  background: #ff6b2b !important;
+  background: var(--cosmetic-accent) !important;
   color: #141518 !important;
-  border-color: #ff6b2b !important;
+  border-color: var(--cosmetic-accent) !important;
 }
 .lesson-workspace .lesson-rating-qa-grid :is(h2, h3) {
   font:
@@ -271,17 +214,23 @@
 .lesson-workspace .lesson-rating-qa-grid .lesson-question__meta {
   flex-wrap: wrap;
 }
+
+/* ─── The end of the last section (lesson-stepper.tsx) ──────────────────── */
 .lesson-workspace .lesson-end {
-  background: #191c22 !important;
-  border-color: #74767d !important;
+  background: #121418 !important;
+  border-color: #303137 !important;
+  border-left: 3px solid var(--cosmetic-accent) !important;
 }
 .lesson-workspace .lesson-end > div:first-child {
-  background: #ff6b2b !important;
+  background: var(--cosmetic-accent) !important;
   box-shadow: none !important;
 }
 .lesson-workspace .lesson-end p {
   font-family: var(--font-interface), sans-serif !important;
 }
+
+/* ─── The drawers: the plan and the notes (lesson-toolbar.tsx) ──────────────
+   Their lists and controls are globals.css's; here, the drawer's chrome. */
 .lesson-tools {
   background: #121418;
   box-shadow: none;
@@ -312,34 +261,9 @@
   text-transform: none;
   color: #aaa79f;
 }
-.lesson-tools :is(button, a, input) {
-  min-height: 44px;
-}
-.lesson-tools .lesson-plan__item {
-  min-height: 56px;
-  font-family: var(--font-interface), sans-serif;
-  color: #aaa79f;
-}
-.lesson-tools .lesson-plan__item[aria-current="step"] {
-  background: #eae7df;
-  color: #141518;
-  border-left-color: #923200;
-}
-.lesson-tools .lesson-plan__item[aria-current="step"] :is(.lesson-plan__num, .lesson-plan__mark) {
-  color: #55524d;
-}
-.lesson-tools .lesson-plan__item:not(:disabled):not([aria-current]):hover {
-  background: #191c22;
-  color: #f4f2ed;
-}
-.lesson-tools .lesson-plan__item:disabled {
-  opacity: 1;
-}
-.lesson-tools .lesson-plan__num,
-.lesson-tools .lesson-plan__mark {
-  color: #aaa79f;
-}
-.lesson-tools .side-drawer__body :is(p, span, a, .mono-label) {
+/* The author's byline and the glossary note write a code face and a wide
+   tracking inline: only !important reaches them. */
+.lesson-tools .side-drawer__body :is(p, span, a, .mono-label):not(.lesson-plan__num) {
   font-family: var(--font-interface), sans-serif !important;
   letter-spacing: 0 !important;
   text-transform: none;
@@ -347,161 +271,351 @@
 .lesson-tools .lesson-author-card {
   background: #191c22;
 }
-.lesson-tools .side-drawer__body button {
-  min-width: 44px;
+/* Under the plan (the author, the glossary) and in the notes' footer, a link
+   or a button is a 44px target, as the drawer's own controls are. */
+.lesson-tools .lesson-plan a:not(:has(> .lesson-author-card)),
+.lesson-tools .side-drawer__foot :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
-.lesson-tools textarea {
-  font:
-    14px / 1.8 var(--font-interface),
-    sans-serif !important;
+.lesson-tools .lesson-plan a:has(> .lesson-author-card) {
+  display: block;
 }
 :is(.lesson-tools, .lesson-complete-dialog) :is(button, a, textarea, input):focus-visible {
-  outline: 2px solid #ff864f !important;
+  outline: 2px solid var(--cosmetic-accent-hover) !important;
   outline-offset: 3px;
 }
 .lesson-workspace :is(input, textarea, [role="combobox"]):focus-visible {
-  outline: 2px solid #ff864f !important;
+  outline: 2px solid var(--cosmetic-accent-hover) !important;
   outline-offset: 3px;
 }
+.lesson-tools .lesson-plan__item:focus-visible,
+.lesson-tools .lesson-notes__editor:focus-visible {
+  outline-offset: -2px;
+}
 .lesson-tools .lesson-plan__item[aria-current="step"]:focus-visible {
-  outline-color: #141518;
+  outline-color: #141518 !important;
 }
 .side-drawer-root:has(> .lesson-tools) .side-drawer__backdrop {
   background: #000b !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+/* ─── The recap of a finished lesson (lesson-complete-modal.tsx) ────────────
+   A chalk sheet with what the lesson credited, the Bastion as its signature,
+   then on carbon the quiz's real score, the level reached and the badges,
+   and the way on. It comes in once, by its opacity and 8px; the XP count is
+   its only other motion, and both go with reduced motion. */
+.modal-shell:has(> .lesson-complete-dialog) {
+  background: #000c;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.modal-shell__frame.lesson-complete-dialog {
+  background: #0b0c0e;
+  border-color: #303137;
+  box-shadow: none;
+  animation: lesson-success-enter 250ms ease-out;
+}
+@keyframes lesson-success-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .lesson-complete-dialog .modal-shell__body {
   padding: 0;
 }
-.lesson-complete-dialog :is(a, button) {
-  min-height: 44px;
-}
-.lesson-complete-dialog :is(p, label, .mono-label) {
-  font-family: var(--font-interface), sans-serif !important;
-  letter-spacing: 0 !important;
-  text-transform: none;
-}
 .lesson-success {
-  padding: 32px;
+  display: grid;
 }
-.lesson-success h2 {
-  font:
-    600 40px / 1.05 var(--font-display),
-    sans-serif;
-  margin: 0 0 28px;
-  overflow-wrap: anywhere;
-}
-.lesson-success__xp {
+.lesson-success__sheet {
+  padding: 26px 32px 30px;
   background: #eae7df;
   color: #141518;
-  padding: 24px;
+}
+.lesson-success__top {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 26px;
 }
-.lesson-success__xp > div {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
+.lesson-complete-dialog .lesson-success__kicker {
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
+  margin: 0;
+  font:
+    600 14px / 1.2 var(--font-interface),
+    sans-serif;
+  color: #141518;
+}
+.lesson-success__tick {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--cosmetic-accent);
+  color: #0b0c0e;
+}
+.lesson-success__tick svg {
+  width: 15px;
+  height: 15px;
+}
+.lesson-success__logo {
+  color: #141518;
+}
+.lesson-success__title {
+  margin: 0 0 26px;
+  font:
+    700 clamp(30px, 6vw, 44px) / 1 var(--font-display),
+    sans-serif;
+  letter-spacing: -0.015em;
+  color: #141518;
+  overflow-wrap: anywhere;
+}
+.lesson-success__tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding-top: 20px;
+  border-top: 1px solid #c9c5bc;
+}
+.lesson-success__xp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
 }
 .lesson-success__xp strong {
   font:
-    600 64px / 1 var(--font-display),
+    800 clamp(72px, 17vw, 112px) / 0.85 var(--font-display),
     sans-serif;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: #141518;
 }
-.lesson-success__xp span {
+.lesson-complete-dialog .lesson-success__xp span {
+  font:
+    600 15px / 1.2 var(--font-interface),
+    sans-serif;
+  color: #55524d;
+}
+.lesson-complete-dialog .lesson-success__level {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  margin: 0;
+}
+.lesson-complete-dialog .lesson-success__level span {
   font-size: 12px;
   color: #55524d;
 }
-.lesson-success__quiz {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  border: 1px solid #74767d;
-  padding: 16px;
-  margin-bottom: 24px;
-  font-size: 13px;
-  color: #c2bfb8;
+.lesson-success__level b {
+  font:
+    700 32px / 1 var(--font-display),
+    sans-serif;
+  color: var(--cosmetic-accent-ink);
 }
-.lesson-success__badges {
-  margin-block: 24px;
+.lesson-success__report {
+  display: grid;
+  gap: 22px;
+  padding: 26px 32px 6px;
+}
+.lesson-success__report:empty {
+  display: none;
+}
+.lesson-success__quiz {
+  display: grid;
+  gap: 12px;
+}
+.lesson-success__quiz-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+.lesson-complete-dialog .lesson-success__quiz-head > span:first-child {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #aaa79f;
+}
+.lesson-success__quiz-head strong {
+  font:
+    600 18px / 1.3 var(--font-interface),
+    sans-serif;
+  color: #f4f2ed;
+}
+.lesson-complete-dialog .lesson-success__share {
+  margin-left: auto;
+  font:
+    700 30px / 1 var(--font-display),
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--cosmetic-accent-hover);
+}
+.lesson-success__score {
+  display: flex;
+  gap: 3px;
+}
+.lesson-success__score span {
+  flex: 1;
+  min-width: 2px;
+  height: 8px;
+  background: #303137;
+}
+.lesson-success__score [data-right="true"] {
+  background: var(--cosmetic-accent);
+}
+.lesson-complete-dialog .level-reached {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "figure eyebrow"
+    "figure label";
+  align-items: center;
+  column-gap: 18px;
+  margin: 0;
+  padding: 16px 18px;
+  background: #121418;
+  border: 1px solid #303137;
+  border-left: 3px solid var(--cosmetic-accent);
+  color: #f4f2ed;
+  text-align: left;
+}
+.lesson-complete-dialog .level-reached__eyebrow {
+  grid-area: eyebrow;
+  align-self: end;
+  margin: 0;
+  font-size: 12px;
+  color: #aaa79f;
+}
+.lesson-complete-dialog .level-reached__figure {
+  grid-area: figure;
+  margin: 0;
+  font:
+    800 48px / 1 var(--font-display),
+    sans-serif;
+  -webkit-text-fill-color: var(--cosmetic-accent-hover);
+  color: var(--cosmetic-accent-hover);
+}
+.lesson-complete-dialog .level-reached__label {
+  grid-area: label;
+  align-self: start;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f4f2ed;
 }
 .lesson-success__badges h3 {
+  margin: 0 0 12px;
   font:
-    600 28px / 1.1 var(--font-display),
+    700 26px / 1.1 var(--font-display),
     sans-serif;
-  margin: 0 0 16px;
+  color: #f4f2ed;
 }
-.lesson-success__badges > div {
+.lesson-success__badges ul {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .lesson-success__badge {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 14px;
-  border: 1px solid #44454a;
-  font-size: 12px;
+  padding: 12px 14px;
+  background: #121418;
+  border: 1px solid #303137;
+  font-size: 13px;
 }
 .lesson-success__badge > div {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   flex: 1 1 120px;
 }
-.lesson-success__badge > div span {
-  font-size: 11px;
+.lesson-complete-dialog .lesson-success__badge > div span {
+  font-size: 12px;
+}
+.lesson-complete-dialog .lesson-success__badge > span {
+  font:
+    600 12px / 1 var(--font-mono),
+    monospace;
+  color: var(--cosmetic-accent-hover);
 }
 .lesson-success__actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: end;
-  gap: 12px;
-  padding-top: 24px;
-  border-top: 1px solid #44454a;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 32px 28px;
 }
+.lesson-complete-dialog .btn--ghost {
+  background: transparent;
+  border-color: #74767d;
+  color: #f4f2ed;
+}
+.lesson-complete-dialog .btn--ghost:hover {
+  background: #191c22;
+}
+.lesson-complete-dialog .lesson-success__close {
+  margin-right: auto;
+  border-color: transparent;
+  background: transparent;
+  color: #c2bfb8;
+}
+.lesson-complete-dialog .lesson-success__close:hover {
+  border-color: #303137;
+  color: #f4f2ed;
+}
+.lesson-complete-dialog .lesson-success__next:hover {
+  background: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
+}
+
 @media (max-width: 600px) {
-  .lesson-workspace .lesson-toolbar {
-    padding-inline: 8px;
-    gap: 6px;
-  }
-  .lesson-workspace .lesson-toolbar__where {
-    gap: 8px;
-  }
-  .lesson-workspace .lesson-toolbar__bar {
-    display: none;
-  }
-  .lesson-workspace .lesson-toolbar__group {
-    gap: 4px;
-  }
-  .lesson-workspace .lesson-toolbar__sep {
-    display: none;
-  }
-  .lesson-workspace .lesson-head__chips {
-    gap: 10px 20px;
-  }
-  .lesson-workspace .lesson-head__chips .lesson-chip:last-child {
-    margin-left: 0;
-  }
   .lesson-workspace .lesson-next-bar__actions .btn {
     width: 100%;
   }
   .lesson-workspace .lesson-rating-qa-grid > .card {
     padding: 24px 16px !important;
   }
-  .lesson-complete-dialog > .modal-shell__body > div {
-    padding: 24px 16px !important;
+  .lesson-success__sheet {
+    padding: 22px 18px 24px;
+  }
+  .lesson-success__report {
+    padding: 22px 18px 4px;
+  }
+  .lesson-success__actions {
+    padding: 20px 18px 22px;
+  }
+  .lesson-success__actions .btn {
+    flex: 1 1 100%;
+  }
+  .lesson-complete-dialog .lesson-success__next {
+    order: -1;
+  }
+  .lesson-complete-dialog .lesson-success__close {
+    order: 3;
+    margin-right: 0;
+  }
+  .lesson-complete-dialog .lesson-success__level {
+    justify-items: start;
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  :is(.lesson-workspace, .lesson-tools, .lesson-complete-dialog),
   :is(.lesson-workspace, .lesson-tools, .lesson-complete-dialog) *,
   :is(.lesson-workspace, .lesson-tools, .lesson-complete-dialog) *::before,
   :is(.lesson-workspace, .lesson-tools, .lesson-complete-dialog) *::after {

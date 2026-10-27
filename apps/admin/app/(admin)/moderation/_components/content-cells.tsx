@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ContentAuthor, ModeratedContent, ReviewableContent } from "@cyberlearn/db";
 import { contentExcerpt } from "@/lib/content-moderation";
 import { learnerUrl } from "@/lib/learner-url";
-import { Tag } from "../../_components/admin-ui";
+import { Tag, UserAvatar } from "../../_components/admin-ui";
 
 /**
  * How the content list and the reports draw one piece of content and its
@@ -27,7 +27,10 @@ function learnerHref(path: string): string | null {
 export function ContentPlace({ content }: { content: ModeratedContent }): React.ReactElement {
   if (content.consolePath !== null) {
     return (
-      <Link href={content.consolePath} style={{ color: "var(--a-accent)" }}>
+      <Link
+        href={content.consolePath}
+        style={{ color: "var(--a-fg)", textDecoration: "underline" }}
+      >
         {content.context}
       </Link>
     );
@@ -36,7 +39,12 @@ export function ContentPlace({ content }: { content: ModeratedContent }): React.
   return href === null ? (
     <span>{content.context}</span>
   ) : (
-    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "var(--a-accent)" }}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "var(--a-fg)", textDecoration: "underline" }}
+    >
       {content.context} ↗
     </a>
   );
@@ -58,10 +66,25 @@ export function ContentText({
   );
 }
 
-export function AuthorLink({ author }: { author: ContentAuthor | null }): React.ReactElement {
-  if (author === null) return <span style={{ color: "var(--a-muted)" }}>Compte supprimé</span>;
+export function AuthorLink({
+  author,
+  avatarSrc,
+}: {
+  author: ContentAuthor | null;
+  /** The author's picture, resolved by the page (lib/avatar.ts). */
+  avatarSrc: string | null;
+}): React.ReactElement {
+  if (author === null) {
+    return (
+      <span className="a-person" style={{ color: "var(--a-muted)" }}>
+        <UserAvatar src={null} name="?" size={30} />
+        Compte supprimé
+      </span>
+    );
+  }
   return (
     <Link href={`/users/${author.id}`} className="a-row-link">
+      <UserAvatar src={avatarSrc} name={author.displayName} size={30} />
       <span style={{ display: "grid", gap: 2 }}>
         <span className="a-row-link-title">{author.displayName}</span>
         {author.username !== null && (
@@ -86,7 +109,7 @@ export function ContentState({
   content: ReviewableContent;
   hiddenLabel?: string;
 }): React.ReactElement {
-  if (!content.isHidden) return <Tag tone="accent">Visible</Tag>;
+  if (!content.isHidden) return <Tag tone="success">Visible</Tag>;
   return content.authorWithdrew && !content.pendingReview ? (
     <Tag>Retiré par l&apos;auteur</Tag>
   ) : (

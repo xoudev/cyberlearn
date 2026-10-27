@@ -15,9 +15,9 @@ import { AVATAR_PATHS, UPLOADED_AVATAR_PREFIX } from "@cyberlearn/types";
 const GLYPH_AVATAR_PREFIX = "__glyph:";
 
 /**
- * An avatar, named for support. The console does not draw it: an uploaded
- * picture would need a signed link to the private bucket for one glance, and
- * what support decides is whether to remove it, which the name is enough for.
+ * An avatar, named for support, beside the picture itself (lib/avatar.ts):
+ * the kind of avatar decides what removing it does (an uploaded photo's file
+ * goes too), which the picture alone does not say.
  */
 export function avatarLabel(avatarUrl: string | null): string {
   if (avatarUrl === null || avatarUrl === "") return "Aucun : ses initiales";

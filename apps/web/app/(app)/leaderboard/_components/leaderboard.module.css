@@ -16,7 +16,7 @@
   font:
     600 48px / 1 var(--font-display),
     sans-serif;
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .identity {
   display: flex;
@@ -34,7 +34,7 @@
 }
 .identity span {
   font:
-    11px var(--font-interface),
+    13px var(--font-interface),
     sans-serif;
   color: var(--color-text-secondary);
 }
@@ -47,7 +47,9 @@
 }
 .sectionHeading span {
   color: var(--color-text-secondary);
-  font: 12px var(--font-mono);
+  font:
+    13px var(--font-interface),
+    sans-serif;
 }
 .players {
   display: flex;
@@ -69,7 +71,7 @@
   background: #121418;
 }
 .currentPlayer {
-  border-left: 3px solid #ff6b2b;
+  border-left: 3px solid var(--cosmetic-accent);
   background: #191c22;
 }
 .playerTop {
@@ -87,12 +89,12 @@
   color: var(--color-text-secondary);
 }
 .you {
-  color: var(--cosmetic-accent);
+  color: var(--cosmetic-accent-hover);
   padding: 0;
   background: transparent;
   border: 0;
   font:
-    500 11px var(--font-interface),
+    600 12px var(--font-interface),
     sans-serif;
 }
 .playerIdentity {
@@ -120,14 +122,14 @@
 }
 .score small {
   color: var(--color-text-secondary);
-  font: 11px var(--font-mono);
+  font: 12px var(--font-mono);
 }
 .streak {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--color-rarity-legendary);
-  font: 11px var(--font-mono);
+  font: 12px var(--font-mono);
   white-space: nowrap;
 }
 .position .identity strong {
@@ -176,8 +178,8 @@
   text-underline-offset: 3px;
 }
 .profileLink:focus-visible {
-  outline: 2px solid var(--cosmetic-accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 
 /* The period pills, under the tabs and above the meta strip. */
@@ -195,9 +197,11 @@
   gap: 12px 20px;
   margin-top: 24px;
   padding: 14px 16px;
-  border: 1px solid var(--color-border-default);
-  background: color-mix(in srgb, var(--color-bg-base) 50%, transparent);
-  font: 11.5px / 1.6 var(--font-mono);
+  border: 1px solid #303137;
+  background: #121418;
+  font:
+    13px / 1.5 var(--font-interface),
+    sans-serif;
   color: var(--color-text-muted);
 }
 .friendsSwitch p {

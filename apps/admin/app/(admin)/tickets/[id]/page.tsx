@@ -3,7 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isTicketOpen, ticketRepository, userRepository } from "@cyberlearn/db";
-import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
+import {
+  Card,
+  GhostLink,
+  PageHeader,
+  Tag,
+  UserAvatar,
+  type Tone,
+} from "../../_components/admin-ui";
 import { AppealedBanCard } from "../_components/AppealedBanCard";
 import { TicketAssignee } from "../_components/TicketAssignee";
 import { TicketNotes } from "../_components/TicketNotes";
@@ -14,6 +21,7 @@ import { describeAppealedBan } from "../appealed-ban";
 import { adminName, STATUS_META, THEME_META } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 import { consoleDateFormat } from "@/lib/console-time";
 import { routeIdOrNotFound } from "@/lib/route-id";
 
@@ -45,17 +53,7 @@ function DetailRow({
         gap: 14,
       }}
     >
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: "var(--a-muted)",
-          flexShrink: 0,
-        }}
-      >
+      <span className="a-meta-label" style={{ flexShrink: 0 }}>
         {label}
       </span>
       <span
@@ -99,6 +97,18 @@ export default async function AdminTicketPage({
     : (ticket.user?.displayName ?? "Visiteur non connecté");
   const contactEmail = ticket.email ?? ticket.user?.email ?? null;
   const open = isTicketOpen(ticket.status);
+
+  // The pictures of the requester and of everybody who wrote, in one round
+  // trip: the thread's authors, then the notes', then the requester.
+  const avatars = await resolveAvatarSrcs([
+    ...ticket.messages.map((m) => m.author?.avatarUrl),
+    ...notes.map((note) => note.author?.avatarUrl),
+    ticket.user?.avatarUrl,
+  ]);
+  const messageAvatar = (index: number): string | null => avatars[index] ?? null;
+  const noteAvatar = (index: number): string | null =>
+    avatars[ticket.messages.length + index] ?? null;
+  const requesterAvatar = avatars[ticket.messages.length + notes.length] ?? null;
 
   // Formatted here: the server owns the locale and the zone (Paris, as the
   // account's page and the audit log read it), and a Date crossing to a client
@@ -165,13 +175,7 @@ export default async function AdminTicketPage({
             <div style={{ display: "grid", gap: 13 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <TicketStatusSelect ticketId={ticket.id} currentStatus={ticket.status} />
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10.5,
-                    color: "var(--a-muted)",
-                  }}
-                >
+                <span className="a-field-hint">
                   mis à jour le {formatDateTime(ticket.updatedAt)}
                 </span>
               </div>
@@ -189,11 +193,12 @@ export default async function AdminTicketPage({
           <TicketNotes
             ticketId={ticket.id}
             open={open}
-            notes={notes.map((note) => ({
+            notes={notes.map((note, index) => ({
               id: note.id,
               body: note.body,
               stamp: format(note.createdAt),
               authorName: note.author?.displayName ?? null,
+              authorAvatar: noteAvatar(index),
             }))}
           />
 
@@ -203,8 +208,13 @@ export default async function AdminTicketPage({
                 {/* The account, one click away: banning, lifting a ban or
                     unblocking a sign-in all happen on its page. */}
                 {ticket.user !== null ? (
-                  <Link href={`/users/${ticket.user.id}`} style={{ color: "var(--a-accent)" }}>
-                    {requester}
+                  <Link href={`/users/${ticket.user.id}`} className="a-row-link">
+                    <UserAvatar
+                      src={requesterAvatar}
+                      name={ticket.user.displayName || requester}
+                      size={26}
+                    />
+                    <span className="a-row-link-title">{requester}</span>
                   </Link>
                 ) : (
                   requester
@@ -223,11 +233,7 @@ export default async function AdminTicketPage({
                 <Tag tone={theme.tone}>{theme.label}</Tag>
               </DetailRow>
               <DetailRow label="Statut">
-                <span
-                  style={{ color: status.color, fontFamily: "var(--font-mono)", fontWeight: 700 }}
-                >
-                  {status.label}
-                </span>
+                <span style={{ color: status.color, fontWeight: 700 }}>{status.label}</span>
               </DetailRow>
               <DetailRow label="Jira">
                 {ticket.jiraIssueKey && ticket.jiraIssueUrl ? (
@@ -267,14 +273,16 @@ export default async function AdminTicketPage({
           ticketId={ticket.id}
           open={open}
           requesterName={requester}
+          requesterAvatar={requesterAvatar}
           openingMessage={ticket.message}
           openingStamp={format(ticket.createdAt)}
-          messages={ticket.messages.map((m) => ({
+          messages={ticket.messages.map((m, index) => ({
             id: m.id,
             body: m.body,
             fromStaff: m.fromStaff,
             stamp: format(m.createdAt),
             authorName: m.author?.displayName ?? null,
+            authorAvatar: messageAvatar(index),
           }))}
         />
       </Card>

@@ -60,7 +60,7 @@
 .activity-history__bar {
   display: block;
   width: min(100%, 36px);
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 .activity-history__months [data-current="true"] .activity-history__bar {
   background: #eae7df;
@@ -73,7 +73,7 @@
 }
 .activity-history__empty {
   padding: 28px;
-  border-left: 4px solid #ff6b2b;
+  border-left: 4px solid var(--cosmetic-accent);
   background: #0b0c0e;
 }
 .activity-history__empty strong {
@@ -100,7 +100,7 @@
 }
 .activity-history__details summary:focus-visible,
 .activity-history__daily:focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .activity-history__daily {

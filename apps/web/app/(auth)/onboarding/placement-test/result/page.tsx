@@ -70,7 +70,7 @@ export default async function PlacementResultPage({
               <ProgressBar
                 value={score}
                 label={`Score en ${PLACEMENT_CATEGORY_LABEL[category]}`}
-                color="#923200"
+                color="var(--cosmetic-accent-ink)"
               />
             </div>
           );

@@ -7,15 +7,13 @@ import { importLessonCoverFromUrlAction, uploadLessonCoverAction } from "../_act
 // ── Design tokens (match the lesson form) ───────────────────────────────────────
 const BORDER = "var(--a-border-2)";
 const DANGER = "var(--a-danger)";
-const MONO = "var(--font-mono)";
 
 const btnBase: React.CSSProperties = {
-  fontFamily: MONO,
-  fontWeight: 700,
-  fontSize: 11,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  padding: "10px 16px",
+  fontFamily: "var(--font-sans)",
+  fontWeight: 600,
+  fontSize: 13,
+  minHeight: 44,
+  padding: "0 16px",
   border: `1px solid ${BORDER}`,
   background: "var(--a-surface)",
   color: "var(--a-fg)",
@@ -138,15 +136,7 @@ export function CoverUploadField({
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <span
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: "0.16em",
-              color: "var(--a-muted)",
-              textTransform: "uppercase",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
             16 : 9
           </span>
         )}
@@ -180,18 +170,8 @@ export function CoverUploadField({
                 handleImportUrl();
               }
             }}
-            style={{
-              flex: 1,
-              minWidth: 160,
-              background: "var(--a-surface)",
-              border: `1px solid ${BORDER}`,
-              color: "var(--a-fg)",
-              fontFamily: MONO,
-              fontSize: 12,
-              padding: "9px 12px",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
+            className="a-input"
+            style={{ flex: 1, width: "auto", minWidth: 160 }}
           />
           <button
             type="button"
@@ -211,7 +191,7 @@ export function CoverUploadField({
         {/* Option 2: upload a file */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
-            OU
+            ou
           </span>
           <button
             type="button"
@@ -247,7 +227,12 @@ export function CoverUploadField({
           JPEG, PNG ou WebP · 4 Mo max · 1280×720 recommandé · le lien est ré-hébergé
         </span>
         {error !== null && (
-          <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)" }}>{error}</span>
+          <span
+            role="alert"
+            style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-danger)" }}
+          >
+            {error}
+          </span>
         )}
       </div>
     </div>

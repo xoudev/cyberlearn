@@ -37,95 +37,24 @@ export function CodeBlock({
   const displayName = filename ?? language;
 
   return (
-    <div style={{ margin: "1.5rem 0" }}>
-      {/* Header */}
-      <div
-        className="card"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "7px 16px",
-          borderLeft: "3px solid var(--cosmetic-accent)",
-          borderBottom: "none",
-        }}
-      >
-        {/* Left: filename + badges */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <span
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 11,
-              color: "var(--color-text-secondary)",
-              letterSpacing: "0.03em",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {displayName}
-          </span>
-          {variant === "danger" && (
-            <span
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--color-category-cybersec)",
-                padding: "2px 7px",
-                border: "1px solid rgba(255,71,87,0.3)",
-                background: "rgba(255,71,87,0.07)",
-                flexShrink: 0,
-              }}
-            >
-              DANGER
-            </span>
-          )}
-          {language !== "code" && filename && (
-            <span
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 9,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "var(--color-text-muted)",
-                flexShrink: 0,
-              }}
-            >
-              {language}
-            </span>
-          )}
+    <div className="lesson-code">
+      {/* Header: the file or the language, as data, and the copy button. */}
+      <div className="lesson-code__head">
+        <div className="lesson-code__name">
+          <span className="lesson-code__file">{displayName}</span>
+          {variant === "danger" && <span className="lesson-code__danger">Danger</span>}
+          {language !== "code" && filename && <span className="lesson-code__lang">{language}</span>}
         </div>
 
-        {/* Right: copy button */}
         <button
           type="button"
           className="lesson-code-copy"
+          data-copied={copied}
           onClick={handleCopy}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: copied ? "var(--cosmetic-accent)" : "var(--color-text-faint)",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 9,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.14em",
-            padding: 0,
-            flexShrink: 0,
-            transition: "color 150ms ease",
-          }}
           aria-label="Copier le code"
         >
-          {copied ? <Check size={9} aria-hidden /> : <Copy size={9} aria-hidden />}
-          {copied ? "Copié" : "Copier"}
+          {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+          <span aria-live="polite">{copied ? "Copié" : "Copier"}</span>
         </button>
       </div>
 
@@ -139,13 +68,13 @@ export function CodeBlock({
           margin: 0,
           // terminal-theme cosmetic drives the code surface background
           background: "var(--cosmetic-terminal-bg)",
-          border: "1px solid var(--color-border-default)",
+          border: "1px solid #303137",
           borderLeft: "3px solid var(--cosmetic-accent)",
           borderRadius: 0,
           padding: "16px 20px",
           overflowX: "auto",
           fontFamily: "var(--font-mono, monospace)",
-          fontSize: 13,
+          fontSize: 14,
           lineHeight: 1.7,
           color: "var(--color-text-secondary)",
         }}

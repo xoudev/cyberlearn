@@ -15,7 +15,6 @@ export function PublicNavbar(): React.JSX.Element {
         </Link>
         <div className="home-nav-links">
           <Link href="/catalogue">Les parcours</Link>
-          <Link href="/download">L&apos;application</Link>
         </div>
         <div className="home-nav-actions">
           <Link href="/login" className="home-nav-login">

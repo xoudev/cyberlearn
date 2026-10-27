@@ -37,19 +37,18 @@ interface PathData {
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const BORDER = "var(--a-border-2)";
-const DANGER = "var(--a-danger)";
-const TURQ = "var(--a-accent)";
-const MONO = "var(--font-sans)";
-const BODY_F = "var(--font-sans)";
+const ACCENT = "var(--a-accent)";
+const UI_FONT = "var(--font-sans)";
+const CODE_FONT = "var(--font-mono)";
 
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
   background: "var(--a-surface)",
   border: `1px solid ${BORDER}`,
   color: "var(--a-fg)",
-  fontFamily: MONO,
+  fontFamily: UI_FONT,
   fontSize: 13,
-  letterSpacing: "0.01em",
+  minHeight: 44,
   padding: "12px 14px",
   outline: "none",
   boxSizing: "border-box",
@@ -94,15 +93,8 @@ function Label({
   return (
     <label
       htmlFor={htmlFor}
-      style={{
-        fontFamily: MONO,
-        fontWeight: 700,
-        fontSize: 12,
-        color: "var(--a-fg-2)",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-      }}
+      className="a-label"
+      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
     >
       {children}
       {req && <span style={{ color: "var(--a-danger)" }}>*</span>}
@@ -110,9 +102,7 @@ function Label({
         <span
           style={{
             fontWeight: 500,
-            letterSpacing: "0.04em",
-            textTransform: "none",
-            fontSize: 10.5,
+            fontSize: 12,
             color: "var(--a-muted)",
             marginLeft: "auto",
           }}
@@ -125,12 +115,12 @@ function Label({
 }
 function Help({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>{children}</span>
+    <span style={{ fontFamily: UI_FONT, fontSize: 12, color: "var(--a-muted)" }}>{children}</span>
   );
 }
 function FieldErr({ msg }: { msg?: string | undefined }) {
   return msg ? (
-    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)" }}>{msg}</span>
+    <span style={{ fontFamily: UI_FONT, fontSize: 12, color: "var(--a-danger)" }}>{msg}</span>
   ) : null;
 }
 
@@ -188,7 +178,7 @@ function LessonRow({
         padding: "12px 16px 12px 8px",
         borderBottom: `1px solid var(--a-border)`,
         background: isDropTarget || isDragging ? "var(--a-hover)" : "var(--a-surface)",
-        outline: isDragging ? `1px solid ${TURQ}` : isDropTarget ? `1px dashed ${TURQ}` : "none",
+        outline: isDragging ? `2px solid ${ACCENT}` : isDropTarget ? `1px solid ${ACCENT}` : "none",
         outlineOffset: -1,
         boxShadow: isDragging
           ? "0 12px 32px color-mix(in srgb, var(--a-bg) 50%, transparent)"
@@ -207,8 +197,7 @@ function LessonRow({
             left: 8,
             right: 8,
             height: 2,
-            background: "var(--a-accent)",
-            boxShadow: "0 0 10px var(--a-accent)",
+            background: ACCENT,
           }}
         />
       )}
@@ -220,7 +209,7 @@ function LessonRow({
           placeItems: "center",
           width: 28,
           height: 28,
-          color: isDragging ? TURQ : "var(--a-muted)",
+          color: isDragging ? ACCENT : "var(--a-muted)",
           transition: "color 100ms ease",
         }}
       >
@@ -237,13 +226,12 @@ function LessonRow({
       {/* position badge */}
       <span
         style={{
-          fontFamily: MONO,
+          fontFamily: CODE_FONT,
           fontWeight: 700,
           fontSize: 11,
-          letterSpacing: "0.04em",
-          color: idx === 0 ? TURQ : "var(--a-muted)",
+          color: "var(--a-fg-2)",
           background: "var(--a-bg)",
-          border: `1px solid ${idx === 0 ? TURQ : BORDER}`,
+          border: `1px solid ${BORDER}`,
           width: 36,
           height: 28,
           display: "grid",
@@ -257,7 +245,7 @@ function LessonRow({
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
         <p
           style={{
-            fontFamily: BODY_F,
+            fontFamily: UI_FONT,
             fontWeight: 600,
             fontSize: 14,
             color: "var(--a-fg)",
@@ -271,8 +259,8 @@ function LessonRow({
         </p>
         <span
           style={{
-            fontFamily: MONO,
-            fontSize: 10.5,
+            fontFamily: UI_FONT,
+            fontSize: 12,
             color: "var(--a-muted)",
             display: "inline-flex",
             alignItems: "center",
@@ -280,7 +268,7 @@ function LessonRow({
             flexWrap: "wrap",
           }}
         >
-          <span style={{ color: TURQ }}>{lesson.refCode}</span>
+          <span style={{ fontFamily: CODE_FONT, color: "var(--a-fg-2)" }}>{lesson.refCode}</span>
           <span style={{ color: "var(--a-muted)" }}>·</span>
           {diamonds(lesson.difficulty)}
           <span style={{ color: "var(--a-muted)" }}>·</span>
@@ -294,11 +282,9 @@ function LessonRow({
       <div style={{ display: "inline-flex", gap: 6, flexShrink: 0 }}>
         <span
           style={{
-            fontFamily: MONO,
+            fontFamily: UI_FONT,
             fontWeight: 700,
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
+            fontSize: 11,
             padding: "3px 8px",
             border: `1px solid ${cat.border}`,
             color: cat.color,
@@ -313,14 +299,12 @@ function LessonRow({
         </span>
         <span
           style={{
-            fontFamily: MONO,
+            fontFamily: CODE_FONT,
             fontWeight: 700,
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
+            fontSize: 11,
             padding: "3px 8px",
-            border: `1px solid var(--a-accent)`,
-            color: TURQ,
+            border: `1px solid ${BORDER}`,
+            color: "var(--a-fg-2)",
             background: "var(--a-surface)",
           }}
         >
@@ -338,8 +322,8 @@ function LessonRow({
         style={{
           display: "grid",
           placeItems: "center",
-          width: 30,
-          height: 30,
+          width: 44,
+          height: 44,
           background: "transparent",
           border: `1px solid ${BORDER}`,
           color: "var(--a-muted)",
@@ -420,7 +404,7 @@ function LessonPicker({
             placeholder="Rechercher…"
             aria-label="Rechercher une leçon"
             autoFocus
-            style={{ ...BASE_INPUT, padding: "10px 14px" }}
+            className="a-input"
           />
         </div>
         <div style={{ overflowY: "auto", flex: 1 }}>
@@ -429,8 +413,8 @@ function LessonPicker({
               style={{
                 padding: "24px",
                 textAlign: "center",
-                fontFamily: MONO,
-                fontSize: 11,
+                fontFamily: UI_FONT,
+                fontSize: 12,
                 color: "var(--a-muted)",
               }}
             >
@@ -458,6 +442,7 @@ function LessonPicker({
                     background: "none",
                     border: 0,
                     borderBottom: `1px solid var(--a-border)`,
+                    minHeight: 44,
                     padding: "12px 18px",
                     cursor: "pointer",
                     textAlign: "left",
@@ -470,7 +455,7 @@ function LessonPicker({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p
                       style={{
-                        fontFamily: BODY_F,
+                        fontFamily: UI_FONT,
                         fontWeight: 600,
                         fontSize: 13,
                         color: "var(--a-fg)",
@@ -480,14 +465,15 @@ function LessonPicker({
                     >
                       {l.title}
                     </p>
-                    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
-                      {l.refCode} · {l.estimatedMinutes} min · +{l.xpReward} XP
+                    <span style={{ fontFamily: UI_FONT, fontSize: 12, color: "var(--a-muted)" }}>
+                      <span style={{ fontFamily: CODE_FONT }}>{l.refCode}</span> ·{" "}
+                      {l.estimatedMinutes} min · +{l.xpReward} XP
                     </span>
                   </div>
                   <span
                     style={{
-                      fontFamily: MONO,
-                      fontSize: 10,
+                      fontFamily: UI_FONT,
+                      fontSize: 11,
                       padding: "2px 8px",
                       border: `1px solid ${cat.border}`,
                       color: cat.color,
@@ -598,20 +584,9 @@ export function EditPathClient({
       )}
 
       {state.error && (
-        <div
-          style={{
-            padding: "13px 16px",
-            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid var(--a-danger)",
-            borderLeft: `3px solid ${DANGER}`,
-            fontFamily: MONO,
-            fontSize: 11,
-            color: "var(--a-danger)",
-            marginBottom: 24,
-          }}
-        >
+        <p className="a-form-error" style={{ marginBottom: 24 }}>
           {state.error}
-        </div>
+        </p>
       )}
 
       <form action={action} onReset={keepFormInput} style={{ display: "grid", gap: 22 }}>
@@ -636,7 +611,7 @@ export function EditPathClient({
             />
             <Help>
               Format :{" "}
-              <b style={{ color: "var(--a-accent)" }}>
+              <b style={{ fontFamily: CODE_FONT, color: "var(--a-fg-2)" }}>
                 CL-PATH-{"{NNN}"}-V{"{NN}"}
               </b>{" "}
               · doit être unique
@@ -663,7 +638,7 @@ export function EditPathClient({
                   display: "grid",
                   placeItems: "center",
                   width: 36,
-                  fontFamily: MONO,
+                  fontFamily: UI_FONT,
                   fontSize: 13,
                   color: "var(--a-muted)",
                   borderRight: `1px solid ${BORDER}`,
@@ -684,7 +659,8 @@ export function EditPathClient({
               />
             </div>
             <Help>
-              cyberlearn.fr/paths/<b style={{ color: "var(--a-accent)" }}>votre-slug</b>
+              cyberlearn.fr/paths/
+              <b style={{ fontFamily: CODE_FONT, color: "var(--a-fg-2)" }}>votre-slug</b>
             </Help>
             <FieldErr msg={state.fieldErrors?.slug} />
           </div>
@@ -831,22 +807,22 @@ export function EditPathClient({
                   display: "grid",
                   placeItems: "center",
                   padding: "0 14px",
-                  fontFamily: MONO,
-                  fontSize: 10.5,
-                  letterSpacing: "0.18em",
+                  fontFamily: UI_FONT,
+                  fontSize: 12,
                   color: "var(--a-muted)",
                   borderLeft: `1px solid ${BORDER}`,
                   background: "var(--a-bg)",
-                  textTransform: "uppercase",
                   whiteSpace: "nowrap",
                 }}
               >
-                H
+                h
               </span>
             </div>
             <Help>
               Calculée auto depuis les leçons :{" "}
-              <b style={{ color: "var(--a-accent)" }}>{(totals.dur / 60).toFixed(1)} h</b>
+              <b style={{ fontFamily: CODE_FONT, color: "var(--a-fg-2)" }}>
+                {(totals.dur / 60).toFixed(1)} h
+              </b>
             </Help>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -863,7 +839,7 @@ export function EditPathClient({
               />
             </div>
             <Help>
-              <span style={{ color: "var(--a-accent)" }}>Publié</span> → visible par les apprenants
+              <span style={{ color: "var(--a-success)" }}>Publié</span> → visible par les apprenants
               · <span style={{ color: "var(--a-danger)" }}>Archivé</span> → caché, supprimable
             </Help>
             <FieldErr msg={state.fieldErrors?.status} />
@@ -872,7 +848,7 @@ export function EditPathClient({
 
         {/* Cover image: uploaded to the private bucket, like a lesson's. */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label hint="// 1280×720 · bucket privé">Image de couverture</Label>
+          <Label hint="1280×720 · bucket privé">Image de couverture</Label>
           <CoverUploadField
             initialMarker={path.coverImageUrl === "" ? null : path.coverImageUrl}
             initialPreview={coverPreview}
@@ -885,7 +861,7 @@ export function EditPathClient({
 
         {/* Lessons section */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label hint="// glisse pour réordonner">Leçons du parcours</Label>
+          <Label hint="glisse pour réordonner">Leçons du parcours</Label>
           <div style={{ border: `1px solid ${BORDER}`, background: "var(--a-surface)" }}>
             <div
               style={{
@@ -897,20 +873,10 @@ export function EditPathClient({
                 background: "var(--a-bg)",
               }}
             >
-              <h3
-                style={{
-                  fontFamily: MONO,
-                  fontWeight: 700,
-                  fontSize: 11,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "var(--a-fg-2)",
-                  margin: 0,
-                }}
-              >
-                <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
+              <h3 className="a-section-title">
+                <b>{lessons.length}</b> leçons · ordre actuel
               </h3>
-              <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
+              <span style={{ fontFamily: UI_FONT, fontSize: 12, color: "var(--a-muted)" }}>
                 <b>{(totals.dur / 60).toFixed(1)} h</b> total · <b>{totals.xp}</b> XP cumulés
               </span>
             </div>
@@ -920,10 +886,9 @@ export function EditPathClient({
                 style={{
                   padding: "24px",
                   textAlign: "center",
-                  fontFamily: MONO,
-                  fontSize: 11,
+                  fontFamily: UI_FONT,
+                  fontSize: 12,
                   color: "var(--a-muted)",
-                  letterSpacing: "0.06em",
                 }}
               >
                 Aucune leçon ajoutée · clique sur &quot;Ajouter une leçon&quot; pour commencer
@@ -958,16 +923,15 @@ export function EditPathClient({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 10,
+                minHeight: 44,
                 padding: 14,
                 background: "transparent",
                 border: 0,
-                borderTop: "1px dashed color-mix(in srgb, var(--a-fg) 8%, transparent)",
-                fontFamily: MONO,
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--a-muted)",
+                borderTop: `1px solid ${BORDER}`,
+                fontFamily: UI_FONT,
+                fontWeight: 600,
+                fontSize: 13,
+                color: "var(--a-fg-2)",
                 cursor: "pointer",
                 transition: "all 150ms ease",
               }}
@@ -1002,15 +966,15 @@ export function EditPathClient({
               style={{
                 background: "var(--a-bg)",
                 borderTop: `1px solid ${BORDER}`,
-                fontFamily: MONO,
-                fontSize: 11,
+                fontFamily: UI_FONT,
+                fontSize: 12,
               }}
             >
               {[
-                { lbl: "Leçons", val: String(totals.count).padStart(2, "0"), brand: true },
-                { lbl: "Durée totale", val: `${(totals.dur / 60).toFixed(1)} h`, brand: false },
-                { lbl: "XP cumulés", val: `+${String(totals.xp)}`, brand: true },
-                { lbl: "Difficulté moy.", val: `${avgDiff} / 4`, brand: false },
+                { lbl: "Leçons", val: String(totals.count).padStart(2, "0") },
+                { lbl: "Durée totale", val: `${(totals.dur / 60).toFixed(1)} h` },
+                { lbl: "XP cumulés", val: `+${String(totals.xp)}` },
+                { lbl: "Difficulté moy.", val: `${avgDiff} / 4` },
               ].map((cell, i) => (
                 <div
                   key={cell.lbl}
@@ -1022,22 +986,13 @@ export function EditPathClient({
                     borderRight: i < 3 ? "1px solid var(--a-border-2)" : "none",
                   }}
                 >
+                  <span className="a-meta-label">{cell.lbl}</span>
                   <span
                     style={{
-                      fontSize: 9.5,
-                      letterSpacing: "0.18em",
-                      textTransform: "uppercase",
-                      color: "var(--a-muted)",
-                    }}
-                  >
-                    {cell.lbl}
-                  </span>
-                  <span
-                    style={{
+                      fontFamily: CODE_FONT,
                       fontWeight: 700,
                       fontSize: 14,
-                      color: cell.brand ? TURQ : "var(--a-fg)",
-                      letterSpacing: "0.02em",
+                      color: "var(--a-fg)",
                     }}
                   >
                     {cell.val}
@@ -1060,43 +1015,14 @@ export function EditPathClient({
             justifyContent: "flex-end",
           }}
         >
-          <Link
-            href="/paths"
-            className="adm-btn-ghost"
-            style={{
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              padding: "13px 22px",
-              background: "transparent",
-              color: "var(--a-muted)",
-              border: `1px solid ${BORDER}`,
-              transition: "all 150ms ease",
-              textDecoration: "none",
-              display: "inline-flex",
-            }}
-          >
+          <Link href="/paths" className="a-btn a-btn--ghost">
             Annuler
           </Link>
           <button
             type="submit"
             disabled={isPending}
+            className="a-btn a-btn--primary"
             style={{
-              position: "relative",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              padding: "13px 22px",
-              background: "var(--a-accent)",
-              color: "var(--a-ink)",
-              border: 0,
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
             }}

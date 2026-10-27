@@ -161,7 +161,6 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/contact") ||
     pathname === "/catalogue" ||
     pathname === "/glossaire" ||
-    pathname === "/download" ||
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||
     pathname === "/privacy" ||

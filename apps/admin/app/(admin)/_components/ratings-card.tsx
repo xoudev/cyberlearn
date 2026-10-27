@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import type { ConsoleRatingRow } from "@cyberlearn/db";
 import { consoleDateFormat } from "@/lib/console-time";
-import { Card, EmptyState } from "./admin-ui";
+import { Card, EmptyState, UserAvatar } from "./admin-ui";
 
 const dated = consoleDateFormat({
   day: "numeric",
@@ -42,8 +42,14 @@ export function RatingsCard({
   avg,
   count,
   allHref,
+  avatarSrcs = [],
 }: {
   ratings: readonly ConsoleRatingRow[];
+  /**
+   * The learners' pictures, in the order of the ratings, resolved by the page
+   * (lib/avatar.ts). Missing ones show the initials.
+   */
+  avatarSrcs?: readonly (string | null)[];
   /** "ce parcours", "cette leçon": what nobody has rated yet. */
   subject: string;
   /** The average kept on the row, over every rating and not only the ones listed. */
@@ -60,7 +66,7 @@ export function RatingsCard({
         title={`Avis des apprenants (${String(count)})`}
         action={
           summary !== null ? (
-            <span className="mono" style={{ color: "var(--a-warning)", fontSize: 12 }}>
+            <span style={{ color: "var(--a-warning)", fontSize: 12.5, fontWeight: 600 }}>
               {summary}
             </span>
           ) : undefined
@@ -73,7 +79,7 @@ export function RatingsCard({
           <div className="a-table-wrap">
             <table className="a-table">
               <tbody>
-                {ratings.map((r) => (
+                {ratings.map((r, index) => (
                   <tr key={r.id}>
                     <td
                       className="mono"
@@ -88,8 +94,15 @@ export function RatingsCard({
                         <span style={{ color: "var(--a-muted)" }}>Sans commentaire</span>
                       )}
                     </td>
-                    <td className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
-                      {r.user?.displayName ?? r.user?.username ?? "Compte supprimé"}
+                    <td style={{ color: "var(--a-fg-2)", whiteSpace: "nowrap" }}>
+                      <span className="a-person">
+                        <UserAvatar
+                          src={avatarSrcs[index] ?? null}
+                          name={r.user?.displayName ?? r.user?.username ?? "?"}
+                          size={24}
+                        />
+                        {r.user?.displayName ?? r.user?.username ?? "Compte supprimé"}
+                      </span>
                     </td>
                     <td className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
                       {dated.format(r.updatedAt)}
@@ -101,10 +114,7 @@ export function RatingsCard({
           </div>
         )}
         {partial !== null && ratings.length > 0 && (
-          <p
-            className="mono"
-            style={{ margin: "14px 0 0", fontSize: 11.5, color: "var(--a-muted)" }}
-          >
+          <p style={{ margin: "14px 0 0", fontSize: 12.5, color: "var(--a-muted)" }}>
             {partial}
             {allHref !== undefined && (
               <>

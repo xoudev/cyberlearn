@@ -139,43 +139,62 @@ function measuredAt(width: number): void {
 }
 
 describe("a panel too narrow for two halves", () => {
-  it("keeps the preview beside the editor from 520px up, and when nothing was measured", () => {
+  it("lays both halves side by side from 1100px up, and when nothing was measured", () => {
     expect(opensSplit(SPLIT_MIN_PANEL_WIDTH)).toBe(true);
-    expect(opensSplit(1200)).toBe(true);
+    expect(opensSplit(1400)).toBe(true);
     expect(opensSplit(0)).toBe(true);
     expect(opensSplit(Number.NaN)).toBe(true);
   });
 
-  it("opens the editor alone under 520px: a phone, a tablet held upright", () => {
+  it("shows one pane at a time under 1100px: a phone, a tablet, a 1280px laptop's console", () => {
     expect(opensSplit(SPLIT_MIN_PANEL_WIDTH - 1)).toBe(false);
     expect(opensSplit(343)).toBe(false);
-    expect(opensSplit(472)).toBe(false);
+    expect(opensSplit(953)).toBe(false);
   });
 
-  it("keeps both halves in the console's studio on a laptop, where the panel is 596 to 682px", () => {
-    expect(opensSplit(596)).toBe(true);
-    expect(opensSplit(682)).toBe(true);
-  });
-
-  it("opens a phone-wide panel on the editor alone, the split button bringing the preview back", () => {
-    measuredAt(343);
+  it("opens a narrow panel on the editor, the tabs switching to the preview and back", () => {
+    measuredAt(953);
     render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
     expect(screen.queryByRole("separator")).toBeNull();
+    // No split to turn on where the halves would not fit.
+    expect(screen.queryByRole("button", { name: "Côte à côte" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "SPLIT" }));
-    expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", String(SPLIT_DEFAULT));
+    const editorTab = screen.getByRole("tab", { name: "Éditeur" });
+    const previewTab = screen.getByRole("tab", { name: "Aperçu" });
+    expect(editorTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("monaco")).toBeVisible();
+    // The preview is not mounted until it is first shown.
+    expect(screen.queryByText("Aperçu rapide")).toBeNull();
+
+    fireEvent.click(previewTab);
+    expect(previewTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Aperçu rapide")).toBeVisible();
+    expect(screen.getByTestId("monaco")).not.toBeVisible();
+
+    fireEvent.keyDown(previewTab, { key: "ArrowLeft" });
+    expect(editorTab).toHaveAttribute("aria-selected", "true");
+    expect(editorTab).toHaveFocus();
+    expect(screen.getByTestId("monaco")).toBeVisible();
+    // Kept once shown, hidden rather than unmounted.
+    expect(screen.getByText("Aperçu rapide")).not.toBeVisible();
   });
 
-  it("opens a wide panel as it always did, both halves", () => {
-    measuredAt(1100);
-    render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
-    expect(screen.getByRole("separator")).toBeInTheDocument();
-  });
-
-  it("opens a laptop-wide panel (about 600px beside the studio's rail) on both halves", () => {
+  it("names the second tab after the guide while the guide is what it holds", () => {
     measuredAt(600);
     render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
+    fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+    expect(screen.getByRole("tab", { name: "Guide" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("opens a wide panel on both halves, and turns the split off into the tabs", () => {
+    measuredAt(1200);
+    render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
     expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(screen.queryByRole("tablist")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Côte à côte" }));
+    expect(screen.queryByRole("separator")).toBeNull();
+    expect(screen.getByRole("tab", { name: "Éditeur" })).toHaveAttribute("aria-selected", "true");
   });
 });
 
@@ -214,11 +233,11 @@ describe("the site's preview, framed as a phone", () => {
     });
     const frame = screen.getByTitle("Aperçu de la leçon, rendu par le site");
     expect(frame.style.width).toBe("100%");
-    expect(screen.getByRole("button", { name: "BUREAU" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Bureau" })).toHaveAttribute("aria-pressed", "true");
 
-    fireEvent.click(screen.getByRole("button", { name: "MOBILE" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mobile" }));
     expect(frame.style.width).toBe(`min(${String(MOBILE_PREVIEW_WIDTH)}px, 100%)`);
-    expect(screen.getByRole("button", { name: "MOBILE" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Mobile" })).toHaveAttribute("aria-pressed", "true");
     expect(readStoredDevice()).toBe("mobile");
   });
 });
