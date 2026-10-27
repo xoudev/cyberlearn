@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Image, View } from "react-native";
-import Svg, { Path, Polygon } from "react-native-svg";
+import Svg, { Path, Rect } from "react-native-svg";
 // The CSS-aware loader: uploaded icons (SVG Repo exports) hide their bounding
 // square with a <style> rule that plain SvgUri ignores, drawing a grey block.
 import { SvgCssUri } from "react-native-svg/css";
@@ -40,9 +40,11 @@ function initialsOf(name: string): string {
 }
 
 /**
- * User avatar rendered inside a hexagon ring. Handles the three storage forms:
- * "__glyph:<name>" (vector glyph), an SVG preset / uploaded URL, or none
- * (initials fallback).
+ * User avatar in a square frame, as on the site: the equipped contour (the
+ * HEXAGON_STYLE cosmetic, named after the shape it first had) draws the
+ * border, its weight, dash and tint; the profile frame a second ring outside.
+ * Handles the three storage forms: "__glyph:<name>" (vector glyph), an SVG
+ * preset / uploaded URL, or none (initials fallback).
  */
 export function Avatar({
   avatarUrl,
@@ -57,7 +59,7 @@ export function Avatar({
 }): React.JSX.Element {
   const { theme } = useCosmetics();
   const [failed, setFailed] = useState(false);
-  const inner = size * 0.62;
+  const inner = size * 0.74;
   const contentColor = color ?? theme.accent;
   const isGlyph = avatarUrl?.startsWith("__glyph:");
   // Judged on the path alone: a signed upload URL also runs through an
@@ -71,11 +73,14 @@ export function Avatar({
 
   return (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-      {/* Hex ring */}
+      {/* Square frame: carbon behind the picture, the contour, the frame ring */}
       <Svg width={size} height={size} viewBox="0 0 100 100" style={{ position: "absolute" }}>
         {theme.frame.strokeWidth > 0 ? (
-          <Polygon
-            points="50,1 94,25 94,75 50,99 6,75 6,25"
+          <Rect
+            x={2}
+            y={2}
+            width={96}
+            height={96}
             fill="none"
             stroke={theme.frame.color}
             strokeWidth={theme.frame.strokeWidth + 3}
@@ -83,16 +88,23 @@ export function Avatar({
           />
         ) : null}
         {theme.hex.glowOpacity > 0 ? (
-          <Polygon
-            points="50,3 90,26 90,74 50,97 10,74 10,26"
+          <Rect
+            x={8}
+            y={8}
+            width={84}
+            height={84}
             fill="none"
             stroke={theme.accent}
             strokeWidth={8}
             opacity={theme.hex.glowOpacity}
           />
         ) : null}
-        <Polygon
-          points="50,3 90,26 90,74 50,97 10,74 10,26"
+        <Rect x={8} y={8} width={84} height={84} fill="#191C22" />
+        <Rect
+          x={8}
+          y={8}
+          width={84}
+          height={84}
           fill={theme.accent}
           fillOpacity={theme.hex.fillOpacity}
           stroke={theme.accent}
@@ -100,8 +112,11 @@ export function Avatar({
           strokeDasharray={theme.hex.dash}
         />
         {theme.frame.strokeWidth > 0 ? (
-          <Polygon
-            points="50,1 94,25 94,75 50,99 6,75 6,25"
+          <Rect
+            x={2}
+            y={2}
+            width={96}
+            height={96}
             fill="none"
             stroke={theme.frame.color}
             strokeWidth={theme.frame.strokeWidth}
@@ -132,7 +147,7 @@ export function Avatar({
       ) : isRaster && avatarUrl && !failed ? (
         <Image
           source={{ uri: avatarUrl }}
-          style={{ width: inner, height: inner, borderRadius: inner / 2 }}
+          style={{ width: inner, height: inner }}
           resizeMode="cover"
           onError={() => setFailed(true)}
         />
@@ -153,7 +168,7 @@ export function Avatar({
 
 /**
  * Badge medallion: the real SVG from /badges/*.svg, falling back to a
- * rarity-tinted hexagon if the icon is missing or fails to load.
+ * rarity-tinted square plate if the icon is missing or fails to load.
  */
 export function BadgeIcon({
   iconUrl,
@@ -168,13 +183,16 @@ export function BadgeIcon({
   if (!iconUrl || failed) {
     return (
       <Svg width={size} height={size} viewBox="0 0 100 100">
-        <Polygon
-          points="50,6 88,28 88,72 50,94 12,72 12,28"
+        <Rect
+          x={10}
+          y={10}
+          width={80}
+          height={80}
           fill={`${color}22`}
           stroke={color}
           strokeWidth={4}
         />
-        <Polygon points="50,30 68,40 68,60 50,70 32,60 32,40" fill={color} opacity={0.55} />
+        <Rect x={34} y={34} width={32} height={32} fill={color} opacity={0.55} />
       </Svg>
     );
   }
