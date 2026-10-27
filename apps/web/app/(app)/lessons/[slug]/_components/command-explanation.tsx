@@ -36,7 +36,7 @@ export function CommandExplanation({
       style={{
         borderTop: "1px solid var(--color-border-subtle)",
         padding: "14px 18px",
-        background: "rgba(5,4,26,0.5)",
+        background: "#121418",
         display: "grid",
         gap: 10,
       }}

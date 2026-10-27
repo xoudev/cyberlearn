@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { currentLessonId, moduleRoute, nextLesson, type RouteLesson } from "../module-route";
+import {
+  currentLessonId,
+  moduleRoute,
+  nextLesson,
+  routeWindow,
+  type RouteLesson,
+  type RouteNode,
+} from "../module-route";
 
 const MODULES = [
   { id: "m1", position: 1, title: "Comment fonctionne un ordinateur" },
@@ -109,5 +116,44 @@ describe("moduleRoute", () => {
 
   it("returns null for an empty path", () => {
     expect(moduleRoute([], MODULES, new Set(), null)).toBeNull();
+  });
+});
+
+describe("routeWindow", () => {
+  const nodes = (states: ("done" | "now" | "todo")[]): RouteNode[] =>
+    states.map((state, i) => ({
+      id: `l${String(i)}`,
+      slug: `l${String(i)}`,
+      title: `L${String(i)}`,
+      state,
+    }));
+
+  it("draws a short module whole", () => {
+    const route = routeWindow(nodes(["done", "now", "todo"]));
+    expect(route).toMatchObject({ hiddenBefore: 0, hiddenAfter: 0 });
+    expect(route.nodes.map((n) => n.position)).toEqual([0, 1, 2]);
+  });
+
+  it("keeps one lesson behind the current one and counts the rest", () => {
+    const states = Array.from({ length: 15 }, (_, i) =>
+      i < 7 ? "done" : i === 7 ? "now" : "todo",
+    );
+    const route = routeWindow(nodes(states));
+    expect(route.nodes.map((n) => n.position)).toEqual([6, 7, 8, 9, 10]);
+    expect(route).toMatchObject({ hiddenBefore: 6, hiddenAfter: 4 });
+  });
+
+  it("starts at the first lesson when the module has just begun", () => {
+    const states = Array.from({ length: 12 }, (_, i) => (i === 0 ? "now" : "todo"));
+    const route = routeWindow(nodes(states));
+    expect(route.nodes.map((n) => n.position)).toEqual([0, 1, 2, 3, 4]);
+    expect(route).toMatchObject({ hiddenBefore: 0, hiddenAfter: 7 });
+  });
+
+  it("ends at the last lesson near the end, and when the module is done", () => {
+    const near = Array.from({ length: 10 }, (_, i) => (i === 9 ? "now" : "done"));
+    expect(routeWindow(nodes(near)).nodes.map((n) => n.position)).toEqual([5, 6, 7, 8, 9]);
+    const done = routeWindow(nodes(Array.from({ length: 10 }, () => "done")));
+    expect(done).toMatchObject({ hiddenBefore: 5, hiddenAfter: 0 });
   });
 });

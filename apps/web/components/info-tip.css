@@ -19,18 +19,18 @@
   cursor: pointer;
 }
 .info-tip__trigger[aria-expanded="true"] {
-  color: #ff864f;
-  border-color: #ff864f;
+  color: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
 }
 .info-tip__trigger:focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .info-tip__panel {
   --color-text-primary: #f4f2ed;
   --color-text-secondary: #c2bfb8;
   --color-text-muted: #aaa79f;
-  --cosmetic-accent: #ff864f;
+  --cosmetic-accent: var(--cosmetic-accent-hover);
   position: fixed;
   display: block;
   width: min(320px, calc(100vw - 24px));

@@ -120,7 +120,7 @@
   border-radius: 0 !important;
 }
 .noticeRoot :is(a, button, textarea):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .noticeRoot :global(.modal-shell__head) {
@@ -177,7 +177,7 @@
   resize: vertical;
 }
 .textarea:focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .textarea::placeholder {
@@ -222,7 +222,7 @@
   margin: 20px 0 0;
 }
 .mail {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   text-underline-offset: 4px;
 }
 @media (max-width: 600px) {

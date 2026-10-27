@@ -19,7 +19,10 @@ import { lessonComponentWidth } from "@cyberlearn/lib/mdx-components";
 
 // What the components reach on a lesson page and not here: the server's
 // actions, the route, the animation player.
-vi.mock("next/navigation", () => ({ useParams: () => ({}) }));
+vi.mock("next/navigation", () => ({
+  useParams: () => ({}),
+  useSearchParams: () => new URLSearchParams(),
+}));
 vi.mock("../../_actions/record-exercise", () => ({ recordExerciseAction: vi.fn() }));
 vi.mock("../../_actions/answer-quiz", () => ({ answerQuiz: vi.fn() }));
 vi.mock("../../_actions/report-quiz", () => ({ reportQuizAction: vi.fn() }));
@@ -130,10 +133,13 @@ describe("a Quiz in a lesson", () => {
     const blocks = container.querySelectorAll(".lesson-block");
     expect(blocks).toHaveLength(1);
     expect(blocks[0]?.getAttribute("data-component")).toBe("QuizGroup");
-    // g-1 is answered on record, found by its id: the group shows it and the
-    // next one, numbered, and holds the third back.
-    expect(screen.getByRole("region", { name: "Question 1" }).textContent).toContain("Première ?");
-    expect(screen.getByRole("region", { name: "Question 2" }).textContent).toContain("2/3");
+    // g-1 is answered on record, found by its id: the group asks the next
+    // one, numbered, and that one only.
+    expect(screen.getAllByRole("region")).toHaveLength(1);
+    expect(screen.getByRole("region", { name: "Question 2" }).textContent).toContain(
+      "Question 2 sur 3",
+    );
+    expect(screen.queryByText("Première ?")).toBeNull();
     expect(screen.queryByText("Troisième ?")).toBeNull();
   });
 });

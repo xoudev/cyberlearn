@@ -1,14 +1,6 @@
-<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="6" y="6" width="52" height="52" stroke="#6E8BFF" stroke-width="1" stroke-dasharray="4 2"/>
-  <line x1="6" y1="21" x2="24" y2="21" stroke="#6E8BFF" stroke-width="1.5"/>
-  <line x1="24" y1="21" x2="24" y2="43" stroke="#6E8BFF" stroke-width="1.5"/>
-  <line x1="24" y1="43" x2="40" y2="43" stroke="#6E8BFF" stroke-width="1.5"/>
-  <line x1="40" y1="43" x2="40" y2="21" stroke="#6E8BFF" stroke-width="1.5"/>
-  <line x1="40" y1="21" x2="58" y2="21" stroke="#6E8BFF" stroke-width="1.5"/>
-  <line x1="6" y1="43" x2="24" y2="43" stroke="#6E8BFF" stroke-width="1.5"/>
-  <circle cx="24" cy="21" r="3" fill="#6E8BFF"/>
-  <circle cx="40" cy="21" r="3" fill="#6E8BFF"/>
-  <circle cx="24" cy="43" r="3" fill="#6E8BFF"/>
-  <circle cx="40" cy="43" r="3" fill="#6E8BFF"/>
-  <circle cx="32" cy="32" r="2" fill="#6E8BFF" opacity="0.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <rect width="64" height="64" fill="#0B0C0E"/>
+  <path d="M19 19H45V45H19Z" stroke="#EAE7DF" stroke-width="4" stroke-linejoin="miter"/>
+  <path d="M27 12V19M37 12V19M27 45V52M37 45V52M12 27H19M12 37H19M45 27H52M45 37H52" stroke="#EAE7DF" stroke-width="4" stroke-linejoin="miter"/>
+  <path d="M26 26H38V38H26Z" fill="#FF6B2B"/>
 </svg>

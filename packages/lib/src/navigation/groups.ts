@@ -72,7 +72,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     entries: [
       { key: "paths", label: "Parcours", web: "/paths", mobile: "/paths" },
       { key: "lessons", label: "Leçons", web: "/lessons", mobile: "/lessons" },
-      { key: "revisions", label: "Révisions", web: "/revisions", mobile: "/revisions" },
+      // A window over the page on the site (?rappel=1), not a page: its
+      // button sits in the top bar, beside the bell. A screen in the app.
+      { key: "revisions", label: "Révisions", web: null, mobile: "/revisions" },
       { key: "notes", label: "Bloc-notes", web: "/notes", mobile: "/notes" },
       { key: "glossary", label: "Glossaire", web: "/glossaire", mobile: "/glossary" },
     ],

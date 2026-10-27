@@ -28,6 +28,7 @@ import { CONTENT_COLUMNS } from "../_components/content-columns";
 import { CONTENT_HEADER } from "../_components/moderation-head";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Contenus publiés" };
 
@@ -57,16 +58,18 @@ export default async function AdminContentPage({
       : userRepository.findConsoleTarget(params.author),
   ]);
 
-  const rows: GridRowBase[] = slice.rows.map((c) => ({
+  const authorAvatars = await resolveAvatarSrcs(slice.rows.map((c) => c.author?.avatarUrl));
+
+  const rows: GridRowBase[] = slice.rows.map((c, index) => ({
     id: c.id,
     cells: [
       <span key="c" style={{ display: "grid", gap: 4, maxWidth: 420 }}>
         <ContentText content={c} />
-        <span className="mono" style={{ color: "var(--a-muted)", fontSize: 11 }}>
+        <span style={{ color: "var(--a-muted)", fontSize: 12 }}>
           <ContentPlace content={c} />
         </span>
       </span>,
-      <AuthorLink key="a" author={c.author} />,
+      <AuthorLink key="a" author={c.author} avatarSrc={authorAvatars[index] ?? null} />,
       <span key="d" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
         {formatDay(c.createdAt)}
       </span>,

@@ -9,6 +9,7 @@ import { PATH_CRUMBS } from "../../_components/path-columns";
 import { EditPathClient } from "./_components/EditPathClient";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 import { routeIdOrNotFound } from "@/lib/route-id";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
@@ -117,6 +118,7 @@ export default async function EditPathPage({
       />
       <RatingsCard
         ratings={ratings}
+        avatarSrcs={await resolveAvatarSrcs(ratings.map((r) => r.user?.avatarUrl))}
         subject="ce parcours"
         avg={path.avgRating}
         count={path.ratingsCount}

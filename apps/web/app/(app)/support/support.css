@@ -6,7 +6,7 @@
   margin: 28px 0 36px;
   background: #eae7df;
   color: #141518;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
 .support-overview__body {
   padding: clamp(24px, 4vw, 40px);
@@ -80,10 +80,10 @@
   border-color: #74767d;
 }
 .support-workspace .tk-status[data-tone="accent"] {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .support-workspace .tk-status[data-tone="warning"] {
-  color: #fbbf24;
+  color: var(--color-state-warning);
 }
 .support-workspace .tk-head {
   flex-wrap: wrap;
@@ -154,7 +154,7 @@
     sans-serif;
 }
 .support-workspace .tk-follow-up {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .request-dialog .tk-new {
   padding: 0;
@@ -165,7 +165,7 @@
   border-color: #74767d;
 }
 .request-dialog .tk-new__error {
-  color: #ff8b96;
+  color: var(--color-state-danger);
   font-family: var(--font-interface), sans-serif;
   font-size: 13px;
 }

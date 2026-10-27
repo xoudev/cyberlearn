@@ -1,13 +1,35 @@
 @import "../../../../components/progression-workspace.css";
 
-.leaderboard-workspace .section-head::before {
-  display: none;
+/* The league's season strip: division, season, pod, and the countdown. */
+.league-season {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #303137;
+  font:
+    13px / 1.4 var(--font-interface),
+    sans-serif;
+  color: var(--color-text-muted);
+}
+.league-season b {
+  color: #c2bfb8;
+  font-weight: 600;
+}
+.league-season__sep {
+  color: var(--color-text-faint);
+}
+.league-season__countdown {
+  font-family: var(--font-mono);
+  color: var(--cosmetic-accent-hover);
 }
 
 .league-position {
   background: #eae7df !important;
   color: #141518;
-  --cosmetic-accent: #923200;
+  --cosmetic-accent: var(--cosmetic-accent-ink);
   --color-text-primary: #141518;
   --color-text-secondary: #55524d;
   --color-text-muted: #55524d;
@@ -15,28 +37,25 @@
   --color-promote: #1d6845;
   --color-relegate: #9a2b36;
 }
+.league-position :focus-visible {
+  outline: 2px solid #141518;
+  outline-offset: 3px;
+}
 .league-player__you {
   display: block;
   font:
-    11px var(--font-interface),
+    600 12px var(--font-interface),
     sans-serif;
   margin-top: 4px;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .league-workspace .league-ladder {
   border-color: #44454a;
   background: #121418;
 }
-.league-workspace > div:first-child {
-  font-family: var(--font-interface), sans-serif !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
-}
-.league-workspace .league-player > div:nth-child(2) > div > span:first-child {
-  font-size: 24px !important;
-}
-.league-workspace .league-player > div:nth-child(3) {
-  font-size: 30px !important;
+.league-player a:focus-visible {
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 @media (max-width: 1100px) {
   .league-position {
@@ -73,26 +92,27 @@
   }
 }
 
-/* The leaderboard's global rules: the caret and live dot's motion, the row
-   hover, and the podium's stacking. Shared by LeaderboardClient and the
-   page's loading skeleton, so the two stack the podium alike. */
+/* The global board: the meta strip, the podium and its stacking. */
 
-@keyframes cl-blink {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  50.01%,
-  100% {
-    opacity: 0;
-  }
+.leaderboard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 18px 0 30px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #303137;
+  font:
+    13px / 1.4 var(--font-interface),
+    sans-serif;
+  color: var(--color-text-muted);
 }
-.leaderboard-workspace .leaderboard-meta {
-  font-family: var(--font-interface), sans-serif !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
-  border-bottom: 1px solid #44454a !important;
-  margin-bottom: 30px !important;
+.leaderboard-meta b {
+  color: #c2bfb8;
+  font-weight: 600;
+}
+.leaderboard-meta__sep {
+  color: var(--color-text-faint);
 }
 .leaderboard-workspace .cl-podium {
   gap: 18px !important;
@@ -114,14 +134,18 @@
 .leaderboard-podium-card[data-rank="1"] {
   background: #eae7df;
   color: #141518;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
   --color-bg-elevated: #eae7df;
+}
+.leaderboard-podium-card[data-rank="1"] :focus-visible {
+  outline: 2px solid #141518;
+  outline-offset: 3px;
 }
 .leaderboard-podium-card__rank {
   display: flex;
   align-items: baseline;
   gap: 14px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .leaderboard-podium-card__rank strong {
   font:
@@ -141,7 +165,7 @@
 }
 .leaderboard-podium-card p {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 .leaderboard-podium-card__xp {
   display: flex;
@@ -155,14 +179,16 @@
     sans-serif;
 }
 .leaderboard-podium-card__xp > span {
-  font-size: 11px;
+  font:
+    12px var(--font-mono),
+    monospace;
 }
 .leaderboard-podium-card__footer {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
-  font-size: 11px;
+  font-size: 13px;
   padding-top: 16px;
   width: 100%;
   border-top: 1px solid #44454a;
@@ -187,27 +213,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
-@keyframes cl-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cl-caret {
-    animation: none !important;
-  }
-  .cl-live-dot {
-    animation: none !important;
-  }
-}
-.cl-row:not(.cl-row-head):hover {
-  background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent) !important;
-}
-
 /* Podium: 3-across only on wide screens. Content width drops to
    viewport-240 once the sidebar reappears at 1024px, so the podium (needs
    ~1000px for 3 columns) stays 3-across only from 1280px up. Below that it

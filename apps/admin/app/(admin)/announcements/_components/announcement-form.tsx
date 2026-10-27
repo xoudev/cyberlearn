@@ -34,6 +34,7 @@ const OPTION_STYLE: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
+  minHeight: 44,
   cursor: "pointer",
 };
 

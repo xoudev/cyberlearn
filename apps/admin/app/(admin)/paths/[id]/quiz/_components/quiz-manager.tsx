@@ -37,120 +37,46 @@ interface Props {
   questions: Question[];
 }
 
-// ── Shared admin tokens (aligned with the Lessons / Badges CRUD pages) ──────────
-const BORDER = "var(--a-border-2)";
-const DANGER = "var(--a-danger)";
-const BLUE = "var(--a-accent)";
-
-const LABEL_STYLE: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  color: "var(--a-muted)",
-  marginBottom: 6,
-};
-
-const INPUT_STYLE: React.CSSProperties = {
-  width: "100%",
-  background: "var(--a-surface)",
-  border: `1px solid ${BORDER}`,
-  color: "var(--a-fg)",
-  fontFamily: "var(--font-sans)",
-  fontSize: 13,
-  padding: "11px 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
+// ── Shared admin styles: the kit classes carry the look, these only what is
+// particular to this editor ───────────────────────────────────────────────────
 const CARD_STYLE: React.CSSProperties = {
   background: "var(--a-surface)",
   border: "1px solid var(--a-border)",
-  borderLeft: `3px solid ${BORDER}`,
+  borderLeft: "3px solid var(--a-border-2)",
   padding: "20px 22px",
   marginBottom: 20,
 };
 
-const SECTION_EYEBROW: React.CSSProperties = {
-  fontFamily: "var(--font-display), sans-serif",
-  fontSize: 24,
-  color: "var(--a-fg)",
-  margin: "0 0 16px",
-};
-
-const primaryBtnStyle = (pending: boolean): React.CSSProperties => ({
-  padding: "12px 26px",
-  background: BLUE,
-  border: `1px solid ${BLUE}`,
-  color: "var(--a-ink)",
-  minHeight: 44,
-  fontFamily: "var(--font-sans)",
-  fontWeight: 700,
-  fontSize: 11,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
+/** A button that is waiting on its action: not clickable, and looks it. */
+const busyStyle = (pending: boolean): React.CSSProperties => ({
   cursor: pending ? "not-allowed" : "pointer",
   opacity: pending ? 0.6 : 1,
 });
-
-const ghostBtnStyle: React.CSSProperties = {
-  padding: "12px 22px",
-  background: "transparent",
-  border: `1px solid ${BORDER}`,
-  color: "var(--a-muted)",
-  minHeight: 44,
-  fontFamily: "var(--font-sans)",
-  fontWeight: 700,
-  fontSize: 11,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  cursor: "pointer",
-};
-
-const dangerBtnStyle = (pending: boolean): React.CSSProperties => ({
-  padding: "9px 16px",
-  background: "transparent",
-  border: "1px solid var(--a-danger)",
-  color: DANGER,
-  fontFamily: "var(--font-mono)",
-  fontWeight: 700,
-  fontSize: 10,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  cursor: pending ? "not-allowed" : "pointer",
-  opacity: pending ? 0.6 : 1,
-});
-
-const smallGhostBtnStyle: React.CSSProperties = {
-  padding: "9px 16px",
-  background: "transparent",
-  border: `1px solid ${BORDER}`,
-  color: "var(--a-fg-2)",
-  minHeight: 44,
-  fontFamily: "var(--font-sans)",
-  fontWeight: 700,
-  fontSize: 10,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  cursor: "pointer",
-};
 
 const errorStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   color: "var(--a-danger)",
   margin: "8px 0 0",
 };
 
 const warnStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   lineHeight: 1.6,
   color: "var(--a-warning)",
   margin: "10px 0 0",
   padding: "10px 14px",
   background: "color-mix(in srgb, var(--a-warning) 7%, transparent)",
-  border: "1px solid var(--a-warning)",
-  borderLeft: "3px solid var(--a-warning)",
+  borderLeft: "2px solid var(--a-warning)",
+};
+
+const CHECK_ROW_STYLE: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  minHeight: 44,
+  cursor: "pointer",
 };
 
 function Field({
@@ -163,17 +89,10 @@ function Field({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div>
-      <label style={LABEL_STYLE}>{label}</label>
+    <div className="a-field">
+      <label className="a-label">{label}</label>
       {hint && (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-muted)",
-            margin: "0 0 6px",
-          }}
-        >
+        <p className="a-field-hint" style={{ margin: 0 }}>
           {hint}
         </p>
       )}
@@ -190,7 +109,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
       {quiz ? (
         <QuestionsSection path={path} quiz={quiz} questions={questions} />
       ) : (
-        <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
+        <p className="a-field-hint">
           {"Enregistre d'abord les réglages pour créer le quiz, puis ajoute des questions."}
         </p>
       )}
@@ -237,11 +156,13 @@ function SettingsForm({
 
   return (
     <div style={CARD_STYLE}>
-      <p style={SECTION_EYEBROW}>Réglages</p>
+      <h2 className="a-section-title" style={{ marginBottom: 16 }}>
+        Réglages
+      </h2>
       <div className="admin-form-grid-2" style={{ gap: 18 }}>
         <Field label="Seuil de réussite (%)">
           <input
-            style={INPUT_STYLE}
+            className="a-input"
             type="number"
             min={0}
             max={100}
@@ -253,7 +174,7 @@ function SettingsForm({
         </Field>
         <Field label="Questions tirées par tentative">
           <input
-            style={INPUT_STYLE}
+            className="a-input"
             type="number"
             min={1}
             value={questionsToDraw}
@@ -264,15 +185,7 @@ function SettingsForm({
         </Field>
       </div>
 
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginTop: 16,
-          cursor: "pointer",
-        }}
-      >
+      <label style={{ ...CHECK_ROW_STYLE, marginTop: 16 }}>
         <input
           type="checkbox"
           checked={isActive}
@@ -281,7 +194,7 @@ function SettingsForm({
           }}
           style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
         />
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
+        <span style={{ fontSize: 13, color: "var(--a-fg-2)" }}>
           Quiz actif (requis pour obtenir le certificat)
         </span>
       </label>
@@ -300,7 +213,13 @@ function SettingsForm({
       )}
 
       <div style={{ marginTop: 18 }}>
-        <button type="button" style={primaryBtnStyle(pending)} onClick={save} disabled={pending}>
+        <button
+          type="button"
+          className="a-btn a-btn--primary"
+          style={busyStyle(pending)}
+          onClick={save}
+          disabled={pending}
+        >
           {pending ? "Enregistrement…" : quiz ? "Mettre à jour" : "Créer le quiz"}
         </button>
       </div>
@@ -329,24 +248,16 @@ function QuestionsSection({
           marginBottom: 16,
         }}
       >
-        <h2
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 16,
-            fontWeight: 700,
-            color: "var(--a-fg)",
-            margin: 0,
-          }}
-        >
+        <h2 className="a-section-title">
           Questions{" "}
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
+          <span className="a-meta-label" style={{ textTransform: "none" }}>
             ({questions.length} · {quiz.activeQuestionCount} active(s))
           </span>
         </h2>
         {!adding && (
           <button
             type="button"
-            style={primaryBtnStyle(false)}
+            className="a-btn a-btn--primary"
             onClick={() => {
               setAdding(true);
             }}
@@ -419,20 +330,13 @@ function QuestionRow({
   return (
     <div style={CARD_STYLE}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--a-fg)" }}>
+        <div style={{ fontSize: 14, color: "var(--a-fg)" }}>
           <span style={{ fontFamily: "var(--font-mono)", color: "var(--a-muted)" }}>
             #{question.orderIndex}
           </span>{" "}
           {question.question}
           {!question.isActive && (
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--a-warning)",
-                marginLeft: 8,
-              }}
-            >
+            <span style={{ fontSize: 12, color: "var(--a-warning)", marginLeft: 8 }}>
               (inactive)
             </span>
           )}
@@ -440,7 +344,7 @@ function QuestionRow({
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button
             type="button"
-            style={smallGhostBtnStyle}
+            className="a-btn a-btn--ghost a-btn--sm"
             onClick={() => {
               setEditing(true);
             }}
@@ -449,7 +353,8 @@ function QuestionRow({
           </button>
           <button
             type="button"
-            style={dangerBtnStyle(pending)}
+            className="a-btn a-btn--danger a-btn--sm"
+            style={busyStyle(pending)}
             onClick={() => {
               void remove();
             }}
@@ -463,8 +368,7 @@ function QuestionRow({
         style={{
           margin: "12px 0 0",
           paddingLeft: 18,
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: 13,
           color: "var(--a-fg-2)",
           lineHeight: 1.8,
         }}
@@ -472,10 +376,10 @@ function QuestionRow({
         {question.options.map((o) => (
           <li
             key={o.id}
-            style={{ color: o.id === question.correctOptionId ? "var(--a-accent)" : undefined }}
+            style={{ color: o.id === question.correctOptionId ? "var(--a-success)" : undefined }}
           >
             {o.id === question.correctOptionId ? "✓ " : ""}
-            <b>{o.id}</b> : {o.text}
+            <b className="a-mono">{o.id}</b> : {o.text}
           </li>
         ))}
       </ul>
@@ -544,11 +448,14 @@ function QuestionForm({
 
   return (
     <div style={{ ...CARD_STYLE, borderLeftColor: "var(--a-accent)" }}>
-      <p style={SECTION_EYEBROW}>{question ? "Éditer la question" : "Nouvelle question"}</p>
+      <h2 className="a-section-title" style={{ marginBottom: 16 }}>
+        {question ? "Éditer la question" : "Nouvelle question"}
+      </h2>
 
       <Field label="Question">
         <textarea
-          style={{ ...INPUT_STYLE, minHeight: 56, resize: "vertical" }}
+          className="a-textarea"
+          style={{ minHeight: 56 }}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -557,7 +464,9 @@ function QuestionForm({
       </Field>
 
       <div style={{ marginTop: 16 }}>
-        <label style={LABEL_STYLE}>Options (la bonne réponse est cochée)</label>
+        <label className="a-label" style={{ display: "block", marginBottom: 7 }}>
+          Options (la bonne réponse est cochée)
+        </label>
         {options.map((o, i) => (
           <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
             <input
@@ -571,7 +480,8 @@ function QuestionForm({
               style={{ accentColor: "var(--a-accent)", width: 16, height: 16, flexShrink: 0 }}
             />
             <input
-              style={{ ...INPUT_STYLE, width: 70, flexShrink: 0 }}
+              className="a-input"
+              style={{ width: 70, flexShrink: 0, fontFamily: "var(--font-mono)" }}
               placeholder="id"
               value={o.id}
               onChange={(e) => {
@@ -579,7 +489,7 @@ function QuestionForm({
               }}
             />
             <input
-              style={INPUT_STYLE}
+              className="a-input"
               placeholder="Texte de l'option"
               value={o.text}
               onChange={(e) => {
@@ -589,7 +499,7 @@ function QuestionForm({
             {options.length > 2 && (
               <button
                 type="button"
-                style={{ ...dangerBtnStyle(false), padding: "9px 13px" }}
+                className="a-btn a-btn--danger a-btn--sm"
                 onClick={() => {
                   removeOpt(i);
                 }}
@@ -599,7 +509,7 @@ function QuestionForm({
             )}
           </div>
         ))}
-        <button type="button" style={smallGhostBtnStyle} onClick={addOpt}>
+        <button type="button" className="a-btn a-btn--ghost a-btn--sm" onClick={addOpt}>
           + Option
         </button>
       </div>
@@ -607,7 +517,7 @@ function QuestionForm({
       <div className="admin-form-grid-2" style={{ gap: 18, marginTop: 16 }}>
         <Field label="Ordre">
           <input
-            style={INPUT_STYLE}
+            className="a-input"
             type="number"
             min={0}
             value={orderIndex}
@@ -616,16 +526,7 @@ function QuestionForm({
             }}
           />
         </Field>
-        <label
-          style={{
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            alignSelf: "end",
-            paddingBottom: 11,
-            cursor: "pointer",
-          }}
-        >
+        <label style={{ ...CHECK_ROW_STYLE, alignSelf: "end" }}>
           <input
             type="checkbox"
             checked={isActive}
@@ -634,16 +535,14 @@ function QuestionForm({
             }}
             style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
           />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
-            Active
-          </span>
+          <span style={{ fontSize: 13, color: "var(--a-fg-2)" }}>Active</span>
         </label>
       </div>
 
       <div style={{ marginTop: 16 }}>
         <Field label="Explication (affichée après soumission, optionnel)">
           <textarea
-            style={{ ...INPUT_STYLE, minHeight: 44, resize: "vertical" }}
+            className="a-textarea"
             value={explanation}
             onChange={(e) => {
               setExplanation(e.target.value);
@@ -653,10 +552,16 @@ function QuestionForm({
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-        <button type="button" style={primaryBtnStyle(pending)} onClick={submit} disabled={pending}>
+        <button
+          type="button"
+          className="a-btn a-btn--primary"
+          style={busyStyle(pending)}
+          onClick={submit}
+          disabled={pending}
+        >
           {pending ? "…" : question ? "Enregistrer" : "Ajouter"}
         </button>
-        <button type="button" style={ghostBtnStyle} onClick={onDone}>
+        <button type="button" className="a-btn a-btn--ghost" onClick={onDone}>
           Annuler
         </button>
       </div>

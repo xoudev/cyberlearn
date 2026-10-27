@@ -60,7 +60,7 @@ export default async function ReferencePlacementPage({
               key={option.id}
               style={
                 option.id === q.correctOptionId
-                  ? { color: "var(--a-accent)", fontWeight: 600 }
+                  ? { color: "var(--a-success)", fontWeight: 600 }
                   : { color: "var(--a-muted)" }
               }
             >
@@ -69,7 +69,7 @@ export default async function ReferencePlacementPage({
             </li>
           ))}
         </ol>,
-        <Tag key="s" tone={q.isActive ? "accent" : "neutral"}>
+        <Tag key="s" tone={q.isActive ? "success" : "neutral"}>
           {q.isActive ? "Posée" : "Retirée"}
         </Tag>,
       ],

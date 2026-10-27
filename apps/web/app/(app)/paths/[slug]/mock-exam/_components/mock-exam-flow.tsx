@@ -33,7 +33,6 @@ import {
   restoreMockAnswers,
   saveDraft,
 } from "@cyberlearn/lib/exam/answers-draft";
-import { Brackets } from "@/app/_components/corner-brackets";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
 import { addressWith } from "@/hooks/use-query-dialog";
@@ -117,8 +116,7 @@ function Opening({
 }): React.ReactElement {
   return (
     <section className="mkx-open" aria-label="Examen blanc">
-      <Brackets />
-      <p className="mkx-eyebrow">{"// Examen blanc"}</p>
+      <p className="mkx-eyebrow">Examen blanc</p>
       <h1 className="pg-title">{overview.pathTitle}</h1>
       {!overview.ready ? (
         <p className="mkx-note">
@@ -200,7 +198,7 @@ function QuestionCard({
                 }}
               />
               <label htmlFor={id} className="mkx-opt__label">
-                <span className="mkx-opt__key mkx-hex" aria-hidden="true">
+                <span className="mkx-opt__key mkx-box" aria-hidden="true">
                   <span data-key={optionKey(k)} />
                 </span>
                 <span className="mkx-opt__text">{option}</span>
@@ -263,11 +261,11 @@ function Paper({
       <header className="mkx-bar">
         <div className="mkx-bar__inner">
           <div className="mkx-bar__exam">
-            <span className="mkx-bar__mark mkx-hex" aria-hidden="true">
+            <span className="mkx-bar__mark mkx-box" aria-hidden="true">
               <IconPaper />
             </span>
             <div className="mkx-bar__txt">
-              <span className="mkx-bar__label">{"// Examen blanc"}</span>
+              <span className="mkx-bar__label">Examen blanc</span>
               <h1 ref={headingRef} tabIndex={-1} className="mkx-bar__name mkx-focus">
                 {pathTitle}
               </h1>
@@ -323,10 +321,7 @@ function Paper({
             return (
               <section key={part.domain} className="mkx-part" aria-labelledby={headId}>
                 <div className="mkx-head">
-                  <h2 id={headId}>
-                    <span aria-hidden="true">{"// "}</span>
-                    Module · {part.domain}
-                  </h2>
+                  <h2 id={headId}>Module · {part.domain}</h2>
                   <span className="mkx-head__meta">
                     {part.questions.length} {plural(part.questions.length, "question")}
                   </span>
@@ -453,7 +448,7 @@ function ReviewRow({ item }: { item: MockReviewItem }): React.ReactElement {
             <div className="mkx-explain">
               <IconInfo />
               <p className="mkx-explain__txt">
-                <span className="mkx-explain__lbl">{"// Explication"}</span>
+                <span className="mkx-explain__lbl">Explication</span>
                 {item.explanation}
               </p>
             </div>
@@ -502,7 +497,7 @@ function ResultActions({
 }
 
 /**
- * The copy handed in: the score in the gauge, its verdict and what to go back
+ * The copy handed in: the score on chalk, its verdict and what to go back
  * to first, the answers right, wrong and blank; then the score of each module
  * beside the correction, question by question, following the reader down it.
  */
@@ -525,31 +520,16 @@ function Result({
 }): React.ReactElement {
   const first = new Set(weakestDomains(result.domains).map((d) => d.domain));
   const { wrong, blank } = answerCounts(result.review);
-  // The gauge's ring: a circle of radius 86 in a 200 box, filled to the score.
-  const ring = 2 * Math.PI * 86;
-  // The focus lands on the heading at hand-in, past the gauge and the badge:
+  // The focus lands on the heading at hand-in, past the score and the badge:
   // the heading says the score first, for whoever does not see them.
   const scoreSaid = `${String(result.score)} %, ${domainVerdict(result.score)}. `;
 
   return (
     <section className="mkx-result" aria-label="Résultat de l'examen blanc">
       <div className="mkx-hero" data-tone={verdictTone(result.score)}>
-        <div className="mkx-gauge">
-          <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">
-            <circle className="mkx-gauge__track" cx="100" cy="100" r="86" />
-            <circle
-              className="mkx-gauge__fill"
-              cx="100"
-              cy="100"
-              r="86"
-              strokeDasharray={ring}
-              strokeDashoffset={ring * (1 - result.score / 100)}
-            />
-          </svg>
-          <div className="mkx-gauge__center">
-            <p className="mkx-gauge__pct">{result.score} %</p>
-            <p className="mkx-gauge__sub">Score global</p>
-          </div>
+        <div className="mkx-score">
+          <p className="mkx-score__lbl">Score global</p>
+          <p className="mkx-score__pct">{result.score} %</p>
         </div>
 
         <div>
@@ -600,10 +580,7 @@ function Result({
           aria-labelledby="mkx-domains-title"
         >
           <div className="mkx-head">
-            <h2 id="mkx-domains-title">
-              <span aria-hidden="true">{"// "}</span>
-              Score par module
-            </h2>
+            <h2 id="mkx-domains-title">Score par module</h2>
             <ul className="mkx-legend" aria-label="Les verdicts">
               <li data-tone="ok">acquis</li>
               <li data-tone="mid">à consolider</li>
@@ -632,10 +609,7 @@ function Result({
 
         <section className="mkx-block" aria-label="Correction">
           <div className="mkx-head">
-            <h2>
-              <span aria-hidden="true">{"// "}</span>
-              Correction
-            </h2>
+            <h2>Correction</h2>
             <ul className="mkx-legend" aria-label="Les états d'une réponse">
               <li data-tone="ok">Juste</li>
               <li data-tone="low">Fausse</li>

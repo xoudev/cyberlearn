@@ -7,7 +7,7 @@
   --color-text-muted: #aaa79f;
   --color-border-subtle: #44454a;
   --color-border-default: #74767d;
-  --color-brand-blue: #ff6b2b;
+  --color-brand-blue: var(--cosmetic-accent);
   --color-danger: #ff929b;
   --color-warning: #ffc36e;
   --font-sans: var(--font-interface);
@@ -24,7 +24,7 @@
   border-radius: 0 !important;
 }
 .page :is(a, button, input):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .context {
@@ -50,10 +50,10 @@
   text-decoration: none;
 }
 .brandAccent {
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .context a:focus-visible {
-  outline-color: #923200;
+  outline-color: var(--cosmetic-accent-ink);
 }
 .eyebrow {
   margin: 0 0 22px;
@@ -80,7 +80,7 @@
 .contextFoot {
   margin: 0;
   color: #55524d;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
 }
 .panel {
@@ -151,7 +151,7 @@
     background-color 120ms ease;
 }
 .input:focus {
-  border-color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
   background: #191c22;
 }
 .input::placeholder {
@@ -186,15 +186,15 @@
   line-height: 1.7;
 }
 .finePrint a {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   text-underline-offset: 4px;
 }
 .submit,
 .oauthButton {
   min-height: 50px;
   padding: 14px 16px;
-  border: 1px solid #ff6b2b;
-  background: #ff6b2b;
+  border: 1px solid var(--cosmetic-accent);
+  background: var(--cosmetic-accent);
   color: #141518;
   cursor: pointer;
   font:
@@ -205,8 +205,8 @@
     border-color 120ms ease;
 }
 .submit:hover:not(:disabled) {
-  background: #ff864f;
-  border-color: #ff864f;
+  background: var(--cosmetic-accent-hover);
+  border-color: var(--cosmetic-accent-hover);
 }
 .submit:disabled,
 .oauthButton:disabled {
@@ -245,7 +245,7 @@
 .message {
   margin: 0;
   padding: 16px;
-  border-left: 3px solid #ff864f;
+  border-left: 3px solid var(--cosmetic-accent-hover);
   background: #191c22;
   color: #f4f2ed;
   font-size: 13px;
@@ -274,7 +274,7 @@
   padding: 6px 0;
   border: 0;
   background: none;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   cursor: pointer;
   font:
     13px / 1.6 var(--font-interface),

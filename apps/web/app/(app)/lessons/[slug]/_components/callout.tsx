@@ -2,45 +2,17 @@ import React from "react";
 
 type CalloutType = "info" | "warning" | "danger" | "tip" | "note";
 
-const VARIANTS: Record<
-  CalloutType,
-  { border: string; bg: string; iconBg: string; iconColor: string; icon: string }
-> = {
-  info: {
-    border: "var(--color-info)",
-    bg: "rgba(77,139,255,0.06)",
-    iconBg: "rgba(77,139,255,0.12)",
-    iconColor: "var(--color-info)",
-    icon: "ℹ",
-  },
-  tip: {
-    border: "var(--cosmetic-accent)",
-    bg: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
-    iconBg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-    iconColor: "var(--cosmetic-accent)",
-    icon: "✓",
-  },
-  warning: {
-    border: "var(--color-warning)",
-    bg: "rgba(255,176,32,0.05)",
-    iconBg: "rgba(255,176,32,0.10)",
-    iconColor: "var(--color-warning)",
-    icon: "⚠",
-  },
-  danger: {
-    border: "var(--color-category-cybersec)",
-    bg: "rgba(255,71,87,0.05)",
-    iconBg: "rgba(255,71,87,0.10)",
-    iconColor: "var(--color-category-cybersec)",
-    icon: "✕",
-  },
-  note: {
-    border: "var(--color-text-disabled)",
-    bg: "var(--color-bg-elevated)",
-    iconBg: "var(--color-bg-base)",
-    iconColor: "var(--color-text-muted)",
-    icon: "·",
-  },
+/**
+ * Each type's colour, kept for its meaning: the stripe on the left and the
+ * icon's square. The box itself is the same panel for every type, flat, so
+ * that a lesson with four callouts does not turn into four tints.
+ */
+const VARIANTS: Record<CalloutType, { color: string; icon: string }> = {
+  info: { color: "var(--color-info)", icon: "i" },
+  tip: { color: "var(--cosmetic-accent)", icon: "✓" },
+  warning: { color: "var(--color-warning)", icon: "!" },
+  danger: { color: "var(--color-category-cybersec)", icon: "✕" },
+  note: { color: "#74767d", icon: "·" },
 };
 
 export interface CalloutProps {
@@ -60,64 +32,27 @@ export function Callout({ type = "info", title, children }: CalloutProps): React
 
   return (
     <div
+      className="lesson-callout"
       style={{
-        display: "flex",
-        gap: "14px",
-        margin: "1.5rem 0",
-        padding: "14px 18px",
-        background: v.bg,
         // The shorthand first: written after, it took the accent back to 1px.
-        border: `1px solid color-mix(in srgb, ${v.border} 13%, transparent)`,
-        borderLeft: `3px solid ${v.border}`,
+        border: "1px solid #303137",
+        borderLeft: `3px solid ${v.color}`,
       }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          flexShrink: 0,
-          width: "28px",
-          height: "28px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: v.iconBg,
-          color: v.iconColor,
-          fontSize: "14px",
-          fontWeight: 700,
-          marginTop: "1px",
-        }}
-      >
+      <div aria-hidden="true" className="lesson-callout__icon" style={{ color: v.color }}>
         {v.icon}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         {title && (
-          <div
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: v.iconColor,
-              marginBottom: "6px",
-              fontFamily: "var(--font-display), sans-serif",
-              lineHeight: 1.2,
-            }}
-          >
+          <div className="lesson-callout__title" style={{ color: v.color }}>
             {title}
           </div>
         )}
         {/* What the author wrote: paragraphs, lists, inline code. The class
             gives its links, bold, code and lists the lesson's look, at the
-            callout's size (globals.css). */}
-        <div
-          className="lesson-callout__body"
-          style={{
-            fontSize: "14px",
-            color: "var(--color-text-secondary)",
-            lineHeight: "1.65",
-          }}
-        >
-          {children}
-        </div>
+            callout's size (globals.css, with the box's own layout). */}
+        <div className="lesson-callout__body">{children}</div>
       </div>
     </div>
   );

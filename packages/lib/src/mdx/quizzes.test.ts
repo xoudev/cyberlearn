@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { checkLessonMdx, describeLessonMdxProblem } from "./check.js";
-import { extractLessonQuizzes, quizProblem, quizProblems, quizSections } from "./quizzes.js";
+import {
+  clearQuizCache,
+  extractLessonQuizzes,
+  quizCacheStats,
+  quizProblem,
+  quizProblems,
+  quizSections,
+} from "./quizzes.js";
 
 /**
  * The answer key, read from the lesson on the server.
@@ -77,6 +84,52 @@ describe("extractLessonQuizzes", () => {
 
   it("returns nothing, rather than throwing, for MDX that does not parse", () => {
     expect(extractLessonQuizzes("<Quiz options={[ />")).toEqual([]);
+  });
+});
+
+/**
+ * Scoring an answer used to parse the whole lesson again each time: the
+ * dearest step of the answer, by far. The quizzes are kept per text now.
+ */
+describe("extractLessonQuizzes, read once per text", () => {
+  const lesson = (correct: number): string =>
+    `## S\n\n<Quiz id="q-1" question="?" options={["a", "b", "c"]} correct={${String(correct)}} />`;
+
+  beforeEach(() => {
+    clearQuizCache();
+  });
+
+  it("parses a text once, however often it is asked", () => {
+    expect(extractLessonQuizzes(lesson(1))[0]?.correct).toBe(1);
+    expect(extractLessonQuizzes(lesson(1))[0]?.correct).toBe(1);
+    expect(quizCacheStats().entries).toBe(1);
+  });
+
+  it("reads a lesson changed since as the new text it is", () => {
+    expect(extractLessonQuizzes(lesson(1))[0]?.correct).toBe(1);
+    expect(extractLessonQuizzes(lesson(2))[0]?.correct).toBe(2);
+  });
+
+  it("hands each caller its own copy", () => {
+    const first = extractLessonQuizzes(lesson(1));
+    const quiz = first[0];
+    if (!quiz) throw new Error("no quiz read");
+    quiz.correct = 0;
+    quiz.options.push("d");
+    first.pop();
+    expect(extractLessonQuizzes(lesson(1))).toEqual([
+      { id: "q-1", question: "?", options: ["a", "b", "c"], correct: 1, explanation: null },
+    ]);
+  });
+
+  it("stays bounded, dropping the text used least recently", () => {
+    for (let i = 0; i < 300; i += 1) extractLessonQuizzes(`${lesson(1)}\n\nTexte ${String(i)}.`);
+    const { entries, chars } = quizCacheStats();
+    expect(entries).toBeLessThanOrEqual(256);
+    expect(chars).toBeGreaterThan(0);
+    // The newest is still there: asking for it adds nothing.
+    extractLessonQuizzes(`${lesson(1)}\n\nTexte 299.`);
+    expect(quizCacheStats().entries).toBe(entries);
   });
 });
 

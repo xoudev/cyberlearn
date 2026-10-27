@@ -51,6 +51,19 @@ const RETIRED = [
     source: "/review",
     destination: "/dashboard?rappel=1",
   },
+  {
+    // The mobile app's install page: the site stopped promoting the app on
+    // 27 October 2026, for the time being.
+    page: "app/download",
+    source: "/download",
+    destination: "/",
+  },
+  {
+    // Its older French address, sent on to the same place.
+    page: "app/telecharger",
+    source: "/telecharger",
+    destination: "/",
+  },
 ];
 
 async function redirects(): Promise<unknown[]> {

@@ -5,18 +5,26 @@ import {
   NOTE_REPORT_REASON_KEYS,
   NOTE_REPORT_REASON_LABELS,
 } from "@cyberlearn/lib/notes/report-reasons";
-import { EmptyState, GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
+import { EmptyState, GhostLink, PageHeader, Tag, UserAvatar } from "../../_components/admin-ui";
 import { NOTES_HEADER } from "../_components/moderation-head";
 import { resolveNoteReportsAction } from "./actions";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Notes signalées" };
 export const dynamic = "force-dynamic";
 
 const DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "Europe/Paris" });
 
-function ReportedNoteCard({ note }: { note: ReportedNote }): React.ReactElement {
+function ReportedNoteCard({
+  note,
+  authorAvatar,
+}: {
+  note: ReportedNote;
+  /** The author's picture, resolved by the page. */
+  authorAvatar: string | null;
+}): React.ReactElement {
   const counts = NOTE_REPORT_REASON_KEYS.map((key) => ({
     key,
     n: note.reports.filter((r) => r.reason === key).length,
@@ -31,8 +39,11 @@ function ReportedNoteCard({ note }: { note: ReportedNote }): React.ReactElement 
       <div className="a-card-head a-report-head">
         <div className="a-report-title">
           <div className="a-report-meta">
-            <span className="a-report-ref">
-              {author} · {note.lessonTitle}
+            <span className="a-person a-meta-label">
+              <UserAvatar src={authorAvatar} name={note.authorDisplayName ?? author} size={26} />
+              <span>
+                {author} · {note.lessonTitle}
+              </span>
             </span>
             <Tag tone="warning">
               {note.reports.length} signalement{note.reports.length > 1 ? "s" : ""}
@@ -99,6 +110,7 @@ function ReportedNoteCard({ note }: { note: ReportedNote }): React.ReactElement 
 export default async function NoteReportsPage(): Promise<React.ReactElement> {
   await requireAdminPage();
   const notes = await noteReportRepository.openByNote();
+  const authorAvatars = await resolveAvatarSrcs(notes.map((n) => n.authorAvatarUrl));
   const total = notes.reduce((n, g) => n + g.reports.length, 0);
 
   return (
@@ -117,8 +129,8 @@ export default async function NoteReportsPage(): Promise<React.ReactElement> {
         <EmptyState title="Aucune note signalée" text="Rien à relire pour l'instant." />
       ) : (
         <div className="a-report-cards">
-          {notes.map((n) => (
-            <ReportedNoteCard key={n.noteId} note={n} />
+          {notes.map((n, index) => (
+            <ReportedNoteCard key={n.noteId} note={n} authorAvatar={authorAvatars[index] ?? null} />
           ))}
         </div>
       )}

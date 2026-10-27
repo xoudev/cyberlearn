@@ -6,8 +6,8 @@ import "@/components/assessment-workspace.css";
 function StatSkeleton(): React.ReactElement {
   return (
     <li className="mkx-stat">
-      <Skeleton w={48} h={28} style={{ margin: "0 auto" }} />
-      <Skeleton w={64} h={9} style={{ margin: "9px auto 0" }} />
+      <Skeleton w={64} h={12} />
+      <Skeleton w={56} h={44} />
     </li>
   );
 }
@@ -35,7 +35,7 @@ export default function MockExamLoading(): React.ReactElement {
             gap={11}
             style={{ maxWidth: "62ch", marginBottom: 32 }}
           />
-          <div className="assessment-departure">
+          <div className="mkx-departure">
             <ul className="mkx-stats">
               <StatSkeleton />
               <StatSkeleton />

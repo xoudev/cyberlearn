@@ -24,36 +24,36 @@ export function XpProgress({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
-          color: "var(--color-text-muted)",
+          color: "#aaa79f",
         }}
       >
         <span
           style={{
-            fontFamily: "var(--font-sans)",
+            fontFamily: "var(--font-mono)",
             fontSize: 18,
             fontWeight: 700,
-            color: "var(--color-text-primary)",
-            letterSpacing: "-0.01em",
-            textTransform: "none",
+            color: "#f4f2ed",
           }}
         >
           <b style={{ color: "var(--cosmetic-accent)" }}>{current.toLocaleString("fr-FR")}</b> /{" "}
           {needed.toLocaleString("fr-FR")} XP
         </span>
         <span>→ {levelLabel(level + 1)}</span>
-        <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>{Math.round(pct)}%</span>
+        <span style={{ color: "#f4f2ed", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+          {Math.round(pct)}%
+        </span>
       </div>
 
-      {/* Segmented bar (marginBottom reserves a row for the YOU marker,
+      {/* Segmented bar (marginBottom reserves a row for the reader's marker,
             which now sits below the bar so it never overlaps the centered
             "Niv. N+1" label in the row above) */}
       <div
-        className="card card--sunken"
         style={{
           position: "relative",
           height: 10,
-          marginBottom: 22,
+          marginBottom: 24,
           overflow: "visible",
+          background: "#303137",
         }}
       >
         {/* Hash marks */}
@@ -62,7 +62,7 @@ export function XpProgress({
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(42,37,96,0.7) calc(10% - 1px), rgba(42,37,96,0.7) 10%)",
+              "repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), #0b0c0e calc(10% - 1px), #0b0c0e 10%)",
             pointerEvents: "none",
             zIndex: 1,
           }}
@@ -74,10 +74,8 @@ export function XpProgress({
             position: "relative",
             height: "100%",
             width: `${pct.toFixed(1)}%`,
-            background:
-              "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
-            boxShadow: "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent)",
-            zIndex: 2,
+            background: "var(--cosmetic-accent)",
+            zIndex: 0,
           }}
         >
           {/* Marker line */}
@@ -88,13 +86,12 @@ export function XpProgress({
               top: -4,
               bottom: -4,
               width: 2,
-              background: "var(--cosmetic-accent)",
-              boxShadow: "0 0 12px var(--cosmetic-accent)",
+              background: "#f4f2ed",
             }}
             aria-hidden="true"
           />
         </div>
-        {/* YOU label - placed below the bar so it never collides with the
+        {/* The reader's label - placed below the bar so it never collides with the
               centered "Niv. N+1" label sitting above the track */}
         <span
           style={{
@@ -102,15 +99,15 @@ export function XpProgress({
             top: "calc(100% + 5px)",
             left: `${pct.toFixed(1)}%`,
             transform: "translateX(-50%)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9.5,
-            color: "var(--cosmetic-accent)",
-            letterSpacing: "0.1em",
+            fontFamily: "var(--font-interface)",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#f4f2ed",
             whiteSpace: "nowrap",
             zIndex: 3,
           }}
         >
-          YOU · {current.toLocaleString("fr-FR")}
+          Toi · {current.toLocaleString("fr-FR")}
         </span>
       </div>
     </div>

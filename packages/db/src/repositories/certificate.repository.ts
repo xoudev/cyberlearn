@@ -69,7 +69,8 @@ const CONSOLE_CERTIFICATE_ROW = {
   score: true,
   revokedAt: true,
   revokedReason: true,
-  user: { select: { username: true, displayName: true, email: true } },
+  // avatarUrl: the console shows the holder's picture beside the name.
+  user: { select: { username: true, displayName: true, email: true, avatarUrl: true } },
   path: { select: { id: true, title: true } },
 } as const satisfies Prisma.CertificateSelect;
 

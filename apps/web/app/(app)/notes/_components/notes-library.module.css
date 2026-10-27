@@ -46,12 +46,12 @@
 }
 .folderTile:hover {
   background: #22262d;
-  border-color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
 }
 .folderTile[data-selected="true"],
 .folderTile[data-drop-active="true"] {
   background: #22262d;
-  border-color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
 }
 .folderTile:focus-visible {
   outline: 2px solid var(--cosmetic-accent);
@@ -76,10 +76,12 @@
   display: block;
   margin-bottom: 8px;
 }
+/* The folder's own icon, 28px, centred on the body of the 100 × 80 artwork. */
 .folderBadge {
   position: absolute;
-  left: 38px;
-  top: 39px;
+  left: 36px;
+  top: 36px;
+  line-height: 0;
 }
 .breadcrumb {
   color: var(--color-text-primary);

@@ -21,7 +21,6 @@ export type SidebarIcon =
   | "dashboard"
   | "route"
   | "book"
-  | "review"
   | "note"
   | "glossary"
   | "flash"
@@ -59,22 +58,10 @@ function notForCrawlers(href: string): AppRoute {
   return { href, protected: false, disallow: true, icon: null };
 }
 
-/**
- * A sidebar entry that opens a window over the page instead of leading to one
- * (lib/sidebar/items.ts): the sidebar lists it under its address, with its
- * icon, and the address itself is a redirect to the window (next.config), so
- * there is no page behind it to guard.
- */
-function opensWindow(href: string, icon: SidebarIcon): AppRoute {
-  return { href, protected: false, disallow: true, icon };
-}
-
 export const APP_ROUTES: readonly AppRoute[] = [
   signedIn("/dashboard", "dashboard"),
   signedIn("/paths", "route"),
   signedIn("/lessons", "book"),
-  // The day's recall, a window over the page (?rappel=1).
-  opensWindow("/revisions", "review"),
   signedIn("/notes", "note"),
   // Public, like the catalogue: a definition is worth reading before signing
   // up too, and the sitemap offers it. Signed in, its layout draws the app
@@ -100,7 +87,9 @@ export const APP_ROUTES: readonly AppRoute[] = [
   // Under (auth), with its own layout: the steps before the app opens.
   signedIn("/onboarding"),
 
-  // Windows over the dashboard now.
+  // Windows over the dashboard now. The day's recall (?rappel=1) opens from
+  // its button in the top bar, beside the bell, not from the sidebar.
+  notForCrawlers("/revisions"),
   notForCrawlers("/settings"),
   notForCrawlers("/changelog"),
   // Tabs of the profile now.

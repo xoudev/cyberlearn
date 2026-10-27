@@ -11,6 +11,7 @@ import {
 import type { ChallengeFormState } from "../../../_actions/challenge-admin-actions";
 import type { ChallengeOption } from "../../../new/_components/new-challenge-form";
 import { Select } from "@cyberlearn/ui";
+import { Tag } from "../../../../_components/admin-ui";
 import { keepFormInput } from "@/lib/form-input";
 import { notifyResult } from "@/lib/notify";
 
@@ -55,28 +56,6 @@ interface Props {
 
 const INITIAL: ChallengeFormState = {};
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "9px 12px",
-  background: "var(--a-surface)",
-  border: "1px solid var(--a-border-2)",
-  color: "var(--a-fg)",
-  minHeight: 44,
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  fontWeight: 700,
-  color: "var(--a-muted)",
-  marginBottom: 6,
-};
-
 function Field({
   label,
   name,
@@ -89,22 +68,13 @@ function Field({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <div>
-      <label htmlFor={name} style={labelStyle}>
+    <div className="a-field">
+      <label htmlFor={name} className="a-label">
         {label}
       </label>
       {children}
       {error !== undefined && (
-        <p
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 12,
-            color: "var(--a-danger)",
-            marginTop: 4,
-          }}
-        >
-          {error}
-        </p>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--a-danger)" }}>{error}</p>
       )}
     </div>
   );
@@ -163,36 +133,22 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
         }}
       >
         <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              marginBottom: 2,
-            }}
-          >
-            RÉSOLUS
+          <div className="a-meta-label" style={{ marginBottom: 2 }}>
+            Résolus
           </div>
           <div
             style={{
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 20,
-              color: "var(--a-accent)",
+              color: "var(--a-fg)",
             }}
           >
             {challenge.solveCount}
           </div>
         </div>
         <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              marginBottom: 2,
-            }}
-          >
+          <div className="a-meta-label" style={{ marginBottom: 2 }}>
             XP
           </div>
           <div
@@ -207,53 +163,23 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
           </div>
         </div>
         <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              marginBottom: 2,
-            }}
-          >
-            STATUT
+          <div className="a-meta-label" style={{ marginBottom: 6 }}>
+            Statut
           </div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 13,
-              color: optimisticActive ? "var(--color-success)" : "var(--a-muted)",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                background: optimisticActive ? "var(--color-success)" : "var(--a-muted)",
-                display: "inline-block",
-              }}
-            />
-            {optimisticActive ? "ACTIF" : "INACTIF"}
-          </div>
+          <Tag tone={optimisticActive ? "success" : "neutral"}>
+            {optimisticActive ? "Actif" : "Inactif"}
+          </Tag>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
           <button
             type="button"
             disabled={togglePending}
             onClick={handleToggleActive}
+            className="a-btn a-btn--sm"
             style={{
-              padding: "7px 16px",
               background: "transparent",
-              border: `1px solid ${optimisticActive ? "var(--a-danger)" : "var(--color-success)"}`,
-              color: optimisticActive ? "var(--a-danger)" : "var(--color-success)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
+              border: `1px solid ${optimisticActive ? "var(--a-danger)" : "var(--a-success)"}`,
+              color: optimisticActive ? "var(--a-danger)" : "var(--a-success)",
               cursor: togglePending ? "not-allowed" : "pointer",
               opacity: togglePending ? 0.5 : 1,
             }}
@@ -269,57 +195,38 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
         onReset={keepFormInput}
         style={{ display: "flex", flexDirection: "column", gap: 24 }}
       >
-        {state.error !== undefined && (
-          <div
-            style={{
-              padding: "12px 16px",
-              background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-              border: "1px solid var(--a-danger)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--a-danger)",
-            }}
-          >
-            {state.error}
-          </div>
-        )}
+        {state.error !== undefined && <p className="a-form-error">{state.error}</p>}
         {Object.keys(fe).length === 0 && state.error === undefined && state !== INITIAL && (
-          <div
+          <p
+            className="a-form-notice"
             style={{
-              padding: "12px 16px",
-              background: "color-mix(in srgb, var(--color-success) 6%, transparent)",
-              border: "1px solid var(--color-success)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--color-success)",
+              borderLeftColor: "var(--a-success)",
+              background: "color-mix(in srgb, var(--a-success) 7%, transparent)",
+              color: "var(--a-success)",
             }}
           >
             Modifications enregistrées.
-          </div>
+          </p>
         )}
 
         <section>
-          <div
+          <h2
+            className="a-section-title"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               marginBottom: 16,
               paddingBottom: 8,
               borderBottom: "1px solid var(--a-border)",
             }}
           >
-            {"// IDENTIFICATION"}
-          </div>
+            Identification
+          </h2>
           <div className="a-fields-grid">
             <Field label="Code de référence *" name="refCode" error={fe.refCode}>
               <input
                 id="refCode"
                 name="refCode"
                 required
-                style={inputStyle}
+                className="a-input"
                 defaultValue={challenge.refCode}
               />
             </Field>
@@ -328,7 +235,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 id="slug"
                 name="slug"
                 required
-                style={inputStyle}
+                className="a-input"
                 defaultValue={challenge.slug}
               />
             </Field>
@@ -336,27 +243,23 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
         </section>
 
         <section>
-          <div
+          <h2
+            className="a-section-title"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               marginBottom: 16,
               paddingBottom: 8,
               borderBottom: "1px solid var(--a-border)",
             }}
           >
-            {"// CONTENU"}
-          </div>
+            Contenu
+          </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <Field label="Titre *" name="title" error={fe.title}>
               <input
                 id="title"
                 name="title"
                 required
-                style={inputStyle}
+                className="a-input"
                 maxLength={200}
                 defaultValue={challenge.title}
               />
@@ -368,7 +271,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 required
                 rows={3}
                 maxLength={1000}
-                style={{ ...inputStyle, resize: "vertical" }}
+                className="a-textarea"
                 defaultValue={challenge.description}
               />
             </Field>
@@ -378,7 +281,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 name="instructions"
                 required
                 rows={10}
-                style={{ ...inputStyle, resize: "vertical" }}
+                className="a-textarea"
                 defaultValue={challenge.instructions}
               />
             </Field>
@@ -386,20 +289,16 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
         </section>
 
         <section>
-          <div
+          <h2
+            className="a-section-title"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               marginBottom: 16,
               paddingBottom: 8,
               borderBottom: "1px solid var(--a-border)",
             }}
           >
-            {"// CLASSIFICATION"}
-          </div>
+            Classification
+          </h2>
           <div className="a-fields-grid a-fields-grid--3">
             <Field label="Catégorie *" name="category" error={fe.category}>
               <Select
@@ -449,20 +348,16 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
         </section>
 
         <section>
-          <div
+          <h2
+            className="a-section-title"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--a-muted)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               marginBottom: 16,
               paddingBottom: 8,
               borderBottom: "1px solid var(--a-border)",
             }}
           >
-            {"// PARAMÈTRES"}
-          </div>
+            Paramètres
+          </h2>
           <div className="a-fields-grid a-fields-grid--4">
             <Field label="XP Récompense *" name="xpReward" error={fe.xpReward}>
               <input
@@ -473,7 +368,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 min={1}
                 max={10000}
                 defaultValue={challenge.xpReward}
-                style={inputStyle}
+                className="a-input"
               />
             </Field>
             <Field label="Limite (min)" name="timeLimitMin" error={fe.timeLimitMin}>
@@ -484,7 +379,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 min={0}
                 max={600}
                 defaultValue={challenge.timeLimitMin}
-                style={inputStyle}
+                className="a-input"
               />
             </Field>
             <Field label="Max tentatives" name="maxAttempts" error={fe.maxAttempts}>
@@ -495,7 +390,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 min={1}
                 max={100}
                 defaultValue={challenge.maxAttempts}
-                style={inputStyle}
+                className="a-input"
               />
             </Field>
             <Field label="Ordre d&apos;affichage" name="orderIndex" error={fe.orderIndex}>
@@ -505,7 +400,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 type="number"
                 min={0}
                 defaultValue={challenge.orderIndex}
-                style={inputStyle}
+                className="a-input"
               />
             </Field>
           </div>
@@ -520,7 +415,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 <input
                   id="flag"
                   name="flag"
-                  style={inputStyle}
+                  className="a-input"
                   defaultValue={challenge.flag ?? ""}
                   placeholder={type === "SCRIPT" ? "FLAG{valeur_calculee}" : "CTF{le_flag_secret}"}
                   autoComplete="off"
@@ -536,12 +431,8 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                   id="machine"
                   name="machine"
                   rows={10}
-                  style={{
-                    ...inputStyle,
-                    resize: "vertical",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                  }}
+                  className="a-textarea"
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
                   defaultValue={challenge.machine}
                   placeholder={MACHINE_PLACEHOLDER}
                 />
@@ -560,12 +451,8 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                   id="starterCode"
                   name="starterCode"
                   rows={8}
-                  style={{
-                    ...inputStyle,
-                    resize: "vertical",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                  }}
+                  className="a-textarea"
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
                   defaultValue={challenge.starterCode ?? ""}
                 />
               </Field>
@@ -577,7 +464,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               <input
                 id="resourceUrl"
                 name="resourceUrl"
-                style={inputStyle}
+                className="a-input"
                 defaultValue={challenge.resourceUrl ?? ""}
                 placeholder="http://10.0.0.1:8080 ou nc ctf.example.com 1337"
               />
@@ -586,7 +473,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               <input
                 id="attachmentUrl"
                 name="attachmentUrl"
-                style={inputStyle}
+                className="a-input"
                 defaultValue={challenge.attachmentUrl ?? ""}
                 placeholder="https://cdn.example.com/challenge.zip"
               />
@@ -611,43 +498,10 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
         </section>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, paddingTop: 8 }}>
-          <a
-            href="/challenges"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "9px 20px",
-              border: "1px solid var(--a-border-2)",
-              color: "var(--a-muted)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textDecoration: "none",
-              textTransform: "uppercase",
-            }}
-          >
+          <a href="/challenges" className="a-btn a-btn--ghost">
             Retour
           </a>
-          <button
-            type="submit"
-            disabled={pending}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "9px 24px",
-              minHeight: 44,
-              background: "var(--a-accent)",
-              color: "var(--a-ink)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              border: "none",
-              cursor: pending ? "not-allowed" : "pointer",
-            }}
-          >
+          <button type="submit" disabled={pending} className="a-btn a-btn--primary">
             {pending ? "Enregistrement..." : "Enregistrer"}
           </button>
         </div>
@@ -661,42 +515,19 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
           background: "var(--a-surface)",
         }}
       >
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-danger)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            marginBottom: 12,
-          }}
-        >
-          {"// ZONE DANGEREUSE"}
-        </div>
+        <h2 className="a-section-title" style={{ color: "var(--a-danger)", marginBottom: 12 }}>
+          Zone dangereuse
+        </h2>
 
         {challenge.solveCount > 0 && (
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--a-muted)",
-              margin: "0 0 12px",
-            }}
-          >
+          <p className="a-field-hint" style={{ margin: "0 0 12px" }}>
             Ce challenge a été résolu par {challenge.solveCount} utilisateur
             {challenge.solveCount > 1 ? "s" : ""} et ne peut pas être supprimé.
           </p>
         )}
 
         {deleteError !== undefined && (
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--a-danger)",
-              margin: "0 0 12px",
-            }}
-          >
+          <p style={{ fontSize: 12, color: "var(--a-danger)", margin: "0 0 12px" }}>
             {deleteError}
           </p>
         )}
@@ -705,17 +536,11 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
           type="button"
           disabled={challenge.solveCount > 0 || deletePending}
           onClick={handleDelete}
+          className="a-btn a-btn--danger a-btn--sm"
           style={{
-            padding: "7px 16px",
-            background: "transparent",
             border: "1px solid var(--a-danger)",
             color: deleteStep === 1 ? "var(--a-ink)" : "var(--a-danger)",
             backgroundColor: deleteStep === 1 ? "var(--a-danger)" : "transparent",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
             cursor: challenge.solveCount > 0 || deletePending ? "not-allowed" : "pointer",
             opacity: challenge.solveCount > 0 ? 0.4 : 1,
           }}
@@ -732,19 +557,8 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             onClick={() => {
               setDeleteStep(0);
             }}
-            style={{
-              marginLeft: 10,
-              padding: "7px 16px",
-              background: "transparent",
-              border: "1px solid var(--a-border-2)",
-              color: "var(--a-muted)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-            }}
+            className="a-btn a-btn--ghost a-btn--sm"
+            style={{ marginLeft: 10 }}
           >
             Annuler
           </button>

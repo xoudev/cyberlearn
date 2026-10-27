@@ -19,21 +19,18 @@ function absolute(url: string): string {
   return `${SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-// Glyph avatars are stored as "__glyph:<name>"; paths mirror the web profile.
+// Glyph avatars are stored as "__glyph:<name>"; paths mirror the web's
+// apps/web/lib/avatar/glyphs.ts (angular strokes: square caps, mitred joins).
 const GLYPH_PATHS: Record<string, string> = {
-  skull:
-    "M12 4a6 6 0 0 0-6 6c0 2.1 1 4 2.6 5.2V17h6.8v-1.8A6 6 0 0 0 12 4zm-1.5 13v1.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5V17h-3zM9 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zm4 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0z",
-  ghost:
-    "M12 3a7 7 0 0 0-7 7v9l2-2 2 2 2-2 2 2 2-2 2 2v-9a7 7 0 0 0-7-7zm-2 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm4 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z",
+  skull: "M7 3H17L20 6V13L17 16V20H7V16L4 13V6ZM8 9H11V12H8ZM13 9H16V12H13ZM10 16V20M14 16V20",
+  ghost: "M5 21V8L10 3H14L19 8V21L15.5 17.5L12 21L8.5 17.5ZM9 9H11V12H9ZM13 9H15V12H13Z",
   matrix:
-    "M4 4h2v2H4zm4 0h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2zM4 8h2v2H4zm8 0h2v2h-2zM4 12h2v2H4zm4 0h2v2H8zm4 0h2v2h-2zM8 16h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2z",
-  circuit:
-    "M2 12h3M19 12h3M12 2v3M12 19v3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
-  bug: "M9 3h6l-1 3H10zm3 4a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0v-1a5 5 0 0 0-5-5zM4 10H2m20 0h-2M4 7l2 2m12-2-2 2M4 17l2-2m12 2-2-2",
-  key: "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4",
-  shield:
-    "M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4zm0 4l5 2.5v4.5c0 3-2 5.8-5 6.75-3-.95-5-3.75-5-6.75V8.5L12 6z",
-  wire: "M4 12h4l3-8 4 16 3-8h2",
+    "M4.5 3V7M4.5 10V12M4.5 15V21M9.5 3V5M9.5 8V14M9.5 17V19M14.5 3V9M14.5 12V14M14.5 17V21M19.5 5V11M19.5 14V18",
+  circuit: "M8 8H16V16H8ZM10 3V8M14 3V8M10 16V21M14 16V21M3 10H8M3 14H8M16 10H21M16 14H21",
+  bug: "M9 8H15L17 10V16L14 19H10L7 16V10ZM10 8V5H14V8M3 12H7M17 12H21M4 7L7 10M20 7L17 10M4 19L7 16M20 19L17 16",
+  key: "M2.5 7.5H11.5V16.5H2.5ZM11.5 12H21.5M16.5 12V16M20 12V15.5",
+  shield: "M4 3H20V12L12 20L4 12ZM8 7H16V10.5L12 14.5L8 10.5Z",
+  wire: "M2 12H6L8.14 4L12.43 20L14.57 12H22",
 };
 
 function initialsOf(name: string): string {
@@ -120,8 +117,8 @@ export function Avatar({
           fill="none"
           stroke={contentColor}
           strokeWidth={1.3}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
         >
           <Path d={GLYPH_PATHS[avatarUrl.slice(8)]} />
         </Svg>

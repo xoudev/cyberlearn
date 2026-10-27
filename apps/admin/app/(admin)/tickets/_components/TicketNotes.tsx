@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { keepFormInput } from "@/lib/form-input";
 import { addTicketNoteAction } from "../../_actions/ticket-actions";
-import { Card, Tag } from "../../_components/admin-ui";
+import { Card, Tag, UserAvatar } from "../../_components/admin-ui";
 import { TICKET_CARDS } from "./ticket-columns";
 
 /**
@@ -22,6 +22,8 @@ export interface TicketNote {
   /** Pre-formatted by the server, which owns the locale. */
   stamp: string;
   authorName: string | null;
+  /** The author's picture, resolved on the server (lib/avatar.ts). */
+  authorAvatar: string | null;
 }
 
 export function TicketNotes({
@@ -51,7 +53,7 @@ export function TicketNotes({
   };
 
   return (
-    <Card title={TICKET_CARDS.notes} action={<Tag tone="purple">Équipe seulement</Tag>} pad>
+    <Card title={TICKET_CARDS.notes} action={<Tag tone="warning">Équipe seulement</Tag>} pad>
       <div style={{ display: "grid", gap: 12 }}>
         <p className="a-field-hint" style={{ margin: 0 }}>
           Jamais montrées au demandeur, ni sur le site ni dans l&apos;app.
@@ -65,20 +67,21 @@ export function TicketNotes({
                 style={{
                   padding: "10px 12px",
                   border: "1px dashed var(--a-border-2)",
-                  borderLeft: "3px solid var(--a-purple)",
+                  borderLeft: "3px solid var(--a-warning)",
                 }}
               >
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: "var(--a-purple)",
-                    marginBottom: 5,
-                  }}
-                >
-                  {note.authorName ?? "Ancien administrateur"} · {note.stamp}
+                <div className="a-person" style={{ marginBottom: 8 }}>
+                  <UserAvatar
+                    src={note.authorAvatar}
+                    name={note.authorName ?? "Ancien administrateur"}
+                    size={26}
+                  />
+                  <span className="a-person-text">
+                    <span className="a-person-name">
+                      {note.authorName ?? "Ancien administrateur"}
+                    </span>
+                    <span className="a-person-meta">{note.stamp}</span>
+                  </span>
                 </div>
                 <p
                   style={{

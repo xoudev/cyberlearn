@@ -1,9 +1,10 @@
 "use client";
 
 import type { LessonComponentWidth } from "@cyberlearn/lib/mdx-components";
-import React, { createContext, useContext } from "react";
+import React, { useContext } from "react";
 import { lessonBlockAttributes } from "./lesson-block";
 import { Quiz } from "./quiz";
+import { InQuizGroup } from "./quiz-group-context";
 
 /**
  * A lesson's Quiz in its block, or bare inside a QuizGroup.
@@ -20,9 +21,6 @@ import { Quiz } from "./quiz";
  * among the paragraphs, and its block is the container the questions' options
  * lay themselves out by (quiz.css).
  */
-
-/** True under a QuizGroup; see QuizBlock. */
-export const InQuizGroup = createContext(false);
 
 type QuizBlockProps = React.ComponentProps<typeof Quiz> & {
   /** The Quiz's width in the registry, passed in by the server. */

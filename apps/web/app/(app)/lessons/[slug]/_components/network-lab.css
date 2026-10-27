@@ -48,11 +48,11 @@
 }
 
 .netlab-canvas .react-flow__controls button:hover {
-  background: #16123f;
+  background: #191c22;
 }
 
 .netlab-canvas .react-flow__attribution {
-  background: rgba(3, 2, 25, 0.75);
+  background: #121418cc;
 }
 
 .netlab-canvas .react-flow__attribution a {

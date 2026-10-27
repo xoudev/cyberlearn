@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, GhostLink, KpiCard, Monogram, PageHeader, Tag } from "../../_components/admin-ui";
+import { Card, GhostLink, KpiCard, PageHeader, Tag, UserAvatar } from "../../_components/admin-ui";
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
 import {
   auditLogRepository,
@@ -47,6 +47,7 @@ import { describeBanAppeal } from "../../tickets/appealed-ban";
 import { USER_CARDS, USER_CRUMBS, USER_DETAIL_KPI_LABELS } from "../_components/columns";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Compte" };
 export const dynamic = "force-dynamic";
@@ -191,6 +192,7 @@ export default async function AdminUserPage({
     }));
 
   const handle = user.username ? `@${user.username}` : user.displayName || user.email;
+  const avatarSrc = await resolveAvatarSrc(user.avatarUrl);
   const classCount = user.classMemberships.length + user.taughtClasses.length;
 
   return (
@@ -198,8 +200,13 @@ export default async function AdminUserPage({
       <PageHeader
         crumbs={USER_CRUMBS}
         title={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-            <Monogram text={handle.replace("@", "")} size={32} tone={roleTone(user.role)} />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 16 }}>
+            <UserAvatar
+              src={avatarSrc}
+              name={user.displayName || handle}
+              size={56}
+              tone={roleTone(user.role)}
+            />
             {handle}
           </span>
         }
@@ -233,11 +240,7 @@ export default async function AdminUserPage({
           value={`${String(user.streakDays)} j`}
           tone="warning"
         />
-        <KpiCard
-          label={USER_DETAIL_KPI_LABELS[3]}
-          value={String(user._count.badges)}
-          tone="purple"
-        />
+        <KpiCard label={USER_DETAIL_KPI_LABELS[3]} value={String(user._count.badges)} tone="info" />
       </div>
 
       <div className="a-split">
@@ -299,6 +302,7 @@ export default async function AdminUserPage({
             displayName={user.displayName}
             username={user.username}
             bio={user.bio}
+            avatarSrc={avatarSrc}
             avatarLabel={avatarLabel(user.avatarUrl)}
             avatarIsUpload={isUploadedAvatar(user.avatarUrl)}
             hasAvatar={user.avatarUrl !== null}

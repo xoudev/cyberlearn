@@ -1,7 +1,7 @@
 import React from "react";
 import { bestScore, domainVerdict, lastDomainScores, verdictTone } from "@cyberlearn/lib/exam/mock";
 import type { MockOverview } from "@/lib/exam/mock-exam";
-import { IconClock, IconModules, IconQuestion, plural } from "./mock-exam-bits";
+import { plural } from "./mock-exam-bits";
 
 // Pinned to the site's zone, so the server and the browser print the same day.
 const dayFormat = new Intl.DateTimeFormat("fr-FR", {
@@ -12,8 +12,8 @@ const dayFormat = new Intl.DateTimeFormat("fr-FR", {
 
 /**
  * A path's mock exam before an attempt, framed like the final exam's intro:
- * what the exam is and its three figures, the rules a practice run actually
- * has, an attempt still running; beside it, the modules it covers (with the
+ * what the exam is, then on chalk its three figures, the rules a practice run
+ * actually has and an attempt still running; beside it, the modules it covers (with the
  * last score of each, once there is one) and the attempts already handed in.
  *
  * Drawn in the window the path's page opens (?mock=1,
@@ -36,77 +36,67 @@ export function MockExamIntro({ overview }: { overview: MockOverview }): React.R
           par module : chaque module dit ce qui est acquis et ce qui reste à revoir.
         </p>
 
-        <ul className="mkx-stats" aria-label="L'examen en chiffres">
-          <li className="mkx-stat">
-            <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-              <IconQuestion />
-            </span>
-            <span className="mkx-stat__val">{overview.questionCount}</span>
-            <span className="mkx-stat__lbl">Questions</span>
-          </li>
-          <li className="mkx-stat">
-            <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-              <IconClock />
-            </span>
-            <span className="mkx-stat__val">
-              {overview.timeLimitMinutes}
-              <small> min</small>
-            </span>
-            <span className="mkx-stat__lbl">Chrono</span>
-          </li>
-          <li className="mkx-stat">
-            <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-              <IconModules />
-            </span>
-            <span className="mkx-stat__val">{moduleCount}</span>
-            <span className="mkx-stat__lbl">{plural(moduleCount, "Module")}</span>
-          </li>
-        </ul>
+        <div className="mkx-departure">
+          <ul className="mkx-stats" aria-label="L'examen en chiffres">
+            <li className="mkx-stat">
+              <span className="mkx-stat__lbl">Questions</span>
+              <span className="mkx-stat__val">{overview.questionCount}</span>
+            </li>
+            <li className="mkx-stat">
+              <span className="mkx-stat__lbl">Chrono</span>
+              <span className="mkx-stat__val">
+                {overview.timeLimitMinutes}
+                <small> min</small>
+              </span>
+            </li>
+            <li className="mkx-stat">
+              <span className="mkx-stat__lbl">{plural(moduleCount, "Module")}</span>
+              <span className="mkx-stat__val">{moduleCount}</span>
+            </li>
+          </ul>
 
-        <ul className="mkx-rules">
-          <li>
-            <span className="mkx-rules__k">Chrono</span>
-            <span>
-              Il part dès que tu commences et ne s&apos;arrête plus. À 00:00, ta copie est rendue
-              telle quelle.
-            </span>
-          </li>
-          <li>
-            <span className="mkx-rules__k">Verdict</span>
-            <span>
-              Chaque module reçoit le sien : acquis, à consolider ou à revoir, avec la correction de
-              chaque question.
-            </span>
-          </li>
-          <li>
-            <span className="mkx-rules__k">Sans enjeu</span>
-            <span>
-              C&apos;est un entraînement : ni certificat, ni XP, autant de fois que tu veux.
-            </span>
-          </li>
-        </ul>
+          <ul className="mkx-rules">
+            <li>
+              <span className="mkx-rules__k">Chrono</span>
+              <span>
+                Il part dès que tu commences et ne s&apos;arrête plus. À 00:00, ta copie est rendue
+                telle quelle.
+              </span>
+            </li>
+            <li>
+              <span className="mkx-rules__k">Verdict</span>
+              <span>
+                Chaque module reçoit le sien : acquis, à consolider ou à revoir, avec la correction
+                de chaque question.
+              </span>
+            </li>
+            <li>
+              <span className="mkx-rules__k">Sans enjeu</span>
+              <span>
+                C&apos;est un entraînement : ni certificat, ni XP, autant de fois que tu veux.
+              </span>
+            </li>
+          </ul>
 
-        {overview.ready && overview.running !== null ? (
-          <p className="mkx-live">
-            <span className="mkx-live__dot" aria-hidden="true" />
-            Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant sont
-            gardées sur cet appareil, tu les retrouves en reprenant.
-          </p>
-        ) : null}
-        {overview.ready ? null : (
-          <p className="mkx-note">
-            Ce parcours n&apos;a pas encore assez de questions pour un examen blanc.
-          </p>
-        )}
+          {overview.ready && overview.running !== null ? (
+            <p className="mkx-live">
+              <span className="mkx-live__dot" aria-hidden="true" />
+              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant
+              sont gardées sur cet appareil, tu les retrouves en reprenant.
+            </p>
+          ) : null}
+          {overview.ready ? null : (
+            <p className="mkx-note">
+              Ce parcours n&apos;a pas encore assez de questions pour un examen blanc.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mkx-intro__side">
         <div>
           <div className="mkx-head">
-            <h2>
-              <span aria-hidden="true">{"// "}</span>
-              Les modules couverts
-            </h2>
+            <h2>Les modules couverts</h2>
             <span className="mkx-head__meta">
               {moduleCount} {plural(moduleCount, "module")}
             </span>
@@ -138,10 +128,7 @@ export function MockExamIntro({ overview }: { overview: MockOverview }): React.R
 
         <section aria-labelledby="mkx-hist-title">
           <div className="mkx-head">
-            <h2 id="mkx-hist-title">
-              <span aria-hidden="true">{"// "}</span>
-              Tes examens blancs
-            </h2>
+            <h2 id="mkx-hist-title">Tes examens blancs</h2>
             {best !== null ? (
               <span className="mkx-head__meta">
                 {history.length} derniers · meilleur {best} %

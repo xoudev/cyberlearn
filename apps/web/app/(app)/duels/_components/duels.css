@@ -22,8 +22,15 @@
 .dark .dl {
   --dl-accent-ink: var(--cosmetic-accent);
 }
-/* The site's eyebrow sets its bold word in the brand colour, which a light
-   page can hardly read; here it names the duel's path. */
+/* The site's eyebrow, in the interface face: a label, not a terminal line.
+   Its bold word names the duel's path. */
+.dl .pg-eyebrow {
+  font:
+    13px / 1.5 var(--font-interface),
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
 .dl .pg-eyebrow b {
   color: var(--dl-accent-ink);
 }
@@ -59,36 +66,34 @@
 
 /* ── Shared bits ────────────────────────────────────────────────────────── */
 
-/* A player's monogram: their initials in a square tile; the reader's in the
-   accent. */
+/* A player's monogram: their initials in a square tile on carbon; the
+   reader's framed in the accent (never filled with it: a picture on the
+   accent disappears). */
 .dl-mono {
   display: inline-grid;
   flex: none;
   place-items: center;
   width: 44px;
   height: 44px;
-  font-family: var(--font-mono);
-  font-size: 14px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-text-secondary);
-  background: var(--color-bg-sunken);
-  border: 1px solid var(--color-border-default);
+  color: #f4f2ed;
+  background: #191c22;
+  border: 1px solid #74767d;
 }
 .dl-mono[data-me="true"] {
-  color: var(--dl-accent-ink);
-  background: color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-sunken));
-  border-color: var(--dl-accent-soft);
+  border: 2px solid var(--cosmetic-accent);
 }
 .dl-mono--sm {
   width: 36px;
   height: 36px;
-  font-size: 12px;
+  font-size: 14px;
 }
 .dl-mono--lg {
   width: 56px;
   height: 56px;
-  font-size: 17px;
+  font-size: 22px;
 }
 /* The picture, glyph or initials inside the box (duel-face.tsx). */
 .dl-mono {
@@ -115,8 +120,8 @@ img.dl-mono__face {
   text-decoration-color: currentColor;
 }
 .dl-name-link:focus-visible {
-  outline: 2px solid var(--cosmetic-accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 
 /* The outcome in a word. */
@@ -125,56 +130,42 @@ img.dl-mono__face {
   align-items: center;
   gap: 7px;
   padding: 3px 8px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
   color: var(--dl-ink);
-  border: 1px solid color-mix(in srgb, var(--dl-tone) 50%, transparent);
+  border: 1px solid var(--dl-tone);
 }
 .dl-badge[data-outcome="win"] {
-  color: var(--color-bg-base);
+  color: #0b0c0e;
   background: var(--dl-ink);
   border-color: var(--dl-ink);
 }
 .dl-badge--lg {
   padding: 6px 12px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 /* A duel the page is reading again every few seconds, on the duel's own page
-   only: the list is drawn once. */
+   only: the list is drawn once. A still square: the badge's word says it is
+   live, the mark does not blink to say it again. */
 .dl-pulse {
   flex: none;
   width: 7px;
   height: 7px;
-  border-radius: 50%;
   background: currentColor;
-  animation: dl-pulse 1.6s ease-in-out infinite;
-}
-@keyframes dl-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
 }
 
 /* "contre", between two players. */
 .dl-vs {
   flex: none;
   padding: 6px 9px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--color-text-muted);
-  border: 1px dashed var(--color-border-default);
+  border: 1px solid var(--color-border-default);
 }
 
 .dl-error {
@@ -188,11 +179,9 @@ img.dl-mono__face {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
   color: var(--dl-accent-ink);
 }
@@ -205,7 +194,7 @@ img.dl-mono__face {
   outline-offset: 3px;
 }
 
-/* A section of the list: its title over a dashed rule, a count beside it. */
+/* A section of the list: its title over a rule, a count beside it. */
 .dl-section {
   margin-bottom: 56px;
 }
@@ -217,21 +206,18 @@ img.dl-mono__face {
   gap: 8px 24px;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px dashed var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
 }
 .dl-sec__title {
   margin: 0;
-  font-family: var(--font-sans);
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font:
+    600 34px / 1 var(--font-display),
+    sans-serif;
   color: var(--color-text-primary);
 }
 .dl-sec__meta {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
@@ -281,8 +267,8 @@ img.dl-mono__face {
   border-left: 1px solid var(--color-border-subtle);
 }
 .dl-record b {
-  font-family: var(--font-mono);
-  font-size: 30px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 40px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -292,10 +278,8 @@ img.dl-mono__face {
   color: var(--color-text-primary);
 }
 .dl-record span {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
@@ -361,17 +345,15 @@ img.dl-mono__face {
   gap: 16px 18px;
   height: 100%;
   padding: 20px 22px 22px;
-  border: 1px solid var(--dl-accent-soft);
-  background: color-mix(in srgb, var(--cosmetic-accent) 6%, var(--color-bg-elevated));
+  border: 1px solid #74767d;
+  background: #191c22;
 }
 .dl-invite__eyebrow {
   grid-column: 1 / -1;
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--dl-accent-ink);
 }
 .dl-invite__text {
@@ -388,9 +370,8 @@ img.dl-mono__face {
 }
 .dl-invite__meta {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.02em;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 .dl-invite__meta time {
@@ -399,7 +380,7 @@ img.dl-mono__face {
 .dl-invite__actions {
   grid-column: 1 / -1;
   padding-top: 16px;
-  border-top: 1px dashed var(--dl-accent-soft);
+  border-top: 1px solid #303137;
 }
 @container (min-width: 640px) {
   .dl-invite {
@@ -410,7 +391,7 @@ img.dl-mono__face {
     grid-column: auto;
     padding: 0 0 0 26px;
     border-top: 0;
-    border-left: 1px dashed var(--dl-accent-soft);
+    border-left: 1px solid #303137;
   }
 }
 
@@ -488,11 +469,9 @@ img.dl-mono__face {
 .dl-card__path {
   min-width: 0;
   overflow: hidden;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  font:
+    600 28px / 1.1 var(--font-display),
+    sans-serif;
   text-overflow: ellipsis;
   color: var(--color-text-secondary);
 }
@@ -517,7 +496,7 @@ img.dl-mono__face {
 .dl-card__name {
   max-width: 100%;
   overflow: hidden;
-  font-family: var(--font-sans);
+  font-family: var(--font-interface), sans-serif;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
@@ -529,7 +508,7 @@ img.dl-mono__face {
   align-items: center;
   gap: 10px;
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-display), sans-serif;
   font-size: 34px;
   font-weight: 700;
   line-height: 1;
@@ -554,10 +533,9 @@ img.dl-mono__face {
 .dl-card__meta {
   margin: auto 0 0;
   padding: 0 18px 16px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   line-height: 1.5;
-  letter-spacing: 0.02em;
   color: var(--color-text-muted);
 }
 
@@ -570,11 +548,9 @@ img.dl-mono__face {
   min-height: 48px;
   padding: 12px 16px;
   border-top: 1px solid var(--color-border-subtle);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
   color: var(--color-text-secondary);
   transition:
@@ -586,7 +562,7 @@ img.dl-mono__face {
   background: var(--color-bg-sunken);
 }
 .dl-card__go:focus-visible {
-  outline: 2px solid var(--dl-accent-ink);
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: -2px;
 }
 .dl-card[data-outcome="live"] .dl-card__go {
@@ -627,9 +603,8 @@ img.dl-mono__face {
 }
 .dl-state__when {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.02em;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   text-align: right;
   color: var(--color-text-muted);
 }
@@ -680,15 +655,14 @@ img.dl-mono__face {
   text-overflow: ellipsis;
 }
 .dl-side__name strong {
-  font-family: var(--font-sans);
+  font-family: var(--font-interface), sans-serif;
   font-size: 19px;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 .dl-side__name span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 .dl-side__stats {
@@ -711,7 +685,7 @@ img.dl-mono__face {
   flex-direction: row;
 }
 .dl-side__score b {
-  font-family: var(--font-mono);
+  font-family: var(--font-display), sans-serif;
   font-size: clamp(48px, 5vw, 72px);
   font-weight: 700;
   line-height: 0.9;
@@ -733,15 +707,12 @@ img.dl-mono__face {
   font-weight: 400;
   color: var(--color-text-muted);
 }
-/* A word a line ("bonnes / réponses"), as wide as its longest word: a width
-   in ch forgets the letter-spacing and lets that word out of the board. */
+/* A word a line ("bonnes / réponses"), as wide as its longest word. */
 .dl-side__score span {
   width: min-content;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   line-height: 1.4;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--color-text-muted);
 }
 .dl-side[data-side="reader"] .dl-side__score span {
@@ -749,13 +720,12 @@ img.dl-mono__face {
 }
 .dl-side__count {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   color: var(--color-text-secondary);
 }
 
-/* "contre" on the dashed line between the two sides. */
+/* "contre" on the line between the two sides. */
 .dl-board__vs {
   position: relative;
   display: grid;
@@ -768,12 +738,11 @@ img.dl-mono__face {
   top: 0;
   bottom: 0;
   left: 50%;
-  border-left: 1px dashed var(--color-border-default);
+  border-left: 1px solid #303137;
 }
 .dl-board__vs .dl-vs {
   position: relative;
-  background: var(--color-bg-elevated);
-  border-style: solid;
+  background: #191c22;
 }
 
 /* One square a question. Mine: filled when right, crossed when missed, the
@@ -844,8 +813,8 @@ img.dl-mono__face {
   align-items: center;
   gap: 4px 14px;
   padding: 14px 18px;
-  border: 1px solid color-mix(in srgb, var(--dl-tone) 45%, transparent);
-  background: color-mix(in srgb, var(--dl-tone) 7%, var(--color-bg-elevated));
+  border: 1px solid var(--dl-tone);
+  background: #191c22;
 }
 .dl-feedback__mark {
   display: grid;
@@ -862,19 +831,17 @@ img.dl-mono__face {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 .dl-feedback__q {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 .dl-feedback__text {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-interface), sans-serif;
   font-size: 15px;
   font-weight: 600;
   line-height: 1.45;
@@ -894,31 +861,21 @@ img.dl-mono__face {
   align-items: center;
   gap: 6px 10px;
   margin: 0 0 18px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--dl-accent-ink);
 }
-.dl-q__eyebrow::before {
-  content: "";
-  width: 22px;
-  height: 1.5px;
-  background: var(--dl-accent);
-}
 .dl-q__eyebrow span {
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 500;
   color: var(--color-text-muted);
 }
 .dl-q__text {
   margin: 0 0 26px;
-  font-family: var(--font-sans);
-  font-size: clamp(22px, 2.4vw, 30px);
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(26px, 2.8vw, 34px);
   font-weight: 700;
-  line-height: 1.28;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--color-text-primary);
   text-wrap: pretty;
   overflow-wrap: anywhere;
@@ -933,13 +890,14 @@ img.dl-mono__face {
   align-items: center;
   gap: 16px;
   width: 100%;
+  min-height: 60px;
   padding: 12px 18px 12px 12px;
   font: inherit;
+  font-family: var(--font-interface), sans-serif;
   text-align: left;
   color: var(--color-text-secondary);
-  background: var(--color-bg-sunken);
-  border: 1px solid var(--color-border-default);
-  border-radius: 0;
+  background: #121418;
+  border: 1px solid #74767d;
   cursor: pointer;
   transition:
     border-color var(--dur-fast) ease,
@@ -952,8 +910,8 @@ img.dl-mono__face {
   border-color: var(--dl-accent-soft);
 }
 .dl-opt:focus-visible {
-  outline: 2px solid var(--dl-accent-ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 .dl-opt:disabled {
   cursor: progress;
@@ -996,8 +954,8 @@ img.dl-mono__face {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 4px 16px;
   padding: 24px 26px;
-  border: 1px dashed color-mix(in srgb, var(--color-warning) 55%, transparent);
-  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-bg-elevated));
+  border: 1px solid var(--color-warning);
+  background: #191c22;
 }
 .dl-wait .dl-pulse {
   margin-top: 8px;
@@ -1005,8 +963,8 @@ img.dl-mono__face {
 }
 .dl-wait__title {
   margin: 0 0 6px;
-  font-family: var(--font-sans);
-  font-size: 19px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 24px;
   font-weight: 700;
   color: var(--color-text-primary);
 }
@@ -1020,21 +978,19 @@ img.dl-mono__face {
 /* The invitation, answered from the duel itself. */
 .dl-callout {
   padding: 26px 28px 28px;
-  border: 1px solid var(--dl-accent-soft);
-  background: color-mix(in srgb, var(--cosmetic-accent) 6%, var(--color-bg-elevated));
+  border: 1px solid #74767d;
+  background: #191c22;
 }
 .dl-callout__eyebrow {
   margin: 0 0 12px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--dl-accent-ink);
 }
 .dl-callout__text {
   margin: 0 0 22px;
-  font-family: var(--font-sans);
+  font-family: var(--font-interface), sans-serif;
   font-size: clamp(18px, 2vw, 22px);
   font-weight: 600;
   line-height: 1.4;
@@ -1050,7 +1006,8 @@ img.dl-mono__face {
   justify-content: space-between;
   gap: 14px 24px;
   padding: 24px 26px;
-  border: 1px dashed var(--color-border-default);
+  border: 1px solid #74767d;
+  background: #191c22;
 }
 .dl-off__text {
   margin: 0;
@@ -1063,26 +1020,23 @@ img.dl-mono__face {
 .dl-result {
   position: relative;
   padding: 32px 36px 34px;
-  border: 1px solid color-mix(in srgb, var(--dl-tone) 50%, transparent);
+  border: 1px solid #74767d;
   border-top: 3px solid var(--dl-tone);
-  background: color-mix(in srgb, var(--dl-tone) 6%, var(--color-bg-elevated));
+  background: #191c22;
 }
 .dl-result__eyebrow {
   margin: 0 0 12px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--dl-ink);
 }
 .dl-result__title {
   margin: 0 0 10px;
-  font-family: var(--font-sans);
+  font-family: var(--font-display), sans-serif;
   font-size: clamp(44px, 6vw, 78px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.04em;
   color: var(--dl-ink);
 }
 .dl-result[data-outcome="draw"] .dl-result__title,
@@ -1093,7 +1047,6 @@ img.dl-mono__face {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 16px;
-  letter-spacing: 0.02em;
   color: var(--color-text-primary);
 }
 .dl-result__note {
@@ -1120,7 +1073,7 @@ img.dl-mono__face {
   justify-content: space-between;
   gap: 8px 20px;
   padding-bottom: 12px;
-  border-bottom: 1px dashed var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
 }
 .dl-review__list {
   margin: 0;
@@ -1145,15 +1098,13 @@ img.dl-mono__face {
 .dl-review__domain {
   display: block;
   margin-bottom: 4px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 .dl-review__q {
   margin: 0 0 6px;
-  font-family: var(--font-sans);
+  font-family: var(--font-interface), sans-serif;
   font-size: 15px;
   font-weight: 600;
   line-height: 1.45;
@@ -1174,11 +1125,9 @@ img.dl-mono__face {
 }
 .dl-review__verdict {
   padding-top: 3px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
   color: var(--dl-ink);
 }
@@ -1269,10 +1218,7 @@ img.dl-mono__face {
     border-left: 0;
   }
   .dl-record b {
-    font-size: 24px;
-  }
-  .dl-record span {
-    letter-spacing: 0.12em;
+    font-size: 32px;
   }
   .dl-launch {
     padding: 20px 18px;
@@ -1307,13 +1253,12 @@ img.dl-mono__face {
   }
   .dl-board__vs .dl-vs {
     padding: 5px 6px;
-    font-size: 9px;
-    letter-spacing: 0.12em;
+    font-size: 12px;
   }
   .dl-side .dl-mono--lg {
     width: 40px;
     height: 40px;
-    font-size: 13px;
+    font-size: 16px;
   }
   .dl-side__name strong {
     font-size: 16px;
@@ -1339,9 +1284,6 @@ img.dl-mono__face {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dl-pulse {
-    animation: none;
-  }
   .dl-card,
   .dl-card__go,
   .dl-opt,
@@ -1351,8 +1293,8 @@ img.dl-mono__face {
 }
 
 .dl.community-workspace {
-  --dl-accent: #ff6b2b;
-  --dl-accent-ink: #ff864f;
+  --dl-accent: var(--cosmetic-accent);
+  --dl-accent-ink: var(--cosmetic-accent-hover);
   --dl-accent-soft: #74767d;
   --dl-accent-wash: #191c22;
 }
@@ -1370,25 +1312,9 @@ img.dl-mono__face {
   min-width: 76px;
   padding: 16px;
 }
-.dl-record b {
-  font-family: var(--font-display), sans-serif;
-  font-size: 40px;
-}
-.dl-record span,
-.dl-sec__meta,
-.dl-badge,
-.dl-card__path,
-.dl-card__meta,
-.dl-card__name,
-.dl-card__go,
-.dl-link,
 .dl-field__label,
 .dl-rules__text,
-.dl-invite__eyebrow,
-.dl-invite__meta,
-.dl-state__when,
-.dl-q__meta,
-.dl-side__count {
+.dl-q__meta {
   font-family: var(--font-interface), sans-serif;
   letter-spacing: 0;
   text-transform: none;
@@ -1407,7 +1333,7 @@ img.dl-mono__face {
 }
 .dl-guide summary::before {
   content: "+";
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font-size: 20px;
 }
 .dl-guide[open] summary::before {
@@ -1434,19 +1360,11 @@ img.dl-mono__face {
 .dl-rules__n {
   color: #aaa79f;
 }
-.dl-sec {
-  border-bottom-style: solid;
-}
-.dl-sec__title {
-  font:
-    600 34px / 1 var(--font-display),
-    sans-serif;
-}
 .dl-launch {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(210px, 0.5fr);
   margin: 28px 0 40px;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
   background: #eae7df;
   color: #141518;
 }
@@ -1530,54 +1448,14 @@ img.dl-mono__face {
 .dl-card__top {
   align-items: start;
 }
-.dl-card__path {
-  font:
-    600 28px / 1.1 var(--font-display),
-    sans-serif;
-  white-space: normal;
-}
-.dl-card__score {
-  font-family: var(--font-display), sans-serif;
-}
-.dl-card__go {
-  min-height: 48px;
-  font-size: 13px;
-}
-.dl-invite {
-  background: #191c22;
-  border-color: #74767d;
-}
-.dl-badge {
-  font-size: 11px;
-}
-.dl-pulse {
-  border-radius: 0;
-  animation: none;
-}
 .dl-board {
   background: #191c22;
   border: 0;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
 }
-.dl-side__score {
-  font-family: var(--font-display), sans-serif;
-}
-.dl-q,
-.dl-result,
-.dl-callout,
-.dl-off {
+.dl-q {
   background: #191c22;
   border-color: #74767d;
-}
-.dl-q__text,
-.dl-result__title,
-.dl-wait__title {
-  font-family: var(--font-display), sans-serif;
-}
-.dl-opt {
-  border-color: #74767d;
-  background: #121418;
-  font-family: var(--font-interface), sans-serif;
 }
 @media (max-width: 1100px) {
   .dl-launch {

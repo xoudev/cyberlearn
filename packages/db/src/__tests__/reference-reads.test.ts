@@ -185,7 +185,7 @@ describe("ratingRepository.findLessonRatings", () => {
         feedback: true,
         updatedAt: true,
         userId: true,
-        user: { select: { displayName: true, username: true } },
+        user: { select: { displayName: true, username: true, avatarUrl: true } },
       },
     });
   });

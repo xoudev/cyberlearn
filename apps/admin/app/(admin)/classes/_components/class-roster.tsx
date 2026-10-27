@@ -9,7 +9,7 @@ import {
   unassignTeacherAction,
   type AddMembersState,
 } from "../_actions/class-actions";
-import { Card, EmptyState } from "../../_components/admin-ui";
+import { Card, EmptyState, UserAvatar } from "../../_components/admin-ui";
 import { MemberPicker, type PickableUser } from "./member-picker";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput, useSuccessKey } from "@/lib/form-input";
@@ -21,6 +21,24 @@ import { keepFormInput, useSuccessKey } from "@/lib/form-input";
 // PANEL, ROW, SMALL_BTN, INPUT, SUBMIT and the rest - which is why this screen
 // did not look like the pages either side of it. It is .a-card, .a-table,
 // .a-field and .a-btn now, the same ones the users list uses.
+
+/** A teacher of the class, with the picture resolved on the server (lib/avatar.ts). */
+export interface RosterTeacher {
+  id: string;
+  name: string;
+  avatarSrc: string | null;
+  subject: string | null;
+}
+
+/** A member of the class, with the picture resolved on the server (lib/avatar.ts). */
+export interface RosterMember {
+  id: string;
+  name: string;
+  avatarSrc: string | null;
+  email: string;
+  role: string;
+  joinedAt: string;
+}
 
 /** An address holding a place in the class until it has an account. */
 export interface PendingInvitation {
@@ -40,8 +58,8 @@ export function ClassRoster({
   invitations,
 }: {
   classId: string;
-  teachers: { id: string; name: string; subject: string | null }[];
-  members: { id: string; name: string; email: string; role: string; joinedAt: string }[];
+  teachers: RosterTeacher[];
+  members: RosterMember[];
   teacherPool: { id: string; label: string }[];
   candidates: PickableUser[];
   invitations: PendingInvitation[];
@@ -65,7 +83,7 @@ function Teachers({
   pool,
 }: {
   classId: string;
-  teachers: { id: string; name: string; subject: string | null }[];
+  teachers: RosterTeacher[];
   pool: { id: string; label: string }[];
 }): React.ReactElement {
   const [state, formAction, pending] = useActionState(assignTeacherAction, {});
@@ -82,8 +100,13 @@ function Teachers({
             <tbody>
               {teachers.map((t) => (
                 <tr key={t.id}>
-                  <td>{t.name}</td>
-                  <td className="mono">{t.subject ?? "Non précisée"}</td>
+                  <td>
+                    <span className="a-person">
+                      <UserAvatar src={t.avatarSrc} name={t.name} size={28} />
+                      <span className="a-person-name">{t.name}</span>
+                    </span>
+                  </td>
+                  <td>{t.subject ?? "Non précisée"}</td>
                   <td align="right">
                     <button
                       type="button"
@@ -160,7 +183,7 @@ function Members({
   candidates,
 }: {
   classId: string;
-  members: { id: string; name: string; email: string; role: string; joinedAt: string }[];
+  members: RosterMember[];
   candidates: PickableUser[];
 }): React.ReactElement {
   const [state, formAction, pending] = useActionState<AddMembersState, FormData>(
@@ -192,9 +215,13 @@ function Members({
               {members.map((m) => (
                 <tr key={m.id}>
                   <td>
-                    {m.name}
-                    <br />
-                    <span className="mono a-field-hint">{m.email}</span>
+                    <span className="a-person">
+                      <UserAvatar src={m.avatarSrc} name={m.name} size={28} />
+                      <span className="a-person-text">
+                        <span className="a-person-name">{m.name}</span>
+                        <span className="a-person-meta a-mono">{m.email}</span>
+                      </span>
+                    </span>
                   </td>
                   <td align="right">
                     <button

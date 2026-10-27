@@ -46,7 +46,7 @@
 }
 .settings-bastion .side-drawer__foot {
   font:
-    11px var(--font-interface),
+    12px var(--font-interface),
     sans-serif;
   letter-spacing: 0;
   text-transform: none;
@@ -66,7 +66,7 @@
 .settings-nav__label {
   margin: 8px 12px 18px;
   color: #aaa79f;
-  font-size: 11px;
+  font-size: 12px;
 }
 .settings-bastion .settings-nav > button {
   display: flex;
@@ -88,7 +88,7 @@
   color: #141518;
 }
 .settings-bastion .settings-nav > button[data-danger="true"] {
-  color: #ff8b96;
+  color: var(--color-state-danger);
 }
 .settings-bastion .settings-nav > button[data-danger="true"][aria-current="true"] {
   background: #eae7df;
@@ -96,9 +96,9 @@
 }
 .settings-nav__number {
   font:
-    11px var(--font-mono),
+    12px var(--font-mono),
     monospace;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 .settings-section-heading {
   padding: 8px 0 12px;
@@ -121,7 +121,7 @@
   overflow-wrap: anywhere;
 }
 .settings-section-heading h2 span {
-  color: #ff6b2b;
+  color: var(--cosmetic-accent-hover);
 }
 .settings-card {
   padding: clamp(20px, 3vw, 28px);
@@ -141,8 +141,8 @@
 }
 .settings-button--danger {
   background: none;
-  color: #ff8b96;
-  border-color: #c26c7a;
+  color: var(--color-state-danger);
+  border-color: var(--color-state-danger);
 }
 .settings-data-pending {
   padding: 20px;
@@ -156,7 +156,7 @@
   line-height: 1.6;
 }
 .settings-card[data-variant="danger"] {
-  border-color: #c26c7a;
+  border-color: color-mix(in srgb, var(--color-state-danger) 70%, #303137);
 }
 .settings-card > h3 {
   display: flex;
@@ -184,6 +184,12 @@
   font-size: 14px !important;
   box-shadow: none !important;
 }
+/* A six-digit code is data: the monospace, large enough to check digit by
+   digit. */
+.settings-bastion input[autocomplete="one-time-code"] {
+  font-family: var(--font-mono), monospace !important;
+  font-size: 20px !important;
+}
 .settings-bastion :is(button, input, select) {
   min-height: 44px;
 }
@@ -194,7 +200,7 @@
   box-shadow: none !important;
 }
 .settings-bastion :is(a, button, input, textarea, select, [role="combobox"]):focus-visible {
-  outline: 2px solid #ff864f !important;
+  outline: 2px solid var(--cosmetic-accent-hover) !important;
   outline-offset: 3px;
 }
 .settings-bastion .settings-nav > button[aria-current="true"]:focus-visible {
@@ -230,11 +236,11 @@
   transition: transform 150ms ease;
 }
 .settings-switch[aria-checked="true"] .settings-switch__track {
-  border-color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
 }
 .settings-switch[aria-checked="true"] .settings-switch__track > span {
   transform: translateX(22px);
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 .settings-toggle {
   display: flex;
@@ -297,11 +303,12 @@
 }
 .account-delete-dialog__actions > button {
   flex: 1 1 140px;
+  min-height: 44px;
 }
 .account-delete-dialog .account-delete-confirm:not(:disabled) {
-  background: #ff8b96 !important;
+  background: var(--color-state-danger) !important;
   color: #141518 !important;
-  border-color: #ff8b96 !important;
+  border-color: var(--color-state-danger) !important;
 }
 .settings-save-bar > p {
   margin: 0;
@@ -309,7 +316,7 @@
   font-size: 12px;
 }
 .settings-save-bar[data-dirty="true"] > p {
-  color: #fbbf24;
+  color: var(--color-state-warning);
 }
 .settings-save-bar > div {
   display: flex;
@@ -321,9 +328,9 @@
 .settings-button {
   min-height: 44px;
   padding: 12px 18px;
-  background: #ff6b2b;
-  border: 1px solid #ff6b2b;
-  color: #141518;
+  background: var(--cosmetic-accent);
+  border: 1px solid var(--cosmetic-accent);
+  color: #0b0c0e;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;

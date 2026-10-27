@@ -436,7 +436,17 @@ export const moderationRepository = {
         excerpt: true,
         createdAt: true,
         contentId: true,
-        user: { select: { id: true, displayName: true, username: true, email: true, role: true } },
+        // avatarUrl: the console's queue shows the author's picture.
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            username: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   },

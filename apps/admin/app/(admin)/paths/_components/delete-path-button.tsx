@@ -87,8 +87,8 @@ export function DeletePathButton({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 28,
-          height: 28,
+          width: 44,
+          height: 44,
           background:
             hov && !disabled
               ? "color-mix(in srgb, var(--a-danger) 8%, transparent)"
@@ -103,8 +103,7 @@ export function DeletePathButton({
         {isPending ? (
           <span
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: 12,
               color: "var(--a-danger)",
               animation: "spin 0.9s linear infinite",
               display: "inline-block",

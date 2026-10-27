@@ -2,10 +2,10 @@ import React from "react";
 import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 
 /**
- * PageHeader while a support page loads, on its own classes: the prompt
+ * PageHeader while a support page loads, on its own classes: the breadcrumb
  * (.pg-crumb), the eyebrow, the title (.pg-title) and its lede (.pg-lede).
- * The eyebrow is a bare bar with the eyebrow's line and margin: .pg-eyebrow
- * would print its "// " before it.
+ * The eyebrow is a bare bar with the eyebrow's line and margin, so a
+ * placeholder carries no text style of its own.
  */
 export function SupportHeaderSkeleton({
   crumb,

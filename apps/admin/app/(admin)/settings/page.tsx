@@ -72,14 +72,14 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
         <Card
           title={SETTINGS_CARDS.env}
           action={
-            <Tag tone={allEnvOk ? "accent" : "danger"}>
+            <Tag tone={allEnvOk ? "success" : "danger"}>
               {allEnvOk ? "Complètes" : "Incomplètes"}
             </Tag>
           }
         >
           {envVars.map((v) => (
             <DefRow key={v.label} label={v.label}>
-              <Tag tone={v.defined ? "accent" : "danger"}>
+              <Tag tone={v.defined ? "success" : "danger"}>
                 {v.defined ? "Définie" : "Manquante"}
               </Tag>
             </DefRow>
@@ -89,7 +89,7 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
         <Card title={SETTINGS_CARDS.database}>
           {stats.map((s) => (
             <DefRow key={s.label} label={s.label}>
-              <b style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--a-accent)" }}>
+              <b style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--a-fg)" }}>
                 {s.val.toLocaleString("fr-FR")}
               </b>
             </DefRow>

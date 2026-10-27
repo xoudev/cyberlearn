@@ -38,7 +38,6 @@ const root = await import("./layout");
 /** What each page of the sitemap declares, from where it declares it. */
 const SOURCES: Record<string, Metadata> = {
   "/": (await import("./page")).metadata,
-  "/download": (await import("./download/page")).metadata,
   "/catalogue": (await import("./catalogue/page")).metadata,
   "/glossaire": (await import("./glossaire/page")).metadata,
   "/verify": (await import("./verify/page")).metadata,

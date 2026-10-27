@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { nextBarTarget } from "./next-bar-target";
+import { LESSON_NEXT_ID, nextBarTarget } from "./next-bar-target";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 interface NextBarProps {
@@ -21,7 +21,13 @@ export function NextBar({ next, placement, nextLocked = false }: NextBarProps): 
   // The lesson page renders one next-lesson bar.
   const hintId = "lesson-next-hint";
   return (
-    <section className="card lesson-next-bar" aria-label="Après cette leçon">
+    // Focusable from a script only: the recap of a finished lesson goes on to it.
+    <section
+      id={LESSON_NEXT_ID}
+      tabIndex={-1}
+      className="card lesson-next-bar"
+      aria-label="Après cette leçon"
+    >
       <div className="lesson-next-bar__preview">
         <p className="lesson-next-bar__eyebrow">{target.eyebrow}</p>
         {placement !== null && (
@@ -57,7 +63,14 @@ export function NextBar({ next, placement, nextLocked = false }: NextBarProps): 
         ) : (
           <Link className="btn" href={target.href}>
             {target.action}
-            <span aria-hidden="true">↗</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 8h9.5M8.5 4l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="square"
+              />
+            </svg>
           </Link>
         )}
       </div>

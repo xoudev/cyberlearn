@@ -16,13 +16,21 @@ import type { RawParams } from "@/lib/grid-params";
 import { REPORTS_PAGE_SIZE, parseReportListParams, reportQueryOf } from "@/lib/list-params";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Signalements" };
 export const dynamic = "force-dynamic";
 
 const DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "Europe/Paris" });
 
-function ReportedContentCard({ group }: { group: ReportedContent }): React.ReactElement {
+function ReportedContentCard({
+  group,
+  authorAvatar,
+}: {
+  group: ReportedContent;
+  /** The author's picture, resolved by the page. */
+  authorAvatar: string | null;
+}): React.ReactElement {
   const { content } = group;
   const counts = CONTENT_REPORT_REASON_KEYS.map((key) => ({
     key,
@@ -34,7 +42,7 @@ function ReportedContentCard({ group }: { group: ReportedContent }): React.React
       <div className="a-card-head a-report-head">
         <div className="a-report-title">
           <div className="a-report-meta">
-            <span className="a-report-ref">{CONTENT_SURFACE_LABEL[group.surface]}</span>
+            <span className="a-meta-label">{CONTENT_SURFACE_LABEL[group.surface]}</span>
             <Tag tone="warning">
               {group.reports.length} signalement{group.reports.length > 1 ? "s" : ""}
             </Tag>
@@ -54,8 +62,8 @@ function ReportedContentCard({ group }: { group: ReportedContent }): React.React
         ) : (
           <>
             <div className="a-report-meta">
-              <AuthorLink author={content.author} />
-              <span className="mono" style={{ color: "var(--a-muted)", fontSize: 11 }}>
+              <AuthorLink author={content.author} avatarSrc={authorAvatar} />
+              <span style={{ color: "var(--a-muted)", fontSize: 12 }}>
                 <ContentPlace content={content} /> · {DATE.format(content.createdAt)}
               </span>
             </div>
@@ -170,6 +178,9 @@ export default async function ContentReportsPage({
   const contents = queue.total;
   const reports = queue.openReports;
   const pageCount = Math.max(1, Math.ceil(contents / REPORTS_PAGE_SIZE));
+  const authorAvatars = await resolveAvatarSrcs(
+    queue.rows.map((g) => g.content?.author?.avatarUrl),
+  );
 
   return (
     <main className="a-page">
@@ -188,8 +199,12 @@ export default async function ContentReportsPage({
       ) : (
         <>
           <div className="a-report-cards">
-            {queue.rows.map((g) => (
-              <ReportedContentCard key={`${g.surface}:${g.contentId}`} group={g} />
+            {queue.rows.map((g, index) => (
+              <ReportedContentCard
+                key={`${g.surface}:${g.contentId}`}
+                group={g}
+                authorAvatar={authorAvatars[index] ?? null}
+              />
             ))}
           </div>
           <ReportsPager page={queue.page} pageCount={pageCount} total={contents} />

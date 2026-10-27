@@ -197,7 +197,7 @@ export function LessonPlacement({
                     {m.moduleTitle !== null ? ` · ${m.moduleTitle}` : " · sans module"}
                   </span>
                   <Tag tone={CONTENT_STATUS[m.status].tone}>{CONTENT_STATUS[m.status].label}</Tag>
-                  {m.isClassPath && <Tag tone="purple">Parcours de classe</Tag>}
+                  {m.isClassPath && <Tag tone="info">Parcours de classe</Tag>}
                 </li>
               ))}
             </ul>

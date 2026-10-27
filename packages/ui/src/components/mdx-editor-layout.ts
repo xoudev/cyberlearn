@@ -16,13 +16,15 @@ export const SPLIT_MAX = 75;
 /** How far an arrow key moves the separator. */
 export const SPLIT_STEP = 2;
 /**
- * Narrower than this, a panel opens on the editor alone. Side by side, each
- * half of a phone is under 200px and of a tablet held upright (472px in the
- * console) under 260px: Monaco shows a few words a line and the preview of the
- * site is laid out as a sliver of it. A laptop's studio, 600px and more, keeps
- * both halves. The split button brings the preview back.
+ * Narrower than this, the panel shows the editor or the preview, one at a time,
+ * behind a pair of tabs: side by side, each half of a 1280px laptop's console
+ * (about 950px beside its 240px sidebar) is under 520px, Monaco shows a few
+ * words a line and the site's page is laid out as a sliver of it. From a
+ * 1440px window (the console and the site both keep a 240px sidebar, so the
+ * panel is about 1113px there) it is this wide, and the editor keeps 600px
+ * beside the preview at the default share.
  */
-export const SPLIT_MIN_PANEL_WIDTH = 520;
+export const SPLIT_MIN_PANEL_WIDTH = 1100;
 
 const SPLIT_KEY = "cl-mdx-editor-split";
 const DEVICE_KEY = "cl-mdx-preview-device";
@@ -80,8 +82,9 @@ export function storeDevice(device: PreviewDevice): void {
 }
 
 /**
- * Whether a panel of this width opens with the preview beside the editor. A
- * width not measured (no layout yet, or none at all) leaves the default.
+ * Whether a panel of this width can lay the editor and the preview side by
+ * side. A width not measured (no layout yet, or none at all) leaves the
+ * default, which the server renders.
  */
 export function opensSplit(panelWidth: number): boolean {
   if (!Number.isFinite(panelWidth) || panelWidth <= 0) return true;

@@ -29,9 +29,9 @@ describe("Skeleton", () => {
     );
   });
 
-  it("is round only when asked, for an element that is round itself", () => {
-    expect(renderToStaticMarkup(<Skeleton w={8} h={8} radius="circle" />)).toContain(
-      "border-radius:50%",
+  it("stays square, even when a caller still asks for a circle", () => {
+    expect(renderToStaticMarkup(<Skeleton w={8} h={8} radius="circle" />)).not.toContain(
+      "border-radius",
     );
     expect(renderToStaticMarkup(<Skeleton w={8} h={8} />)).not.toContain("border-radius");
   });

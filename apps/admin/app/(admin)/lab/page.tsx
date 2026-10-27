@@ -52,7 +52,7 @@ export default async function LabPage(): Promise<React.JSX.Element> {
         <Card
           title={LAB_CARDS.wrapped}
           action={
-            <Tag tone={window.open ? "accent" : "neutral"}>
+            <Tag tone={window.open ? "success" : "neutral"}>
               {window.open ? "ouvert au public" : "fermé au public"}
             </Tag>
           }

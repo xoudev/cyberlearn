@@ -5,12 +5,12 @@
  * going, who else is here. The groups, their labels and their order are the
  * app's too (@cyberlearn/lib/navigation/groups, which its profile hub reads),
  * the icons the route registry's (lib/routes.ts). The account block at the
- * bottom says who is signed in; the news and the settings are in the navbar,
- * where the other things that are not pages of the site already are.
+ * bottom says who is signed in; the news, the settings and the day's recall
+ * are in the navbar, where the other things that are not pages of the site
+ * already are.
  */
 
 import { navGroupsFor, type NavEntryKey } from "@cyberlearn/lib/navigation/groups";
-import { DAILY_RAPPEL, RAPPEL_QUERY } from "@/components/rappel/rappel-query";
 import { sidebarIconOf, type SidebarIcon } from "@/lib/routes";
 
 export type { SidebarIcon } from "@/lib/routes";
@@ -23,12 +23,6 @@ export interface SidebarItem {
   count: number | null;
   /** What the count is, read out in place of the bare number. */
   countLabel?: string;
-  /**
-   * A window the entry opens over the page instead of leading to `href`
-   * (`?<query>=<value>`, components/query-dialogs.ts). `href` still says
-   * which pages the entry owns.
-   */
-  opens?: { query: string; value: string };
 }
 
 export interface SidebarGroup {
@@ -41,15 +35,12 @@ export interface SidebarGroup {
 export interface SidebarInput {
   /** Teaching one or being in one: either opens the classes page. */
   hasClasses: boolean;
-  /** False once spaced repetition is switched off in the settings. */
-  showRevisions: boolean;
   /** Duel invitations waiting on the reader's answer. */
   duelInvitations: number;
 }
 
 /** Whether the entry is listed for this reader. */
 function listed(key: NavEntryKey, input: SidebarInput): boolean {
-  if (key === "revisions") return input.showRevisions;
   if (key === "classes") return input.hasClasses;
   return true;
 }
@@ -64,11 +55,6 @@ function itemFor(
   if (icon === null) return null;
   const item: SidebarItem = { href: entry.href, label: entry.label, icon, count: null };
 
-  if (entry.key === "revisions") {
-    // The day's recall, in its window. No count: what waits beyond today's
-    // few questions is not a number anybody should be shown.
-    item.opens = { query: RAPPEL_QUERY, value: DAILY_RAPPEL };
-  }
   if (entry.key === "duels" && input.duelInvitations > 0) {
     // A friend waiting on an answer, for a day at most: worth a number.
     const n = input.duelInvitations;

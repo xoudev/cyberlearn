@@ -45,10 +45,10 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 };
 
 export const DIFFICULTY_META: Record<Difficulty, { tone: Tone; label: string }> = {
-  BEGINNER: { tone: "accent", label: "Débutant" },
+  BEGINNER: { tone: "success", label: "Débutant" },
   INTERMEDIATE: { tone: "info", label: "Intermédiaire" },
-  ADVANCED: { tone: "purple", label: "Avancé" },
-  EXPERT: { tone: "warning", label: "Expert" },
+  ADVANCED: { tone: "warning", label: "Avancé" },
+  EXPERT: { tone: "danger", label: "Expert" },
 };
 
 export const ORIGIN_LABEL: Record<ConsoleLessonOrigin, string> = {

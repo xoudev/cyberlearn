@@ -114,7 +114,9 @@ export function AvatarForm({
               src={currentAvatarSrc}
               name={displayName}
               glyphSize={28}
-              glyphColor={photoSelected ? "#923200" : "#ff864f"}
+              glyphColor={
+                photoSelected ? "var(--cosmetic-accent-ink)" : "var(--cosmetic-accent-hover)"
+              }
               className="ob-avatar-current__image"
             />
             <span>Garder ta photo actuelle</span>

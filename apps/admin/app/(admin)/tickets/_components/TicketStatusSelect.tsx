@@ -10,7 +10,7 @@ import { isTicketStatus, TICKET_STATUSES } from "../ticket-meta";
 const STATUS_COLORS: Record<TicketStatus, string> = {
   OPEN: "var(--a-danger)",
   IN_PROGRESS: "var(--a-warning)",
-  RESOLVED: "var(--a-accent)",
+  RESOLVED: "var(--a-success)",
   CLOSED: "var(--a-faint)",
 };
 
@@ -40,13 +40,7 @@ export function TicketStatusSelect({
   return (
     <Select
       block={false}
-      triggerStyle={{
-        padding: "5px 10px",
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-      }}
+      triggerStyle={{ fontWeight: 700, minWidth: 150 }}
       value={currentStatus}
       disabled={isPending}
       aria-label="Statut du ticket"

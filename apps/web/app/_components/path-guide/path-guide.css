@@ -121,11 +121,11 @@
 .pg-error {
   margin: 0 0 18px;
   padding: 10px 14px;
-  border-left: 3px solid var(--color-category-cybersec);
-  background: rgba(255, 71, 87, 0.06);
+  border-left: 3px solid var(--color-state-danger);
+  background: #121418;
   font-family: var(--font-interface);
   font-size: 14px;
-  color: #ff8a95;
+  color: var(--color-state-danger);
 }
 
 .pg-suggestions {
@@ -211,15 +211,15 @@
   --color-text-primary: #141518;
   --color-text-secondary: #55524d;
   --color-text-muted: #55524d;
-  --color-brand-turquoise: #923200;
+  --color-brand-turquoise: var(--cosmetic-accent-ink);
   background: #eae7df;
   border-color: #bdbab3;
 }
 .pg-dialog .pg-suggestion:first-child :focus-visible {
-  outline-color: #923200;
+  outline-color: var(--cosmetic-accent-ink);
 }
 .pg-dialog :is(section[tabindex="-1"], .pg-recap__edit):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 4px;
 }
 

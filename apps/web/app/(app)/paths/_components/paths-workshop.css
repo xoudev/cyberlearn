@@ -8,7 +8,7 @@
   gap: 18px;
 }
 .pc2-root.paths-workshop .pc2-guide:hover {
-  border-color: #ff6b2b;
+  border-color: var(--cosmetic-accent);
 }
 .pc2-root.paths-workshop .pc2-filters {
   border-top: 0;
@@ -92,17 +92,17 @@
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 24px;
   padding: 22px 36px;
-  background: #ff6b2b;
+  background: var(--cosmetic-accent);
   color: #141518;
   border: 0;
 }
 .pc2-root.paths-workshop .hero-next:hover {
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 .pc2-root.paths-workshop .hero-next__lbl {
   color: #141518;
   grid-column: 1;
-  font-size: 11px;
+  font-size: 12px;
 }
 .pc2-root.paths-workshop .hero-next__title {
   margin: 8px 0 0;
@@ -143,7 +143,7 @@
   bottom: 0;
   width: 110px;
   background: #191c22;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   overflow: hidden;
   border-right: 1px solid #303137;
 }
@@ -171,7 +171,7 @@
   margin-top: 0;
 }
 .pc2-root.paths-workshop .active-card:hover {
-  border-color: #ff6b2b;
+  border-color: var(--cosmetic-accent);
 }
 .pc2-root.paths-workshop .hero-path__poster .catalogue-artwork {
   min-height: 440px;

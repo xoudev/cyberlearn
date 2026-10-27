@@ -1,7 +1,7 @@
 .cl-home {
   --home-ink: #f4f2ed;
   --home-secondary: #aaa79f;
-  --home-copper: #ff6b2b;
+  --home-copper: var(--cosmetic-accent);
   --font-sans: var(--font-interface);
   color: var(--home-ink);
   background: #0b0c0e;
@@ -53,7 +53,7 @@
   color: #f4f2ed;
 }
 .home-brand-stop {
-  color: #ff6b2b;
+  color: var(--cosmetic-accent);
 }
 .home-nav-links {
   display: flex;
@@ -101,10 +101,10 @@
 }
 .home-button--primary {
   color: #0b0c0e;
-  background: #ff6b2b;
+  background: var(--cosmetic-accent);
 }
 .home-button--primary:hover {
-  background: #ff824a;
+  background: var(--cosmetic-accent-hover);
   transform: translateY(-2px);
 }
 .home-button--quiet {
@@ -121,7 +121,7 @@
 }
 .cl-home :is(a, button):focus-visible,
 .home-nav a:focus-visible {
-  outline: 2px solid #ff9b71;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 5px;
 }
 .cl-home .home-method a:focus-visible {
@@ -273,7 +273,7 @@
   color: #e2dfd7;
 }
 .home-request-method {
-  color: #ff9364;
+  color: var(--cosmetic-accent-hover);
   display: inline-block;
   min-width: 3ch;
 }
@@ -310,9 +310,9 @@
   border-color: #aaa79f;
 }
 .home-method-choice[aria-pressed="true"] {
-  background: #ff6b2b;
+  background: var(--cosmetic-accent);
   color: #0b0c0e;
-  border-color: #ff6b2b;
+  border-color: var(--cosmetic-accent);
 }
 .home-practice-feedback {
   min-height: 91px;
@@ -336,7 +336,7 @@
 }
 .home-feedback-mark {
   padding-top: 2px;
-  color: #ff9364;
+  color: var(--cosmetic-accent-hover);
 }
 .home-feedback-placeholder {
   margin-top: 4px;

@@ -1,11 +1,6 @@
-<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="10" r="5" stroke="#0AFFD4" stroke-width="1.5" fill="rgba(10,255,212,0.1)"/>
-  <circle cx="10" cy="44" r="5" stroke="#0AFFD4" stroke-width="1.5" fill="rgba(10,255,212,0.1)"/>
-  <circle cx="54" cy="44" r="5" stroke="#0AFFD4" stroke-width="1.5" fill="rgba(10,255,212,0.1)"/>
-  <circle cx="32" cy="54" r="5" stroke="#0AFFD4" stroke-width="1.5" fill="rgba(10,255,212,0.1)"/>
-  <line x1="32" y1="15" x2="10" y2="39" stroke="#0AFFD4" stroke-width="1.2"/>
-  <line x1="32" y1="15" x2="54" y2="39" stroke="#0AFFD4" stroke-width="1.2"/>
-  <line x1="10" y1="49" x2="32" y2="49" stroke="#0AFFD4" stroke-width="1.2"/>
-  <line x1="54" y1="49" x2="32" y2="49" stroke="#0AFFD4" stroke-width="1.2"/>
-  <line x1="15" y1="44" x2="49" y2="44" stroke="#0AFFD4" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <rect width="64" height="64" fill="#0B0C0E"/>
+  <path d="M21 21L26 26M43 21L38 26M21 43L26 38M43 43L38 38" stroke="#EAE7DF" stroke-width="4" stroke-linejoin="miter"/>
+  <path d="M12 12H21V21H12ZM43 12H52V21H43ZM12 43H21V52H12ZM43 43H52V52H43Z" stroke="#EAE7DF" stroke-width="4" stroke-linejoin="miter"/>
+  <path d="M26 26H38V38H26Z" fill="#FF6B2B"/>
 </svg>

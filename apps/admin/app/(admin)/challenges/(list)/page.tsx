@@ -12,16 +12,16 @@ import { requireAdminPage } from "@/lib/auth";
 export const metadata: Metadata = { title: "Challenges" };
 
 const DIFF_META: Record<string, { tone: Tone; label: string }> = {
-  BEGINNER: { tone: "accent", label: "Facile" },
+  BEGINNER: { tone: "success", label: "Facile" },
   INTERMEDIATE: { tone: "info", label: "Inter" },
-  ADVANCED: { tone: "purple", label: "Avancé" },
-  EXPERT: { tone: "warning", label: "Expert" },
+  ADVANCED: { tone: "warning", label: "Avancé" },
+  EXPERT: { tone: "danger", label: "Expert" },
 };
 
 const TYPE_TONE: Record<string, Tone> = {
   CTF: "danger",
   PUZZLE: "info",
-  LAB: "accent",
+  LAB: "neutral",
 };
 
 const CAT_LABEL: Record<string, string> = {
@@ -91,16 +91,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
             {c.slug}
           </span>
         </span>,
-        <span
-          key="c"
-          className="mono"
-          style={{
-            fontSize: 10.5,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--a-muted)",
-          }}
-        >
+        <span key="c" style={{ color: "var(--a-fg-2)" }}>
           {CAT_LABEL[c.category] ?? c.category}
         </span>,
         <Tag key="d" tone={diff.tone}>
@@ -109,7 +100,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
         <Tag key="ty" tone={TYPE_TONE[c.type] ?? "neutral"}>
           {c.type}
         </Tag>,
-        <b key="x" style={{ color: "var(--a-accent)" }}>
+        <b key="x" className="mono" style={{ color: "var(--a-fg)" }}>
           +{String(c.xpReward)}
         </b>,
         String(c._count.progress),

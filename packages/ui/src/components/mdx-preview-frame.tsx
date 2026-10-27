@@ -1,6 +1,6 @@
 "use client";
 
-import { ACCENT, BORDER, DANGER, MONO } from "../lib/palette.js";
+import { ACCENT, BORDER, DANGER } from "../lib/palette.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MOBILE_PREVIEW_WIDTH,
@@ -163,7 +163,7 @@ export function usePreviewRefresh(
 
 // ── Chrome ─────────────────────────────────────────────────────────────────────
 
-/** A small button of a pane's header: RAFRAÎCHIR, SITE, RAPIDE, BUREAU, MOBILE. */
+/** A button of a pane's header: Rafraîchir, Site, Rapide, Bureau, Mobile. */
 export function PaneButton({
   children,
   onClick,
@@ -198,8 +198,8 @@ export function PaneButton({
               ? "var(--color-text-faint)"
               : "var(--color-text-muted)",
         fontFamily: "var(--font-sans, system-ui, sans-serif)",
-        fontSize: 12,
-        fontWeight: 700,
+        fontSize: 13,
+        fontWeight: 600,
         cursor: disabled ? "default" : "pointer",
         flexShrink: 0,
       }}
@@ -270,27 +270,19 @@ export function MdxPreviewFrame({
     >
       <div
         style={{
-          fontFamily: MONO,
-          fontSize: 9,
+          fontFamily: "var(--font-sans, system-ui, sans-serif)",
+          fontSize: 12,
           color: "var(--color-text-muted)",
-          letterSpacing: "0.12em",
-          padding: "10px 16px",
+          padding: "6px 12px",
           display: "flex",
           alignItems: "center",
+          flexWrap: "wrap",
           gap: 6,
           borderBottom: "1px solid var(--color-border-subtle)",
           flexShrink: 0,
         }}
       >
-        <span
-          style={{
-            width: 4,
-            height: 4,
-            background: ACCENT,
-            display: "inline-block",
-          }}
-        />
-        APERÇU DU SITE
+        <b style={{ color: "var(--color-text-secondary)", fontWeight: 600 }}>Aperçu du site</b>
         <span
           aria-live="polite"
           style={{
@@ -312,7 +304,7 @@ export function MdxPreviewFrame({
             chooseDevice("desktop");
           }}
         >
-          BUREAU
+          Bureau
         </PaneButton>
         <PaneButton
           title={`La leçon à la largeur d'un téléphone (${String(MOBILE_PREVIEW_WIDTH)} px)`}
@@ -321,17 +313,17 @@ export function MdxPreviewFrame({
             chooseDevice("mobile");
           }}
         >
-          MOBILE
+          Mobile
         </PaneButton>
         <PaneButton
           title="Envoyer le brouillon au site maintenant"
           onClick={refreshNow}
           disabled={state.busy}
         >
-          RAFRAÎCHIR
+          Rafraîchir
         </PaneButton>
         <PaneButton title="L'aperçu rapide : une approximation, à chaque frappe" onClick={onQuick}>
-          RAPIDE
+          Rapide
         </PaneButton>
       </div>
 
@@ -349,9 +341,7 @@ export function MdxPreviewFrame({
             flexShrink: 0,
           }}
         >
-          <b style={{ color: DANGER, fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em" }}>
-            NE S&apos;AFFICHE PAS ·{" "}
-          </b>
+          <b style={{ color: DANGER, fontWeight: 700 }}>Ne s&apos;affiche pas · </b>
           {state.error}
         </p>
       )}
@@ -364,7 +354,7 @@ export function MdxPreviewFrame({
           display: "flex",
           justifyContent: "center",
           padding: device === "mobile" ? "12px 0" : 0,
-          background: device === "mobile" ? "#04031A" : "transparent",
+          background: device === "mobile" ? "var(--color-bg-base)" : "transparent",
         }}
       >
         {state.url === null ? (
@@ -375,12 +365,11 @@ export function MdxPreviewFrame({
               display: "grid",
               placeItems: "center",
               color: "var(--color-text-muted)",
-              fontFamily: MONO,
-              fontSize: 11,
-              letterSpacing: "0.08em",
+              fontFamily: "var(--font-sans, system-ui, sans-serif)",
+              fontSize: 13,
             }}
           >
-            {state.error === null ? "// préparation de l'aperçu…" : "// corrige, puis rafraîchis"}
+            {state.error === null ? "Préparation de l'aperçu…" : "Corrige, puis rafraîchis."}
           </div>
         ) : (
           <iframe

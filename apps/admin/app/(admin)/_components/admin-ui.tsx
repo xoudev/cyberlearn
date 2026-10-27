@@ -1,5 +1,11 @@
 import React from "react";
 import Link from "next/link";
+import {
+  avatarInitials,
+  glyphNameOf,
+  glyphPath,
+  isRenderableAvatarSrc,
+} from "@cyberlearn/lib/avatar/display";
 
 /**
  * Server-safe presentation primitives for the admin console. All visual
@@ -12,7 +18,7 @@ import Link from "next/link";
  * site's.
  */
 
-export type Tone = "neutral" | "accent" | "success" | "info" | "warning" | "danger" | "purple";
+export type Tone = "neutral" | "accent" | "success" | "info" | "warning" | "danger";
 
 const TONE_COLOR: Record<Tone, string> = {
   neutral: "var(--a-muted)",
@@ -21,7 +27,6 @@ const TONE_COLOR: Record<Tone, string> = {
   info: "var(--a-info)",
   warning: "var(--a-warning)",
   danger: "var(--a-danger)",
-  purple: "var(--a-purple)",
 };
 
 export function toneColor(tone: Tone): string {
@@ -253,34 +258,74 @@ export function Tag({
   );
 }
 
-export function Monogram({
-  text,
-  size = 24,
+/**
+ * Somebody's picture, square like the rest of the console, from a src already
+ * resolved on the server (lib/avatar.ts): a signed URL, a picture on the
+ * learner site, a glyph marker, or null.
+ *
+ * The initials are always underneath. A picture that fails to load - a signed
+ * URL that expired while the page stayed open, a linked account's image that
+ * was removed - has an empty alt, so the browser draws nothing for it and the
+ * initials show through. No state, so it renders on the server and inside the
+ * client chrome alike. The alt is empty because the name is always written
+ * next to it.
+ */
+export function UserAvatar({
+  src,
+  name,
+  size = 28,
   tone = "neutral",
 }: {
-  text: string;
+  src: string | null;
+  /** Whose it is: the initials are taken from it. */
+  name: string;
   size?: number;
+  /** The frame's colour: a role, for the lists that show one. */
   tone?: Tone;
 }): React.ReactElement {
-  const accent = tone === "neutral" ? "var(--a-border-2)" : TONE_COLOR[tone];
+  const style: CssWithVars = {
+    "--avatar-size": `${String(size)}px`,
+    ...(tone === "neutral" ? {} : { "--avatar-frame": TONE_COLOR[tone] }),
+  };
+  const glyph = glyphNameOf(src);
+  const glyphD = glyph === null ? null : glyphPath(glyph);
+  let picture: React.ReactNode = null;
+  if (glyph !== null) {
+    picture = (
+      <svg
+        className="a-avatar-glyph"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        aria-hidden="true"
+      >
+        {glyphD !== null ? <path d={glyphD} /> : <rect x="5" y="5" width="14" height="14" />}
+      </svg>
+    );
+  } else if (isRenderableAvatarSrc(src)) {
+    picture = (
+      // A plain <img>, not next/image: a signed URL carries a token and
+      // expires, and the optimizer would keep a copy that outlives it.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className="a-avatar-img"
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
   return (
-    <span
-      style={{
-        width: size,
-        height: size,
-        display: "grid",
-        placeItems: "center",
-        flexShrink: 0,
-        background: `color-mix(in srgb, ${accent} 22%, var(--a-surface-2))`,
-        border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
-        fontFamily: "var(--font-mono)",
-        fontWeight: 700,
-        fontSize: Math.round(size * 0.38),
-        color: "var(--a-fg-2)",
-        textTransform: "uppercase",
-      }}
-    >
-      {text.slice(0, 2)}
+    <span className="a-avatar" style={style}>
+      <span className="a-avatar-initials" aria-hidden="true">
+        {avatarInitials(name)}
+      </span>
+      {picture}
     </span>
   );
 }

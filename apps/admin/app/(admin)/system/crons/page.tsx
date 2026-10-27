@@ -46,7 +46,7 @@ export default async function SystemCronsPage(): Promise<React.ReactElement> {
       />
 
       <div className="a-kpi-grid">
-        <KpiCard label={CRON_KPI_LABELS[0]} value={String(tally.ok)} tone="accent" />
+        <KpiCard label={CRON_KPI_LABELS[0]} value={String(tally.ok)} tone="success" />
         <KpiCard label={CRON_KPI_LABELS[1]} value={String(tally.failed)} tone="danger" />
         <KpiCard label={CRON_KPI_LABELS[2]} value={String(tally.late)} tone="warning" />
         <KpiCard label={CRON_KPI_LABELS[3]} value={String(tally.never)} tone="info" />
@@ -89,7 +89,7 @@ export default async function SystemCronsPage(): Promise<React.ReactElement> {
                       <span style={{ display: "grid", gap: 4 }}>
                         <span>{row.scheduleText}</span>
                         <span>
-                          <Tag tone={row.job.source === "vercel" ? "info" : "purple"}>
+                          <Tag tone={row.job.source === "vercel" ? "info" : "neutral"}>
                             {row.job.source === "vercel" ? "Vercel" : "cron-job.org"}
                           </Tag>
                         </span>

@@ -2,14 +2,14 @@
    verdict, and the end. Square, like the rest of the site. */
 
 /* The window's body (.modal-shell__body, packages/ui) has no margin of its own:
-   its header and its action row hold 20px each side, and this is what puts the
+   its header and its action row hold 24px each side, and this is what puts the
    pips, the question and the answers on the same line as them rather than
    against the frame. */
 .rp {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 18px 20px 20px;
+  padding: 20px 24px 24px;
 }
 
 .rp-quiet {
@@ -74,25 +74,21 @@
   align-items: baseline;
   gap: 4px 10px;
   margin: 0 0 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #aaa79f;
 }
 .rp-question__eyebrow span {
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: none;
-  color: var(--color-text-faint);
+  font-weight: 400;
+  color: #aaa79f;
 }
 .rp-question__text {
   margin: 0 0 18px;
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display), sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
   color: var(--color-text-primary);
   text-wrap: pretty;
   overflow-wrap: anywhere;
@@ -108,9 +104,10 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px 14px 10px 10px;
+  min-height: 44px;
+  padding: 7px 14px 7px 7px;
   font: inherit;
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.45;
   text-align: left;
   color: var(--color-text-secondary);
@@ -128,8 +125,8 @@
   border-color: var(--cosmetic-accent);
 }
 .rp-option:focus-visible {
-  outline: 2px solid var(--cosmetic-accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 3px;
 }
 .rp-option:disabled {
   cursor: default;

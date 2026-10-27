@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "Tournois" };
 
 const PHASE_TONE: Record<TournamentPhase, Tone> = {
   UPCOMING: "info",
-  RUNNING: "accent",
+  RUNNING: "success",
   FINISHED: "neutral",
 };
 
@@ -68,7 +68,7 @@ export default async function AdminTournamentsPage(): Promise<React.ReactElement
                   >
                     <span style={{ display: "grid", gap: 4 }}>
                       <strong>{t.title}</strong>
-                      <span className="mono" style={{ fontSize: 12, color: "var(--a-muted)" }}>
+                      <span style={{ fontSize: 12, color: "var(--a-muted)" }}>
                         Du {tournamentDateLabel(t.startsAt)} au {tournamentDateLabel(t.endsAt)} ·{" "}
                         {TEAM_SCOPE_LABELS[t.teamScope]} · {String(t._count.classes)} classe
                         {t._count.classes > 1 ? "s" : ""} · {String(t._count.challenges)} défi

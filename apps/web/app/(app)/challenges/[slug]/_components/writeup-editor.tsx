@@ -82,20 +82,9 @@ export function WriteupEditor({
     });
   };
 
-  const color =
-    message?.tone === "error"
-      ? "var(--color-danger)"
-      : message?.tone === "held"
-        ? "var(--color-warning)"
-        : "var(--cosmetic-accent)";
-
   return (
-    <div className="card" style={{ padding: "16px 18px", display: "grid", gap: 10 }}>
-      <label
-        htmlFor={`writeup-${challengeId}`}
-        className="mono-label"
-        style={{ color: "var(--color-text-muted)" }}
-      >
+    <div className="card writeup-editor">
+      <label htmlFor={`writeup-${challengeId}`} className="writeup-editor__label">
         Ta solution {moderated ? "(masquée)" : initial !== null ? "(publiée)" : ""}
       </label>
       <textarea
@@ -108,19 +97,8 @@ export function WriteupEditor({
         maxLength={10000}
         readOnly={moderated}
         placeholder="Explique ta démarche : par où tu as commencé, ce qui a coincé, la commande ou le code qui a marché. Markdown accepté (```code```, listes, liens)."
-        style={{
-          width: "100%",
-          resize: "vertical",
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          lineHeight: 1.6,
-          padding: "10px 12px",
-          background: "var(--color-bg-sunken, #05041A)",
-          color: "var(--color-text-primary)",
-          border: "1px solid var(--color-border-default)",
-        }}
       />
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="writeup-editor__bar">
         <button
           type="button"
           className="btn btn--accent btn--sm"
@@ -139,11 +117,9 @@ export function WriteupEditor({
             Retirer
           </button>
         ) : null}
-        <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-          {String(content.trim().length)} / 10 000
-        </span>
+        <span className="writeup-editor__count">{String(content.trim().length)} / 10 000</span>
       </div>
-      <p aria-live="polite" style={{ margin: 0, fontSize: 13, color, minHeight: 18 }}>
+      <p aria-live="polite" className="writeup-editor__message" data-tone={message?.tone}>
         {message?.text ?? ""}
       </p>
     </div>

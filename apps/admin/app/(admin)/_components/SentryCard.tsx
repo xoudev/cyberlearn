@@ -37,8 +37,7 @@ function Note({ children }: { children: React.ReactNode }): React.JSX.Element {
         margin: 0,
         padding: "34px 18px",
         textAlign: "center",
-        fontFamily: "var(--font-mono)",
-        fontSize: 11.5,
+        fontSize: 13,
         lineHeight: 1.7,
         color: "var(--a-muted)",
       }}
@@ -75,7 +74,7 @@ export function SentryCard({ result }: { result: SentryIssuesResult }): React.JS
   if (result.issues.length === 0) {
     return (
       <Note>
-        <span style={{ color: "var(--a-accent)" }}>Aucune erreur non résolue sur 24 h.</span>
+        <span style={{ color: "var(--a-success)" }}>Aucune erreur non résolue sur 24 h.</span>
       </Note>
     );
   }

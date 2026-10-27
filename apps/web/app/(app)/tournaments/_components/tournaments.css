@@ -4,11 +4,11 @@
    surfaces follow Bastion’s carbon, chalk and copper hierarchy. */
 
 .trn {
-  --trn-accent: #ff864f;
+  --trn-accent: var(--cosmetic-accent-hover);
   --trn-accent-soft: #74767d;
   --trn-accent-wash: #191c22;
-  --trn-me: #ff6b2b;
-  --trn-me-ink: #ff864f;
+  --trn-me: var(--cosmetic-accent);
+  --trn-me-ink: var(--cosmetic-accent-hover);
   --trn-me-soft: #74767d;
   --trn-me-wash: #191c22;
   --trn-phase: #aaa79f;
@@ -36,7 +36,6 @@
 .trn [data-phase] {
   --trn-phase-ink: color-mix(in srgb, var(--trn-phase) 70%, var(--color-text-primary));
   --trn-phase-soft: color-mix(in srgb, var(--trn-phase) 45%, transparent);
-  --trn-phase-wash: color-mix(in srgb, var(--trn-phase) 8%, transparent);
 }
 
 .trn [data-cat="CYBERSEC"] {
@@ -78,12 +77,12 @@
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 
-/* A section's head: the site's `.section-head` (`// Title`), a figure on the
-   right, a dashed rule under. Only its colours are the page's own. */
+/* A section's head: the site's `.section-head`, a figure on the right, a rule
+   under. Only its colours are the page's own. */
 .trn-shead {
   display: flex;
   flex-wrap: wrap;
@@ -97,11 +96,8 @@
 .trn .trn-shead__title {
   color: var(--color-text-primary);
 }
-.trn .trn-shead__title::before {
-  color: var(--trn-accent);
-}
 .trn-shead__meta {
-  font: 500 12px var(--font-interface);
+  font: 500 13px var(--font-interface);
   letter-spacing: 0;
   text-transform: none;
   color: var(--color-text-muted);
@@ -119,14 +115,12 @@
   white-space: nowrap;
   color: var(--trn-phase-ink);
   border: 1px solid var(--trn-phase-soft);
-  background: var(--trn-phase-wash);
 }
 .trn-dot {
   display: inline-block;
   width: 7px;
   height: 7px;
   flex-shrink: 0;
-  border-radius: 0;
   background: var(--trn-phase);
 }
 .trn-livetag {
@@ -176,7 +170,6 @@
 .trn-tag[data-cat] {
   color: var(--trn-cat-ink);
   border-color: color-mix(in srgb, var(--trn-cat) 55%, transparent);
-  background: color-mix(in srgb, var(--trn-cat) 8%, transparent);
 }
 
 /* A difficulty as four squares. */
@@ -209,8 +202,7 @@
 .trn-place[data-place] {
   color: color-mix(in srgb, var(--trn-medal) 62%, var(--color-text-primary));
   border-color: var(--trn-medal);
-  background: color-mix(in srgb, var(--trn-medal) 10%, transparent);
-  box-shadow: inset 0 -3px 0 var(--trn-medal);
+  border-bottom-width: 3px;
 }
 
 /* "Ton équipe", "Toi". */
@@ -278,7 +270,7 @@
   margin: 0;
   padding: 0 0 6px;
   list-style: none;
-  font: 11px var(--font-interface);
+  font: 13px var(--font-interface);
   letter-spacing: 0;
   text-transform: none;
   color: var(--color-text-muted);
@@ -964,8 +956,8 @@ a.trn-ch:focus-visible {
 }
 .trn-ch[data-state="mine"] {
   --trn-state: var(--color-success);
-  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
-  background: color-mix(in srgb, var(--color-success) 4%, var(--color-bg-elevated));
+  border-color: var(--color-success);
+  background: #191c22;
 }
 a.trn-ch[data-state="mine"]:hover {
   border-color: color-mix(in srgb, var(--color-success) 70%, transparent);
@@ -1328,8 +1320,7 @@ a.trn-ch[data-state="team"]:hover {
   align-items: flex-start;
   gap: 16px;
   padding: 22px 24px;
-  border: 1px solid color-mix(in srgb, var(--color-success) 40%, transparent);
-  background: color-mix(in srgb, var(--color-success) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 60%, transparent);
 }
 .trn-done .trn-ico {
   width: 22px;
@@ -1352,8 +1343,7 @@ a.trn-ch[data-state="team"]:hover {
 }
 /* A flag the console took back: said where a found one would be, in the danger tone. */
 .trn-done[data-state="disqualified"] {
-  border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
-  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 60%, transparent);
 }
 .trn-done[data-state="disqualified"] .trn-ico,
 .trn-done[data-state="disqualified"] .trn-done__title {
@@ -1502,17 +1492,15 @@ a.trn-ch[data-state="team"]:hover {
 }
 .trn-flag__msg[data-ok="true"] {
   color: color-mix(in srgb, var(--color-success) 70%, var(--color-text-primary));
-  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
-  background: color-mix(in srgb, var(--color-success) 6%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 60%, transparent);
 }
 .trn-flag__msg[data-ok="false"] {
   color: var(--color-danger);
-  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
-  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 60%, transparent);
 }
 .trn-flag__hint {
   margin: 0;
-  font: 11px var(--font-interface);
+  font: 12px var(--font-interface);
   letter-spacing: 0;
   color: var(--color-text-muted);
 }
@@ -1524,7 +1512,7 @@ a.trn-ch[data-state="team"]:hover {
 }
 .trn-script__note {
   margin: 0;
-  font: 11px / 1.6 var(--font-interface);
+  font: 12px / 1.6 var(--font-interface);
   letter-spacing: 0;
   color: var(--color-text-muted);
 }
@@ -1641,10 +1629,6 @@ a.trn-ch[data-state="team"]:hover {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .trn-phase[data-phase="RUNNING"] .trn-dot,
-  .trn-livetag .trn-dot {
-    animation: none;
-  }
   .trn-card,
   .trn-card__go,
   .trn-ch,
@@ -1670,7 +1654,7 @@ a.trn-ch[data-state="team"]:hover {
 }
 .trn .pg-eyebrow {
   font:
-    12px / 1.5 var(--font-interface),
+    13px / 1.5 var(--font-interface),
     sans-serif;
   letter-spacing: 0;
   text-transform: none;
@@ -1692,11 +1676,8 @@ a.trn-ch[data-state="team"]:hover {
   letter-spacing: 0;
   text-transform: none;
 }
-.trn .trn-shead__title::before {
-  content: none;
-}
 .trn :is(a, button, input):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .trn-guide {
@@ -1724,13 +1705,13 @@ a.trn-ch[data-state="team"]:hover {
   padding-left: 22px;
 }
 .trn-guide > summary:focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 .trn .empty-state {
   padding: clamp(24px, 4vw, 44px);
   border: 1px solid #44454a;
-  border-left: 4px solid #ff6b2b;
+  border-left: 4px solid var(--cosmetic-accent);
   background: #121418;
   text-align: left;
 }
@@ -1772,9 +1753,9 @@ a.trn-ch[data-state="team"]:hover {
   --color-bg-sunken: #dfdbd2;
   --color-bg-elevated: #eae7df;
   --color-success: #226c4c;
-  --color-warning: #923200;
-  --trn-me-ink: #923200;
-  --trn-accent: #923200;
+  --color-warning: var(--cosmetic-accent-ink);
+  --trn-me-ink: var(--cosmetic-accent-ink);
+  --trn-accent: var(--cosmetic-accent-ink);
   --trn-accent-wash: #dfdbd2;
 }
 .trn-brief__head {
@@ -1802,10 +1783,10 @@ a.trn-ch[data-state="team"]:hover {
   margin-top: 8px;
 }
 .trn-brief .trn-standing__rank[data-team] dd {
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .trn .trn-clock[data-low] .trn-clock__v {
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .trn .trn-live .pbar,
 .trn .trn-brief .pbar {
@@ -1813,7 +1794,7 @@ a.trn-ch[data-state="team"]:hover {
 }
 .trn .trn-live .pbar__fill,
 .trn .trn-brief .pbar__fill {
-  background: #923200 !important;
+  background: var(--cosmetic-accent-ink) !important;
   box-shadow: none;
 }
 .trn-team[aria-current="true"],
@@ -1823,9 +1804,9 @@ a.trn-ch[data-state="team"]:hover {
   --color-text-muted: #55524d;
   --color-bg-sunken: #dfdbd2;
   --color-border-default: #77746e;
-  --trn-me-ink: #923200;
-  --trn-me: #923200;
-  --trn-medal: #923200;
+  --trn-me-ink: var(--cosmetic-accent-ink);
+  --trn-me: var(--cosmetic-accent-ink);
+  --trn-medal: var(--cosmetic-accent-ink);
   background: #eae7df;
   border-color: #eae7df;
 }
@@ -1835,12 +1816,8 @@ a.trn-ch[data-state="team"]:hover {
 }
 .trn-player[aria-current="true"] .trn-you,
 .trn-team[aria-current="true"] .trn-you {
-  color: #923200;
-  border-color: #923200;
-}
-.trn-ch[data-state="mine"] {
-  background: #191c22;
-  border-color: #62d4a1;
+  color: var(--cosmetic-accent-ink);
+  border-color: var(--cosmetic-accent-ink);
 }
 .trn-team__bar i {
   background: #aaa79f;

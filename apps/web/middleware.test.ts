@@ -217,7 +217,7 @@ describe("the landing page is for people who are not signed in", () => {
     // reason to open, and they stay open.
     auth.session = { user: { app_metadata: { onboarding_complete: true } } };
 
-    for (const path of ["/catalogue", "/legal/terms", "/privacy", "/verify", "/download"]) {
+    for (const path of ["/catalogue", "/legal/terms", "/privacy", "/verify"]) {
       const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
       expect(location(response)).toBeNull();
     }

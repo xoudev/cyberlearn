@@ -16,7 +16,7 @@ import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { initialAuthActionState } from "@/app/(auth)/_actions/auth-action-state";
 import { updatePassword } from "@/app/(auth)/_actions/password-auth";
 import { SettingsCard } from "../../_components/SettingsPrimitives";
-import { MONO, S } from "../../_components/tokens";
+import { MONO, S, SANS } from "../../_components/tokens";
 
 interface Enrollment {
   factorId: string;
@@ -34,34 +34,55 @@ const DISABLED_MESSAGE = "Double authentification désactivée.";
 const inputStyle: React.CSSProperties = {
   width: "100%",
   height: 46,
-  border: `1px solid ${S.border}`,
-  background: "#080622",
+  border: `1px solid ${S.borderStrong}`,
+  background: S.base,
   color: S.fg,
   padding: "0 13px",
+  fontFamily: SANS,
+  fontSize: 14,
+};
+
+/** A six-digit code: the monospace, spaced so each digit reads on its own. */
+const codeInputStyle: React.CSSProperties = {
+  ...inputStyle,
   fontFamily: MONO,
+  textAlign: "center",
+  fontSize: 20,
+  letterSpacing: "0.3em",
+};
+
+const fieldLabelStyle: React.CSSProperties = {
+  fontFamily: SANS,
   fontSize: 13,
-  outline: "none",
+  fontWeight: 500,
+  color: S.fg2,
+};
+
+const noteStyle: React.CSSProperties = {
+  margin: 0,
+  color: S.fg2,
+  fontFamily: SANS,
+  fontSize: 13,
+  lineHeight: 1.6,
 };
 
 const buttonStyle: React.CSSProperties = {
   minHeight: 44,
-  border: `1px solid ${S.turq}`,
-  background: S.turq,
-  color: "var(--color-bg-base)",
+  border: `1px solid ${S.accent}`,
+  background: S.accent,
+  color: S.onAccent,
   padding: "0 18px",
   cursor: "pointer",
-  fontFamily: MONO,
-  fontSize: 10,
-  fontWeight: 700,
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
+  fontFamily: SANS,
+  fontSize: 13,
+  fontWeight: 600,
 };
 
 const secondaryButtonStyle: React.CSSProperties = {
   ...buttonStyle,
   background: "transparent",
   color: S.fg2,
-  borderColor: S.border,
+  borderColor: S.borderStrong,
 };
 
 const dangerButtonStyle: React.CSSProperties = {
@@ -82,13 +103,13 @@ async function fetchTotpFactors(): Promise<TotpFactorsState> {
   }
 }
 
-/** The status line: "MFA INACTIF" only once Supabase has said there is no factor. */
+/** The status line: "MFA inactif" only once Supabase has said there is no factor. */
 function factorStatusLabel(state: TotpFactorsState): { text: string; color: string } {
-  if (state.status === "loading") return { text: "VÉRIFICATION…", color: S.muted };
-  if (state.status === "error") return { text: "ÉTAT INCONNU", color: S.warning };
+  if (state.status === "loading") return { text: "Vérification…", color: S.muted };
+  if (state.status === "error") return { text: "État inconnu", color: S.warning };
   return state.factors.length > 0
-    ? { text: "MFA ACTIF", color: S.turq }
-    : { text: "MFA INACTIF", color: S.muted };
+    ? { text: "MFA actif", color: S.success }
+    : { text: "MFA inactif", color: S.muted };
 }
 
 function factorStatusText(state: TotpFactorsState): string {
@@ -280,9 +301,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
           {/* Re-authentication: without it a stolen session could change the
               password and lock the owner out permanently. */}
           <label style={{ display: "grid", gap: 7 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: S.muted }}>
-              MOT DE PASSE ACTUEL
-            </span>
+            <span style={fieldLabelStyle}>Mot de passe actuel</span>
             <input
               style={inputStyle}
               type="password"
@@ -292,9 +311,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
             />
           </label>
           <label style={{ display: "grid", gap: 7 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: S.muted }}>
-              NOUVEAU MOT DE PASSE
-            </span>
+            <span style={fieldLabelStyle}>Nouveau mot de passe</span>
             <input
               style={inputStyle}
               type="password"
@@ -305,7 +322,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
             />
           </label>
           <label style={{ display: "grid", gap: 7 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: S.muted }}>CONFIRMATION</span>
+            <span style={fieldLabelStyle}>Confirmation</span>
             <input
               style={inputStyle}
               type="password"
@@ -318,10 +335,8 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
           {passwordState.message ? (
             <p
               style={{
-                margin: 0,
-                color: passwordState.status === "error" ? S.danger : S.turq,
-                fontFamily: MONO,
-                fontSize: 11,
+                ...noteStyle,
+                color: passwordState.status === "error" ? S.danger : S.success,
               }}
             >
               {passwordState.message}
@@ -347,22 +362,14 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
               <div
                 style={{
                   color: status.color,
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  fontWeight: 700,
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  fontWeight: 600,
                 }}
               >
                 {status.text}
               </div>
-              <p
-                style={{
-                  margin: "7px 0 0",
-                  color: S.muted,
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  lineHeight: 1.6,
-                }}
-              >
+              <p style={{ ...noteStyle, margin: "7px 0 0", color: S.muted }}>
                 {factorStatusText(factorsState)}
               </p>
             </div>
@@ -400,8 +407,8 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
                 display: "grid",
                 gap: 14,
                 padding: 18,
-                background: "#080622",
-                border: `1px solid ${S.border}`,
+                background: S.panel,
+                border: `1px solid ${S.borderSoft}`,
               }}
             >
               {/* Scanners need dark modules on a light backdrop plus a quiet
@@ -416,28 +423,21 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
                 />
               </div>
               <div>
-                <div style={{ color: S.muted, fontFamily: MONO, fontSize: 10, marginBottom: 7 }}>
-                  CLÉ MANUELLE
-                </div>
+                <div style={{ ...fieldLabelStyle, marginBottom: 7 }}>Clé manuelle</div>
                 <code
-                  style={{ color: S.fg, fontFamily: MONO, fontSize: 12, overflowWrap: "anywhere" }}
+                  style={{ color: S.fg, fontFamily: MONO, fontSize: 13, overflowWrap: "anywhere" }}
                 >
                   {groupOtpSecret(enrollment.secret)}
                 </code>
               </div>
               <OtpCodeInput
-                label="CODE DE CONFIRMATION"
+                label="Code de confirmation"
                 value={code}
                 onValueChange={setCode}
                 placeholder="000000"
                 style={{ display: "grid", gap: 7 }}
-                labelStyle={{ fontFamily: MONO, fontSize: 10, color: S.muted }}
-                inputStyle={{
-                  ...inputStyle,
-                  textAlign: "center",
-                  fontSize: 20,
-                  letterSpacing: "0.3em",
-                }}
+                labelStyle={fieldLabelStyle}
+                inputStyle={codeInputStyle}
               />
               <button style={buttonStyle} type="submit" disabled={busy}>
                 Vérifier et activer
@@ -446,15 +446,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
           ) : null}
 
           {factors.length > 0 && !canDisableMfa ? (
-            <p
-              style={{
-                margin: 0,
-                color: S.fg2,
-                fontFamily: MONO,
-                fontSize: 11,
-                lineHeight: 1.6,
-              }}
-            >
+            <p style={noteStyle}>
               Compte administrateur : ta double authentification protège aussi la console et ne se
               désactive pas ici. Si tu perds ton application d’authentification, suis la procédure
               de secours décrite dans docs/authentication.md.
@@ -482,35 +474,22 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
                 display: "grid",
                 gap: 14,
                 padding: 18,
-                background: "#080622",
+                background: S.panel,
                 border: `1px solid ${S.danger}`,
               }}
             >
-              <p
-                style={{
-                  margin: 0,
-                  color: S.fg2,
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  lineHeight: 1.6,
-                }}
-              >
+              <p style={noteStyle}>
                 Sans second facteur, ton mot de passe suffira pour entrer dans ton compte. Pour
                 confirmer, entre le code affiché par ton application d’authentification.
               </p>
               <OtpCodeInput
-                label="CODE ACTUEL"
+                label="Code actuel"
                 value={disableCode}
                 onValueChange={setDisableCode}
                 placeholder="000000"
                 style={{ display: "grid", gap: 7 }}
-                labelStyle={{ fontFamily: MONO, fontSize: 10, color: S.muted }}
-                inputStyle={{
-                  ...inputStyle,
-                  textAlign: "center",
-                  fontSize: 20,
-                  letterSpacing: "0.3em",
-                }}
+                labelStyle={fieldLabelStyle}
+                inputStyle={codeInputStyle}
               />
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 <button style={dangerButtonStyle} type="submit" disabled={busy}>
@@ -533,7 +512,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
               role={
                 message === ENABLED_MESSAGE || message === DISABLED_MESSAGE ? "status" : "alert"
               }
-              style={{ margin: 0, color: S.fg2, fontFamily: MONO, fontSize: 11 }}
+              style={noteStyle}
             >
               {message}
             </p>

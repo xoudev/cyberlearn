@@ -42,6 +42,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
     user.createdAt,
   );
   const avatarRarity = rarestOf(user.badges.map((entry) => entry.badge.rarity));
+  // A custom property is a valid inline style that CSSProperties does not list.
+  const rarityStyle: React.CSSProperties & { "--rarity": string } = {
+    "--rarity": BADGE_RARITY_VAR[avatarRarity],
+  };
   const serializedLessons: SerializedLesson[] = user.lessonProgress.map((entry) => ({
     lessonId: entry.lessonId,
     slug: entry.lesson.slug,
@@ -69,19 +73,20 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       <section className="profile-hero" aria-label="Ton identité">
         <div className="profile-identity">
           <div className="profile-avatar-block">
-            <div
-              className="profile-avatar-frame"
-              style={{ color: BADGE_RARITY_VAR[avatarRarity], ...cosmeticAvatarFilter(1) }}
-            >
+            {/* Square, framed by what the learner equipped (globals.css, Avatar
+                frames). The rarest badge is said beside it, in its own colour,
+                rather than painted around the picture. */}
+            <div className="profile-avatar-frame" style={cosmeticAvatarFilter(1)}>
               <AvatarView
                 src={resolvedAvatarUrl}
                 name={user.displayName}
                 className="profile-avatar-face"
                 glyphSize={56}
-                glyphColor={BADGE_RARITY_VAR[avatarRarity]}
               />
             </div>
-            <span className="profile-avatar-rarity">{BADGE_RARITY_LABELS[avatarRarity]}</span>
+            <span className="profile-avatar-rarity" style={rarityStyle}>
+              {BADGE_RARITY_LABELS[avatarRarity]}
+            </span>
           </div>
           <div className="profile-identity__body">
             <h1>

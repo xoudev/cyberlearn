@@ -4,8 +4,13 @@ import Link from "next/link";
 export type CrumbSegment = string | { label: string; href?: string };
 
 /**
- * The prompt-shaped breadcrumb every page opens with: `$ ~/cyberlearn/…`,
- * the last segment lit, a caret blinking after it.
+ * The breadcrumb every page opens with: CyberLearn, then the segments, the
+ * last one lit.
+ *
+ * It used to imitate a shell prompt (`$ ~/cyberlearn/…` with a blinking
+ * caret), the old art direction's terminal voice; Bastion writes it as a
+ * plain trail in the interface face. `caret` is still accepted so the pages
+ * that pass it compile, and draws nothing.
  *
  * It was written out on seventeen pages, in style objects or in a stylesheet
  * of the page's own (.pc2-crumb, .pd2-crumb, .r-crumb, .chx-breadcrumb), and
@@ -14,25 +19,27 @@ export type CrumbSegment = string | { label: string; href?: string };
  */
 export function Crumb({
   segments,
-  caret = true,
 }: {
   segments: readonly CrumbSegment[];
+  /** The blinking caret is gone: accepted, so its callers compile, and ignored. */
   caret?: boolean;
 }): React.ReactElement {
   const last = segments.length - 1;
   return (
-    <div className="pg-crumb">
-      <span className="pg-crumb__sigil">$</span>
-      <span>~/</span>
-      <b>cyberlearn</b>
+    <nav className="pg-crumb" aria-label="Fil d'Ariane">
+      <b>CyberLearn</b>
       {segments.map((segment, index) => {
         const item = typeof segment === "string" ? { label: segment } : segment;
         const className = index === last ? "pg-crumb__leaf" : undefined;
         return (
           <React.Fragment key={`${String(index)}-${item.label}`}>
-            <span className="pg-crumb__sep">/</span>
+            <span className="pg-crumb__sep" aria-hidden="true">
+              /
+            </span>
             {item.href === undefined ? (
-              <span className={className}>{item.label}</span>
+              <span className={className} aria-current={index === last ? "page" : undefined}>
+                {item.label}
+              </span>
             ) : (
               <Link href={item.href} className={className ?? "pg-crumb__link"}>
                 {item.label}
@@ -41,7 +48,6 @@ export function Crumb({
           </React.Fragment>
         );
       })}
-      {caret && <span className="pg-crumb__caret" aria-hidden="true" />}
-    </div>
+    </nav>
   );
 }

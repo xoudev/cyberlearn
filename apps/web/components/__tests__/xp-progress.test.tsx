@@ -10,7 +10,7 @@ describe("the XP bar", () => {
     expect(html).toContain("Niv. 8");
     expect(html).toContain("64%");
     expect(html).toContain("width:64.0%");
-    expect(html).toContain("YOU · 320");
+    expect(html).toContain("Toi · 320");
   });
 
   it("is full at the top, never past it", () => {

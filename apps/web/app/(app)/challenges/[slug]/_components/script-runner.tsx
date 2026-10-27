@@ -146,16 +146,34 @@ const BUILTINS = new Set([
   "zip",
 ]);
 
+// The editor's syntax colours are part of the code shown (docs/design §20),
+// the same as the site's code blocks (globals.css, .hljs-*).
 const TOKEN_STYLE: Record<TokenType, React.CSSProperties> = {
   keyword: { color: "var(--color-info)", fontWeight: 600 },
   builtin: { color: "#B14DFF" },
-  string: { color: "var(--cosmetic-accent)" },
-  comment: { color: "var(--color-text-muted)", fontStyle: "italic" },
+  string: { color: "var(--cosmetic-accent-hover)" },
+  comment: { color: "#AAA79F", fontStyle: "italic" },
   number: { color: "var(--color-warning)" },
   decorator: { color: "var(--color-danger)" },
-  operator: { color: "#8B88B8" },
+  operator: { color: "#C2BFB8" },
   text: {},
 };
+
+// The runner's chrome, Bastion: a panel, its bars on the panel, the code on
+// carbon, square, no glow.
+const PANEL = "#121418";
+const SEPARATOR = "1px solid #303137";
+const META = "#AAA79F";
+
+/** A state's mark: a still square in the state's colour. */
+function StateMark({ color }: { color: string }): React.ReactElement {
+  return (
+    <span
+      aria-hidden="true"
+      style={{ display: "inline-block", width: 8, height: 8, flexShrink: 0, background: color }}
+    />
+  );
+}
 
 function tokenizePython(code: string): Token[] {
   const tokens: Token[] = [];
@@ -367,23 +385,25 @@ export function ScriptRunner({
   const isLocked = displayStatus === "LOCKED";
   const attemptsExhausted = attemptsLeft === 0 && userAttempts >= maxAttempts;
 
-  // Status dot color
-  const dotColor = isLoading
-    ? "var(--color-warning)"
+  // The sandbox's state: loading (warning), running (the accent), ready (success).
+  const stateColor = isLoading
+    ? "var(--color-state-warning)"
     : isRunning
-      ? "var(--color-info)"
-      : "var(--cosmetic-accent)";
+      ? "var(--cosmetic-accent-hover)"
+      : "var(--color-state-success)";
 
   const highlighted = useMemo(() => tokenizePython(code), [code]);
 
   return (
     <div
-      className="card card--sunken challenge-runner"
+      className="challenge-runner"
       id="challenge-action"
       style={{
         position: "relative",
         overflow: "hidden",
         marginTop: 4,
+        background: PANEL,
+        border: SEPARATOR,
       }}
     >
       {/* Header */}
@@ -392,48 +412,27 @@ export function ScriptRunner({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
           padding: "12px 16px",
-          borderBottom: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.7)",
+          borderBottom: SEPARATOR,
+          fontFamily: "var(--font-interface), sans-serif",
         }}
       >
         <span
-          className="mono-label"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 10,
-            color: "var(--color-text-secondary)",
+            fontSize: 13,
             fontWeight: 600,
+            color: "#F4F2ED",
           }}
         >
-          {/* Pulsing dot */}
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: dotColor,
-              boxShadow: `0 0 8px color-mix(in srgb, ${dotColor} 70%, transparent)`,
-              display: "inline-block",
-              // SAFETY: inline animation keyword accepted by browsers
-              animation: "pulse 2s ease-in-out infinite",
-            }}
-          />
-          Python Sandbox
+          <StateMark color={stateColor} />
+          Bac à sable Python
         </span>
-        <span
-          className="mono-label mono-label--xs"
-          style={{
-            color: "var(--cosmetic-accent)",
-            fontWeight: 700,
-            padding: "4px 8px",
-            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
-            background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
-          }}
-        >
-          Pyodide · WASM
-        </span>
+        <span style={{ fontSize: 12, color: META }}>Pyodide · WASM</span>
       </div>
 
       {/* Code editor with line numbers */}
@@ -444,7 +443,7 @@ export function ScriptRunner({
           fontFamily: "var(--font-mono)",
           fontSize: 13,
           lineHeight: 1.7,
-          background: "var(--color-bg-elevated)",
+          background: "#0B0C0E",
           overflowX: "auto",
           minHeight: 160,
         }}
@@ -452,12 +451,12 @@ export function ScriptRunner({
         {/* Gutter */}
         <div
           style={{
-            background: "rgba(5,4,26,0.6)",
-            borderRight: "1px solid var(--color-border-subtle)",
+            background: "#0D0E12",
+            borderRight: SEPARATOR,
             padding: "16px 0",
             textAlign: "right",
             userSelect: "none",
-            color: "var(--color-text-muted)",
+            color: META,
             flexShrink: 0,
           }}
         >
@@ -482,7 +481,7 @@ export function ScriptRunner({
               fontSize: 13,
               lineHeight: 1.7,
               background: "transparent",
-              color: "var(--color-text-primary)",
+              color: "#F4F2ED",
               whiteSpace: "pre",
               wordBreak: "normal",
               overflow: "hidden",
@@ -521,7 +520,7 @@ export function ScriptRunner({
               background: "transparent",
               border: "none",
               color: "transparent",
-              caretColor: "var(--color-text-primary)",
+              caretColor: "#F4F2ED",
               fontFamily: "var(--font-mono)",
               fontSize: 13,
               lineHeight: 1.7,
@@ -557,67 +556,40 @@ export function ScriptRunner({
         style={{
           display: "flex",
           alignItems: "stretch",
-          borderTop: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.7)",
+          flexWrap: "wrap",
+          borderTop: SEPARATOR,
+          fontFamily: "var(--font-interface), sans-serif",
         }}
       >
         {/* Run button */}
         <button
-          className="mono-label"
+          className="btn"
           type="button"
           disabled={!canRun}
           onClick={handleRun}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "0 22px",
-            minHeight: 46,
-            fontWeight: 700,
-            background: canRun ? "var(--color-brand-blue)" : "#1A1840",
-            color: canRun ? "#fff" : "var(--color-text-disabled)",
-            border: "none",
-            borderRight: "1px solid rgba(0,36,255,0.4)",
-            cursor: canRun ? "pointer" : "not-allowed",
-            transition: "background 200ms ease",
-            boxShadow: canRun ? "inset 0 0 0 1px rgba(255,255,255,0.15)" : "none",
-          }}
+          style={{ height: "auto", minHeight: 46 }}
         >
-          <span style={{ fontSize: 9 }}>▶</span>
-          {isRunning ? "EXÉCUTION..." : "EXÉCUTER"}
+          <span style={{ fontSize: 10 }}>▶</span>
+          {isRunning ? "Exécution…" : "Exécuter"}
         </button>
 
         {/* Status */}
         <div
-          className="mono-label"
           style={{
             flex: 1,
             display: "flex",
             alignItems: "center",
-            gap: 12,
-            padding: "0 16px",
-            color: dotColor,
+            flexWrap: "wrap",
+            gap: "4px 12px",
+            padding: "8px 16px",
+            fontSize: 13,
+            fontWeight: 600,
+            color: stateColor,
           }}
         >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "currentColor",
-              boxShadow: "0 0 6px currentColor",
-              flexShrink: 0,
-            }}
-          />
-          <span>{isLoading ? "Chargement..." : isRunning ? "Exécution..." : "Prêt"}</span>
-          <span
-            style={{
-              color: "var(--color-text-muted)",
-              marginLeft: "auto",
-              letterSpacing: "0.1em",
-              fontWeight: 500,
-            }}
-          >
+          <StateMark color={stateColor} />
+          <span>{isLoading ? "Chargement…" : isRunning ? "Exécution…" : "Prêt"}</span>
+          <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 400, color: META }}>
             solution.py · {String(lineCount)} ligne{lineCount > 1 ? "s" : ""} · python 3.11
           </span>
         </div>
@@ -626,13 +598,13 @@ export function ScriptRunner({
       {/* Output area */}
       <div
         style={{
-          borderTop: "1px solid var(--color-border-subtle)",
-          background: "var(--color-bg-base)",
+          borderTop: SEPARATOR,
+          background: "#0B0C0E",
           padding: "14px 18px",
           fontFamily: "var(--font-mono)",
-          fontSize: 12.5,
+          fontSize: 13,
           lineHeight: 1.7,
-          color: "var(--color-text-primary)",
+          color: "#F4F2ED",
           minHeight: 70,
         }}
       >
@@ -644,13 +616,13 @@ export function ScriptRunner({
               gap: 8,
               color:
                 line.kind === "good"
-                  ? "var(--cosmetic-accent)"
+                  ? "#F4F2ED"
                   : line.kind === "err"
-                    ? "var(--color-danger)"
-                    : "var(--color-text-secondary)",
+                    ? "var(--color-state-danger)"
+                    : "#C2BFB8",
             }}
           >
-            <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>{">>>"}</span>
+            <span style={{ color: "var(--cosmetic-accent-hover)", flexShrink: 0 }}>{">>>"}</span>
             <span>{line.text}</span>
           </div>
         ))}
@@ -659,62 +631,53 @@ export function ScriptRunner({
       {/* Flag row - conditionally rendered */}
       {isCompleted ? (
         <div
-          className="mono-label mono-label--md"
           style={{
-            borderTop: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
-            background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
+            borderTop: SEPARATOR,
             padding: "16px 20px",
             display: "flex",
             alignItems: "center",
             gap: 12,
-            fontWeight: 700,
-            color: "var(--cosmetic-accent)",
+            fontFamily: "var(--font-interface), sans-serif",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "#F4F2ED",
           }}
         >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "var(--cosmetic-accent)",
-              boxShadow: "0 0 6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-              flexShrink: 0,
-            }}
-          />
-          Challenge résolu · FLAG correct
+          <StateMark color="var(--color-state-success)" />
+          Défi résolu · flag correct
         </div>
       ) : flagNotice !== undefined ? (
         <div
-          className="mono-label"
           style={{
-            borderTop: "1px solid var(--color-border-subtle)",
-            background: "rgba(5,4,26,0.5)",
+            borderTop: SEPARATOR,
             padding: "16px 20px",
-            color: "var(--color-text-muted)",
+            fontFamily: "var(--font-interface), sans-serif",
+            fontSize: 13,
+            color: META,
           }}
         >
           {flagNotice}
         </div>
       ) : isLocked ? (
         <div
-          className="mono-label"
           style={{
-            borderTop: "1px solid var(--color-border-subtle)",
-            background: "rgba(5,4,26,0.5)",
+            borderTop: SEPARATOR,
             padding: "16px 20px",
-            color: "var(--color-text-muted)",
+            fontFamily: "var(--font-interface), sans-serif",
+            fontSize: 13,
+            color: META,
           }}
         >
-          Challenge verrouillé · complète les prérequis
+          Défi verrouillé · complète les prérequis
         </div>
       ) : attemptsExhausted ? (
         <div
-          className="mono-label"
           style={{
-            borderTop: "1px solid rgba(255,77,109,0.2)",
-            background: "rgba(255,77,109,0.04)",
+            borderTop: SEPARATOR,
             padding: "16px 20px",
-            color: "var(--color-danger)",
+            fontFamily: "var(--font-interface), sans-serif",
+            fontSize: 13,
+            color: "var(--color-state-danger)",
           }}
         >
           Plus de tentatives disponibles
@@ -726,31 +689,28 @@ export function ScriptRunner({
             display: "grid",
             gridTemplateColumns: "auto 1fr auto",
             alignItems: "stretch",
-            borderTop: "1px solid var(--color-border-subtle)",
-            background: "rgba(255,77,109,0.04)",
+            borderTop: SEPARATOR,
+            fontFamily: "var(--font-interface), sans-serif",
           }}
         >
           {/* Flag label */}
           <span
-            className="mono-label"
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
               padding: "0 18px",
-              fontWeight: 700,
-              color: "var(--color-danger)",
-              borderRight: "1px solid var(--color-border-subtle)",
-              background: "rgba(255,77,109,0.08)",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#C2BFB8",
+              borderRight: SEPARATOR,
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ fontSize: 13 }}>⚑</span>
-            FLAG
+            Flag
           </span>
 
           {/* Input */}
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", background: "#0B0C0E" }}>
             <input
               name="flag"
               type="text"
@@ -766,8 +726,8 @@ export function ScriptRunner({
                 padding: "14px 16px",
                 fontFamily: "var(--font-mono)",
                 fontSize: 14,
-                color: "var(--color-text-primary)",
-                caretColor: "var(--color-danger)",
+                color: "#F4F2ED",
+                caretColor: "#F4F2ED",
                 width: "100%",
               }}
             />
@@ -775,10 +735,8 @@ export function ScriptRunner({
               <span
                 style={{
                   padding: "0 16px 10px",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "var(--color-danger)",
-                  letterSpacing: "0.06em",
+                  fontSize: 12,
+                  color: "var(--color-state-danger)",
                 }}
               >
                 {flagState.error}
@@ -788,24 +746,12 @@ export function ScriptRunner({
 
           {/* Validate button */}
           <button
-            className="mono-label"
+            className="btn"
             type="submit"
             disabled={flagPending}
-            style={{
-              padding: "0 22px",
-              minHeight: 50,
-              fontWeight: 700,
-              background: flagPending ? "#2A1520" : "var(--color-danger)",
-              color: "#fff",
-              border: "none",
-              borderLeft: "1px solid rgba(255,77,109,0.4)",
-              cursor: flagPending ? "not-allowed" : "pointer",
-              transition: "background 200ms ease",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.15)",
-              whiteSpace: "nowrap",
-            }}
+            style={{ height: "auto", minHeight: 50, whiteSpace: "nowrap" }}
           >
-            {flagPending ? "..." : "Valider →"}
+            {flagPending ? "…" : "Valider →"}
           </button>
         </form>
       )}

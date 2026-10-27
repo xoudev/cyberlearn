@@ -29,28 +29,6 @@ interface Props {
 
 const INITIAL: ChallengeFormState = {};
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "9px 12px",
-  background: "var(--a-surface)",
-  border: "1px solid var(--a-border-2)",
-  color: "var(--a-fg)",
-  minHeight: 44,
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-sans)",
-  fontSize: 12,
-  fontWeight: 700,
-  color: "var(--a-muted)",
-  marginBottom: 6,
-};
-
 function Field({
   label,
   name,
@@ -63,22 +41,13 @@ function Field({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <div>
-      <label htmlFor={name} style={labelStyle}>
+    <div className="a-field">
+      <label htmlFor={name} className="a-label">
         {label}
       </label>
       {children}
       {error !== undefined && (
-        <p
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 12,
-            color: "var(--a-danger)",
-            marginTop: 4,
-          }}
-        >
-          {error}
-        </p>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--a-danger)" }}>{error}</p>
       )}
     </div>
   );
@@ -95,47 +64,30 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
       onReset={keepFormInput}
       style={{ display: "flex", flexDirection: "column", gap: 24 }}
     >
-      {state.error !== undefined && (
-        <div
-          style={{
-            padding: "12px 16px",
-            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid var(--a-danger)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--a-danger)",
-          }}
-        >
-          {state.error}
-        </div>
-      )}
+      {state.error !== undefined && <p className="a-form-error">{state.error}</p>}
 
       {/* Identification */}
       <section>
-        <div
+        <h2
+          className="a-section-title"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-muted)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
             borderBottom: "1px solid var(--a-border)",
           }}
         >
-          {"// IDENTIFICATION"}
-        </div>
+          Identification
+        </h2>
         <div className="a-fields-grid">
           <Field label="Code de référence *" name="refCode" error={fe.refCode}>
-            <input id="refCode" name="refCode" required style={inputStyle} placeholder="CTF-001" />
+            <input id="refCode" name="refCode" required className="a-input" placeholder="CTF-001" />
           </Field>
           <Field label="Slug *" name="slug" error={fe.slug}>
             <input
               id="slug"
               name="slug"
               required
-              style={inputStyle}
+              className="a-input"
               placeholder="sql-injection-bypass"
             />
           </Field>
@@ -144,23 +96,19 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
 
       {/* Content */}
       <section>
-        <div
+        <h2
+          className="a-section-title"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-muted)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
             borderBottom: "1px solid var(--a-border)",
           }}
         >
-          {"// CONTENU"}
-        </div>
+          Contenu
+        </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Field label="Titre *" name="title" error={fe.title}>
-            <input id="title" name="title" required style={inputStyle} maxLength={200} />
+            <input id="title" name="title" required className="a-input" maxLength={200} />
           </Field>
           <Field label="Description courte *" name="description" error={fe.description}>
             <textarea
@@ -169,7 +117,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               required
               rows={3}
               maxLength={1000}
-              style={{ ...inputStyle, resize: "vertical" }}
+              className="a-textarea"
             />
           </Field>
           <Field label="Instructions (Markdown) *" name="instructions" error={fe.instructions}>
@@ -178,7 +126,8 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               name="instructions"
               required
               rows={10}
-              style={{ ...inputStyle, resize: "vertical", fontFamily: "var(--font-mono)" }}
+              className="a-textarea"
+              style={{ fontFamily: "var(--font-mono)" }}
               placeholder="## Objectif&#10;&#10;Trouve le flag caché dans..."
             />
           </Field>
@@ -187,20 +136,16 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
 
       {/* Classification */}
       <section>
-        <div
+        <h2
+          className="a-section-title"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-muted)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
             borderBottom: "1px solid var(--a-border)",
           }}
         >
-          {"// CLASSIFICATION"}
-        </div>
+          Classification
+        </h2>
         <div className="a-fields-grid a-fields-grid--3">
           <Field label="Catégorie *" name="category" error={fe.category}>
             <Select
@@ -249,20 +194,16 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
 
       {/* Parameters */}
       <section>
-        <div
+        <h2
+          className="a-section-title"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--a-muted)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
             borderBottom: "1px solid var(--a-border)",
           }}
         >
-          {"// PARAMÈTRES"}
-        </div>
+          Paramètres
+        </h2>
         <div className="a-fields-grid a-fields-grid--4">
           <Field label="XP Récompense *" name="xpReward" error={fe.xpReward}>
             <input
@@ -273,7 +214,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               min={1}
               max={10000}
               defaultValue={300}
-              style={inputStyle}
+              className="a-input"
             />
           </Field>
           <Field label="Limite (min)" name="timeLimitMin" error={fe.timeLimitMin}>
@@ -284,7 +225,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               min={0}
               max={600}
               defaultValue={0}
-              style={inputStyle}
+              className="a-input"
             />
           </Field>
           <Field label="Max tentatives" name="maxAttempts" error={fe.maxAttempts}>
@@ -295,7 +236,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               min={1}
               max={100}
               defaultValue={3}
-              style={inputStyle}
+              className="a-input"
             />
           </Field>
           <Field label="Ordre d&apos;affichage" name="orderIndex" error={fe.orderIndex}>
@@ -305,7 +246,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               type="number"
               min={0}
               defaultValue={0}
-              style={inputStyle}
+              className="a-input"
             />
           </Field>
         </div>
@@ -321,7 +262,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
               <input
                 id="flag"
                 name="flag"
-                style={inputStyle}
+                className="a-input"
                 placeholder={type === "SCRIPT" ? "FLAG{valeur_calculee}" : "CTF{le_flag_secret}"}
                 autoComplete="off"
               />
@@ -336,12 +277,8 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
                 id="machine"
                 name="machine"
                 rows={10}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                }}
+                className="a-textarea"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
                 placeholder={MACHINE_PLACEHOLDER}
               />
             </Field>
@@ -360,12 +297,8 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
                 id="starterCode"
                 name="starterCode"
                 rows={8}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                }}
+                className="a-textarea"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
                 placeholder={
                   "# Déchiffre le message et trouve le flag\nciphertext = 'Uryyb Jbeyq'\n\n# Ton code ici...\nprint('FLAG{...}')"
                 }
@@ -380,7 +313,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
             <input
               id="resourceUrl"
               name="resourceUrl"
-              style={inputStyle}
+              className="a-input"
               placeholder="http://10.0.0.1:8080 ou nc ctf.example.com 1337"
             />
           </Field>
@@ -388,7 +321,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
             <input
               id="attachmentUrl"
               name="attachmentUrl"
-              style={inputStyle}
+              className="a-input"
               placeholder="https://cdn.example.com/challenge.zip"
             />
           </Field>
@@ -416,43 +349,10 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
 
       {/* Submit */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, paddingTop: 8 }}>
-        <a
-          href="/challenges"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "9px 20px",
-            border: "1px solid var(--a-border-2)",
-            color: "var(--a-muted)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            fontSize: 11,
-            letterSpacing: "0.12em",
-            textDecoration: "none",
-            textTransform: "uppercase",
-          }}
-        >
+        <a href="/challenges" className="a-btn a-btn--ghost">
           Annuler
         </a>
-        <button
-          type="submit"
-          disabled={pending}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "9px 24px",
-            minHeight: 44,
-            background: "var(--a-accent)",
-            color: "var(--a-ink)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            border: "none",
-            cursor: pending ? "not-allowed" : "pointer",
-          }}
-        >
+        <button type="submit" disabled={pending} className="a-btn a-btn--primary">
           {pending ? "Création..." : "Créer le challenge"}
         </button>
       </div>

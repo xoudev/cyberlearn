@@ -63,21 +63,16 @@ export function CatalogFilterSelect({
           });
         }}
         style={{ width: "100%", minWidth: 0 }}
+        // The field itself is the shared Select's (Bastion field, 44px). A
+        // filter that narrows the list is outlined in the equipped accent,
+        // never in a hard-coded copper that would ignore it.
         triggerStyle={{
-          height: 46,
           padding: "0 12px",
-          fontFamily: "var(--font-interface), sans-serif",
           fontSize: 13,
-          fontWeight: 400,
-          letterSpacing: 0,
-          textTransform: "none",
-          background: "#0d0e12",
-          border: "1px solid #4e4e52",
-          color: "#c2bfb8",
           ...(active
             ? {
-                border: "1px solid #ff6b2b",
-                color: "#ff864f",
+                border: "1px solid var(--cosmetic-accent)",
+                color: "var(--cosmetic-accent-hover)",
               }
             : {}),
         }}

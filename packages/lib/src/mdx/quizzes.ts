@@ -78,13 +78,80 @@ export function readQuizElements(mdx: string): RawQuiz[] {
   return found;
 }
 
-/** The well-formed quizzes of a lesson: what can be answered and scored. */
+/**
+ * The quizzes last read, by the exact text they were read from.
+ *
+ * Parsing a lesson is the dearest step of scoring an answer: 60 to 130 ms for
+ * a lesson of 15 to 40 kB, measured locally, against a few milliseconds for
+ * each database read around it. It used to be done again for every answer,
+ * and for every page that reads a lesson's quizzes (the lesson page cuts it
+ * into sections and reads each one). The result depends on the text alone,
+ * so it is kept, keyed by that text: a lesson changed since is another text,
+ * hence another key, and is read afresh. The answer key still comes from the
+ * lesson as the server stores it now, never from anything a client sent.
+ *
+ * Least recently used first out, within a count and a total length: a lesson
+ * and its sections take one entry each, and the longest lesson is 160 kB.
+ */
+const QUIZ_CACHE_MAX_ENTRIES = 256;
+const QUIZ_CACHE_MAX_CHARS = 4_000_000;
+const quizCache = new Map<string, readonly LessonQuiz[]>();
+let quizCacheChars = 0;
+
+function rememberQuizzes(mdx: string, quizzes: readonly LessonQuiz[]): void {
+  // A text longer than the whole budget would only evict everything else.
+  if (mdx.length > QUIZ_CACHE_MAX_CHARS) return;
+  quizCache.set(mdx, quizzes);
+  quizCacheChars += mdx.length;
+  // A Map iterates in insertion order: its first key is the one used least recently.
+  for (const oldest of quizCache.keys()) {
+    if (quizCache.size <= QUIZ_CACHE_MAX_ENTRIES && quizCacheChars <= QUIZ_CACHE_MAX_CHARS) break;
+    quizCache.delete(oldest);
+    quizCacheChars -= oldest.length;
+  }
+}
+
+/** What the cache holds, for its tests: entries, and the characters of their keys. */
+export function quizCacheStats(): { entries: number; chars: number } {
+  return { entries: quizCache.size, chars: quizCacheChars };
+}
+
+/** Empties the cache, for tests that time or count the parse. */
+export function clearQuizCache(): void {
+  quizCache.clear();
+  quizCacheChars = 0;
+}
+
+/**
+ * The well-formed quizzes of a lesson: what can be answered and scored.
+ *
+ * Read once per text (see quizCache above). Each call gets its own copies, so
+ * a caller that changes what it was given changes nothing for the next one.
+ */
 export function extractLessonQuizzes(mdx: string): LessonQuiz[] {
+  let quizzes = quizCache.get(mdx);
+  if (quizzes === undefined) {
+    const parsed = parseLessonQuizzes(mdx);
+    // What does not parse has no quizzes, and is not kept: a draft being
+    // written, or no text at all.
+    if (parsed === null) return [];
+    quizzes = parsed;
+    rememberQuizzes(mdx, quizzes);
+  } else {
+    // Used again: to the back of the eviction order.
+    quizCache.delete(mdx);
+    quizCache.set(mdx, quizzes);
+  }
+  return quizzes.map((quiz) => ({ ...quiz, options: [...quiz.options] }));
+}
+
+/** The quizzes of a text, or null when it does not parse. */
+function parseLessonQuizzes(mdx: string): LessonQuiz[] | null {
   let raw: RawQuiz[];
   try {
     raw = readQuizElements(mdx);
   } catch {
-    return [];
+    return null;
   }
   const quizzes: LessonQuiz[] = [];
   const seen = new Set<string>();

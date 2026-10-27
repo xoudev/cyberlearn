@@ -58,7 +58,7 @@ function entry(overrides: Partial<AuditRow> = {}): AuditRow {
       reportsClosed: 2,
     },
     createdAt: DAY,
-    actor: { username: "root", displayName: "Root", email: "root@example.test" },
+    actor: { username: "root", displayName: "Root", email: "root@example.test", avatarUrl: null },
     ...overrides,
   };
 }

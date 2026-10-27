@@ -254,7 +254,6 @@ export function LandingClient({
           CyberLearn
         </Link>
         <nav aria-label="Liens utiles">
-          <Link href="/download">Application</Link>
           <Link href="/verify">Vérifier un certificat</Link>
           <Link href="/contact">Contact</Link>
           <Link href="/privacy">Confidentialité</Link>

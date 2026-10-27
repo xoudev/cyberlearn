@@ -19,7 +19,7 @@
   --color-danger: var(--color-state-danger);
   --a-chalk: var(--color-paper);
   --a-ink: var(--color-ink);
-  --a-accent-hover: var(--color-brand-hover);
+  --a-accent-hover: var(--color-copper-hover);
   --a-bg: var(--color-bg-base);
   --a-surface: var(--color-bg-elevated);
   --a-surface-2: var(--color-bg-sunken);
@@ -37,13 +37,15 @@
   --a-faint: var(--color-text-disabled);
   /* A step above --a-faint, for the short rule before a sidebar section label. */
   --a-faint-2: var(--color-text-faint);
-  --a-accent: var(--color-brand-turquoise);
-  --a-blue: var(--color-brand-blue);
+  /* The copper itself, not the site's accent aliases: those follow the accent a
+     learner equips (--cosmetic-accent), and the console, which has none, sets
+     --cosmetic-accent from this one below. Read through the alias, the two
+     pointed at each other and the copper resolved to nothing. */
+  --a-accent: var(--color-copper);
   --a-info: var(--color-info);
   --a-success: var(--color-success);
   --a-danger: var(--color-danger);
   --a-warning: var(--color-warning);
-  --a-purple: var(--color-rarity-epic);
   /* A badge's rarity wears the site's own ramp, not a tone: Rare is the site's
      blue, which the info tone is not. */
   --a-rarity-common: var(--color-rarity-common);
@@ -55,14 +57,25 @@
   --a-category-dev: var(--color-category-dev);
   --a-category-network: var(--color-category-network);
 
-  /* The shared <Select>: its defaults are the web app's palette, so the two
-     values that differ here are named rather than the whole scale restated.
-     They sit on :root because the open list is portalled to <body> and
-     inherits from there, not from the field. */
+  /* The shared <Select> and <MultiSelect>, on the console's scale: the field
+     on the sunken surface with the field outline, the list on the panel with
+     the raised surface under the highlighted row, the interface face. They sit
+     on :root because the open list is portalled to <body> and inherits from
+     there, not from the field. Spelled out in full: the package's fallbacks
+     once included a navy row and a monospace face. */
+  --cl-select-bg: var(--a-surface-2);
+  --cl-select-fg: var(--a-fg);
+  --cl-select-fg-muted: var(--a-muted);
   --cl-select-border: var(--a-border-2);
   --cl-select-accent: var(--a-accent);
+  --cl-select-panel-bg: var(--a-surface);
+  --cl-select-panel-border: var(--a-border-2);
+  --cl-select-option-fg: var(--a-fg-2);
+  --cl-select-option-active-bg: var(--a-overlay);
+  --cl-select-option-disabled-fg: var(--a-faint);
   --cl-select-font: var(--font-sans);
   --cosmetic-accent: var(--a-accent);
+  --cosmetic-accent-hover: var(--a-accent-hover);
 }
 
 /* ─── Focus & interaction defaults ─────────────────────────── */
@@ -188,6 +201,19 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface-2);
+  transition: border-color 140ms ease;
+}
+.a-topbar-account:hover {
+  border-color: var(--a-border-2);
+}
+.a-topbar-account .admin-navbar-handle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--a-fg-2);
 }
 @media (min-width: 768px) {
   .a-topbar-account {
@@ -250,12 +276,10 @@
   border-top: 1px solid var(--a-border-2);
 }
 .a-cmd-group-label {
-  padding: 10px 14px 6px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  padding: 12px 14px 6px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--a-muted);
 }
 .a-cmd-option {
@@ -263,6 +287,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 44px;
   padding: 9px 14px;
   border-bottom: 1px solid var(--a-border);
   color: var(--a-fg-2);
@@ -296,10 +321,8 @@
 }
 .a-cmd-hint {
   flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
   color: var(--a-muted);
 }
 .a-cmd-hint[data-kind="action"] {
@@ -415,6 +438,87 @@
   border-color: color-mix(in srgb, var(--a-danger) 45%, transparent);
   background: color-mix(in srgb, var(--a-danger) 10%, transparent);
   color: var(--a-danger);
+}
+
+/* "Gestion", "Système": the name of a group of entries, in the interface face
+   and the case it is written in, after a short rule. */
+.a-side-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--a-muted);
+}
+.a-side-section-rule {
+  width: 8px;
+  height: 1px;
+  flex-shrink: 0;
+  background: var(--a-faint-2);
+}
+
+/* Who is signed in, at the foot of the sidebar: the picture, the handle and
+   the address, and the mark that says this is an administrator's session. */
+.a-sidebar-me {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 52px;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  background: var(--a-surface);
+  border: 1px solid var(--a-border);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 140ms ease;
+}
+.a-sidebar-me:hover {
+  border-color: var(--a-border-2);
+}
+.a-sidebar-me[aria-current="page"] {
+  border-color: var(--a-accent);
+}
+.a-sidebar-me-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.a-sidebar-me-handle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--a-fg);
+}
+.a-sidebar-me-email {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  color: var(--a-muted);
+}
+.a-sidebar-account .admin-signout {
+  width: 100%;
+}
+
+/* The ADMIN mark of the account chips: the copper names the space the console
+   is, as on the bar. */
+.a-admin-mark {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--a-accent) 45%, transparent);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--a-accent);
 }
 
 /* ─── Page scaffolding ─────────────────────────────────────── */
@@ -557,8 +661,8 @@
     border-color 140ms ease;
 }
 .a-btn--primary {
-  background: var(--a-blue);
-  border-color: var(--a-blue);
+  background: var(--a-accent);
+  border-color: var(--a-accent);
   color: var(--a-ink);
 }
 .a-btn--primary:hover {
@@ -762,8 +866,71 @@
 .a-tag[data-tone="danger"] {
   --tag: var(--a-danger);
 }
-.a-tag[data-tone="purple"] {
-  --tag: var(--a-purple);
+
+/* ─── Avatars ──────────────────────────────────────────────── */
+
+/* Somebody's picture (UserAvatar in admin-ui.tsx): a square, the initials
+   underneath and the picture over them, so a picture that fails to load
+   leaves the initials. --avatar-frame is the role's colour where a list shows
+   one. */
+.a-avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--avatar-size, 28px);
+  height: var(--avatar-size, 28px);
+  overflow: hidden;
+  background: var(--a-overlay);
+  border: 1px solid var(--avatar-frame, var(--a-border-2));
+  color: var(--a-fg-2);
+}
+.a-avatar-initials {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: calc(var(--avatar-size, 28px) * 0.44);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.a-avatar-img,
+.a-avatar-glyph {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.a-avatar-img {
+  object-fit: cover;
+}
+.a-avatar-glyph {
+  padding: 16%;
+  background: var(--a-surface-2);
+  color: var(--a-accent);
+}
+
+/* A person in a cell or a line: the picture, then the name and what tells
+   two namesakes apart. */
+.a-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.a-person-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.a-person-name {
+  color: var(--a-fg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.a-person-meta {
+  color: var(--a-muted);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
 }
 
 /* ─── Data grid (toolbar + table + pagination) ─────────────── */
@@ -1033,7 +1200,6 @@
 }
 .a-bulk-count {
   font-weight: 700;
-  letter-spacing: 0.08em;
   color: var(--a-accent);
 }
 .a-bulk-actions {
@@ -1052,9 +1218,9 @@
   padding: 0;
   cursor: pointer;
   font: inherit;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 44px;
   color: var(--a-muted);
 }
 .a-bulk-clear:hover,
@@ -1415,8 +1581,6 @@
 .a-label-optional {
   color: var(--a-muted);
   font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0.04em;
 }
 
 .a-field-hint {
@@ -1498,10 +1662,8 @@
   color: var(--a-muted);
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 600;
   transition: color 140ms ease;
 }
 .a-input-reveal:hover,
@@ -1603,6 +1765,30 @@
   color: var(--a-muted);
 }
 
+/* The heading of a part of a form or a panel ("Identité", "Critères"): the
+   display face, in capitals like the other structural titles. The old console
+   wrote these in 9px spaced-out monospace, which is the face of code and ids. */
+.a-section-title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--a-fg-2);
+}
+
+/* A small label over a value or a group of controls, in the interface face and
+   the case it is written in. */
+.a-meta-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--a-muted);
+}
+
 /* A save next to the destructive twin of the same row. Wraps rather than
    squeezing, so the archive button never ends up half off a narrow screen. */
 .a-row-actions {
@@ -1629,6 +1815,7 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  min-height: 44px;
   padding: 11px 14px;
   cursor: pointer;
   list-style: none;
@@ -2044,11 +2231,16 @@
   gap: 10px;
   flex-wrap: wrap;
 }
-.a-report-ref,
-.a-report-small {
+.a-report-ref {
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  color: var(--a-muted);
+  overflow-wrap: anywhere;
+}
+/* The line under a report: when, who and why, in words. */
+.a-report-small {
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
   overflow-wrap: anywhere;
 }
@@ -2078,8 +2270,11 @@
 /* ─── Lesson studio ────────────────────────────────────────── */
 
 /* The bar stays under the top bar (56px including its brand line) while the page
-   scrolls; the body below it takes what is left of the window, so the
-   editor and its preview are seen whole once the header is scrolled by. */
+   scrolls. Under it, the lesson's fields and its versions, folded, then the
+   editor, which takes what is left of the window: the editor and its preview
+   are seen whole once the header is scrolled by. The fields are not a column
+   beside the editor any more: with the editor's own split that made three,
+   and on a 1280px laptop none of them was wide enough to write in. */
 .a-studio {
   display: grid;
   gap: 12px;
@@ -2098,9 +2293,9 @@
   background: var(--a-surface);
 }
 .a-studio-state {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
   color: var(--a-accent);
 }
 .a-studio-state[data-state="pending"],
@@ -2113,8 +2308,8 @@
   color: var(--a-danger);
 }
 .a-studio-version {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
 }
 .a-studio-actions {
@@ -2125,9 +2320,9 @@
   margin-left: auto;
 }
 .a-studio-shortcut {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--a-faint-2);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--a-muted);
 }
 .a-studio-alert {
   display: flex;
@@ -2146,38 +2341,52 @@
 }
 .a-studio-body {
   display: grid;
-  gap: 16px;
-}
-.a-studio-rail {
-  display: grid;
-  align-content: start;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
+}
+.a-studio-fold > .a-disclosure-head {
+  min-height: 44px;
+}
+.a-studio-fold > .a-disclosure-head > .a-disclosure-title {
+  font-size: 14px;
+}
+.a-studio-fold > .a-disclosure-head > .a-disclosure-meta {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.a-studio-fold > .a-disclosure-body {
+  padding: 16px 14px 18px;
+}
+/* The fields as a grid across the page: one column on a phone, two from
+   560px of page, four from 900px, where category, difficulty, duration and
+   reward share a line and the longer ones take two columns or the row. */
+.a-studio-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px 20px;
+  align-items: start;
+}
+@container admin-page (min-width: 560px) {
+  .a-studio-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .a-studio-span-2,
+  .a-studio-span-full {
+    grid-column: 1 / -1;
+  }
+}
+@container admin-page (min-width: 900px) {
+  .a-studio-fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .a-studio-span-2 {
+    grid-column: span 2;
+  }
 }
 .a-studio-editor {
-  height: 78vh;
-  min-height: 480px;
+  height: calc(100dvh - 140px);
+  min-height: 560px;
   min-width: 0;
-}
-@media (min-width: 1100px) {
-  .a-studio-body {
-    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
-    height: calc(100dvh - 150px);
-    min-height: 560px;
-  }
-  .a-studio-rail {
-    overflow-y: auto;
-    padding-right: 6px;
-  }
-  .a-studio-editor {
-    height: auto;
-    min-height: 0;
-  }
-}
-.a-studio-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
 }
 .a-studio-code {
   display: flex;
@@ -2185,7 +2394,7 @@
   justify-content: space-between;
   gap: 10px;
   min-height: 46px;
-  padding: 6px 6px 6px 13px;
+  padding: 0 0 0 13px;
   border: 1px solid var(--a-border-2);
   background: var(--a-surface-2);
   overflow-wrap: anywhere;
@@ -2193,23 +2402,15 @@
 .a-studio-url {
   overflow-wrap: anywhere;
 }
-.a-studio-rail .a-field-hint b {
+.a-studio-fields .a-field-hint b {
   color: var(--a-accent);
 }
 .a-studio-field-error {
   color: var(--a-danger);
 }
-.a-studio-versions {
-  display: grid;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--a-border);
-}
-.a-studio-versions h2 {
-  margin: 0;
-}
 .a-studio-version-list {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -2218,8 +2419,9 @@
 .a-studio-version-list li {
   display: grid;
   gap: 4px;
+  align-content: start;
   justify-items: start;
-  padding: 9px 11px;
+  padding: 10px 12px;
   border: 1px solid var(--a-border);
   background: var(--a-surface-2);
 }
@@ -2230,18 +2432,112 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
 }
 .a-studio-version-head b {
+  font-family: var(--font-mono);
   color: var(--a-fg);
 }
 .a-studio-version-title {
   font-size: 13px;
   color: var(--a-fg-2);
   overflow-wrap: anywhere;
+}
+
+/* The lesson creation form (/lessons/new): its fields in the same grid as the
+   studio's, above the editor; a field marked with the creation form's own
+   prefix ("/" before the slug) or unit ("min", "XP") keeps them in one box. */
+.a-lesson-form {
+  display: grid;
+  gap: 22px;
+}
+.a-lesson-affix {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--a-border-2);
+  background: var(--a-surface-2);
+  transition: border-color 140ms ease;
+}
+.a-lesson-affix:focus-within {
+  border-color: var(--a-accent);
+}
+.a-lesson-affix > .a-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+}
+.a-lesson-affix > span {
+  display: grid;
+  place-items: center;
+  padding: 0 14px;
+  border-color: var(--a-border-2);
+  border-style: solid;
+  border-width: 0;
+  background: var(--a-bg);
+  color: var(--a-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.a-lesson-affix > span:first-child {
+  border-right-width: 1px;
+}
+.a-lesson-affix > span:last-child {
+  border-left-width: 1px;
+}
+.a-lesson-publish {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: 44px;
+  padding: 16px 18px;
+  border: 1px solid var(--a-border-2);
+  background: var(--a-surface);
+  cursor: pointer;
+}
+.a-lesson-publish input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--a-accent);
+  cursor: pointer;
+}
+.a-lesson-publish-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 4px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--a-fg);
+}
+.a-lesson-publish-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--a-accent);
+}
+.a-lesson-publish-live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: var(--a-accent);
+}
+.a-lesson-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-top: 24px;
+  border-top: 1px solid var(--a-border-2);
 }
 
 /* ─── E-mail preview (/lab) ────────────────────────────────── */

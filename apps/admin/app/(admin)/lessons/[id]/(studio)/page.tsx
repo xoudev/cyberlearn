@@ -17,6 +17,7 @@ import { LESSON_CRUMBS } from "../../_components/lesson-headers";
 import { LessonPlacement, type LessonMembership } from "../_components/lesson-placement";
 import { LessonStudio, type StudioVersion } from "../_components/lesson-studio";
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 import { STUDIO_MESSAGES } from "@/lib/lesson-studio";
@@ -69,7 +70,7 @@ export default async function LessonStudioPage({
     ),
   ];
 
-  const [coverSources, ahead, pathOptions, lessonOptions, codes] = await Promise.all([
+  const [coverSources, ahead, pathOptions, lessonOptions, codes, raterAvatars] = await Promise.all([
     Promise.all(covers.map((cover) => resolveLessonCoverSrc(cover))),
     // The lessons before it in each path. How many gives its place, rather
     // than the stored position: a path the console saved before it numbered
@@ -81,6 +82,7 @@ export default async function LessonStudioPage({
     pathRepository.findCatalogueOptions(pathIds),
     lessonRepository.findPrerequisiteOptions({ except: id, keep: prerequisiteIds }),
     lessonRepository.findLessonRefCodes(),
+    resolveAvatarSrcs(ratings.map((r) => r.user?.avatarUrl)),
   ]);
 
   const coverPreviews: Record<string, string> = {};
@@ -196,6 +198,7 @@ export default async function LessonStudioPage({
         />
         <RatingsCard
           ratings={ratings}
+          avatarSrcs={raterAvatars}
           subject="cette leçon"
           avg={lesson.avgRating}
           count={lesson.ratingsCount}

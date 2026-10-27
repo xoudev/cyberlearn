@@ -1,7 +1,7 @@
 @import "../../../../components/learning-workspace.css";
 
 .dfx {
-  --dfx-accent: #ff864f;
+  --dfx-accent: var(--cosmetic-accent-hover);
 }
 .dfx-tally {
   list-style: none;
@@ -37,7 +37,7 @@
   gap: 14px;
 }
 .dfx-steps__n {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font:
     500 24px var(--font-display),
     sans-serif;
@@ -57,12 +57,12 @@
   flex-wrap: wrap;
   gap: 12px;
   margin: 0 0 24px;
-  font-size: 11px;
+  font-size: 12px;
   color: #aaa79f;
 }
 .dfx-eyebrow b {
   font-weight: 500;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .dfx-tags {
   display: flex;
@@ -101,14 +101,14 @@
   color: #f4f2ed;
 }
 .dfx-term__p {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   margin-right: 8px;
 }
 .dfx-term__caret {
   display: inline-block;
   width: 7px;
   height: 12px;
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
   margin-left: 6px;
 }
 .dfx-redacted {
@@ -130,14 +130,14 @@
   min-width: 0;
   background: #eae7df;
   color: #141518;
-  border-top: 4px solid #ff6b2b;
+  border-top: 4px solid var(--cosmetic-accent);
   padding: 32px;
 }
 .dfx-week__main .dfx-eyebrow {
   color: #55524d;
 }
 .dfx-week__main .dfx-eyebrow b {
-  color: #923200;
+  color: var(--cosmetic-accent-ink);
 }
 .dfx-week__title {
   margin: 0 0 20px;
@@ -173,8 +173,10 @@
   border: 1px solid #141518;
   gap: 24px;
 }
-.dfx .dfx-week__cta .btn:hover {
+.dfx .dfx-week__cta .btn:hover:not(:disabled):not([aria-disabled="true"]) {
   background: #35373d;
+  border-color: #35373d;
+  color: #eae7df;
 }
 .dfx-week__side {
   background: #191c22;
@@ -189,7 +191,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  font-size: 11px;
+  font-size: 12px;
   color: #c2bfb8;
 }
 .dfx-week__side .dfx-term,
@@ -204,7 +206,7 @@
 }
 .dfx-facts {
   margin: 0;
-  border-top: 1px solid #44454a;
+  border-top: 1px solid #303137;
   padding-top: 12px;
 }
 .dfx-facts div {
@@ -234,7 +236,7 @@
   justify-content: space-between;
   gap: 16px 24px;
   margin-bottom: 22px;
-  border-bottom: 1px solid #44454a;
+  border-bottom: 1px solid #303137;
 }
 .dfx-list-head h2 {
   margin: 0 0 14px;
@@ -253,8 +255,8 @@
   text-transform: none;
 }
 .dfx .tabs__tab[data-active="true"] {
-  color: #ff864f;
-  border-bottom-color: #ff864f;
+  color: var(--cosmetic-accent-hover);
+  border-bottom-color: var(--cosmetic-accent-hover);
   box-shadow: none;
 }
 .dfx .tabs__count {
@@ -272,12 +274,12 @@
   flex-direction: column;
   min-width: 0;
   background: #121418;
-  border: 1px solid #44454a;
+  border: 1px solid #303137;
   transition: border-color 180ms;
 }
 .dfx-card:focus-within,
 .dfx-card:hover {
-  border-color: #ff864f;
+  border-color: var(--cosmetic-accent-hover);
 }
 .dfx-card__peek {
   display: flex;
@@ -295,7 +297,7 @@
   align-items: center;
 }
 .dfx-card__cat {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   font-size: 12px;
 }
 .dfx-card__evidence {
@@ -320,7 +322,7 @@
   margin: 0;
   list-style: none;
   font:
-    11px / 1.7 var(--font-mono),
+    12px / 1.7 var(--font-mono),
     monospace;
   color: #aaa79f;
 }
@@ -332,9 +334,17 @@
 .dfx-card__file {
   color: #aaa79f;
   font:
-    11px / 1.6 var(--font-mono),
+    12px / 1.6 var(--font-mono),
     monospace;
   margin: 0;
+  overflow-wrap: anywhere;
+}
+/* What the challenge supplies, said in words when it has no file to show. */
+.dfx-card__supplied {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #aaa79f;
   overflow-wrap: anywhere;
 }
 .dfx-card__body {
@@ -347,7 +357,7 @@
   margin: 0 0 14px;
   color: #aaa79f;
   font:
-    10px var(--font-mono),
+    12px var(--font-mono),
     monospace;
 }
 .dfx-card__title {
@@ -381,9 +391,9 @@
   justify-content: space-between;
   gap: 20px;
   min-height: 52px;
-  border-top: 1px solid #44454a;
+  border-top: 1px solid #303137;
   padding: 16px 24px;
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
   text-decoration: none;
   font-size: 12px;
   margin: 0;
@@ -403,7 +413,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: 12px;
   color: #c2bfb8;
 }
 .dfx-badge svg {
@@ -417,7 +427,7 @@
   color: #62d4a1;
 }
 .dfx-badge[data-status="IN_PROGRESS"] {
-  color: #ff864f;
+  color: var(--cosmetic-accent-hover);
 }
 .dfx-card--next {
   grid-column: 1 / -1;
@@ -428,7 +438,7 @@
   padding: 28px;
   background: transparent;
   border: 0;
-  border-top: 1px solid #44454a;
+  border-top: 1px solid #303137;
 }
 .dfx-card--next .dfx-eyebrow {
   grid-column: 1 / -1;

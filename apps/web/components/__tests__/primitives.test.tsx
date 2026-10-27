@@ -6,12 +6,14 @@ import { EmptyState } from "../empty-state";
 import { StatTile } from "../stat-tile";
 
 describe("the breadcrumb", () => {
-  it("writes the prompt, the segments and lights the last one", () => {
+  it("writes the trail, without the old shell prompt, and lights the last segment", () => {
     const html = renderToStaticMarkup(<Crumb segments={["parcours"]} />);
     expect(html).toContain('class="pg-crumb"');
-    expect(html).toContain("<b>cyberlearn</b>");
-    expect(html).toContain('<span class="pg-crumb__leaf">parcours</span>');
-    expect(html).toContain("pg-crumb__caret");
+    expect(html).toContain('aria-label="Fil d&#x27;Ariane"');
+    expect(html).toContain("<b>CyberLearn</b>");
+    expect(html).toContain('<span class="pg-crumb__leaf" aria-current="page">parcours</span>');
+    expect(html).not.toContain("pg-crumb__caret");
+    expect(html).not.toContain("~/");
   });
 
   it("links a segment that has an address, and can do without the caret", () => {
@@ -20,7 +22,7 @@ describe("the breadcrumb", () => {
     );
     expect(html).toContain('href="/paths"');
     expect(html).toContain("pg-crumb__link");
-    expect(html).toContain('<span class="pg-crumb__leaf">guide</span>');
+    expect(html).toContain('<span class="pg-crumb__leaf" aria-current="page">guide</span>');
     expect(html).not.toContain("pg-crumb__caret");
     expect(html.match(/pg-crumb__sep/g)?.length).toBe(2);
   });

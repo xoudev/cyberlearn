@@ -1,0 +1,19 @@
+/* The navbar's "Révisions du jour" (revisions-button.tsx). Its size, colours
+   and hover are the other icon buttons' (.chrome-actions in app-chrome.css);
+   this only places the mark that says the day's recall waits. */
+.navbar-revisions {
+  position: relative;
+  cursor: pointer;
+}
+.navbar-revisions__mark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  background: var(--cosmetic-accent);
+  /* A ring of the bar's carbon, so the mark reads apart from the glyph. */
+  box-shadow: 0 0 0 2px #0b0c0e;
+  pointer-events: none;
+}

@@ -12,6 +12,16 @@ import { reportQuizAction } from "../_actions/report-quiz";
  * is unmounted: an answer kept in the component was forgotten on the way to
  * the next section and back, and the question asked again. The page passes
  * the answers already on record, so a reload shows them too.
+ *
+ * An answer shows at once. The page already holds the answer key (the Quiz's
+ * `correct` prop), so the verdict is drawn from it while the server records
+ * the answer, and the server's record replaces it when it comes back: the
+ * learner used to wait for the whole round trip, a second or more, staring at
+ * "Enregistrement…". The record still wins: if the server kept an earlier
+ * answer (a second tab), that one is shown; if it refused, the answer is taken
+ * back and the reason said. Until it is confirmed an answer is `unconfirmed`,
+ * and nothing that counts (the section's gate, the lesson's completion) is
+ * moved by it.
  */
 
 export interface QuizAnswer {
@@ -22,8 +32,20 @@ export interface QuizAnswer {
 export type SubmitResult = { ok: true; answer: QuizAnswer } | { ok: false; error: string };
 
 export interface LessonQuizContextValue {
+  /** Every answer shown: on record, or sent and not confirmed yet. */
   answers: Readonly<Record<string, QuizAnswer>>;
-  submit: (quizId: string, selected: number) => Promise<SubmitResult>;
+  /** The answers sent and not confirmed by the server yet. */
+  unconfirmed: ReadonlySet<string>;
+  /**
+   * The questions answered, and confirmed, since this page opened: what the
+   * learner did here, as opposed to what the record held already.
+   */
+  answeredNow: ReadonlySet<string>;
+  /**
+   * Sends an answer. `expected` is the verdict the page draws until the
+   * server's comes back: whether `selected` is the option the quiz names right.
+   */
+  submit: (quizId: string, selected: number, expected: boolean) => Promise<SubmitResult>;
   /**
    * The written indices of a quiz's options, in the order this learner sees
    * them. The same on every visit and in the mobile app; see quizOptionOrder.
@@ -43,6 +65,19 @@ export function useLessonQuiz(): LessonQuizContextValue | null {
   return useContext(LessonQuizContext);
 }
 
+const NOT_SAVED = "Ta réponse n'a pas pu être enregistrée. Réessaie.";
+
+function withId(set: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  return set.has(id) ? set : new Set(set).add(id);
+}
+
+function withoutId(set: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  if (!set.has(id)) return set;
+  const next = new Set(set);
+  next.delete(id);
+  return next;
+}
+
 export function LessonQuizProvider({
   lessonId,
   userId,
@@ -59,20 +94,46 @@ export function LessonQuizProvider({
   children: React.ReactNode;
 }): React.ReactElement {
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>(initialAnswers);
+  const [unconfirmed, setUnconfirmed] = useState<ReadonlySet<string>>(() => new Set());
+  const [answeredNow, setAnsweredNow] = useState<ReadonlySet<string>>(() => new Set());
 
   const submit = useCallback(
-    async (quizId: string, selected: number): Promise<SubmitResult> => {
+    async (quizId: string, selected: number, expected: boolean): Promise<SubmitResult> => {
+      // Shown now, as the page scores it. An answer on record is never
+      // replaced: the quiz does not offer to answer twice, and a click that
+      // got through anyway is the server's to settle.
+      setAnswers((prev) =>
+        prev[quizId] ? prev : { ...prev, [quizId]: { selected, correct: expected } },
+      );
+      setUnconfirmed((prev) => withId(prev, quizId));
+
+      const takeBack = (): void => {
+        setAnswers((prev) =>
+          quizId in prev
+            ? Object.fromEntries(Object.entries(prev).filter(([id]) => id !== quizId))
+            : prev,
+        );
+        setUnconfirmed((prev) => withoutId(prev, quizId));
+      };
+
+      let result: Awaited<ReturnType<typeof answerQuiz>>;
       try {
-        const result = await answerQuiz(lessonId, quizId, selected);
-        if (!result.ok) return { ok: false, error: result.error };
-        // The server's answer, which is an earlier one if there was: a second
-        // tab cannot make this page show a different verdict than the record.
-        const answer = { selected: result.selected, correct: result.correct };
-        setAnswers((prev) => ({ ...prev, [quizId]: answer }));
-        return { ok: true, answer };
+        result = await answerQuiz(lessonId, quizId, selected);
       } catch {
-        return { ok: false, error: "Ta réponse n'a pas pu être enregistrée. Réessaie." };
+        takeBack();
+        return { ok: false, error: NOT_SAVED };
       }
+      if (!result.ok) {
+        takeBack();
+        return { ok: false, error: result.error };
+      }
+      // The server's answer, which is an earlier one if there was: a second
+      // tab cannot make this page show a different verdict than the record.
+      const answer = { selected: result.selected, correct: result.correct };
+      setAnswers((prev) => ({ ...prev, [quizId]: answer }));
+      setUnconfirmed((prev) => withoutId(prev, quizId));
+      setAnsweredNow((prev) => withId(prev, quizId));
+      return { ok: true, answer };
     },
     [lessonId],
   );
@@ -99,8 +160,8 @@ export function LessonQuizProvider({
   );
 
   const value = useMemo(
-    () => ({ answers, submit, optionOrder, reported, report }),
-    [answers, submit, optionOrder, reported, report],
+    () => ({ answers, unconfirmed, answeredNow, submit, optionOrder, reported, report }),
+    [answers, unconfirmed, answeredNow, submit, optionOrder, reported, report],
   );
   return <LessonQuizContext.Provider value={value}>{children}</LessonQuizContext.Provider>;
 }

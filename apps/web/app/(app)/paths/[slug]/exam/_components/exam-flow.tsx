@@ -615,7 +615,7 @@ function TakingScreen(props: {
               <BastionLogo size={32} />
             </span>
             <span className="q-exam__txt">
-              <span className="q-exam__label">{"// Examen final"}</span>
+              <span className="q-exam__label">Examen final</span>
               <span className="q-exam__name">{pathTitle}</span>
             </span>
           </div>
@@ -642,8 +642,7 @@ function TakingScreen(props: {
           <div className="q-stage">
             <div className="q-card">
               <div className="q-eyebrow">
-                {"// Question "}
-                {pad2(index + 1)} <span className="pts">· {questionCount} au total</span>
+                Question {pad2(index + 1)} <span className="pts">· {questionCount} au total</span>
               </div>
               <h1 className="q-text">{q?.question}</h1>
               <div className="q-options">
@@ -670,15 +669,7 @@ function TakingScreen(props: {
               </div>
               {/* A copy refused or lost on the way used to say nothing here. */}
               {error && (
-                <p
-                  role="alert"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    color: "var(--color-danger)",
-                    marginTop: 12,
-                  }}
-                >
+                <p role="alert" className="q-error">
                   {error}
                 </p>
               )}
@@ -923,7 +914,7 @@ function ResultsScreen(props: {
 
           <section className="r-review">
             <div className="r-review__head">
-              <span className="r-review__title">{"// Correction détaillée"}</span>
+              <span className="r-review__title">Correction détaillée</span>
               <div className="r-review__legend">
                 <span>
                   <i className="ok" />
@@ -1140,7 +1131,7 @@ function ReviewRow(props: {
               </svg>
             </span>
             <div className="r-explain__txt">
-              <span className="lbl">{"// Explication"}</span>
+              <span className="lbl">Explication</span>
               {item.explanation}
             </div>
           </div>

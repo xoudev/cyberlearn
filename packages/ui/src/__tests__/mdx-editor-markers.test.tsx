@@ -86,7 +86,7 @@ describe("the problems in the lesson editor", () => {
       ],
     ]);
     expect(screen.getByRole("region", { name: "Problèmes du contenu" })).toHaveTextContent(
-      "À CORRIGER · 1",
+      "À corriger · 1",
     );
   });
 
@@ -175,7 +175,7 @@ describe("the problems in the lesson editor", () => {
     rerender(<MdxEditorPanel value={BROKEN} onChange={() => undefined} preview={preview} />);
     expect(lastMarkers()).toEqual(fromPreview);
     expect(screen.getByRole("region", { name: "Problèmes du contenu" })).toHaveTextContent(
-      "À CORRIGER · 1",
+      "À corriger · 1",
     );
   });
 

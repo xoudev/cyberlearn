@@ -1,10 +1,10 @@
 "use client";
 
-import { RED } from "@cyberlearn/ui";
 import { quizAnchor } from "@cyberlearn/lib/revisions/passage";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
 import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
+import { InQuizGroup } from "./quiz-group-context";
 import { QuizReport } from "./quiz-report";
 import "./quiz.css";
 
@@ -17,9 +17,13 @@ import "./quiz.css";
  *
  *  - the first answer is the answer: it is recorded on the server, which
  *    decides whether it is right, and it cannot be changed;
- *  - an answered quiz stays open, grouped or not, showing the right option and
- *    the explanation when the author wrote one;
- *  - answering, right or wrong, is what lets the section go on.
+ *  - the verdict shows as soon as the answer is sent, drawn from the key the
+ *    page holds, and the server's record replaces it when it comes back
+ *    (lesson-quiz-context.tsx);
+ *  - an answered quiz stays open, showing the right option and the
+ *    explanation when the author wrote one;
+ *  - answering, right or wrong, is what lets the section go on, once the
+ *    server has the answer.
  *
  * Outside a lesson page (an editor preview) there is no record to write to,
  * and the quiz scores itself locally.
@@ -29,7 +33,19 @@ import "./quiz.css";
  * Only the display moves. The index sent, stored and compared is the option's
  * written index; the letters follow the display. A preview keeps the written
  * order, which is what its author is checking.
+ *
+ * In a QuizGroup the group asks one question at a time (quiz-group.tsx): it
+ * holds the section's gate for all of its questions, passes the answer a
+ * preview keeps, and gives each answered question its way on (`next`).
  */
+
+/** The way on from an answered question, given by its QuizGroup. */
+export interface QuizNextAction {
+  label: string;
+  onSelect: () => void;
+  /** Pressed before the server confirmed the answer: it goes on once it has. */
+  waiting?: boolean;
+}
 
 interface QuizProps {
   id: string;
@@ -43,8 +59,12 @@ interface QuizProps {
   explanation?: string;
   questionNumber?: number;
   questionCount?: number;
-  /** Injected by QuizGroup: called once, when this question is answered. */
-  onAnswered?: (answer: QuizAnswer) => void;
+  /** Injected by QuizGroup without a lesson record: the answer it keeps for this question. */
+  localAnswer?: QuizAnswer | undefined;
+  /** Injected by QuizGroup without a lesson record: called when this question is answered. */
+  onAnswered?: ((answer: QuizAnswer) => void) | undefined;
+  /** Injected by QuizGroup: shown once the question is answered. */
+  next?: QuizNextAction | undefined;
 }
 
 const LETTER = ["A", "B", "C", "D", "E", "F"];
@@ -58,16 +78,21 @@ export function Quiz({
   explanation,
   questionNumber,
   questionCount,
+  localAnswer,
   onAnswered,
+  next,
 }: QuizProps): React.ReactElement {
   const items = options ?? choices ?? [];
   const lessonQuiz = useLessonQuiz();
+  const grouped = useContext(InQuizGroup);
   const [picked, setPicked] = useState<number | null>(null);
-  const [localAnswer, setLocalAnswer] = useState<QuizAnswer | null>(null);
-  const [pending, setPending] = useState(false);
+  const [ownAnswer, setOwnAnswer] = useState<QuizAnswer | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const answer = lessonQuiz ? (lessonQuiz.answers[id] ?? null) : localAnswer;
+  const answer = lessonQuiz ? (lessonQuiz.answers[id] ?? null) : (localAnswer ?? ownAnswer);
+  // Shown, and not yet on record: the options are locked, the gate is not moved.
+  const sending = lessonQuiz?.unconfirmed.has(id) === true;
+  const confirmed = answer !== null && !sending;
   // order[position] = written index of the option shown at that position.
   const order = lessonQuiz ? lessonQuiz.optionOrder(id, items) : items.map((_, i) => i);
   const letterOf = (written: number): string => {
@@ -81,34 +106,35 @@ export function Quiz({
   // when isAllComplete/pendingCount change (which would cause an infinite loop).
   const completionRef = useRef(completion);
   completionRef.current = completion;
-  const onAnsweredRef = useRef(onAnswered);
-  onAnsweredRef.current = onAnswered;
 
+  // A grouped question is held by its group, which asks one question at a
+  // time and must hold the section for the questions not on screen too.
   useEffect(() => {
+    if (grouped) return;
     completionRef.current?.register(id);
     return () => {
       completionRef.current?.unregister(id);
     };
-  }, [id]);
+  }, [id, grouped]);
 
-  // Answered - now, or before this section was last on screen - is done.
+  // Answered and on record - now, or before this section was last on screen - is done.
   useEffect(() => {
-    if (answer === null) return;
+    if (grouped || !confirmed) return;
     completionRef.current?.markDone(id);
-    onAnsweredRef.current?.(answer);
-  }, [answer, id]);
+  }, [confirmed, grouped, id]);
 
-  async function validate(): Promise<void> {
-    if (picked === null || answered || pending) return;
+  function validate(): void {
+    if (picked === null || answered) return;
+    setError(null);
+    const verdict = { selected: picked, correct: picked === correct };
     if (!lessonQuiz) {
-      setLocalAnswer({ selected: picked, correct: picked === correct });
+      setOwnAnswer(verdict);
+      onAnswered?.(verdict);
       return;
     }
-    setPending(true);
-    setError(null);
-    const result = await lessonQuiz.submit(id, picked);
-    setPending(false);
-    if (!result.ok) setError(result.error);
+    void lessonQuiz.submit(id, picked, verdict.correct).then((result) => {
+      if (!result.ok) setError(result.error);
+    });
   }
 
   const chosen = answered ? answer.selected : picked;
@@ -119,165 +145,57 @@ export function Quiz({
     : !isCorrect && rightOption !== undefined
       ? `La bonne réponse était ${letterOf(correct)} : ${rightOption}.`
       : null;
+  const tone = isCorrect ? "right" : "wrong";
 
   return (
     <section
       // "Revoir ce passage" lands here from a review question (revisions/passage.ts).
       id={quizAnchor(id)}
-      className="cl-quiz card card--sunken"
+      className="cl-quiz"
+      data-grouped={grouped ? "" : undefined}
       aria-label={questionNumber !== undefined ? `Question ${String(questionNumber)}` : "Question"}
-      style={{
-        margin: questionNumber !== undefined ? "0" : "56px 0 0",
-        position: "relative",
-      }}
     >
-      {/* Top gradient border accent */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          padding: 1,
-          background: "var(--cosmetic-accent)",
-          WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-          WebkitMaskComposite: "xor",
-          maskComposite: "exclude",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          marginBottom: 8,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--cosmetic-accent)",
-          }}
-        >
-          › Vérification
-          {questionNumber !== undefined && questionCount !== undefined && (
-            <span style={{ color: "var(--color-text-faint)" }}>
-              {" · Question "}
-              {questionNumber}/{questionCount}
-            </span>
-          )}
+      <div className="cl-quiz-head">
+        <span className="cl-quiz-kicker">
+          {questionNumber !== undefined && questionCount !== undefined
+            ? `Question ${String(questionNumber)} sur ${String(questionCount)}`
+            : "Question"}
         </span>
-        <span
-          role={answered ? "status" : undefined}
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
-        >
-          {answered &&
-            (isCorrect ? (
-              <span style={{ color: "var(--cosmetic-accent)" }}>✓ Bonne réponse</span>
-            ) : (
-              <span style={{ color: RED }}>✗ Mauvaise réponse</span>
-            ))}
-        </span>
+        {answered && (
+          <span role="status" className="cl-quiz-verdict" data-tone={tone}>
+            {isCorrect ? "✓ Bonne réponse" : "✗ Mauvaise réponse"}
+          </span>
+        )}
       </div>
 
-      {/* Question */}
-      <h3
-        className="cl-quiz-question"
-        style={{
-          fontFamily: "var(--font-display, sans-serif)",
-          fontWeight: 700,
-          lineHeight: 1.25,
-          letterSpacing: "-0.015em",
-          color: "var(--color-text-primary)",
-          margin: "0 0 24px",
-        }}
-      >
+      {/* The group moves focus here when it puts this question on screen. */}
+      <h3 className="cl-quiz-question" tabIndex={-1}>
         {question}
       </h3>
 
-      {/* Choices */}
-      <div
-        role="radiogroup"
-        aria-label={question}
-        style={{ display: "flex", flexDirection: "column", gap: 0 }}
-      >
+      <div role="radiogroup" aria-label={question} className="cl-quiz-options">
         {order.map((i, position) => {
           const choice = items[i] ?? "";
           const isChosen = chosen === i;
           const isThisCorrect = answered && i === correct;
           const isThisWrong = answered && isChosen && i !== correct;
 
-          let borderLeftColor = "var(--color-border-subtle)";
-          let bg = "var(--color-bg-base)";
-          let textColor = "var(--color-text-secondary)";
-          let letterColor = "var(--color-text-disabled)";
+          let state = "idle";
           let stateLabel = "";
-
           if (isThisCorrect) {
-            borderLeftColor = "var(--cosmetic-accent)";
-            bg = "color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-base))";
-            textColor = "var(--color-text-primary)";
-            letterColor = "var(--cosmetic-accent)";
+            state = "right";
             stateLabel = isChosen ? "Ton choix · bonne réponse" : "Bonne réponse";
           } else if (isThisWrong) {
-            borderLeftColor = RED;
-            bg = "color-mix(in srgb, var(--color-danger) 8%, var(--color-bg-base))";
-            textColor = "var(--color-text-primary)";
-            letterColor = RED;
+            state = "wrong";
             stateLabel = "Ton choix";
-          } else if (isChosen && !answered) {
-            borderLeftColor = "var(--color-brand-blue)";
-            bg = "var(--color-bg-overlay)";
-            textColor = "var(--color-text-primary)";
-            letterColor = "var(--cosmetic-accent)";
           } else if (answered) {
-            textColor = "var(--color-text-muted)";
+            state = "other";
+          } else if (isChosen) {
+            state = "picked";
           }
 
-          const locked = answered || pending;
           return (
-            <label
-              key={i}
-              className="cl-quiz-option"
-              style={{
-                border: "1px solid var(--color-border-subtle)",
-                borderLeft: `3px solid ${borderLeftColor}`,
-                background: bg,
-                cursor: locked ? "default" : "pointer",
-                fontFamily: "var(--font-body, sans-serif)",
-                fontSize: 14,
-                color: textColor,
-                transition: "all 180ms ease",
-                marginBottom: 8,
-                position: "relative",
-              }}
-              onMouseEnter={(e) => {
-                if (!locked && !isChosen) {
-                  e.currentTarget.style.borderColor = "var(--color-border-default)";
-                  e.currentTarget.style.background =
-                    "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)";
-                  e.currentTarget.style.color = "var(--color-text-primary)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!locked && !isChosen) {
-                  e.currentTarget.style.borderColor = "var(--color-border-subtle)";
-                  e.currentTarget.style.borderLeftColor = "var(--color-border-subtle)";
-                  e.currentTarget.style.background = "var(--color-bg-base)";
-                  e.currentTarget.style.color = "var(--color-text-secondary)";
-                }
-              }}
-            >
+            <label key={i} className="cl-quiz-option" data-state={state}>
               <input
                 type="radio"
                 name={`quiz-${id}`}
@@ -288,158 +206,55 @@ export function Quiz({
                   setError(null);
                 }}
                 className="sr-only"
-                disabled={locked}
+                disabled={answered}
               />
-              {/* Letter */}
-              <span
-                style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: letterColor,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {LETTER[position]}
-              </span>
-              {/* Radio indicator */}
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 14,
-                  height: 14,
-                  border: `1.5px solid ${isChosen || isThisCorrect ? borderLeftColor : "var(--color-border-default)"}`,
-                  borderRadius: "50%",
-                  display: "grid",
-                  placeItems: "center",
-                  background: isThisCorrect ? "var(--cosmetic-accent)" : "transparent",
-                  flexShrink: 0,
-                }}
-              >
-                {isThisCorrect && (
-                  <svg viewBox="0 0 12 12" width={8} height={8} fill="none">
-                    <path
-                      d="M2.5 6.5 L5 9 L9.5 3.5"
-                      stroke="var(--color-bg-base)"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-                {isChosen && !answered && (
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "var(--color-brand-blue)",
-                    }}
-                  />
-                )}
-              </span>
-              {/* Choice text */}
-              <span>{choice}</span>
-              {/* State label */}
-              {stateLabel !== "" && (
-                <span
-                  className="cl-quiz-state"
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: isThisCorrect ? "var(--cosmetic-accent)" : RED,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {stateLabel}
-                </span>
-              )}
+              <span className="cl-quiz-letter">{LETTER[position]}</span>
+              <span className="cl-quiz-choice">{choice}</span>
+              {stateLabel !== "" && <span className="cl-quiz-state">{stateLabel}</span>}
             </label>
           );
         })}
       </div>
 
       {answered ? (
-        verdictText !== null && (
-          <div
-            style={{
-              marginTop: 16,
-              padding: "14px 18px",
-              borderLeft: `3px solid ${isCorrect ? "var(--cosmetic-accent)" : RED}`,
-              background: isCorrect
-                ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
-                : "rgba(255,71,87,0.05)",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: isCorrect ? "var(--cosmetic-accent)" : RED,
-                marginBottom: 6,
-              }}
-            >
-              {explanation?.trim() ? "Pourquoi" : "Correction"}
+        <>
+          {verdictText !== null && (
+            <div className="cl-quiz-explanation" data-tone={tone}>
+              <p className="cl-quiz-explanation-title">
+                {explanation?.trim() ? "Pourquoi" : "Correction"}
+              </p>
+              <p className="cl-quiz-explanation-body">{verdictText}</p>
             </div>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-body, sans-serif)",
-                fontSize: 14,
-                lineHeight: 1.6,
-                color: "var(--color-text-secondary)",
-              }}
+          )}
+          {next && (
+            <button
+              type="button"
+              className="cl-quiz-button"
+              aria-busy={next.waiting === true ? true : undefined}
+              onClick={next.onSelect}
             >
-              {verdictText}
-            </p>
-          </div>
-        )
+              {next.label}
+              {next.waiting !== true && <span aria-hidden="true"> →</span>}
+            </button>
+          )}
+        </>
       ) : (
         <>
           <button
             type="button"
-            disabled={picked === null || pending}
-            onClick={() => {
-              void validate();
-            }}
-            style={{
-              display: "block",
-              width: "100%",
-              marginTop: 16,
-              padding: "18px 24px",
-              fontFamily: "var(--font-interface), sans-serif",
-              fontWeight: 700,
-              fontSize: 14,
-              letterSpacing: 0,
-              textTransform: "none",
-              background: picked === null ? "var(--color-bg-elevated)" : "var(--color-brand-blue)",
-              color: picked === null ? "var(--color-text-disabled)" : "#141518",
-              border:
-                picked === null
-                  ? "1px solid var(--color-border-default)"
-                  : "1px solid var(--color-brand-blue)",
-              cursor: picked === null ? "not-allowed" : pending ? "wait" : "pointer",
-              transition: "all 180ms ease",
-            }}
+            className="cl-quiz-button"
+            disabled={picked === null}
+            onClick={validate}
           >
-            {pending ? "Enregistrement…" : "Valider la réponse"}
+            Valider la réponse
           </button>
-          <div
+          <p
             role={error !== null ? "alert" : undefined}
-            style={{
-              margin: "10px 0 0",
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 11,
-              letterSpacing: "0.04em",
-              color: error !== null ? RED : "var(--color-text-faint)",
-            }}
+            className="cl-quiz-note"
+            data-error={error !== null ? "" : undefined}
           >
             {error ?? "Une seule réponse par question : elle compte dans ta note de la leçon."}
-          </div>
+          </p>
         </>
       )}
       <QuizReport quizId={id} />

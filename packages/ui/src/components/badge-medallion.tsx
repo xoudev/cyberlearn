@@ -9,23 +9,17 @@ export type BadgeMedallionSize = "xs" | "sm" | "md" | "lg";
 export type BadgeMedallionState = "locked" | "unlocked";
 
 /**
- * The single canonical hexagon - a REGULAR pointy-top hexagon drawn as an SVG
- * <polygon> (NOT a CSS clip-path + border). The viewBox carries the exact
- * √3/2 width:height ratio of a regular hexagon, so the shape can never
- * stretch, and the rarity outline is a real SVG stroke - uniform thickness on
- * all six edges. Pointy-top is kept: its two vertical edges stay parallel to
- * the card sides, and the badge artwork SVGs are pointy-top hexagons too.
+ * The plate is a square, the Bastion way: a matt panel with the rarity drawn
+ * as its frame. It used to be a pointy-top hexagon with a neon halo, the
+ * vocabulary of the old art direction; the rarity colour keeps its meaning,
+ * it just stops glowing. The frame is a real border of `ring` px, uniform on
+ * the four sides at every size.
  */
-const HEX_VIEWBOX = "0 0 86.6 100";
-const HEX_POINTS = "43.3,0 86.6,25 86.6,75 43.3,100 0,75 0,25";
-/** width / height of a regular pointy-top hexagon (√3/2). */
-const HEX_RATIO = 0.866;
-
 const SIZES: Record<BadgeMedallionSize, { h: number; icon: number; ring: number }> = {
-  xs: { h: 34, icon: 27, ring: 1.5 },
-  sm: { h: 60, icon: 46, ring: 2 },
-  md: { h: 110, icon: 86, ring: 3 },
-  lg: { h: 142, icon: 110, ring: 3 },
+  xs: { h: 34, icon: 24, ring: 1.5 },
+  sm: { h: 60, icon: 42, ring: 2 },
+  md: { h: 110, icon: 78, ring: 3 },
+  lg: { h: 142, icon: 100, ring: 3 },
 };
 
 /** The single consistent fallback glyph (an award star), used everywhere the
@@ -100,9 +94,9 @@ export interface BadgeMedallionProps {
 }
 
 /**
- * The single shared hexagonal badge medallion. Replaces every per-page inline
- * hexagon + duplicated rarity colour map across the app (dashboard, /badges,
- * profile, public profile, lesson-complete modal, notifications).
+ * The single shared badge medallion. Replaces every per-page inline plate and
+ * duplicated rarity colour map across the app (dashboard, /badges, profile,
+ * public profile, lesson-complete modal, notifications).
  */
 export function BadgeMedallion({
   rarity,
@@ -114,64 +108,30 @@ export function BadgeMedallion({
   style,
 }: BadgeMedallionProps): React.ReactElement {
   const s = SIZES[size];
-  // Width derives from height at the regular-hexagon ratio - never stretched.
-  const w = Math.round(s.h * HEX_RATIO * 10) / 10;
   const locked = state === "locked";
   const rarityColor = BADGE_RARITY_VAR[rarity];
 
-  const glow = locked
-    ? "drop-shadow(0 0 4px rgba(42,37,96,0.8))"
-    : `drop-shadow(0 0 ${String(s.ring * 2)}px color-mix(in oklab, ${rarityColor} 70%, transparent)) drop-shadow(0 0 ${String(s.ring * 5)}px color-mix(in oklab, ${rarityColor} 26%, transparent))`;
-
   return (
-    <div className={cn(className)} style={{ filter: glow, lineHeight: 0, ...style }}>
+    <div className={cn(className)} style={{ lineHeight: 0, ...style }}>
       <div
         style={{
-          position: "relative",
-          width: w,
+          boxSizing: "border-box",
+          width: s.h,
           height: s.h,
           display: "grid",
           placeItems: "center",
+          background: "#121418",
+          border: `${String(s.ring)}px solid ${locked ? "var(--color-interface-separator, #303137)" : rarityColor}`,
+          borderRadius: 0,
         }}
       >
-        {/* Plate + rarity outline: ONE polygon. vector-effect keeps the stroke
-            at exactly `ring`px on all six edges at every rendered size. */}
-        <svg
-          viewBox={HEX_VIEWBOX}
-          width={w}
-          height={s.h}
-          preserveAspectRatio="xMidYMid meet"
-          style={{ position: "absolute", inset: 0, overflow: "visible" }}
-          aria-hidden="true"
-        >
-          <polygon
-            points={HEX_POINTS}
-            fill="var(--color-bg-elevated)"
-            stroke={locked ? "var(--color-border-default)" : rarityColor}
-            strokeWidth={s.ring}
-            strokeOpacity={locked ? 0.8 : 1}
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        {/* Icon */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            display: "grid",
-            placeItems: "center",
-            filter: locked ? "none" : `drop-shadow(0 0 ${String(s.ring * 3)}px ${rarityColor})`,
-          }}
-        >
-          <MedallionIcon
-            iconUrl={iconUrl}
-            name={name}
-            size={s.icon}
-            color={locked ? "var(--color-text-faint)" : rarityColor}
-            dimmed={locked}
-          />
-        </div>
+        <MedallionIcon
+          iconUrl={iconUrl}
+          name={name}
+          size={s.icon}
+          color={locked ? "var(--color-text-faint)" : rarityColor}
+          dimmed={locked}
+        />
       </div>
     </div>
   );

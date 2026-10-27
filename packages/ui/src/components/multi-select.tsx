@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { SELECT_PALETTE, SELECT_ROW_HEIGHT } from "./select.js";
 import { firstEnabled, fold, moveActive } from "./select-nav.js";
 
 /**
@@ -54,21 +55,10 @@ export interface MultiSelectProps {
   style?: React.CSSProperties;
 }
 
-/** The Select's palette, so the two read as one family. */
-const C = {
-  bg: "var(--cl-select-bg, var(--color-bg-sunken))",
-  fg: "var(--cl-select-fg, var(--color-text-primary))",
-  muted: "var(--cl-select-fg-muted, var(--color-text-muted))",
-  border: "var(--cl-select-border, var(--color-border-default))",
-  accent: "var(--cl-select-accent, var(--cosmetic-accent, var(--color-brand-turquoise)))",
-  panel: "var(--cl-select-panel-bg, var(--color-bg-elevated))",
-  option: "var(--cl-select-option-fg, var(--color-text-secondary))",
-  active: "var(--cl-select-option-active-bg, #141040)",
-  off: "var(--cl-select-option-disabled-fg, var(--color-text-faint))",
-  font: "var(--font-mono, ui-monospace, monospace)",
-} as const;
+/** The Select's palette and row height, so the two read as one family. */
+const C = SELECT_PALETTE;
 
-const LIST_MAX_HEIGHT = 280;
+const LIST_MAX_HEIGHT = 308;
 
 function defaultSummary(count: number): string {
   // "choix" is the same word for one and for several.
@@ -248,12 +238,14 @@ export function MultiSelect({
           justifyContent: "space-between",
           gap: 10,
           width: "100%",
-          padding: "9px 12px",
+          minHeight: SELECT_ROW_HEIGHT,
+          padding: "0 14px",
           background: C.bg,
           border: `1px solid ${open ? C.accent : C.border}`,
           color: count === 0 ? C.muted : C.fg,
           fontFamily: C.font,
-          fontSize: 12.5,
+          fontSize: 14,
+          lineHeight: 1.3,
           textAlign: "left",
           cursor: disabled === true ? "not-allowed" : "pointer",
           opacity: disabled === true ? 0.5 : 1,
@@ -290,8 +282,8 @@ export function MultiSelect({
             right: 0,
             zIndex: 60,
             background: C.panel,
-            border: `1px solid ${C.border}`,
-            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            border: `1px solid ${C.panelBorder}`,
+            boxShadow: C.shadow,
           }}
         >
           <input
@@ -319,13 +311,14 @@ export function MultiSelect({
               display: "block",
               width: "100%",
               boxSizing: "border-box",
-              padding: "9px 12px",
+              minHeight: SELECT_ROW_HEIGHT,
+              padding: "0 14px",
               background: C.bg,
               border: 0,
-              borderBottom: `1px solid ${C.border}`,
+              borderBottom: `1px solid ${C.panelBorder}`,
               color: C.fg,
               fontFamily: C.font,
-              fontSize: 12.5,
+              fontSize: 14,
               outline: "none",
             }}
           />
@@ -340,7 +333,7 @@ export function MultiSelect({
               maxHeight: LIST_MAX_HEIGHT,
               overflowY: "auto",
               margin: 0,
-              padding: 4,
+              padding: 0,
               listStyle: "none",
             }}
           >
@@ -371,9 +364,12 @@ export function MultiSelect({
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "7px 10px",
+                    boxSizing: "border-box",
+                    minHeight: SELECT_ROW_HEIGHT,
+                    padding: "0 14px",
                     fontFamily: C.font,
-                    fontSize: 12.5,
+                    fontSize: 14,
+                    lineHeight: 1.3,
                     color: isDisabled ? C.off : isChosen ? C.fg : C.option,
                     background: isActive && !isDisabled ? C.active : "transparent",
                     cursor: isDisabled ? "not-allowed" : "pointer",
@@ -385,11 +381,11 @@ export function MultiSelect({
                       display: "grid",
                       placeItems: "center",
                       flexShrink: 0,
-                      width: 14,
-                      height: 14,
+                      width: 16,
+                      height: 16,
                       border: `1px solid ${isChosen ? C.accent : C.border}`,
                       background: isChosen ? C.accent : "transparent",
-                      color: C.panel,
+                      color: "#0b0c0e",
                     }}
                   >
                     {isChosen && (
@@ -415,7 +411,7 @@ export function MultiSelect({
                     {option.label}
                   </span>
                   {option.hint !== undefined && (
-                    <span style={{ flexShrink: 0, fontSize: 10.5, color: C.muted }}>
+                    <span style={{ flexShrink: 0, fontSize: 12, color: C.muted }}>
                       {option.hint}
                     </span>
                   )}
@@ -427,9 +423,9 @@ export function MultiSelect({
             <p
               style={{
                 margin: 0,
-                padding: "10px 12px",
+                padding: "12px 14px",
                 fontFamily: C.font,
-                fontSize: 11.5,
+                fontSize: 13,
                 color: C.muted,
               }}
             >
@@ -442,10 +438,10 @@ export function MultiSelect({
               alignItems: "center",
               justifyContent: "space-between",
               gap: 10,
-              padding: "6px 8px 6px 12px",
-              borderTop: `1px solid ${C.border}`,
+              padding: "6px 6px 6px 14px",
+              borderTop: `1px solid ${C.panelBorder}`,
               fontFamily: C.font,
-              fontSize: 10.5,
+              fontSize: 13,
               color: C.muted,
             }}
           >
@@ -456,12 +452,14 @@ export function MultiSelect({
                 close(true);
               }}
               style={{
-                padding: "4px 10px",
+                minHeight: 36,
+                padding: "0 14px",
                 background: "transparent",
                 border: `1px solid ${C.border}`,
                 color: C.fg,
                 fontFamily: C.font,
-                fontSize: 10.5,
+                fontSize: 13,
+                fontWeight: 600,
                 cursor: "pointer",
               }}
             >
@@ -493,10 +491,10 @@ export function MultiSelect({
                   alignItems: "center",
                   gap: 6,
                   maxWidth: "100%",
-                  padding: "3px 4px 3px 8px",
+                  padding: "3px 4px 3px 10px",
                   border: `1px solid ${C.border}`,
                   fontFamily: C.font,
-                  fontSize: 11.5,
+                  fontSize: 13,
                   color: C.fg,
                 }}
               >
@@ -515,8 +513,8 @@ export function MultiSelect({
                   style={{
                     display: "grid",
                     placeItems: "center",
-                    width: 18,
-                    height: 18,
+                    width: 28,
+                    height: 28,
                     padding: 0,
                     background: "transparent",
                     border: 0,

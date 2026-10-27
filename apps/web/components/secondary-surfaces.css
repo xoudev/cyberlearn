@@ -2,12 +2,16 @@
 body {
   --font-sans: var(--font-interface);
   --font-body: var(--font-interface);
+  /* The shared Select (packages/ui): its defaults are Bastion already; these
+     restate the panel, the highlighted row and the chosen value's colour so a
+     scope that re-declares the colour tokens cannot reach a portalled list. */
   --cl-select-font: var(--font-interface), Arial, sans-serif;
-  --cl-select-panel-bg: #191c22;
+  --cl-select-panel-bg: #121418;
+  --cl-select-panel-border: #303137;
   --cl-select-border: #74767d;
   --cl-select-option-fg: #f4f2ed;
-  --cl-select-option-active-bg: #303137;
-  --cl-select-accent: #ff864f;
+  --cl-select-option-active-bg: #191c22;
+  --cl-select-accent: var(--cosmetic-accent-hover);
   --cl-select-fg-muted: #aaa79f;
 }
 body *,
@@ -52,10 +56,7 @@ body :is(.modal-shell__close, .side-drawer__close) {
   height: 44px;
 }
 body .side-drawer__close:hover {
-  border-color: #ff864f;
-}
-body [role="listbox"] {
-  box-shadow: none !important;
+  border-color: var(--cosmetic-accent-hover);
 }
 body [role="option"] {
   min-height: 44px;
@@ -117,19 +118,19 @@ body :is(.modal-shell, .side-drawer) .mono-label {
 body
   :is(.modal-shell, .side-drawer, .cookie-notice)
   :is(a, button, input, textarea, [role="combobox"]):focus-visible {
-  outline: 2px solid #ff864f;
+  outline: 2px solid var(--cosmetic-accent-hover);
   outline-offset: 3px;
 }
 body .cookie-notice .btn {
   min-height: 44px;
   color: #141518;
-  background: #ff6b2b;
+  background: var(--cosmetic-accent);
   font-family: var(--font-interface), Arial, sans-serif;
   text-transform: none;
   letter-spacing: 0;
 }
 body .cookie-notice .btn:hover {
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
 }
 body .level-reached {
   padding: 24px;
@@ -149,8 +150,8 @@ body .level-reached__label {
 body .level-reached__figure {
   font-family: var(--font-display), sans-serif;
   background: none;
-  -webkit-text-fill-color: #923200;
-  color: #923200;
+  -webkit-text-fill-color: var(--cosmetic-accent-ink);
+  color: var(--cosmetic-accent-ink);
   text-shadow: none;
 }
 body .news-log {

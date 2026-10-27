@@ -2,13 +2,14 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
-import { Card, GhostLink, PageHeader, Tag } from "../_components/admin-ui";
+import { Card, GhostLink, PageHeader, Tag, UserAvatar } from "../_components/admin-ui";
 import { ACCOUNT_CARDS, ACCOUNT_HEADER } from "./_components/account-head";
 import { OwnSessions } from "./_components/own-sessions";
 import { learnerUrl } from "@/lib/learner-url";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Mon compte" };
 
@@ -104,6 +105,7 @@ export default async function AccountPage(): Promise<React.ReactElement> {
   ]);
   if (account === null) notFound();
   const password = passwordHref();
+  const avatarSrc = await resolveAvatarSrc(account.avatarUrl);
 
   return (
     <main className="a-page">
@@ -115,6 +117,13 @@ export default async function AccountPage(): Promise<React.ReactElement> {
 
       <div className="admin-settings-grid">
         <Card title={ACCOUNT_CARDS.identity}>
+          <DefRow label="Avatar">
+            <UserAvatar
+              src={avatarSrc}
+              name={account.displayName || (account.username ?? account.email)}
+              size={48}
+            />
+          </DefRow>
           <DefRow label="Adresse e-mail">
             <span className="mono a-field-hint">{account.email}</span>
           </DefRow>

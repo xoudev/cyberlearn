@@ -49,9 +49,20 @@ describe("Footer", () => {
       renderToStaticMarkup(<Footer />),
       renderToStaticMarkup(<Footer signedIn />),
     ]) {
-      expect(hrefOf(html, "Application mobile")).toBe("/download");
       expect(hrefOf(html, "Vérifier un certificat")).toBe("/verify");
       expect(hrefOf(html, "Mentions légales")).toBe("/legal");
+    }
+  });
+
+  it("no longer promotes the mobile app, whichever side reads it", () => {
+    // The site stopped promoting the app on 27 October 2026; /download is a
+    // redirect to the home page (next.config.ts) until it comes back.
+    for (const html of [
+      renderToStaticMarkup(<Footer />),
+      renderToStaticMarkup(<Footer signedIn />),
+    ]) {
+      expect(hrefOf(html, "Application mobile")).toBeUndefined();
+      expect(html).not.toContain('href="/download"');
     }
   });
 });

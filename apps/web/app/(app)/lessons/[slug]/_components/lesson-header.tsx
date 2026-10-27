@@ -49,11 +49,19 @@ export function LessonHeader({
         {!punctuated && <span>.</span>}
       </h1>
       <p className="lesson-head__lede">{description}</p>
+      {/* Four facts on one line, between hairlines: the duration and the XP
+          as data, the difficulty, and where the reader is, marked by a
+          square as well as said. */}
       <ul className="lesson-head__chips" aria-label="La leçon en bref">
-        <li className="lesson-chip">{estimatedMinutes} min</li>
-        <li className="lesson-chip">+{xpReward} XP</li>
+        <li className="lesson-chip" data-kind="data">
+          {estimatedMinutes} min
+        </li>
+        <li className="lesson-chip" data-kind="data">
+          +{xpReward} XP
+        </li>
         <li className="lesson-chip">{difficultyMeta(difficulty).label}</li>
-        <li className="lesson-chip" data-completed={isCompleted}>
+        <li className="lesson-chip lesson-chip--status" data-completed={isCompleted}>
+          <span className="lesson-chip__mark" aria-hidden="true" />
           {isCompleted ? "Terminée" : "En cours"}
         </li>
       </ul>

@@ -42,7 +42,7 @@ export function MockExamDialog({
     <>
       <button
         type="button"
-        className="btn btn--ghost btn--sm"
+        className="btn btn--ghost"
         style={{ marginTop: 10 }}
         title="Un entraînement chronométré : trois questions par module, le score par module, sans certificat ni XP"
         aria-haspopup="dialog"
@@ -91,7 +91,7 @@ function MockExamWindow({
   }, [slug, attempt]);
 
   const close = (
-    <button type="button" className="btn btn--ghost btn--sm" onClick={onClose} disabled={pending}>
+    <button type="button" className="btn btn--ghost" onClick={onClose} disabled={pending}>
       Annuler
     </button>
   );
@@ -122,7 +122,7 @@ function MockExamWindow({
         {close}
         <button
           type="button"
-          className="btn btn--sm"
+          className="btn"
           onClick={() => {
             setLoad({ kind: "loading" });
             setAttempt((n) => n + 1);
@@ -141,7 +141,7 @@ function MockExamWindow({
           {close}
           <button
             type="button"
-            className="btn btn--accent btn--sm"
+            className="btn btn--accent"
             disabled={pending}
             onClick={() => {
               start(() => {

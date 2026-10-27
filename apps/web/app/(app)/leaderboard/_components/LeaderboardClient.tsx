@@ -16,7 +16,7 @@ import {
   leaderboardPeriodSince,
   type LeaderboardPeriod,
 } from "@cyberlearn/lib/gamification/leaderboard-period";
-import { DISPLAY, fmtXp, HexAvatar, MONO } from "./shared";
+import { fmtXp, INTERFACE, PlayerAvatar } from "./shared";
 import { LeagueClient } from "./LeagueClient";
 import styles from "./leaderboard.module.css";
 import "./leaderboard.css";
@@ -38,17 +38,15 @@ const SEASON_END = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "lo
 
 // ── Style constants ────────────────────────────────────────────────────────────
 
-const RK_COLORS: Record<number, { color: string; grad: string }> = {
-  1: {
-    color: "var(--color-rarity-legendary)",
-    grad: "linear-gradient(135deg, #FFE08A 0%, var(--color-rarity-legendary) 50%, #FF8E1F 100%)",
-  },
-  2: {
-    color: "#C8CFE2",
-    grad: "linear-gradient(135deg, #F0F2F8 0%, var(--color-text-secondary) 50%, var(--color-text-muted) 100%)",
-  },
-  3: { color: "#E08A4A", grad: "linear-gradient(135deg, #F2B07A 0%, #E08A4A 50%, #8C4A1F 100%)" },
+/** The medals of the first three: gold, silver, bronze. A meaning, not a decoration. */
+const MEDAL: Record<number, string> = {
+  1: "var(--color-rarity-legendary)",
+  2: "#c2bfb8",
+  3: "var(--color-division-bronze)",
 };
+
+/** The contour of every other avatar: a plain line. */
+const NEUTRAL_RING = "#74767d";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -131,9 +129,9 @@ function PodiumCard({
         <strong>{String(rank).padStart(2, "0")}</strong>
         {isMe && <span>Toi</span>}
       </div>
-      <HexAvatar
+      <PlayerAvatar
         mono={initialsOf(name)}
-        grad={rank === 1 ? "#ff6b2b" : "#aaa79f"}
+        ring={rank === 1 ? "var(--cosmetic-accent)" : NEUTRAL_RING}
         size={64}
         src={entry.avatarSrc}
         name={name}
@@ -246,7 +244,7 @@ export function PlayerCard({
       ].join(" ")}
     >
       <div className={styles.playerTop}>
-        <span className={styles.rank} style={{ color: RK_COLORS[entry.rank]?.color }}>
+        <span className={styles.rank} style={{ color: MEDAL[entry.rank] }}>
           #{entry.rank}
         </span>
         {entry.isCurrentUser ? <span className={styles.you}>Toi</span> : null}
@@ -262,11 +260,10 @@ export function PlayerCard({
         ) : null}
       </div>
       <div className={styles.playerIdentity}>
-        <HexAvatar
+        <PlayerAvatar
           mono={initialsOf(entry.displayName ?? entry.username ?? "Anonyme")}
-          grad={
-            RK_COLORS[entry.rank]?.grad ??
-            "linear-gradient(135deg, var(--color-rarity-rare), var(--cosmetic-accent))"
+          ring={
+            MEDAL[entry.rank] ?? (entry.isCurrentUser ? "var(--cosmetic-accent)" : NEUTRAL_RING)
           }
           size={44}
           src={entry.avatarSrc}
@@ -334,7 +331,7 @@ function FriendsSection({
       </div>
 
       {board.rows.length === 0 ? (
-        <p style={{ ...DISPLAY, fontSize: 14, color: "#8B88A8", margin: "0 0 20px" }}>
+        <p style={{ ...INTERFACE, fontSize: 14, color: "#aaa79f", margin: "0 0 20px" }}>
           Rien à classer pour l&apos;instant : ce tableau réunit les amis qui ont choisi d&apos;y
           figurer.
         </p>
@@ -348,7 +345,14 @@ function FriendsSection({
       )}
 
       {period !== "all" && others.length > 0 ? (
-        <p style={{ ...MONO, fontSize: 11, color: "var(--color-text-muted)", margin: "14px 0 0" }}>
+        <p
+          style={{
+            ...INTERFACE,
+            fontSize: 13,
+            color: "var(--color-text-muted)",
+            margin: "14px 0 0",
+          }}
+        >
           Un ami sans XP sur la période reste au tableau, à 0.
         </p>
       ) : null}
@@ -530,43 +534,24 @@ export function LeaderboardClient({
         ) : null}
 
         {/* Meta strip */}
-        <div
-          className="leaderboard-meta"
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 16,
-            ...MONO,
-            fontSize: 11,
-            color: "var(--color-text-muted)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            margin: "18px 0 48px",
-            paddingBottom: 18,
-            borderBottom: "1px dashed var(--color-border-default)",
-          }}
-        >
+        <div className="leaderboard-meta">
           {/* Only what is true of this board. "Session sécurisée", "FR · Europe"
               and "maj temps réel" were decoration dressed as information. */}
           <span>
-            <b style={{ color: "var(--color-text-secondary)" }}>{formatNumberFr(shownCount)}</b>{" "}
+            <b>{formatNumberFr(shownCount)}</b>{" "}
             {shownCount === 1 ? "joueur classé" : "joueurs classés"}
           </span>
           {since !== null ? (
             <>
-              <span style={{ color: "var(--color-text-faint)" }}>/</span>
+              <span className="leaderboard-meta__sep">/</span>
               <span>{since}</span>
             </>
           ) : null}
           {season ? (
             <>
-              <span style={{ color: "var(--color-text-faint)" }}>/</span>
+              <span className="leaderboard-meta__sep">/</span>
               <span>
-                Fin de saison ·{" "}
-                <b style={{ color: "var(--color-text-secondary)" }}>
-                  {SEASON_END.format(new Date(season.endsAt))}
-                </b>
+                Fin de saison · <b>{SEASON_END.format(new Date(season.endsAt))}</b>
               </span>
             </>
           ) : null}

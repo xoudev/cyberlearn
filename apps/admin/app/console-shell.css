@@ -158,9 +158,6 @@
   }
 }
 @container admin-page (max-width: 500px) {
-  .a-studio-pair {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .a-fields-grid {
     grid-template-columns: minmax(0, 1fr);
   }

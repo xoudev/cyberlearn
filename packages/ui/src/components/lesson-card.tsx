@@ -43,9 +43,9 @@ function barsOf(level: number): number {
 }
 
 const STATUS_META = {
-  NOT_STARTED: { label: "COMMENCER", color: "var(--color-text-muted)" },
-  IN_PROGRESS: { label: "EN COURS", color: "var(--color-brand-turquoise)" },
-  COMPLETED: { label: "TERMINÉ", color: "var(--color-brand-turquoise)" },
+  NOT_STARTED: { label: "Commencer", color: "#aaa79f" },
+  IN_PROGRESS: { label: "En cours", color: "var(--cosmetic-accent)" },
+  COMPLETED: { label: "Terminé", color: "var(--color-state-success, #62d4a1)" },
 } satisfies Record<LessonStatus, { label: string; color: string }>;
 
 // ── Category SVG icons - 64×64 from CatalogGrid.jsx reference ─────────────────
@@ -265,7 +265,7 @@ function DiffBars({ filled, color }: { filled: number; color: string }): React.R
       {[1, 2, 3].map((i) => (
         <span
           key={i}
-          style={{ width: 3, height: 8, background: i <= filled ? color : "#1A1840" }}
+          style={{ width: 3, height: 8, background: i <= filled ? color : "#303137" }}
         />
       ))}
     </span>
@@ -430,19 +430,15 @@ function CatalogCard({
       ? Math.round((currentSection / totalSections) * 100)
       : 0;
 
+  // Bastion: a matt panel, a separator, and the equipped accent only where the
+  // lesson is underway. No halo, no tinted wash.
   const cardBorder = isInProgress
-    ? "rgba(10,255,212,0.35)"
-    : isCompleted
-      ? "rgba(10,255,212,0.5)"
-      : "var(--color-border-default)";
+    ? "color-mix(in srgb, var(--cosmetic-accent) 55%, transparent)"
+    : "#303137";
 
-  const cardBoxShadow = isInProgress
-    ? "inset 3px 0 0 var(--color-brand-turquoise), 0 0 24px rgba(10,255,212,0.08)"
-    : "none";
+  const cardBoxShadow = isInProgress ? "inset 3px 0 0 var(--cosmetic-accent)" : "none";
 
-  const cardBg = isCompleted
-    ? "linear-gradient(180deg, rgba(10,255,212,0.04), transparent 40%), var(--color-bg-elevated)"
-    : "var(--color-bg-elevated)";
+  const cardBg = "#121418";
 
   return (
     <article
@@ -455,21 +451,15 @@ function CatalogCard({
         height: "100%",
         overflow: "hidden",
         cursor: "pointer",
-        transition: "border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease",
+        transition: "border-color 180ms ease",
         boxShadow: cardBoxShadow,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.borderColor = isInProgress
-          ? "rgba(10,255,212,0.6)"
-          : isCompleted
-            ? "rgba(10,255,212,0.7)"
-            : "var(--color-text-disabled)";
+        e.currentTarget.style.borderColor = isInProgress ? "var(--cosmetic-accent)" : "#74767d";
         const bar = e.currentTarget.querySelector("[data-accent-bar]");
         if (bar instanceof HTMLElement && !isInProgress) bar.style.opacity = "0.6";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "";
         e.currentTarget.style.borderColor = cardBorder;
         const bar = e.currentTarget.querySelector("[data-accent-bar]");
         if (bar instanceof HTMLElement && !isInProgress) bar.style.opacity = "0";
@@ -485,16 +475,15 @@ function CatalogCard({
           top: 0,
           bottom: 0,
           width: isInProgress ? 3 : 2,
-          background: isInProgress ? "var(--color-brand-turquoise)" : catMeta.accent,
+          background: isInProgress ? "var(--cosmetic-accent)" : catMeta.accent,
           opacity: isInProgress ? 1 : 0,
           transition: "opacity 180ms ease",
           pointerEvents: "none",
           zIndex: 4,
-          boxShadow: isInProgress ? "0 0 12px var(--color-brand-turquoise)" : "none",
         }}
       />
 
-      {/* Completed hexagon check badge */}
+      {/* Completed: a square check on the accent */}
       {isCompleted && (
         <span
           aria-hidden="true"
@@ -506,11 +495,9 @@ function CatalogCard({
             height: 26,
             display: "grid",
             placeItems: "center",
-            background: "var(--color-brand-turquoise)",
-            color: "var(--color-bg-base)",
-            boxShadow: "0 0 16px rgba(10,255,212,0.55)",
+            background: "var(--cosmetic-accent)",
+            color: "#0b0c0e",
             zIndex: 3,
-            clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
           }}
         >
           <svg
@@ -544,11 +531,9 @@ function CatalogCard({
             alignItems: "center",
             gap: 6,
             padding: "3px 9px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 9.5,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
+            fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+            fontWeight: 600,
+            fontSize: 12,
             border: `1px solid ${catMeta.tagBorder}`,
             color: catMeta.tagColor,
             background: catMeta.tagBg,
@@ -557,27 +542,24 @@ function CatalogCard({
           {catLabel}
         </span>
 
-        {/* Difficulty badge - parallelogram + bars */}
+        {/* Difficulty badge - bars + label */}
         <span
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
             padding: "3px 9px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 9.5,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
+            fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+            fontWeight: 600,
+            fontSize: 12,
             color: diffMeta.color,
-            background: "var(--color-bg-sunken)",
-            border: "1px solid var(--color-border-default)",
-            clipPath: "polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%)",
+            background: "#0b0c0e",
+            border: "1px solid #303137",
             ...(isCompleted ? { marginRight: 32 } : {}),
           }}
         >
           <DiffBars filled={barsOf(diffMeta.level)} color={diffMeta.color} />
-          <span>{diffMeta.label.toUpperCase()}</span>
+          <span>{diffMeta.label}</span>
         </span>
       </div>
 
@@ -587,8 +569,8 @@ function CatalogCard({
           position: "relative",
           aspectRatio: "16 / 9",
           margin: "0 16px",
-          background: "var(--color-bg-sunken)",
-          border: "1px solid rgba(42,37,96,0.5)",
+          background: "#0b0c0e",
+          border: "1px solid #303137",
           overflow: "hidden",
           display: "grid",
           placeItems: "center",
@@ -620,35 +602,12 @@ function CatalogCard({
                 zIndex: 1,
                 pointerEvents: "none",
                 background:
-                  "linear-gradient(180deg, rgba(3,2,25,0.55) 0%, transparent 30%, transparent 68%, rgba(3,2,25,0.45) 100%)",
+                  "linear-gradient(180deg, #0b0c0e8c 0%, transparent 30%, transparent 68%, #0b0c0e73 100%)",
               }}
             />
           </>
         ) : (
           <>
-            {/* Grid line pattern with radial mask - density varies per card */}
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage:
-                  "linear-gradient(to right, rgba(42,37,96,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.6) 1px, transparent 1px)",
-                backgroundSize: `${String(decor.gridSize)}px ${String(decor.gridSize)}px`,
-                maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
-                WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
-              }}
-            />
-            {/* Radial glow - per category, positioned per card */}
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: `radial-gradient(ellipse 70% 60% at ${String(decor.glowX)}% ${String(decor.glowY)}%, ${catMeta.glow}, transparent 70%)`,
-                pointerEvents: "none",
-              }}
-            />
             {/* Seeded circuit traces - unique per card, tinted by category */}
             <svg
               aria-hidden="true"
@@ -724,9 +683,8 @@ function CatalogCard({
               top: 8,
               right: 8,
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 9.5,
-              letterSpacing: "0.1em",
-              color: "var(--color-text-muted)",
+              fontSize: 11,
+              color: "#aaa79f",
               zIndex: 2,
             }}
           >
@@ -741,7 +699,6 @@ function CatalogCard({
               position: "relative",
               zIndex: 1,
               color: catMeta.accent,
-              filter: `drop-shadow(0 0 12px ${catMeta.accent})`,
             }}
             aria-hidden="true"
           >
@@ -802,29 +759,25 @@ function CatalogCard({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: "var(--color-text-muted)",
+                fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+                fontSize: 12,
+                color: "#aaa79f",
                 marginBottom: 6,
               }}
             >
               <span>
-                <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>
+                <b style={{ color: "#f4f2ed", fontWeight: 700 }}>
                   {currentSection}/{totalSections}
                 </b>
-                {" SECTIONS"}
+                {" sections"}
               </span>
               <span>{pct}%</span>
             </div>
             <div
               style={{
                 position: "relative",
-                height: 3,
-                background: "var(--color-bg-sunken)",
-                borderTop: "1px solid var(--color-border-default)",
-                borderBottom: "1px solid var(--color-border-default)",
+                height: 4,
+                background: "#303137",
               }}
             >
               <div
@@ -834,9 +787,7 @@ function CatalogCard({
                   top: 0,
                   bottom: 0,
                   width: `${String(pct)}%`,
-                  background:
-                    "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  boxShadow: "0 0 8px rgba(10,255,212,0.6)",
+                  background: "var(--cosmetic-accent)",
                 }}
               />
             </div>
@@ -848,41 +799,24 @@ function CatalogCard({
         style={{
           marginTop: "auto",
           padding: "12px 16px",
-          borderTop: "1px solid rgba(42,37,96,0.4)",
+          borderTop: "1px solid #303137",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
-          fontFamily: "var(--font-mono, monospace)",
-          fontSize: 11,
-          letterSpacing: "0.06em",
-          color: "var(--color-text-muted)",
+          fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+          fontSize: 12,
+          color: "#aaa79f",
         }}
       >
-        {/* XP with diamond accent */}
+        {/* XP, a figure: mono, in the accent */}
         <span
           style={{
-            color: "var(--color-brand-turquoise)",
+            color: "var(--cosmetic-accent)",
+            fontFamily: "var(--font-mono, monospace)",
             fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
           }}
         >
-          <span
-            style={{
-              display: "inline-block",
-              width: 6,
-              height: 6,
-              transform: "rotate(45deg)",
-              background: "var(--color-brand-turquoise)",
-              boxShadow: "0 0 6px var(--color-brand-turquoise)",
-              flexShrink: 0,
-            }}
-            aria-hidden="true"
-          />
           +{xpReward} XP
         </span>
 
@@ -912,8 +846,6 @@ function CatalogCard({
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
             color: statusMeta.color,
           }}
         >
@@ -927,8 +859,8 @@ function CatalogCard({
                 padding: "1px 6px",
                 border: `1px solid color-mix(in srgb, ${quizScoreColor(quizScore)} 40%, transparent)`,
                 color: quizScoreColor(quizScore),
+                fontFamily: "var(--font-mono, monospace)",
                 fontWeight: 700,
-                letterSpacing: "0.06em",
               }}
             >
               <span className="sr-only">Quiz : </span>
@@ -943,7 +875,7 @@ function CatalogCard({
 
 /** Full marks in the accent, a pass in soft white, below half in amber. */
 function quizScoreColor(score: { correct: number; total: number }): string {
-  if (score.correct === score.total) return "var(--color-brand-turquoise)";
+  if (score.correct === score.total) return "var(--cosmetic-accent)";
   return score.correct * 2 >= score.total ? "var(--color-text-secondary)" : "var(--color-warning)";
 }
 
@@ -991,17 +923,7 @@ function CompactCard({
           top: 12,
           width: 8,
           height: 8,
-          borderRadius: "50%",
-          background: isCompleted
-            ? "var(--color-brand-turquoise)"
-            : isInProgress
-              ? "var(--color-brand-blue)"
-              : "var(--color-border-default)",
-          boxShadow: isCompleted
-            ? "0 0 6px rgba(10,255,212,0.5)"
-            : isInProgress
-              ? "0 0 6px rgba(0,36,255,0.6)"
-              : undefined,
+          background: isCompleted ? "var(--cosmetic-accent)" : isInProgress ? "#f4f2ed" : "#303137",
         }}
       />
 
@@ -1045,14 +967,12 @@ function CompactCard({
         <span
           style={{
             padding: "2px 8px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
+            fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+            fontSize: 12,
+            fontWeight: 600,
             color: diffMeta.color,
-            background: "rgba(5,4,26,0.9)",
-            border: "1px solid var(--color-border-default)",
+            background: "#0b0c0e",
+            border: "1px solid #303137",
           }}
         >
           {diffMeta.label}
@@ -1060,11 +980,9 @@ function CompactCard({
         <span
           style={{
             padding: "2px 8px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+            fontSize: 12,
             fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
             color: catMeta.tagColor,
             background: catMeta.tagBg,
             border: `1px solid ${catMeta.tagBorder}`,
@@ -1081,11 +999,11 @@ function CompactCard({
           display: "flex",
           alignItems: "center",
           gap: 16,
-          borderTop: "1px solid var(--color-border-default)",
+          borderTop: "1px solid #303137",
           paddingTop: 10,
-          fontFamily: "var(--font-mono, monospace)",
-          fontSize: 11,
-          color: "var(--color-text-muted)",
+          fontFamily: "var(--font-interface, var(--font-sans, sans-serif))",
+          fontSize: 12,
+          color: "#aaa79f",
         }}
       >
         {durationMinutes !== undefined && (
@@ -1112,12 +1030,18 @@ function CompactCard({
             width={11}
             height={11}
             fill="none"
-            stroke="var(--color-brand-turquoise)"
+            stroke="var(--cosmetic-accent)"
             strokeWidth={1.6}
           >
             <polygon points="8,2 10,6 14.5,6.5 11,10 12,14.5 8,12 4,14.5 5,10 1.5,6.5 6,6" />
           </svg>
-          <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>
+          <span
+            style={{
+              color: "var(--cosmetic-accent)",
+              fontFamily: "var(--font-mono, monospace)",
+              fontWeight: 700,
+            }}
+          >
             {xpReward} XP
           </span>
         </span>

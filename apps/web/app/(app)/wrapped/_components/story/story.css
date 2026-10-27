@@ -68,14 +68,13 @@
   flex-shrink: 0;
 }
 .ws-brand {
-  font: 12px var(--font-interface);
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--color-text-muted);
-}
-.ws-brand b {
-  color: #ff864f;
-  font-weight: 600;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font:
+    600 22px var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
 }
 .ws-chrome__actions {
   display: flex;
@@ -130,43 +129,30 @@
   padding: 24px 24px 32px;
 }
 
+/* Every slide reads the equipped accent. The tones a slide names (blue,
+   turquoise, amber…) were the first story's palette; the class stays on the
+   element because the slides still carry it, and nothing styles it. */
 .ws-slide {
   margin-block: auto;
-  --ws-accent: #ff864f;
-  animation: ws-rise 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-.ws-slide--blue {
-  --ws-accent: #ff864f;
-}
-.ws-slide--turquoise {
-  --ws-accent: #ff864f;
-}
-.ws-slide--amber {
-  --ws-accent: #ff864f;
-}
-.ws-slide--rose {
-  --ws-accent: #ff864f;
-}
-.ws-slide--violet {
-  --ws-accent: #ff864f;
+  --ws-accent: var(--cosmetic-accent-hover);
+  /* A brief fade, nothing that moves: the slide changes, the frame stays. */
+  animation: ws-fade 180ms ease-out both;
 }
 
-@keyframes ws-rise {
+@keyframes ws-fade {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
 .ws-eyebrow {
   margin: 0 0 18px;
-  font: 700 12px var(--font-interface);
-  letter-spacing: 0;
-  text-transform: none;
+  font:
+    600 13px / 1.5 var(--font-interface),
+    sans-serif;
   color: var(--ws-accent);
 }
 .ws-kicker {
@@ -178,23 +164,28 @@
   color: var(--color-text-secondary);
 }
 
-/* The figure is the picture. It is allowed to be enormous and to sit tight
-   against its own baseline, which is what makes it read as a graphic rather
-   than as a heading. */
+/* The figure is the picture: enormous, tight against its own baseline, on
+   chalk, which is what makes it read as a graphic rather than as a heading. */
 .ws-figure {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0 12px;
-  margin: 0;
+  min-width: 0;
+  margin-block: 20px 24px;
+  margin-inline: 0;
+  padding: 24px;
+  background: #eae7df;
 }
 .ws-figure__value {
+  max-width: 100%;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: clamp(64px, 20vw, 116px);
   line-height: 0.88;
   letter-spacing: -0.045em;
-  color: var(--color-text-primary);
+  color: #141518;
+  overflow-wrap: anywhere;
   /* Digits of different widths make a number jump as it animates in; this
      keeps the figure still. */
   font-variant-numeric: tabular-nums;
@@ -204,7 +195,7 @@
   font-weight: 800;
   font-size: clamp(20px, 5vw, 30px);
   letter-spacing: -0.02em;
-  color: var(--ws-accent);
+  color: var(--cosmetic-accent-ink);
 }
 
 .ws-headline {
@@ -213,8 +204,8 @@
   font-weight: 800;
   font-size: clamp(26px, 7vw, 40px);
   line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--ws-accent);
+  letter-spacing: -0.02em;
+  color: #f4f2ed;
 }
 /* Above the figure it is the reveal itself, so it gets the room a headline
    gets rather than the gap that follows one. */
@@ -231,9 +222,9 @@
 }
 .ws-footer {
   margin: 22px 0 0;
-  font: 12px var(--font-interface);
-  letter-spacing: 0;
-  text-transform: none;
+  font:
+    13px / 1.6 var(--font-interface),
+    sans-serif;
   color: var(--color-text-muted);
 }
 
@@ -249,14 +240,14 @@
 }
 .ws-split__row {
   display: grid;
-  grid-template-columns: 5.5em 1fr 2.5em;
+  grid-template-columns: 72px minmax(0, 1fr) 40px;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .ws-split__label {
-  font: 12px var(--font-interface);
-  letter-spacing: 0;
-  text-transform: none;
+  font:
+    13px / 1.5 var(--font-interface),
+    sans-serif;
   color: var(--color-text-secondary);
 }
 .ws-split__track {
@@ -267,6 +258,7 @@
   display: block;
   height: 100%;
   background: var(--ws-accent);
+  /* A bar fills from its start when it shows, as the site's progress does. */
   animation: ws-grow 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   transform-origin: left center;
 }
@@ -279,7 +271,9 @@
   }
 }
 .ws-split__value {
-  font: 700 13px var(--font-interface);
+  font:
+    600 14px var(--font-mono),
+    monospace;
   color: var(--color-text-primary);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -297,26 +291,27 @@
 }
 .ws-list__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
+/* A square marker, like every Bastion mark. */
 .ws-list__mark {
   width: 8px;
   height: 8px;
   flex-shrink: 0;
   background: var(--ws-accent);
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
 .ws-list__label {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
+  font:
+    500 15px / 1.5 var(--font-interface),
+    sans-serif;
   color: var(--color-text-primary);
 }
 .ws-list__note {
-  font: 12px var(--font-interface);
-  letter-spacing: 0;
-  text-transform: none;
+  font:
+    13px var(--font-interface),
+    sans-serif;
   color: var(--color-text-muted);
 }
 
@@ -341,12 +336,13 @@
   flex-shrink: 0;
 }
 .ws-step {
+  min-height: 44px;
   padding: 8px 12px;
   background: transparent;
   border: 1px solid var(--color-border-default);
-  font: 700 12px var(--font-interface);
-  letter-spacing: 0;
-  text-transform: none;
+  font:
+    500 13px var(--font-interface),
+    sans-serif;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition:
@@ -362,8 +358,9 @@
   cursor: default;
 }
 .ws-count {
-  font: 12px var(--font-interface);
-  letter-spacing: 0;
+  font:
+    13px var(--font-mono),
+    monospace;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -377,75 +374,6 @@
   .ws-step {
     transition: none;
   }
-}
-.ws-brand {
-  display: inline-flex;
-  gap: 10px;
-  align-items: center;
-  font:
-    600 22px var(--font-display),
-    sans-serif;
-  letter-spacing: 0;
-  color: #f4f2ed;
-}
-.ws-figure {
-  background: #eae7df;
-  padding: 24px;
-  margin-block: 20px 24px;
-  min-width: 0;
-}
-.ws-figure__value {
-  color: #141518;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-}
-.ws-figure__unit {
-  color: #923200;
-}
-.ws-headline {
-  color: #f4f2ed;
-}
-.ws-eyebrow {
-  font:
-    12px / 1.5 var(--font-interface),
-    sans-serif;
-  letter-spacing: 0;
-  color: #ff864f;
-}
-.ws-footer {
-  line-height: 1.6;
-}
-.ws-step {
-  min-height: 44px;
-  font:
-    500 12px var(--font-interface),
-    sans-serif;
-  letter-spacing: 0;
-}
-.ws-list__row {
-  flex-wrap: wrap;
-}
-.ws-list__label {
-  font:
-    500 15px / 1.5 var(--font-interface),
-    sans-serif;
-}
-.ws-list__mark {
-  clip-path: none;
-}
-.ws-split__row {
-  grid-template-columns: 72px minmax(0, 1fr) 40px;
-  gap: 10px;
-}
-.ws-split__label {
-  font:
-    11px / 1.5 var(--font-interface),
-    sans-serif;
-}
-.ws-split__value {
-  font:
-    600 14px var(--font-interface),
-    sans-serif;
 }
 @media (max-width: 360px) {
   .ws-stage {

@@ -24,7 +24,7 @@
   width: 18px;
   height: 18px;
   margin-top: -7px;
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
   border: 0;
   border-radius: 0;
 }
@@ -35,7 +35,7 @@
 .avatar-cropper input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: #ff864f;
+  background: var(--cosmetic-accent-hover);
   border: 0;
   border-radius: 0;
 }

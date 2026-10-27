@@ -1,8 +1,4 @@
-"use client";
-
-// "use client" justification: the card lifts on hover.
-
-import React, { useState } from "react";
+import React from "react";
 import {
   BadgeMedallion,
   BADGE_RARITY_LABELS,
@@ -17,6 +13,10 @@ import { ProgressBar } from "@/components/progress-bar";
  * either the day it was earned or how far along it is. The badges page and
  * the profile each drew their own; this is the badges page's, which knew
  * about both states, and the profile shows its earned ones with it.
+ *
+ * Bastion: a matt panel with the rarity as a flat line along its top. The
+ * glow, the gradient strip, the corner brackets and the lift on hover were
+ * the old art direction's, and are gone.
  */
 
 /** The colours a rarity gives a card, from the one scale in tokens.css. */
@@ -31,11 +31,11 @@ export function rarityChrome(rarity: string): {
   const v = BADGE_RARITY_VAR[toBadgeRarity(rarity)];
   return {
     color: v,
-    borderColor: `color-mix(in oklab, ${v} 30%, var(--color-border-subtle))`,
-    grad: `linear-gradient(135deg, ${v}, color-mix(in oklab, ${v} 50%, var(--color-bg-sunken)))`,
-    glow: `color-mix(in oklab, ${v} 16%, transparent)`,
+    borderColor: "#303137",
+    grad: `linear-gradient(${v}, ${v})`,
+    glow: "transparent",
     secColor: v,
-    stripShadow: `0 0 12px color-mix(in oklab, ${v} 55%, transparent)`,
+    stripShadow: "none",
   };
 }
 
@@ -75,7 +75,6 @@ function LockIcon() {
 }
 
 export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Element {
-  const [hovered, setHovered] = useState(false);
   const r = rarityChrome(badge.rarity);
   const isLeg = badge.rarity === "LEGENDARY";
   const pct = badge.progress ? Math.round((badge.progress.done / badge.progress.total) * 100) : 0;
@@ -83,49 +82,19 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
   return (
     <article
       className="badge-card"
-      onMouseEnter={() => {
-        setHovered(true);
-      }}
-      onMouseLeave={() => {
-        setHovered(false);
-      }}
       style={{
         position: "relative",
         padding: isLeg ? "32px 24px 26px" : "26px 20px 22px",
-        background: badge.earned ? "rgba(10,8,38,0.5)" : "rgba(7,5,32,0.4)",
-        border: `1px solid ${
-          badge.earned
-            ? hovered
-              ? "var(--color-border-default)"
-              : r.borderColor
-            : hovered
-              ? "var(--color-border-default)"
-              : "var(--color-border-subtle)"
-        }`,
+        background: "#121418",
+        border: "1px solid #303137",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
         overflow: "hidden",
-        transform: hovered ? "translateY(-3px)" : "translateY(0)",
-        transition: "transform 280ms cubic-bezier(0.16,1,0.3,1), border-color 180ms ease",
       }}
     >
-      {/* Bottom atmospheric glow */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background: badge.earned
-            ? `radial-gradient(ellipse 80% 60% at 50% 100%, ${r.glow}, transparent 70%)`
-            : "none",
-          opacity: 0.55,
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Rarity strip */}
+      {/* Rarity line: flat, in the rarity's colour once earned */}
       <span
         style={{
           position: "absolute",
@@ -133,80 +102,23 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
           left: 0,
           right: 0,
           height: 2,
-          background: badge.earned
-            ? `linear-gradient(90deg, transparent, ${r.color}, transparent)`
-            : "linear-gradient(90deg, transparent, var(--color-text-faint), transparent)",
-          boxShadow: badge.earned ? r.stripShadow : "none",
+          background: badge.earned ? r.color : "#303137",
         }}
         aria-hidden="true"
       />
 
-      {/* Legendary corner brackets */}
-      {isLeg && (
-        <>
-          <span
-            style={{
-              position: "absolute",
-              top: -1,
-              left: -1,
-              width: 12,
-              height: 12,
-              borderTop: `2px solid ${r.color}`,
-              borderLeft: `2px solid ${r.color}`,
-              opacity: 0.7,
-            }}
-          />
-          <span
-            style={{
-              position: "absolute",
-              top: -1,
-              right: -1,
-              width: 12,
-              height: 12,
-              borderTop: `2px solid ${r.color}`,
-              borderRight: `2px solid ${r.color}`,
-              opacity: 0.7,
-            }}
-          />
-          <span
-            style={{
-              position: "absolute",
-              bottom: -1,
-              left: -1,
-              width: 12,
-              height: 12,
-              borderBottom: `2px solid ${r.color}`,
-              borderLeft: `2px solid ${r.color}`,
-              opacity: 0.7,
-            }}
-          />
-          <span
-            style={{
-              position: "absolute",
-              bottom: -1,
-              right: -1,
-              width: 12,
-              height: 12,
-              borderBottom: `2px solid ${r.color}`,
-              borderRight: `2px solid ${r.color}`,
-              opacity: 0.7,
-            }}
-          />
-        </>
-      )}
-
-      {/* RefCode label */}
+      {/* Reference: data, in the monospace */}
       <div
-        className="mono-label mono-label--xs"
         style={{
           position: "absolute",
           top: 10,
           left: 12,
-          color: "var(--color-text-muted)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          color: "#aaa79f",
         }}
       >
-        {"// "}
-        <b style={{ color: badge.earned ? r.color : "var(--color-text-faint)" }}>{badge.refCode}</b>
+        {badge.refCode}
       </div>
 
       {/* Lock icon (unearned) */}
@@ -221,7 +133,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             height: 24,
             display: "grid",
             placeItems: "center",
-            color: "var(--color-text-muted)",
+            color: "#aaa79f",
             zIndex: 2,
           }}
         >
@@ -229,7 +141,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
         </div>
       )}
 
-      {/* Hexagonal medallion: shared component */}
+      {/* Medallion: shared component */}
       <BadgeMedallion
         rarity={toBadgeRarity(badge.rarity)}
         size={isLeg ? "lg" : "md"}
@@ -241,26 +153,24 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
 
       {/* Rarity label */}
       <div
-        className="mono-label mono-label--xs"
+        className="mono-label"
         style={{
-          fontWeight: 700,
-          color: badge.earned ? r.color : "var(--color-text-faint)",
+          color: badge.earned ? r.color : "#aaa79f",
           marginBottom: 8,
         }}
       >
-        · {BADGE_RARITY_LABELS[toBadgeRarity(badge.rarity)]} ·
+        {BADGE_RARITY_LABELS[toBadgeRarity(badge.rarity)]}
       </div>
 
       {/* Name */}
       <h3
         style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 700,
-          fontSize: isLeg ? 22 : 17,
-          lineHeight: 1.15,
-          color: badge.earned ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+          fontFamily: "var(--font-display)",
+          fontWeight: 600,
+          fontSize: isLeg ? 32 : 28,
+          lineHeight: 1.05,
+          color: badge.earned ? "#f4f2ed" : "#c2bfb8",
           margin: "0 0 8px",
-          letterSpacing: "-0.01em",
         }}
       >
         {badge.name}
@@ -269,10 +179,10 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
       {/* Description */}
       <p
         style={{
-          fontFamily: "var(--font-body)",
-          fontSize: isLeg ? 13 : 12.5,
-          lineHeight: 1.5,
-          color: badge.earned ? "var(--color-text-secondary)" : "var(--color-text-muted)",
+          fontFamily: "var(--font-interface)",
+          fontSize: 13,
+          lineHeight: 1.6,
+          color: badge.earned ? "#c2bfb8" : "#aaa79f",
           margin: "0 0 16px",
           maxWidth: isLeg ? 320 : 260,
         }}
@@ -288,8 +198,8 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             marginTop: "auto",
             width: "100%",
             paddingTop: 14,
-            borderTop: "1px solid #1A1640",
-            color: "var(--color-text-muted)",
+            borderTop: "1px solid #303137",
+            color: "#aaa79f",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -307,7 +217,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
           >
             <CheckIcon />
           </span>
-          Obtenu le <b style={{ color: r.color, fontWeight: 700 }}>{badge.earnedDateStr}</b>
+          Obtenu le <b style={{ color: "#f4f2ed", fontWeight: 700 }}>{badge.earnedDateStr}</b>
         </div>
       ) : badge.progress ? (
         <div
@@ -315,7 +225,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             width: "100%",
             marginTop: "auto",
             paddingTop: 14,
-            borderTop: "1px solid #1A1640",
+            borderTop: "1px solid #303137",
           }}
         >
           <div
@@ -323,17 +233,19 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             style={{
               display: "flex",
               justifyContent: "space-between",
-              color: "var(--color-text-muted)",
+              color: "#aaa79f",
               marginBottom: 6,
             }}
           >
             <span>
-              <b style={{ color: "var(--color-text-primary)", fontWeight: 700 }}>
+              <b style={{ color: "#f4f2ed", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
                 {badge.progress.done}/{badge.progress.total}
               </b>{" "}
               {badge.progress.label}
             </span>
-            <span style={{ color: r.color, fontWeight: 700 }}>{pct}%</span>
+            <span style={{ color: "#f4f2ed", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+              {pct}%
+            </span>
           </div>
           <ProgressBar value={pct} size="xs" color={r.color} label={badge.progress.label} />
         </div>
@@ -344,12 +256,12 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             marginTop: "auto",
             width: "100%",
             paddingTop: 14,
-            borderTop: "1px solid #1A1640",
-            color: "var(--color-text-faint)",
+            borderTop: "1px solid #303137",
+            color: "#aaa79f",
             textAlign: "center",
           }}
         >
-          {"// verrouillé"}
+          Verrouillé
         </div>
       )}
     </article>

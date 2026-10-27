@@ -58,10 +58,10 @@ export default async function WrappedPage({
             margin: "0 auto",
             maxWidth: 720,
             padding: "10px 16px",
-            background: "#1a1640",
-            border: "1px solid var(--color-border-default)",
-            color: "var(--color-text-secondary)",
-            font: "600 13px var(--font-mono)",
+            background: "#121418",
+            border: "1px solid #303137",
+            color: "#c2bfb8",
+            font: "600 13px / 1.5 var(--font-interface), sans-serif",
             textAlign: "center",
           }}
         >

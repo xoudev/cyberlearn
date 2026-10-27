@@ -67,7 +67,8 @@ const AUDIT_ROW = {
   targetId: true,
   metadata: true,
   createdAt: true,
-  actor: { select: { username: true, displayName: true, email: true } },
+  // avatarUrl: the console shows the author's picture beside the name.
+  actor: { select: { username: true, displayName: true, email: true, avatarUrl: true } },
 } as const satisfies Prisma.AuditLogSelect;
 
 export type AuditRow = Prisma.AuditLogGetPayload<{ select: typeof AUDIT_ROW }>;

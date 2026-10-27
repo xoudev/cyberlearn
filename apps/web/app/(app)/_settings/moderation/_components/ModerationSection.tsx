@@ -7,7 +7,7 @@ import {
 } from "@cyberlearn/lib/moderation/record";
 import type { ModerationSectionData } from "../../_lib/settings-data";
 import { SectionHead } from "../../_components/SettingsPrimitives";
-import { MONO, S, SANS } from "../../_components/tokens";
+import { S, SANS } from "../../_components/tokens";
 
 /**
  * Somebody's own moderation record.
@@ -47,15 +47,18 @@ export function ModerationSection({ data }: { data: ModerationSectionData }): Re
       {events.length === 0 ? (
         <p
           style={{
-            fontFamily: MONO,
-            fontSize: 12,
-            color: S.muted,
-            border: `1px solid ${S.border}`,
-            padding: "22px 20px",
+            fontFamily: SANS,
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: S.fg2,
+            background: "#121418",
+            border: `1px solid ${S.borderSoft}`,
+            borderLeft: "4px solid var(--color-success)",
+            padding: "20px 22px",
             margin: 0,
           }}
         >
-          {`// ${MODERATION_RECORD_EMPTY}`}
+          {MODERATION_RECORD_EMPTY}
         </p>
       ) : (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
@@ -65,10 +68,10 @@ export function ModerationSection({ data }: { data: ModerationSectionData }): Re
               <li
                 key={event.id}
                 style={{
-                  border: `1px solid ${S.border}`,
-                  borderLeft: `2px solid ${state.color}`,
-                  background: "rgba(5,4,26,0.5)",
-                  padding: "16px 18px",
+                  border: `1px solid ${S.borderSoft}`,
+                  borderLeft: `4px solid ${state.color}`,
+                  background: "#121418",
+                  padding: "18px 20px",
                 }}
               >
                 <div
@@ -77,15 +80,13 @@ export function ModerationSection({ data }: { data: ModerationSectionData }): Re
                     flexWrap: "wrap",
                     gap: "4px 14px",
                     justifyContent: "space-between",
-                    fontFamily: MONO,
-                    fontSize: 10.5,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
+                    fontFamily: SANS,
+                    fontSize: 12,
                     color: S.muted,
                     marginBottom: 10,
                   }}
                 >
-                  <span>{surfaceNoun(event.surface)}</span>
+                  <span style={{ color: S.fg }}>{surfaceNoun(event.surface)}</span>
                   <span>{stamp(new Date(event.createdAt))}</span>
                 </div>
 
@@ -107,8 +108,9 @@ export function ModerationSection({ data }: { data: ModerationSectionData }): Re
                     display: "flex",
                     flexWrap: "wrap",
                     gap: "4px 14px",
-                    fontFamily: MONO,
-                    fontSize: 11,
+                    fontFamily: SANS,
+                    fontSize: 13,
+                    fontWeight: 700,
                     color: state.color,
                   }}
                 >

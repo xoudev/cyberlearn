@@ -14,12 +14,12 @@ export interface OutcomeLabel {
   color: string;
 }
 
-const WAITING: OutcomeLabel = { label: "En attente d'un modérateur", color: "#FFB547" };
+const WAITING: OutcomeLabel = { label: "En attente d'un modérateur", color: "#FFC36E" };
 
 const OUTCOME: Record<string, OutcomeLabel> = {
   PENDING: WAITING,
-  OVERTURNED: { label: "Fausse alerte · rétabli", color: "#0AFFD4" },
-  UPHELD: { label: "Confirmé · supprimé", color: "#FF6B7A" },
+  OVERTURNED: { label: "Fausse alerte · rétabli", color: "#62D4A1" },
+  UPHELD: { label: "Confirmé · supprimé", color: "#FF929B" },
 };
 
 /** How a recorded decision ended; anything not yet decided reads as waiting. */

@@ -108,3 +108,39 @@ export function moduleRoute(
     nodes,
   };
 }
+
+/** One lesson of a windowed route, with its place in the whole module (from 0). */
+export interface RouteWindowNode {
+  node: RouteNode;
+  position: number;
+}
+
+/** The part of a module's route drawn beside the mission card. */
+export interface RouteWindow {
+  /** Lessons of the module before the first one drawn. */
+  hiddenBefore: number;
+  /** Lessons of the module after the last one drawn. */
+  hiddenAfter: number;
+  nodes: RouteWindowNode[];
+}
+
+/**
+ * At most `size` lessons of a module, around the one offered now.
+ *
+ * A module can hold fifteen lessons, and drawn whole its route pushed the
+ * card three screens tall. The window keeps the lesson just behind (where the
+ * reader comes from), the current one, and what comes next; the rest is
+ * counted, not drawn. A finished module (no lesson "now") shows its end.
+ */
+export function routeWindow(nodes: readonly RouteNode[], size = 5): RouteWindow {
+  const all = nodes.map((node, position) => ({ node, position }));
+  if (nodes.length <= size) return { hiddenBefore: 0, hiddenAfter: 0, nodes: all };
+  const now = nodes.findIndex((node) => node.state === "now");
+  const focus = now === -1 ? nodes.length - 1 : now;
+  const start = Math.max(0, Math.min(focus - 1, nodes.length - size));
+  return {
+    hiddenBefore: start,
+    hiddenAfter: nodes.length - (start + size),
+    nodes: all.slice(start, start + size),
+  };
+}

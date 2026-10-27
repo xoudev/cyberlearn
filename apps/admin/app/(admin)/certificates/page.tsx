@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { certificateRepository, type ConsoleCertificateRow } from "@cyberlearn/db";
 import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
-import { KpiCard, PageHeader, Tag } from "../_components/admin-ui";
+import { KpiCard, PageHeader, Tag, UserAvatar } from "../_components/admin-ui";
 import { DataGrid, type GridRowBase } from "../_components/data-grid";
 import { formatDay } from "../users/_components/dates";
 import type { RawParams } from "@/lib/grid-params";
@@ -24,6 +24,7 @@ import {
 } from "./_components/columns";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveAvatarSrcs } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Certificats" };
 
@@ -71,7 +72,9 @@ export default async function AdminCertificatesPage({
   );
   const slice = await certificateRepository.listForConsole(certificateQueryOf(params));
 
-  const rows: GridRowBase[] = slice.rows.map((c) => {
+  const avatars = await resolveAvatarSrcs(slice.rows.map((c) => c.user?.avatarUrl));
+
+  const rows: GridRowBase[] = slice.rows.map((c, index) => {
     const holder = holderOf(c);
     const code = certificateCode(c.publicId, c.issuedAt);
     const href = verifyHref(c.publicId);
@@ -83,6 +86,7 @@ export default async function AdminCertificatesPage({
       cells: [
         c.userId !== null ? (
           <Link key="h" href={`/users/${c.userId}`} className="a-row-link">
+            <UserAvatar src={avatars[index] ?? null} name={holder} size={30} />
             <span style={{ display: "grid", gap: 2 }}>
               <span className="a-row-link-title">{holder}</span>
               {account !== null && (
@@ -95,7 +99,8 @@ export default async function AdminCertificatesPage({
         ) : (
           // An erased account: the certificate outlives it, under the name the
           // erasure wrote, and there is no account left to open.
-          <span key="h" style={{ color: "var(--a-muted)" }}>
+          <span key="h" className="a-person" style={{ color: "var(--a-muted)" }}>
+            <UserAvatar src={null} name={holder} size={30} />
             {holder}
           </span>
         ),
@@ -128,7 +133,7 @@ export default async function AdminCertificatesPage({
             )}
           </span>
         ) : (
-          <Tag key="s" tone="accent">
+          <Tag key="s" tone="success">
             Valide
           </Tag>
         ),
@@ -173,7 +178,7 @@ export default async function AdminCertificatesPage({
         <KpiCard
           label={CERTIFICATE_KPI_LABELS[1]}
           value={counts.active.toLocaleString("fr-FR")}
-          tone="accent"
+          tone="success"
         />
         <KpiCard
           label={CERTIFICATE_KPI_LABELS[2]}
@@ -183,7 +188,7 @@ export default async function AdminCertificatesPage({
         <KpiCard
           label={CERTIFICATE_KPI_LABELS[3]}
           value={counts.lastMonth.toLocaleString("fr-FR")}
-          tone="purple"
+          tone="info"
         />
       </div>
 

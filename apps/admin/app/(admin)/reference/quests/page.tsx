@@ -43,11 +43,11 @@ export default async function ReferenceQuestsPage({
       </span>,
       <span key="t">{QUEST_TYPE_LABEL[q.type]}</span>,
       q.target.toLocaleString("fr-FR"),
-      <b key="x" style={{ color: "var(--a-accent)" }}>
+      <b key="x" className="mono" style={{ color: "var(--a-fg)" }}>
         {q.xpReward.toLocaleString("fr-FR")}
       </b>,
       q.freezeReward.toLocaleString("fr-FR"),
-      <Tag key="s" tone={q.isActive ? "accent" : "neutral"}>
+      <Tag key="s" tone={q.isActive ? "success" : "neutral"}>
         {q.isActive ? "Active" : "Retirée"}
       </Tag>,
     ],

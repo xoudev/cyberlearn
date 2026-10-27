@@ -86,7 +86,13 @@ const nextConfig: NextConfig = {
     // follow the English-only rule); keep the old URLs alive for links
     // already shared in emails, store listings and bookmarks.
     return Promise.resolve([
-      { source: "/telecharger", destination: "/download", permanent: true },
+      // The site stopped promoting the mobile app on 27 October 2026 (the app
+      // itself and /api/mobile/* keep working). Its install page is gone; its
+      // addresses, printed in the promo video and the app's README, land on
+      // the home page. Not permanent: the page is meant to come back, and a
+      // browser must not remember where it went in the meantime.
+      { source: "/download", destination: "/", permanent: false },
+      { source: "/telecharger", destination: "/", permanent: false },
       { source: "/classement", destination: "/leaderboard", permanent: true },
       { source: "/defis", destination: "/challenges", permanent: true },
       { source: "/casier", destination: "/locker", permanent: true },

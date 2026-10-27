@@ -29,7 +29,7 @@ interface Props {
 
 const PHASE_TONE: Record<TournamentPhase, Tone> = {
   UPCOMING: "info",
-  RUNNING: "accent",
+  RUNNING: "success",
   FINISHED: "neutral",
 };
 

@@ -91,103 +91,36 @@ function FlagForm({
 
   if (state.correct) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 16,
-          padding: "40px 32px",
-          background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
-          border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            background: "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
-            display: "grid",
-            placeItems: "center",
-            color: "var(--cosmetic-accent)",
-          }}
-        >
-          <IconCheck size={24} />
-        </div>
+      <div className="challenge-solved">
+        <span className="challenge-solved__mark" aria-hidden="true">
+          <IconCheck size={22} />
+        </span>
         <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 16,
-              color: "var(--cosmetic-accent)",
-              marginBottom: 6,
-            }}
-          >
-            FLAG CORRECT · CHALLENGE RÉSOLU
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--color-text-muted)",
-            }}
-          >
+          <p className="challenge-solved__title">Flag correct, défi résolu.</p>
+          <p className="challenge-solved__xp">
             {state.xpEarned !== undefined
               ? `+${String(state.xpEarned)} XP crédités sur ton profil.`
               : "XP crédités sur ton profil."}
-          </div>
+          </p>
         </div>
       </div>
     );
   }
 
   if (remaining === 0 && userAttempts >= maxAttempts) {
-    return (
-      <div
-        style={{
-          padding: "24px 32px",
-          background: "rgba(255,77,109,0.04)",
-          border: "1px solid rgba(255,77,109,0.2)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          color: "var(--color-danger)",
-          textAlign: "center",
-        }}
-      >
-        Plus de tentatives disponibles pour ce défi.
-      </div>
-    );
+    return <p className="challenge-alert">Plus de tentatives disponibles pour ce défi.</p>;
   }
 
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <label
-        htmlFor="challenge-flag"
-        className="mono-label"
-        style={{
-          color: "var(--color-text-muted)",
-          marginBottom: 4,
-        }}
-      >
+    <form action={action} className="challenge-form">
+      <label htmlFor="challenge-flag" className="challenge-form__label">
         Flag trouvé
       </label>
 
       {state.error !== undefined && (
-        <div
-          role="alert"
-          style={{
-            padding: "10px 14px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.25)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--color-danger)",
-          }}
-        >
+        <p role="alert" className="challenge-alert">
           {state.error}
-        </div>
+        </p>
       )}
 
       <div className="challenge-flag-row">
@@ -200,46 +133,17 @@ function FlagForm({
           autoComplete="off"
           spellCheck={false}
           required
-          style={{
-            flex: 1,
-            padding: "11px 14px",
-            background: "#060420",
-            border: "1px solid var(--color-border-default)",
-            color: "var(--color-text-primary)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            outline: "none",
-            letterSpacing: "0.04em",
-          }}
         />
-        <button
-          className="mono-label"
-          type="submit"
-          disabled={pending}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "11px 24px",
-            background: pending ? "var(--color-border-subtle)" : "var(--color-brand-blue)",
-            color: "#fff",
-            fontWeight: 700,
-            border: "none",
-            cursor: pending ? "not-allowed" : "pointer",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <IconFlag size={12} />
-          {pending ? "Vérification..." : "Soumettre"}
+        <button className="btn" type="submit" disabled={pending}>
+          <IconFlag size={14} />
+          {pending ? "Vérification…" : "Soumettre"}
         </button>
       </div>
 
-      <div
-        style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}
-      >
+      <p className="challenge-form__meta">
         {remaining} tentative{remaining > 1 ? "s" : ""} restante{remaining > 1 ? "s" : ""} sur{" "}
         {maxAttempts}
-      </div>
+      </p>
     </form>
   );
 }
@@ -253,65 +157,16 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
   );
 
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div
-        className="mono-label"
-        style={{
-          color: "var(--color-text-muted)",
-          marginBottom: 4,
-        }}
-      >
-        {"// VALIDATION"}
-      </div>
+    <form action={action} className="challenge-form">
+      {state.error !== undefined && <p className="challenge-alert">{state.error}</p>}
 
-      {state.error !== undefined && (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.25)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--color-danger)",
-          }}
-        >
-          {state.error}
-        </div>
-      )}
-
-      <button
-        className="mono-label mono-label--md"
-        type="submit"
-        disabled={pending}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          padding: "14px 32px",
-          background: pending
-            ? "var(--color-border-subtle)"
-            : "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-          color: pending ? "var(--color-text-muted)" : "var(--cosmetic-accent)",
-          border: `1px solid ${pending ? "var(--color-border-default)" : "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"}`,
-          fontWeight: 700,
-          cursor: pending ? "not-allowed" : "pointer",
-          alignSelf: "flex-start",
-        }}
-      >
+      <button className="btn" type="submit" disabled={pending}>
         <IconCheck size={14} />
-        {pending ? "Enregistrement..." : "Marquer comme complété"}
+        {pending ? "Enregistrement…" : "Marquer comme complété"}
       </button>
 
-      <p
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: "var(--color-text-muted)",
-          margin: 0,
-        }}
-      >
-        Sur l&apos;honneur · valide uniquement si tu as réellement résolu le défi.
+      <p className="challenge-form__meta">
+        Sur l&apos;honneur : valide uniquement si tu as réellement résolu le défi.
       </p>
     </form>
   );
@@ -330,65 +185,33 @@ export function ChallengeAction({
   // SCRIPT type: flag submission is handled inline inside ScriptRunner
   if (type === "SCRIPT") return null;
 
-  const panelStyle: React.CSSProperties = {
-    padding: "24px 28px",
-    background: "var(--color-bg-elevated)",
-    border: "1px solid var(--color-border-subtle)",
-  };
-
   if (displayStatus === "LOCKED") {
     return (
-      <div id="challenge-action" style={{ ...panelStyle, borderColor: "rgba(107,104,144,0.4)" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            color: "var(--color-text-muted)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-          }}
-        >
+      <div id="challenge-action" className="challenge-panel">
+        <p className="challenge-panel__status">
           <IconLock size={16} />
           <span>
             Défi verrouillé.
             {prerequisiteTitle !== null ? ` Complète d'abord : ${prerequisiteTitle}` : ""}
           </span>
-        </div>
+        </p>
       </div>
     );
   }
 
   if (displayStatus === "COMPLETED") {
     return (
-      <div
-        id="challenge-action"
-        style={{
-          ...panelStyle,
-          borderColor: "color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
-          background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            color: "var(--cosmetic-accent)",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 13,
-          }}
-        >
+      <div id="challenge-action" className="challenge-panel">
+        <p className="challenge-panel__status challenge-panel__status--done">
           <IconCheck size={16} />
           Défi résolu · bien joué.
-        </div>
+        </p>
       </div>
     );
   }
 
   return (
-    <div id="challenge-action" style={panelStyle}>
+    <div id="challenge-action" className="challenge-panel">
       {type === "CTF" ? (
         <FlagForm challengeId={challengeId} maxAttempts={maxAttempts} userAttempts={userAttempts} />
       ) : (

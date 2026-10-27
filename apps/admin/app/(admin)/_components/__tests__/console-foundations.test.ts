@@ -95,7 +95,7 @@ describe("the console palette", () => {
   });
 
   it("gives every tone a token, so a role colour follows the site's", () => {
-    const tones: Tone[] = ["neutral", "accent", "success", "info", "warning", "danger", "purple"];
+    const tones: Tone[] = ["neutral", "accent", "success", "info", "warning", "danger"];
     for (const tone of tones) expect(toneColor(tone)).toMatch(/^var\(--a-[\w-]+\)$/u);
   });
 

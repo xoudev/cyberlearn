@@ -322,7 +322,6 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
             En cours
           </span>
           <span className="active-card__refcode">
-            {"// "}
             <b>{path.refCode}</b>
           </span>
         </div>
@@ -409,7 +408,6 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
       <Link href={`/paths/${path.slug}`} className="trophy-card__body">
         <div className="trophy-card__eyebrow">Certifié</div>
         <div className="trophy-card__refcode">
-          {"// "}
           <b>{path.refCode}</b>
         </div>
         <h3 className="trophy-card__title">{path.title}</h3>

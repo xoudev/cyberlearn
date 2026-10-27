@@ -48,7 +48,7 @@ function Section({
 function DemoCard({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="w-full flex flex-wrap items-center gap-4 rounded-xl p-5"
+      className="w-full flex flex-wrap items-center gap-4 p-5"
       style={{
         backgroundColor: "var(--color-bg-elevated)",
         border: "1px solid var(--color-border-subtle)",
@@ -89,10 +89,7 @@ export default function DevComponentsPage(): React.JSX.Element {
         {/* ── Brand components ─────────────────────────────────────── */}
 
         <div className="space-y-2">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--color-brand-turquoise)" }}
-          >
+          <p className="text-sm font-semibold" style={{ color: "var(--cosmetic-accent-hover)" }}>
             Brand components - @cyberlearn/ui
           </p>
           <Separator />
@@ -131,10 +128,7 @@ export default function DevComponentsPage(): React.JSX.Element {
         {/* ── shadcn/ui ─────────────────────────────────────────────── */}
 
         <div className="space-y-2 pt-4">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--color-brand-blue)" }}
-          >
+          <p className="text-sm font-semibold" style={{ color: "var(--cosmetic-accent-hover)" }}>
             shadcn/ui - primitives
           </p>
           <Separator />

@@ -24,13 +24,45 @@ export interface ChangelogEntry {
   changes: ChangelogChange[];
 }
 
+/** The three kinds, in the Bastion state colours: copper for what is new, chalk for what got better, green for what was repaired. */
 export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg: string }> = {
-  new: { label: "Nouveau", color: "#0AFFD4", bg: "rgba(10,255,212,0.08)" },
-  improved: { label: "Amélioration", color: "#6E8BFF", bg: "rgba(0,36,255,0.10)" },
-  fixed: { label: "Correctif", color: "#FFB020", bg: "rgba(255,176,32,0.08)" },
+  new: { label: "Nouveau", color: "#FF864F", bg: "rgba(255,107,43,0.10)" },
+  improved: { label: "Amélioration", color: "#EAE7DF", bg: "rgba(234,231,223,0.08)" },
+  fixed: { label: "Correctif", color: "#62D4A1", bg: "rgba(98,212,161,0.08)" },
 };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "3.7",
+    date: "2026-10-27",
+    title: "Nouvelle identité Bastion et ses finitions",
+    changes: [
+      {
+        type: "new",
+        text: "CyberLearn change d'allure : le logo Bastion, des titres condensés, un fond carbone, des surfaces craie pour ce qui compte et le cuivre pour l'action principale, sur tout le site, la console et les e-mails. Les angles sont droits partout, des boutons aux listes déroulantes, et les pages bougent un peu : elles arrivent en glissant, les listes s'affichent dans l'ordre, les cartes se soulèvent au survol et les barres de progression se remplissent.",
+      },
+      {
+        type: "improved",
+        text: "Le casier montre ce que tu changes sur les vrais éléments du site : la navigation avec le logo, une mission avec sa barre de progression et son bouton, un bloc de code de leçon et ton avatar. L'accent que tu équipes remplace désormais le cuivre partout, logo compris, et s'applique aussitôt. Les hexagones laissent la place à des avatars carrés, que le « Contour » équipé habille ; l'accent par défaut s'appelle enfin « Cuivre », et « Équipé » a la taille du bouton qu'il remplace.",
+      },
+      {
+        type: "improved",
+        text: "Le QCM de fin de leçon pose une question à la fois : après ta réponse, son explication reste affichée et « Question suivante » passe à la suivante. Le verdict s'affiche tout de suite, sans attendre le serveur, et la dernière réponse valide la leçon toute seule, sans passer par « Terminer ». Les leçons s'étendent sur toute la largeur de l'écran, avec une barre d'outils redessinée (un repère par section, le plan, les notes et le mode focus), des liens « Pour aller plus loin » en rangées et un bilan de fin de leçon sur craie, avec tes XP, ton score et tes badges.",
+      },
+      {
+        type: "new",
+        text: "Des badges et des avatars par défaut redessinés : traits craie, un seul détail cuivre, plus aucun hexagone. Les icônes de dossiers du bloc-notes sont redessinées dans le même style, avec leur nom en français. L'app affiche aussi les nouveaux badges, avatars et icônes.",
+      },
+      {
+        type: "improved",
+        text: "Les révisions du jour s'ouvrent depuis un bouton de la barre du haut, à côté de la cloche, plutôt que depuis la barre latérale : c'est une fenêtre, pas une page. Les CGU, la confidentialité et le contact restent dans l'espace connecté quand tu y es. Le site ne propose plus l'application mobile pour le moment ; elle continue de fonctionner.",
+      },
+      {
+        type: "fixed",
+        text: "Ta photo de profil se voit dans la barre latérale et la barre du haut, même orange : elle repose sur un fond sombre avec un contour. Sur le tableau de bord, un module de nombreuses leçons ne déroule plus toute sa liste : cinq étapes autour de la leçon en cours, et le reste compté. L'étiquette « Fermé » d'un sujet du forum est lisible, la fin d'un sujet fermé le dit clairement, et ton historique de modération dans les paramètres passe aux couleurs du site.",
+      },
+    ],
+  },
   {
     version: "3.6",
     date: "2026-10-18",

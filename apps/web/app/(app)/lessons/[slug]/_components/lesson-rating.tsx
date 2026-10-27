@@ -177,7 +177,7 @@ export function LessonRating({
           alignItems: "center",
           gap: 10,
           padding: "14px 16px",
-          background: "rgba(42,37,96,0.4)",
+          background: "#191c22",
           border: "1px solid var(--color-border-default)",
         }}
       >

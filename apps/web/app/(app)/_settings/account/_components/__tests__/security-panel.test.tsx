@@ -45,7 +45,7 @@ afterEach(cleanup);
 describe("the security panel", () => {
   it("offers an administrator no removal, and points to the break-glass procedure", async () => {
     render(<SecurityPanel canDisableMfa={false} />);
-    expect(await screen.findByText("MFA ACTIF")).toBeTruthy();
+    expect(await screen.findByText("MFA actif")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Désactiver le MFA" })).toBeNull();
     expect(
       screen.getByText(/procédure de secours décrite dans docs\/authentication\.md/),
@@ -74,7 +74,7 @@ describe("the security panel", () => {
   it("says nothing of the procedure to an administrator without a factor", async () => {
     m.listFactors.mockResolvedValue({ data: { totp: [] }, error: null });
     render(<SecurityPanel canDisableMfa={false} />);
-    expect(await screen.findByText("MFA INACTIF")).toBeTruthy();
+    expect(await screen.findByText("MFA inactif")).toBeTruthy();
     expect(screen.queryByText(/procédure de secours/)).toBeNull();
   });
 });

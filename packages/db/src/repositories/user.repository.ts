@@ -52,6 +52,9 @@ const CONSOLE_USER_ROW = {
   email: true,
   username: true,
   displayName: true,
+  // The stored value, a marker or a path: the console signs or prefixes it
+  // (apps/admin/lib/avatar.ts) to show the picture beside the name.
+  avatarUrl: true,
   role: true,
   level: true,
   xpTotal: true,
@@ -128,6 +131,7 @@ const OWN_ACCOUNT = {
   email: true,
   username: true,
   displayName: true,
+  avatarUrl: true,
   role: true,
   createdAt: true,
   lastActiveAt: true,

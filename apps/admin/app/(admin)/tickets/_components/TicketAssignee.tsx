@@ -34,7 +34,7 @@ export function TicketAssignee({
     <span style={{ display: "inline-grid", gap: 4 }}>
       <Select
         block={false}
-        triggerStyle={{ padding: "5px 10px", fontSize: 11 }}
+        triggerStyle={{ minWidth: 180 }}
         value={assigneeId ?? NOBODY}
         disabled={pending}
         aria-label="Administrateur assigné au ticket"

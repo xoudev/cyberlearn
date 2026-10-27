@@ -1,7 +1,4 @@
-"use client";
-
 import { z } from "zod";
-import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 
 const externalLinkPropsSchema = z.object({
   href: z.url(),
@@ -27,6 +24,42 @@ function isSafeUrl(href: string): boolean {
   }
 }
 
+/** "owasp.org" for https://www.owasp.org/…: the source, as a reader names it. */
+export function linkSource(href: string): string {
+  try {
+    return new URL(href).hostname.replace(/^www\./u, "");
+  } catch {
+    return href;
+  }
+}
+
+/** The way out: up and to the right, square-ended like the site's icons. */
+function Arrow({ className }: { className: string }): React.JSX.Element {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M4.5 11.5l7-7M6 4.5h5.5V10"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+/** Said after the link's name: it leaves the lesson for another tab. */
+const NEW_TAB = "(s'ouvre dans un nouvel onglet)";
+
+/**
+ * A resource outside the lesson, most often in its "pour aller plus loin".
+ *
+ * The card is a row on the panel's surface: the source in the meta grey, the
+ * title, the author's line about it, and an arrow that leans toward the
+ * corner it leads out of on hover and on focus, where the edge takes the
+ * accent. Its look is the stylesheet's (globals.css, `.lesson-link`): it used
+ * to be inline, with a blue icon tile and a glow set from mouse handlers,
+ * which made a client component of a link.
+ */
 export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
   const { children, ...rest } = rawProps;
   const result = externalLinkPropsSchema.safeParse({
@@ -41,17 +74,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
         result.success ? "unsafe URL" : z.flattenError(result.error),
       );
     }
-    return (
-      <span
-        style={{
-          color: "var(--color-category-cybersec)",
-          fontFamily: "var(--font-mono, monospace)",
-          fontSize: "12px",
-        }}
-      >
-        [ExternalLink] URL invalide
-      </span>
-    );
+    return <span className="lesson-link-invalid">[ExternalLink] URL invalide</span>;
   }
 
   const { href, description, variant } = result.data;
@@ -60,130 +83,25 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
 
   if (variant === "link") {
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          color: "var(--color-info)",
-          textDecoration: "none",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "4px",
-          borderBottom: "1px solid rgba(77,139,255,0.3)",
-          transition: "border-color 150ms ease, color 150ms ease",
-        }}
-        onMouseEnter={(e) => {
-          const a = e.currentTarget;
-          a.style.borderBottomColor = "var(--color-info)";
-          a.style.color = "#7AAAFF";
-        }}
-        onMouseLeave={(e) => {
-          const a = e.currentTarget;
-          a.style.borderBottomColor = "rgba(77,139,255,0.3)";
-          a.style.color = "var(--color-info)";
-        }}
-      >
+      <a className="lesson-link-inline" href={href} target="_blank" rel="noopener noreferrer">
         {label}
-        <ExternalLinkIcon size={11} aria-hidden />
+        <Arrow className="lesson-link-inline__arrow" />
+        <span className="sr-only"> {NEW_TAB}</span>
       </a>
     );
   }
 
-  // Card variant
-  let hostname = href;
-  try {
-    hostname = new URL(href).hostname;
-  } catch {
-    // fallback to full href
-  }
-
   return (
-    <a
-      className="card card--sunken"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "14px",
-        margin: "1.5rem 0",
-        padding: "14px 18px",
-        textDecoration: "none",
-        transition: "border-color 200ms ease, box-shadow 200ms ease",
-        cursor: "pointer",
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget;
-        el.style.borderColor = "var(--color-border-default)";
-        el.style.boxShadow =
-          "0 0 0 1px var(--color-border-default), 0 4px 24px color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)";
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget;
-        el.style.borderColor = "var(--color-border-subtle)";
-        el.style.boxShadow = "none";
-      }}
-    >
-      <div
-        style={{
-          width: "36px",
-          height: "36px",
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(77,139,255,0.08)",
-          border: "1px solid rgba(77,139,255,0.2)",
-          color: "var(--color-info)",
-        }}
-      >
-        <ExternalLinkIcon size={16} aria-hidden />
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: "14px",
-            fontWeight: 600,
-            color: "var(--color-text-primary)",
-            marginBottom: description ? "4px" : "6px",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {label}
-        </div>
-
-        {description && (
-          <div
-            style={{
-              fontSize: "13px",
-              color: "var(--color-text-secondary)",
-              marginBottom: "6px",
-              lineHeight: "1.4",
-            }}
-          >
-            {description}
-          </div>
+    <a className="lesson-link" href={href} target="_blank" rel="noopener noreferrer">
+      <span className="lesson-link__body">
+        <span className="lesson-link__source">{linkSource(href)}</span>
+        <span className="lesson-link__title">{label}</span>
+        {description !== undefined && description !== "" && (
+          <span className="lesson-link__description">{description}</span>
         )}
-
-        <div
-          style={{
-            fontSize: "11px",
-            color: "var(--color-text-muted)",
-            fontFamily: "var(--font-mono, monospace)",
-            letterSpacing: "0.02em",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {hostname}
-        </div>
-      </div>
+      </span>
+      <Arrow className="lesson-link__arrow" />
+      <span className="sr-only"> {NEW_TAB}</span>
     </a>
   );
 }

@@ -483,8 +483,7 @@ export function ImportClient(): React.ReactElement {
               padding: "12px 14px",
               background: "color-mix(in srgb, var(--a-accent) 6%, transparent)",
               border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--a-accent)",
             }}
           >
@@ -501,15 +500,8 @@ export function ImportClient(): React.ReactElement {
             }}
           >
             <div
-              style={{
-                padding: "8px 12px",
-                borderBottom: "1px solid var(--a-border)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: "var(--a-muted)",
-              }}
+              className="a-meta-label"
+              style={{ padding: "10px 12px", borderBottom: "1px solid var(--a-border)" }}
             >
               Lot · {files.length} fichier{files.length > 1 ? "s" : ""}
             </div>
@@ -548,8 +540,7 @@ export function ImportClient(): React.ReactElement {
               padding: "12px 14px",
               background: "color-mix(in srgb, var(--a-info) 6%, transparent)",
               border: "1px solid color-mix(in srgb, var(--a-info) 20%, transparent)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--a-info)",
             }}
           >
@@ -577,9 +568,8 @@ export function ImportClient(): React.ReactElement {
           >
             <div
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
+                fontSize: 13,
+                fontWeight: 600,
                 color: "var(--a-accent)",
                 marginBottom: 6,
               }}
@@ -590,8 +580,7 @@ export function ImportClient(): React.ReactElement {
               <div
                 key={i}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 12,
                   color: "var(--a-warning)",
                   marginTop: 4,
                 }}
@@ -604,18 +593,8 @@ export function ImportClient(): React.ReactElement {
               onClick={() => {
                 router.push(`/lessons/${current.imported?.lessonId ?? ""}`);
               }}
-              style={{
-                marginTop: 10,
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "var(--a-accent)",
-                background: "none",
-                border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
-                padding: "6px 12px",
-                cursor: "pointer",
-              }}
+              className="a-btn a-btn--ghost a-btn--sm"
+              style={{ marginTop: 10 }}
             >
               Ouvrir l&apos;éditeur →
             </button>
@@ -628,18 +607,7 @@ export function ImportClient(): React.ReactElement {
             type="button"
             onClick={handleValidate}
             disabled={files.length === importedCount || busy}
-            style={{
-              padding: "10px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              background: "transparent",
-              border: "1px solid var(--a-border-2)",
-              color: files.length > importedCount ? "var(--a-fg-2)" : "var(--a-faint-2)",
-              cursor: files.length > importedCount ? "pointer" : "not-allowed",
-            }}
+            className="a-btn a-btn--ghost"
           >
             {isValidating
               ? "Validation…"
@@ -650,19 +618,7 @@ export function ImportClient(): React.ReactElement {
             type="button"
             onClick={handleImport}
             disabled={validCount === 0 || busy}
-            style={{
-              padding: "10px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              background: validCount > 0 ? "var(--a-blue)" : "transparent",
-              border: `1px solid ${validCount > 0 ? "var(--a-blue)" : "var(--a-border-2)"}`,
-              color: validCount > 0 ? "var(--a-fg)" : "var(--a-faint-2)",
-              cursor: validCount > 0 ? "pointer" : "not-allowed",
-              transition: "all 150ms ease",
-            }}
+            className={validCount > 0 ? "a-btn a-btn--primary" : "a-btn a-btn--ghost"}
           >
             {isImporting
               ? "Import…"
@@ -685,18 +641,10 @@ export function ImportClient(): React.ReactElement {
             flexWrap: "wrap",
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--a-muted)",
-            }}
-          >
-            {showDiff ? "DIFFÉRENCES AVEC LA BASE" : "ÉDITEUR MDX"}
+          <span className="a-meta-label">
+            {showDiff ? "Différences avec la base" : "Éditeur MDX"}
           </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--a-muted)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-muted)" }}>
             {current?.name ?? "aucun fichier"}
             {current?.imported ? " · écrite (lecture seule)" : ""}
           </span>
@@ -729,16 +677,7 @@ export function ImportClient(): React.ReactElement {
                 onClick={() => {
                   newFile("nouvelle-lecon.mdx", "");
                 }}
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  letterSpacing: "0.1em",
-                  color: "var(--a-info)",
-                  background: "none",
-                  border: "1px solid var(--a-border-2)",
-                  padding: "3px 8px",
-                  cursor: "pointer",
-                }}
+                className="a-btn a-btn--ghost a-btn--sm"
               >
                 Nouveau fichier
               </button>
@@ -747,16 +686,7 @@ export function ImportClient(): React.ReactElement {
                 onClick={() => {
                   newFile("example.mdx", EXAMPLE_MDX);
                 }}
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  letterSpacing: "0.1em",
-                  color: "var(--a-info)",
-                  background: "none",
-                  border: "1px solid var(--a-border-2)",
-                  padding: "3px 8px",
-                  cursor: "pointer",
-                }}
+                className="a-btn a-btn--ghost a-btn--sm"
               >
                 Charger exemple
               </button>
@@ -803,8 +733,7 @@ export function ImportClient(): React.ReactElement {
           style={{
             padding: "8px 16px",
             borderTop: "1px solid var(--a-border)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 12,
             color: "var(--a-muted)",
             display: "flex",
             gap: 16,
@@ -819,17 +748,7 @@ export function ImportClient(): React.ReactElement {
       {/* Panel 3 - Preview (selected file) */}
       <div className="import-preview">
         <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--a-border)" }}>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--a-muted)",
-            }}
-          >
-            APERÇU MÉTADONNÉES
-          </span>
+          <span className="a-meta-label">Aperçu des métadonnées</span>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
           {current?.validation?.metadata ? (
@@ -837,8 +756,7 @@ export function ImportClient(): React.ReactElement {
           ) : (
             <div
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: 13,
                 color: "var(--a-muted)",
                 paddingTop: 20,
               }}
@@ -908,6 +826,7 @@ function FileRow({
           display: "flex",
           alignItems: "center",
           gap: 10,
+          minHeight: 44,
           padding: "8px 4px 8px 12px",
           background: "none",
           border: "none",
@@ -920,14 +839,13 @@ function FileRow({
             width: 7,
             height: 7,
             background: status.color,
-            boxShadow: `0 0 5px color-mix(in srgb, ${status.color} 50%, transparent)`,
             flexShrink: 0,
           }}
         />
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
+            fontSize: 12,
             color: active ? "var(--a-fg)" : "var(--a-fg-2)",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -939,8 +857,7 @@ function FileRow({
         </span>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 12,
             color: status.color,
             whiteSpace: "nowrap",
           }}
@@ -954,13 +871,13 @@ function FileRow({
           onClick={onOpenEditor}
           title="Ouvrir dans l'éditeur de leçon"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 14,
             color: "var(--a-accent)",
             background: "none",
             border: "none",
             cursor: "pointer",
-            padding: "8px 4px",
+            minWidth: 44,
+            minHeight: 44,
             flexShrink: 0,
           }}
         >
@@ -973,13 +890,13 @@ function FileRow({
           onClick={onRemove}
           title="Retirer du lot"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 14,
             color: "var(--a-muted)",
             background: "none",
             border: "none",
             cursor: "pointer",
-            padding: "8px 10px 8px 4px",
+            minWidth: 44,
+            minHeight: 44,
             flexShrink: 0,
           }}
         >
@@ -997,8 +914,7 @@ function ErrorBanner({ message }: { message: string }) {
         padding: "12px 14px",
         background: "color-mix(in srgb, var(--a-danger) 6%, transparent)",
         border: "1px solid color-mix(in srgb, var(--a-danger) 30%, transparent)",
-        fontFamily: "var(--font-mono)",
-        fontSize: 11,
+        fontSize: 13,
         color: "var(--a-danger)",
       }}
     >
@@ -1023,12 +939,12 @@ function ValidationPanel({
       ? "var(--a-warning)"
       : "var(--a-accent)";
   const label = !result.valid
-    ? `${String(result.errors.length)} ERREUR${result.errors.length > 1 ? "S" : ""}`
+    ? `${String(result.errors.length)} erreur${result.errors.length > 1 ? "s" : ""}`
     : update
       ? isUnchanged(update)
-        ? "IDENTIQUE À LA BASE"
-        : "LEÇON EXISTANTE · À METTRE À JOUR"
-      : "VALIDE";
+        ? "Identique à la base"
+        : "Leçon existante · à mettre à jour"
+      : "Valide";
   return (
     <div
       style={{
@@ -1056,10 +972,8 @@ function ValidationPanel({
         />
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.1em",
-            fontWeight: 700,
+            fontSize: 13,
+            fontWeight: 600,
             color: tone,
           }}
         >
@@ -1102,8 +1016,7 @@ function ValidationPanel({
               key={i}
               style={{
                 padding: "5px 14px",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 12,
                 color: "var(--a-warning)",
                 display: "flex",
                 gap: 6,
@@ -1131,8 +1044,7 @@ function ErrorItem({
     <div style={{ padding: "6px 14px", display: "flex", gap: 8, alignItems: "flex-start" }}>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 12,
           color: "var(--a-danger)",
           marginTop: 1,
         }}
@@ -1156,9 +1068,7 @@ function ErrorItem({
             ) : null}
           </span>
         )}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--a-fg-2)" }}>
-          {error.message}
-        </span>
+        <span style={{ fontSize: 12, color: "var(--a-fg-2)" }}>{error.message}</span>
       </div>
     </div>
   );
@@ -1279,24 +1189,15 @@ function MetadataPreview({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: "var(--a-accent)",
-          marginBottom: 4,
-        }}
-      >
-        {"// Métadonnées extraites"}
+      <div className="a-meta-label" style={{ marginBottom: 4 }}>
+        Métadonnées extraites
       </div>
       {rows.map(([key, value]) => (
         <div key={key}>
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: 11,
               color: "var(--a-muted)",
               marginBottom: 2,
             }}
@@ -1306,7 +1207,7 @@ function MetadataPreview({
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 12,
               color: "var(--a-fg-2)",
               background: "var(--a-surface-2)",
               border: "1px solid var(--a-border)",

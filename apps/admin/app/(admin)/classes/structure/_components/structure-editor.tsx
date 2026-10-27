@@ -171,7 +171,7 @@ function PromotionRow({ promotion: p }: { promotion: StructurePromotion }): Reac
           {p.startYear !== null && ` · ${String(p.startYear)}`} · {p.classCount} classe
           {p.classCount > 1 ? "s" : ""}
         </span>
-        <Tag tone={p.archived ? "neutral" : "accent"}>{p.archived ? "Archivée" : "Active"}</Tag>
+        <Tag tone={p.archived ? "neutral" : "success"}>{p.archived ? "Archivée" : "Active"}</Tag>
       </summary>
 
       <form action={formAction} onReset={keepFormInput} className="a-form a-disclosure-body">

@@ -31,25 +31,14 @@ export function WriteupsSection({
   board: WriteupBoard;
 }): React.ReactElement {
   return (
-    <section
-      className="challenge-solutions"
-      aria-label="Solutions"
-      style={{ marginTop: 48, display: "grid", gap: 16 }}
-    >
-      <div
-        className="mono-label"
-        style={{
-          color: "var(--cosmetic-accent)",
-          fontWeight: 600,
-          paddingBottom: 14,
-          borderBottom: "1px dashed var(--color-border-subtle)",
-        }}
-      >
-        {"// "}Solutions · {solutionsLabel(board.count)}
+    <section className="challenge-solutions" aria-label="Solutions">
+      <div className="challenge-section-head">
+        <h2>Solutions</h2>
+        <span>{solutionsLabel(board.count)}</span>
       </div>
 
       {!board.solved ? (
-        <p className="card card--sunken" style={{ margin: 0, padding: "14px 16px", fontSize: 14 }}>
+        <p className="card challenge-solutions__locked">
           Les solutions des autres s&apos;ouvrent quand tu as résolu le défi : une solution,
           c&apos;est la réponse. Une fois le flag trouvé, tu pourras aussi publier la tienne.
         </p>
@@ -68,27 +57,14 @@ export function WriteupsSection({
             }
           />
           {board.others.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-muted)" }}>
+            <p className="challenge-solutions__none">
               Personne d&apos;autre n&apos;a encore publié sa solution.
             </p>
           ) : (
-            <ul
-              aria-label="Les solutions des autres"
-              style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 14 }}
-            >
+            <ul aria-label="Les solutions des autres" className="challenge-solutions__list">
               {board.others.map((writeup) => (
-                <li key={writeup.id} className="card" style={{ padding: "14px 18px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      flexWrap: "wrap",
-                      marginBottom: 8,
-                      fontSize: 12.5,
-                      color: "var(--color-text-muted)",
-                    }}
-                  >
+                <li key={writeup.id} className="card">
+                  <div className="challenge-solutions__meta">
                     <span>
                       {writeup.author === null ? (
                         "Compte supprimé"
@@ -99,15 +75,13 @@ export function WriteupsSection({
                       )}
                       {writeup.author?.isFriend === true && <FriendMark size={12} />}
                     </span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                    <span className="challenge-solutions__when">
                       {dayFormat.format(new Date(writeup.updatedAt))}
                       {/* The others' only: the reader's own is in the editor above. */}
                       <ReportContentButton surface="CHALLENGE_WRITEUP" contentId={writeup.id} />
                     </span>
                   </div>
-                  <div
-                    style={{ fontSize: 14, lineHeight: 1.65, color: "var(--color-text-secondary)" }}
-                  >
+                  <div className="challenge-solutions__text">
                     {renderNoteMarkdown(writeup.content)}
                   </div>
                 </li>

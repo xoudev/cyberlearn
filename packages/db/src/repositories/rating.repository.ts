@@ -10,7 +10,8 @@ const CONSOLE_RATING_ROW = {
   updatedAt: true,
   /** Null once the account is erased: the rating stays, without its author. */
   userId: true,
-  user: { select: { displayName: true, username: true } },
+  // avatarUrl: the console shows the learner's picture beside the rating.
+  user: { select: { displayName: true, username: true, avatarUrl: true } },
 } as const satisfies Prisma.RatingSelect;
 
 export type ConsoleRatingRow = Prisma.RatingGetPayload<{ select: typeof CONSOLE_RATING_ROW }>;

@@ -1,6 +1,5 @@
 "use client";
 
-import { MUTED, RED } from "@cyberlearn/ui";
 import React, { useId, useState } from "react";
 import {
   QUIZ_REPORT_COMMENT_MAX,
@@ -18,16 +17,17 @@ import { useLessonQuiz } from "./lesson-quiz-context";
  * question. Only on a lesson page: an editor preview has nobody to report to.
  */
 
+const MUTED = "var(--color-interface-muted)";
+const DANGER = "var(--color-state-danger)";
+
 const linkStyle: React.CSSProperties = {
   background: "none",
   border: 0,
   padding: "6px 0",
-  minHeight: 32,
+  minHeight: 44,
   cursor: "pointer",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 10.5,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
+  fontFamily: "var(--font-interface), sans-serif",
+  fontSize: 13,
   color: MUTED,
   textDecoration: "underline",
   textUnderlineOffset: 3,
@@ -76,9 +76,9 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
           <span
             role={justSent ? "status" : undefined}
             style={{
-              fontFamily: "var(--font-body, sans-serif)",
+              fontFamily: "var(--font-interface), sans-serif",
               fontSize: 13,
-              color: "var(--color-text-secondary)",
+              color: "var(--color-interface-secondary)",
             }}
           >
             {justSent
@@ -108,18 +108,17 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
       style={{
         margin: "16px 0 0",
         padding: "16px 18px",
-        border: "1px solid var(--color-border-default)",
-        background: "var(--color-bg-elevated)",
+        border: "1px solid var(--color-interface-separator)",
+        background: "var(--color-bg-overlay)",
       }}
     >
       <legend
         style={{
           padding: "0 6px",
-          fontFamily: "var(--font-mono, monospace)",
-          fontSize: 10.5,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--color-text-secondary)",
+          fontFamily: "var(--font-interface), sans-serif",
+          fontSize: 14,
+          fontWeight: 700,
+          color: "var(--color-text-primary)",
         }}
       >
         Qu&apos;est-ce qui ne va pas ?
@@ -132,15 +131,15 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
               display: "flex",
               alignItems: "center",
               gap: 10,
-              minHeight: 36,
+              minHeight: 44,
               padding: "6px 10px",
               cursor: "pointer",
-              border: `1px solid ${reason === key ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
+              border: `1px solid ${reason === key ? "var(--cosmetic-accent)" : "var(--color-interface-separator)"}`,
               background:
                 reason === key
                   ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
                   : "transparent",
-              fontFamily: "var(--font-body, sans-serif)",
+              fontFamily: "var(--font-interface), sans-serif",
               fontSize: 14,
               color: "var(--color-text-primary)",
             }}
@@ -163,10 +162,8 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
         style={{
           display: "block",
           marginTop: 12,
-          fontFamily: "var(--font-mono, monospace)",
-          fontSize: 10,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
+          fontFamily: "var(--font-interface), sans-serif",
+          fontSize: 13,
           color: MUTED,
         }}
       >
@@ -184,14 +181,12 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
             marginTop: 6,
             padding: "10px 12px",
             resize: "vertical",
-            border: "1px solid var(--color-border-default)",
-            background: "var(--color-bg-sunken)",
+            border: "1px solid var(--color-interface-separator)",
+            background: "var(--color-bg-base)",
             color: "var(--color-text-primary)",
-            fontFamily: "var(--font-body, sans-serif)",
+            fontFamily: "var(--font-interface), sans-serif",
             fontSize: 14,
             lineHeight: 1.5,
-            textTransform: "none",
-            letterSpacing: "normal",
           }}
         />
       </label>
@@ -218,9 +213,9 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
             fontSize: 14,
             letterSpacing: 0,
             textTransform: "none",
-            border: "1px solid var(--color-brand-blue)",
-            background: reason === null ? "transparent" : "var(--color-brand-blue)",
-            color: reason === null ? "var(--color-text-disabled)" : "#141518",
+            border: `1px solid ${reason === null ? "var(--color-interface-separator)" : "var(--cosmetic-accent)"}`,
+            background: reason === null ? "transparent" : "var(--cosmetic-accent)",
+            color: reason === null ? MUTED : "#0B0C0E",
             cursor: reason === null ? "not-allowed" : pending ? "wait" : "pointer",
           }}
         >
@@ -241,7 +236,7 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
         </span>
       </div>
       {error !== null ? (
-        <p role="alert" style={{ margin: "10px 0 0", fontSize: 13, color: RED }}>
+        <p role="alert" style={{ margin: "10px 0 0", fontSize: 13, color: DANGER }}>
           {error}
         </p>
       ) : null}
