@@ -10,6 +10,12 @@ import {
 import type { LessonOption, PathOption } from "../../../new/_components/new-badge-form";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
+import {
+  ACTIVITY_CRITERION_LABELS,
+  ActivityCriterionFields,
+  activityCriterionDefaults,
+  isActivityCriterion,
+} from "../../../_components/activity-criterion-fields";
 
 interface BadgeData {
   id: string;
@@ -70,6 +76,7 @@ const CRITERION_LABELS: Record<string, string> = {
   LESSON_SPECIFIC: "Leçon spécifique complétée",
   PERFECT_QUIZ: "Quiz parfaits (N scores de 100 %)",
   CUSTOM: "Personnalisé (événement)",
+  ...ACTIVITY_CRITERION_LABELS,
 };
 
 const CATEGORY_OPTIONS = ["DEV", "CYBERSEC", "NETWORK", "CLOUD", "OSINT"] as const;
@@ -78,6 +85,7 @@ function extractDefaultCriterionValues(
   type: string,
   data: unknown,
 ): Record<string, string | boolean> {
+  if (isActivityCriterion(type)) return activityCriterionDefaults(type, data);
   if (typeof data !== "object" || data === null) return {};
   const d = data as Record<string, unknown>;
   switch (type) {
@@ -286,6 +294,8 @@ function CriterionFields({
           />
         </Field>
       )}
+
+      <ActivityCriterionFields type={type} defaults={defaults} />
     </div>
   );
 }
@@ -403,7 +413,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
               />
             </Field>
           </div>
-          {criterionType && criterionType !== "PERFECT_QUIZ" && criterionType !== "CUSTOM" && (
+          {criterionType && (
             <div
               style={{
                 gridColumn: "1 / -1",

@@ -22,6 +22,7 @@ const m = vi.hoisted(() => ({
   pathFindMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
   profilesOpenTo: vi.fn<(viewerId: string, ids: readonly string[]) => Promise<Set<string>>>(),
+  evaluateAndAwardBadges: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -50,6 +51,7 @@ vi.mock("@cyberlearn/db", () => ({
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
 vi.mock("@/lib/exam/mock-exam", () => ({ loadSources: m.loadSources }));
 vi.mock("@/lib/rate-limit", () => ({ checkNotifyingWrite: m.checkNotifyingWrite }));
+vi.mock("@/lib/badges/award", () => ({ evaluateAndAwardBadges: m.evaluateAndAwardBadges }));
 
 const {
   answerDuel,
@@ -262,6 +264,12 @@ describe("answerDuel and duelViewFor", () => {
       expect.objectContaining({ status: "FINISHED", winnerId: ME }),
     );
     expect(m.notify).toHaveBeenCalledTimes(2);
+    // Both players: the duels played, and the one won.
+    for (const player of [ME, FRIEND]) {
+      expect(m.evaluateAndAwardBadges).toHaveBeenCalledWith(player, ["DUELS_PLAYED", "DUELS_WON"], {
+        duelId: DUEL,
+      });
+    }
     expect(view).toMatchObject({
       status: "FINISHED",
       winner: "reader",

@@ -175,6 +175,11 @@ const tx = {
   certificate: { count: vi.fn(() => Promise.resolve(0)) },
   quizAttempt: { count: vi.fn(() => Promise.resolve(0)) },
   userPlacementResult: { findUnique: vi.fn(() => Promise.resolve(null)) },
+  userChallengeProgress: { findMany: vi.fn(() => Promise.resolve([])) },
+  challengeHintReveal: { findMany: vi.fn(() => Promise.resolve([])) },
+  duel: { count: vi.fn(() => Promise.resolve(0)) },
+  tournamentSolve: { findMany: vi.fn(() => Promise.resolve([])) },
+  reviewSession: { count: vi.fn(() => Promise.resolve(0)) },
 };
 
 // Hoisted above the imports: `tx` is only read when a transaction runs, by

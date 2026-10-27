@@ -57,6 +57,22 @@ export interface BadgeCriterionStats {
   placementMasteredCount: number;
   /** refCodes of every badge the user has earned (drives BADGE_EARNED). */
   earnedBadgeRefCodes: ReadonlySet<string>;
+  /** Challenges solved (drives CHALLENGES_SOLVED). */
+  challengesSolved: number;
+  /** Of those, the ones solved without revealing any of their hints. */
+  challengesSolvedWithoutHints: number;
+  /** Of those, the ones solved the week they were the challenge of the week. */
+  weeklyChallengesSolved: number;
+  /** Duels finished, won, lost or drawn (drives DUELS_PLAYED). */
+  duelsPlayed: number;
+  /** Duels won (drives DUELS_WON). */
+  duelsWon: number;
+  /** Tournaments where a flag of the user's still counts (drives TOURNAMENTS_PLAYED). */
+  tournamentsPlayed: number;
+  /** The place of the user's team in each finished tournament it scored in (drives TOURNAMENT_RANK). */
+  tournamentRanks: readonly number[];
+  /** Daily recalls handed in (drives DAILY_RECALLS). */
+  dailyRecalls: number;
 }
 
 /** Raw per-user facts, as returned by `badgeRepository.findCriterionFacts`. */
@@ -68,6 +84,16 @@ export interface BadgeCriterionFacts {
   /** refCodes of badges already earned (drives BADGE_EARNED unlocks). */
   earnedBadgeRefCodes: string[];
   placementScores: { devScore: number; cybersecScore: number; networkScore: number } | null;
+  // The activities outside lessons. Optional so a caller that only cares about
+  // lessons can leave them out: absent reads as none.
+  challengesSolved?: number;
+  challengesSolvedWithoutHints?: number;
+  weeklyChallengesSolved?: number;
+  duelsPlayed?: number;
+  duelsWon?: number;
+  tournamentsPlayed?: number;
+  tournamentRanks?: readonly number[];
+  dailyRecalls?: number;
 }
 
 /** Derive the full stats object from raw facts + the user's gamification numbers. */
@@ -95,6 +121,14 @@ export function buildBadgeCriterionStats(
     perfectQuizCount: facts.perfectQuizCount,
     placementMasteredCount,
     earnedBadgeRefCodes: new Set(facts.earnedBadgeRefCodes),
+    challengesSolved: facts.challengesSolved ?? 0,
+    challengesSolvedWithoutHints: facts.challengesSolvedWithoutHints ?? 0,
+    weeklyChallengesSolved: facts.weeklyChallengesSolved ?? 0,
+    duelsPlayed: facts.duelsPlayed ?? 0,
+    duelsWon: facts.duelsWon ?? 0,
+    tournamentsPlayed: facts.tournamentsPlayed ?? 0,
+    tournamentRanks: facts.tournamentRanks ?? [],
+    dailyRecalls: facts.dailyRecalls ?? 0,
   };
 }
 
@@ -134,6 +168,23 @@ function strArrayOrNull(data: unknown, key: string): string[] | null {
   return strings.length > 0 ? strings : null;
 }
 
+/** Which challenges CHALLENGES_SOLVED counts, by its `only` key: absent, all of them. */
+export const CHALLENGE_CRITERION_FILTERS = ["WITHOUT_HINTS", "WEEKLY"] as const;
+export type ChallengeCriterionFilter = (typeof CHALLENGE_CRITERION_FILTERS)[number];
+
+function challengeFilterOf(data: unknown): ChallengeCriterionFilter | "ALL" | null {
+  if (typeof data !== "object" || data === null || !("only" in data)) return "ALL";
+  const only = strOrNull(data, "only");
+  return CHALLENGE_CRITERION_FILTERS.find((filter) => filter === only) ?? null;
+}
+
+/** A {count} criterion against a running total; null when the count is missing or not positive. */
+function countProgress(data: unknown, achieved: number): BadgeProgress | null {
+  const count = numOrNull(data, "count");
+  if (count === null || count <= 0) return null;
+  return { done: Math.min(achieved, count), total: count };
+}
+
 // ── Unified criterion progress ─────────────────────────────────────────────────
 
 /**
@@ -157,6 +208,15 @@ function strArrayOrNull(data: unknown, key: string): string[] | null {
  *  - PERFECT_QUIZ      {count} (default 1) - N quiz attempts scored 100.
  *  - CUSTOM            {event}            - placement_test_passed: at least
  *                                           one placement category mastered.
+ *  - CHALLENGES_SOLVED {count}            - challenges solved;
+ *                      {count, only: "WITHOUT_HINTS"} - solved without a hint;
+ *                      {count, only: "WEEKLY"} - solved as the challenge of the week.
+ *  - DUELS_PLAYED      {count}            - duels finished, whatever the result.
+ *  - DUELS_WON         {count}            - duels won.
+ *  - TOURNAMENTS_PLAYED {count}           - tournaments with a flag that counts.
+ *  - TOURNAMENT_RANK   {top, count} (count default 1) - finished tournaments
+ *                                           where the team placed in the top N.
+ *  - DAILY_RECALLS     {count}            - daily recalls handed in.
  */
 export function computeBadgeProgress(
   criterionType: string,
@@ -241,6 +301,40 @@ export function computeBadgeProgress(
       if (!refCode) return null;
       return { done: stats.earnedBadgeRefCodes.has(refCode) ? 1 : 0, total: 1 };
     }
+
+    case "CHALLENGES_SOLVED": {
+      const filter = challengeFilterOf(criterionData);
+      if (filter === null) return null;
+      const solved =
+        filter === "WITHOUT_HINTS"
+          ? stats.challengesSolvedWithoutHints
+          : filter === "WEEKLY"
+            ? stats.weeklyChallengesSolved
+            : stats.challengesSolved;
+      return countProgress(criterionData, solved);
+    }
+
+    case "DUELS_PLAYED":
+      return countProgress(criterionData, stats.duelsPlayed);
+
+    case "DUELS_WON":
+      return countProgress(criterionData, stats.duelsWon);
+
+    case "TOURNAMENTS_PLAYED":
+      return countProgress(criterionData, stats.tournamentsPlayed);
+
+    case "TOURNAMENT_RANK": {
+      const top = numOrNull(criterionData, "top");
+      if (top === null || top < 1) return null;
+      // Default 1: "place in the top N once".
+      const count = numOrNull(criterionData, "count") ?? 1;
+      if (count <= 0) return null;
+      const placed = stats.tournamentRanks.filter((rank) => rank <= top).length;
+      return { done: Math.min(placed, count), total: count };
+    }
+
+    case "DAILY_RECALLS":
+      return countProgress(criterionData, stats.dailyRecalls);
 
     default:
       return null;

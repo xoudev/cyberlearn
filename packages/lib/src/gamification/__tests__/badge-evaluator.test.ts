@@ -37,6 +37,14 @@ const BASE_STATS: BadgeCriterionStats = {
   perfectQuizCount: 0,
   placementMasteredCount: 0,
   earnedBadgeRefCodes: new Set(),
+  challengesSolved: 0,
+  challengesSolvedWithoutHints: 0,
+  weeklyChallengesSolved: 0,
+  duelsPlayed: 0,
+  duelsWon: 0,
+  tournamentsPlayed: 0,
+  tournamentRanks: [],
+  dailyRecalls: 0,
 };
 
 // ── buildBadgeCriterionStats ──────────────────────────────────────────────────
@@ -546,5 +554,100 @@ describe("already-earned and inactive guards", () => {
       totalLessonsCompleted: 5,
     });
     expect(result.sort()).toEqual(["a", "b", "c"]);
+  });
+});
+
+// ── Challenges, duels, tournaments, daily recall ──────────────────────────────
+
+describe("activity criteria", () => {
+  it("reads the activity facts, absent ones as none", () => {
+    const facts = {
+      completedLessons: [],
+      completedPathIds: [],
+      totalCertificates: 0,
+      perfectQuizCount: 0,
+      earnedBadgeRefCodes: [],
+      placementScores: null,
+    };
+    const user = { xpTotal: 0, streakDays: 0 };
+    const bare = buildBadgeCriterionStats(facts, user);
+    expect(bare.challengesSolved).toBe(0);
+    expect(bare.tournamentRanks).toEqual([]);
+    expect(bare.dailyRecalls).toBe(0);
+    const full = buildBadgeCriterionStats(
+      { ...facts, duelsWon: 4, tournamentRanks: [2, 1], dailyRecalls: 7 },
+      user,
+    );
+    expect(full.duelsWon).toBe(4);
+    expect(full.tournamentRanks).toEqual([2, 1]);
+    expect(full.dailyRecalls).toBe(7);
+  });
+
+  it("counts challenges solved, all of them or a kind", () => {
+    const stats = {
+      ...BASE_STATS,
+      challengesSolved: 12,
+      challengesSolvedWithoutHints: 1,
+      weeklyChallengesSolved: 2,
+    };
+    expect(computeBadgeProgress("CHALLENGES_SOLVED", { count: 10 }, stats)).toEqual({
+      done: 10,
+      total: 10,
+    });
+    expect(
+      computeBadgeProgress("CHALLENGES_SOLVED", { count: 1, only: "WITHOUT_HINTS" }, stats),
+    ).toEqual({ done: 1, total: 1 });
+    expect(computeBadgeProgress("CHALLENGES_SOLVED", { count: 3, only: "WEEKLY" }, stats)).toEqual({
+      done: 2,
+      total: 3,
+    });
+  });
+
+  it("treats an unknown challenge filter or a missing count as misconfigured", () => {
+    const stats = { ...BASE_STATS, challengesSolved: 5 };
+    expect(computeBadgeProgress("CHALLENGES_SOLVED", { count: 1, only: "FAST" }, stats)).toBeNull();
+    expect(computeBadgeProgress("CHALLENGES_SOLVED", {}, stats)).toBeNull();
+    expect(computeBadgeProgress("DUELS_WON", { count: 0 }, stats)).toBeNull();
+  });
+
+  it("counts duels played and duels won apart", () => {
+    const stats = { ...BASE_STATS, duelsPlayed: 3, duelsWon: 1 };
+    expect(computeBadgeProgress("DUELS_PLAYED", { count: 1 }, stats)).toEqual({
+      done: 1,
+      total: 1,
+    });
+    expect(computeBadgeProgress("DUELS_WON", { count: 10 }, stats)).toEqual({
+      done: 1,
+      total: 10,
+    });
+  });
+
+  it("counts tournaments played, and the places taken in the finished ones", () => {
+    const stats = { ...BASE_STATS, tournamentsPlayed: 3, tournamentRanks: [4, 2, 1] };
+    expect(computeBadgeProgress("TOURNAMENTS_PLAYED", { count: 1 }, stats)).toEqual({
+      done: 1,
+      total: 1,
+    });
+    expect(computeBadgeProgress("TOURNAMENT_RANK", { top: 3 }, stats)).toEqual({
+      done: 1,
+      total: 1,
+    });
+    expect(computeBadgeProgress("TOURNAMENT_RANK", { top: 3, count: 3 }, stats)).toEqual({
+      done: 2,
+      total: 3,
+    });
+    expect(computeBadgeProgress("TOURNAMENT_RANK", { top: 1, count: 2 }, stats)).toEqual({
+      done: 1,
+      total: 2,
+    });
+    expect(computeBadgeProgress("TOURNAMENT_RANK", { count: 1 }, stats)).toBeNull();
+  });
+
+  it("awards on the daily recall handed in that reaches the count", () => {
+    const badge = makeBadge("recall", "DAILY_RECALLS", { count: 7 });
+    expect(evaluateBadges([badge], new Set(), { ...BASE_STATS, dailyRecalls: 6 })).toEqual([]);
+    expect(evaluateBadges([badge], new Set(), { ...BASE_STATS, dailyRecalls: 7 })).toEqual([
+      "recall",
+    ]);
   });
 });

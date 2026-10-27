@@ -54,6 +54,12 @@ const CRITERION_LABEL: Record<BadgeCriterionType, string> = {
   LESSON_SPECIFIC: "Leçon précise",
   LEVEL: "Niveau",
   BADGE_EARNED: "Badge obtenu",
+  CHALLENGES_SOLVED: "Défis résolus",
+  DUELS_PLAYED: "Duels joués",
+  DUELS_WON: "Duels gagnés",
+  TOURNAMENTS_PLAYED: "Tournois joués",
+  TOURNAMENT_RANK: "Place en tournoi",
+  DAILY_RECALLS: "Rappels du jour",
 };
 
 function field(data: unknown, key: string): string | number | null {

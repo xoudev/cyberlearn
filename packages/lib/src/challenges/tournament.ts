@@ -503,6 +503,45 @@ export function firstSolves(
   return firsts;
 }
 
+/** A flag as a finished tournament keeps it: the class it was scored for, not yet its team. */
+export interface FinishedSolve {
+  challengeId: string;
+  userId: string | null;
+  classId: string;
+  points: number;
+  solvedAt: Date;
+}
+
+/**
+ * The place the player's team took on a finished tournament's board, for the
+ * badges that reward a podium: the best of their teams when they scored for
+ * more than one class. Null when the player found no flag that still counts
+ * there, or when their team ended without a point (a podium at zero says
+ * nothing, as for tournamentWinners). The solves given are the ones still
+ * counting, disqualified flags left out by the caller.
+ */
+export function playerTeamRank(
+  scope: TournamentTeamScope,
+  classes: readonly TournamentClassRef[],
+  solves: readonly FinishedSolve[],
+  userId: string,
+): number | null {
+  const { teams, teamOfClass } = tournamentTeams(scope, classes);
+  const rows: TournamentSolveRow[] = solves.flatMap((solve) => {
+    const teamId = teamOfClass.get(solve.classId);
+    return teamId === undefined ? [] : [{ ...solve, teamId }];
+  });
+  const mine = new Set(rows.filter((row) => row.userId === userId).map((row) => row.teamId));
+  if (mine.size === 0) return null;
+  const ranks = teamStandings(
+    teams.map((team) => team.id),
+    rows,
+  )
+    .filter((standing) => mine.has(standing.teamId) && standing.points > 0)
+    .map((standing) => standing.rank);
+  return ranks.length === 0 ? null : Math.min(...ranks);
+}
+
 /** "1er", "2e", "3e": a rank as a place. */
 export function placeLabel(rank: number): string {
   return rank === 1 ? "1er" : `${String(rank)}e`;

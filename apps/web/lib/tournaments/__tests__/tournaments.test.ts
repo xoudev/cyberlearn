@@ -28,6 +28,7 @@ const m = vi.hoisted(() => ({
         userId: string,
       ) => { ok: true; flag: string } | { ok: false; error: string }
     >(),
+  evaluateAndAwardBadges: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -48,6 +49,7 @@ vi.mock("@cyberlearn/db", () => ({
 }));
 vi.mock("@/lib/challenges/play", () => ({ expectedFlag: m.expectedFlag }));
 vi.mock("@/lib/rate-limit", () => ({ checkFlagSubmission: m.checkFlagSubmission }));
+vi.mock("@/lib/badges/award", () => ({ evaluateAndAwardBadges: m.evaluateAndAwardBadges }));
 
 const {
   listTournamentsFor,
@@ -282,6 +284,21 @@ describe("tournamentViewFor", () => {
     expect(view?.myTeam).toBeNull();
   });
 
+  it("gives its player, once it is over, the badges of their team's place", async () => {
+    await tournamentViewFor(ME, T, DURING);
+    expect(m.evaluateAndAwardBadges).not.toHaveBeenCalled();
+    await tournamentViewFor(ME, T, AFTER);
+    expect(m.evaluateAndAwardBadges).toHaveBeenCalledWith(ME, ["TOURNAMENT_RANK"], {
+      tournamentId: T,
+    });
+  });
+
+  it("gives no badge of a place to a teacher reading the board of a finished one", async () => {
+    m.accessOf.mockResolvedValue({ ...NOBODY, teaches: true });
+    await tournamentViewFor(ME, T, AFTER);
+    expect(m.evaluateAndAwardBadges).not.toHaveBeenCalled();
+  });
+
   it("opens to an admin, who plays for no team", async () => {
     m.accessOf.mockResolvedValue(NOBODY);
     m.findRoleById.mockResolvedValue({ role: "ADMIN" });
@@ -318,6 +335,9 @@ describe("submitTournamentFlag", () => {
       classId: CLASS_A,
       points: 300,
       solvedAt: DURING,
+    });
+    expect(m.evaluateAndAwardBadges).toHaveBeenCalledWith(ME, ["TOURNAMENTS_PLAYED"], {
+      tournamentId: T,
     });
   });
 

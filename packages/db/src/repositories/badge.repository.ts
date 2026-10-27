@@ -3,6 +3,7 @@ import {
   isBadgeUnlocked,
   type BadgeCriterionFacts,
 } from "@cyberlearn/lib";
+import { playerTeamRank } from "@cyberlearn/lib/challenges/tournament";
 import type { BadgeRarity, Prisma } from "@prisma/client";
 import { AUDIT_ACTION } from "../audit-actions.js";
 import { awardBadges } from "../badges/award.js";
@@ -50,6 +51,83 @@ function creditedXpOf(context: unknown): number {
   return typeof xpCredited === "number" && xpCredited > 0 ? xpCredited : 0;
 }
 
+/** The facts of the challenges solved: all of them, without a hint, as the week's. */
+async function readChallengeFacts(
+  db: Prisma.TransactionClient,
+  userId: string,
+): Promise<{
+  challengesSolved: number;
+  challengesSolvedWithoutHints: number;
+  weeklyChallengesSolved: number;
+}> {
+  const [solved, reveals] = await Promise.all([
+    db.userChallengeProgress.findMany({
+      where: { userId, status: "COMPLETED" },
+      select: { challengeId: true, weekly: true },
+    }),
+    db.challengeHintReveal.findMany({
+      where: { userId },
+      select: { hint: { select: { challengeId: true } } },
+    }),
+  ]);
+  const hinted = new Set(reveals.map((reveal) => reveal.hint.challengeId));
+  return {
+    challengesSolved: solved.length,
+    challengesSolvedWithoutHints: solved.filter((row) => !hinted.has(row.challengeId)).length,
+    weeklyChallengesSolved: solved.filter((row) => row.weekly).length,
+  };
+}
+
+/**
+ * The tournaments the user played, a flag of theirs still counting, and the
+ * place their team took in each one that is over. A disqualified flag counts
+ * for nobody, here as on the board.
+ */
+async function readTournamentFacts(
+  db: Prisma.TransactionClient,
+  userId: string,
+  now: Date,
+): Promise<{ tournamentsPlayed: number; tournamentRanks: number[] }> {
+  const played = await db.tournamentSolve.findMany({
+    where: { userId, disqualifiedAt: null },
+    select: { tournamentId: true },
+    distinct: ["tournamentId"],
+  });
+  if (played.length === 0) return { tournamentsPlayed: 0, tournamentRanks: [] };
+  const finished = await db.tournament.findMany({
+    where: { id: { in: played.map((row) => row.tournamentId) }, endsAt: { lte: now } },
+    select: {
+      teamScope: true,
+      classes: {
+        select: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              promotion: { select: { establishment: { select: { id: true, name: true } } } },
+            },
+          },
+        },
+      },
+      solves: {
+        where: { disqualifiedAt: null },
+        select: { challengeId: true, userId: true, classId: true, points: true, solvedAt: true },
+      },
+    },
+  });
+  const tournamentRanks = finished.flatMap((tournament) => {
+    const classes = tournament.classes.map(({ class: c }) => ({
+      id: c.id,
+      name: c.name,
+      schoolId: c.promotion.establishment.id,
+      schoolName: c.promotion.establishment.name,
+    }));
+    const rank = playerTeamRank(tournament.teamScope, classes, tournament.solves, userId);
+    return rank === null ? [] : [rank];
+  });
+  return { tournamentsPlayed: played.length, tournamentRanks };
+}
+
 /** Reads the criterion facts through the given client: the app's, or a transaction's. */
 async function readCriterionFacts(
   db: Prisma.TransactionClient,
@@ -62,6 +140,11 @@ async function readCriterionFacts(
     perfectQuizCount,
     placementScores,
     earnedBadges,
+    challenges,
+    duelsPlayed,
+    duelsWon,
+    tournaments,
+    dailyRecalls,
   ] = await Promise.all([
     db.userLessonProgress.findMany({
       where: { userId, status: "COMPLETED" },
@@ -81,6 +164,14 @@ async function readCriterionFacts(
       where: { userId },
       select: { badge: { select: { refCode: true } } },
     }),
+    readChallengeFacts(db, userId),
+    db.duel.count({
+      where: { status: "FINISHED", OR: [{ challengerId: userId }, { opponentId: userId }] },
+    }),
+    db.duel.count({ where: { status: "FINISHED", winnerId: userId } }),
+    readTournamentFacts(db, userId, new Date()),
+    // Handed in: an empty day is closed at once, with nothing credited.
+    db.reviewSession.count({ where: { userId, xpCredited: true } }),
   ]);
   return {
     completedLessons: completedLessons.map((r) => ({
@@ -92,6 +183,11 @@ async function readCriterionFacts(
     perfectQuizCount,
     earnedBadgeRefCodes: earnedBadges.map((r) => r.badge.refCode),
     placementScores,
+    ...challenges,
+    duelsPlayed,
+    duelsWon,
+    ...tournaments,
+    dailyRecalls,
   };
 }
 

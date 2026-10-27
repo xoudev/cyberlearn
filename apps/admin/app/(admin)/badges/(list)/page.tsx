@@ -29,6 +29,12 @@ const CRITERION_LABEL: Record<string, string> = {
   LESSON_SPECIFIC: "Leçon spécifique",
   PERFECT_QUIZ: "Quiz parfait",
   CUSTOM: "Personnalisé",
+  CHALLENGES_SOLVED: "Défis résolus",
+  DUELS_PLAYED: "Duels joués",
+  DUELS_WON: "Duels gagnés",
+  TOURNAMENTS_PLAYED: "Tournois joués",
+  TOURNAMENT_RANK: "Place en tournoi",
+  DAILY_RECALLS: "Rappels du jour",
 };
 
 export default async function AdminBadgesPage(): Promise<React.ReactElement> {

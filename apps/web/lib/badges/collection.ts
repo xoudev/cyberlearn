@@ -81,6 +81,24 @@ function progressLabel(criterionType: string, criterionData: unknown): string {
       return data.withCertificate === true ? "certificat" : "parcours";
     case "LESSON_SPECIFIC":
       return "leçon spécifique";
+    case "CHALLENGES_SOLVED":
+      return data.only === "WITHOUT_HINTS"
+        ? "défis sans indice"
+        : data.only === "WEEKLY"
+          ? "défis de la semaine"
+          : "défis";
+    case "DUELS_PLAYED":
+      return "duels";
+    case "DUELS_WON":
+      return "duels gagnés";
+    case "TOURNAMENTS_PLAYED":
+      return "tournois";
+    case "TOURNAMENT_RANK":
+      if (data.top === 1) return "tournois gagnés";
+      if (data.top === 3) return "podiums";
+      return typeof data.top === "number" ? `tournois dans le top ${String(data.top)}` : "tournois";
+    case "DAILY_RECALLS":
+      return "rappels du jour";
     default:
       return "";
   }

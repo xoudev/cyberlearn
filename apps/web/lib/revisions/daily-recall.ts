@@ -24,6 +24,7 @@ import { passageHref } from "@cyberlearn/lib/revisions/passage";
 import { checkDuelAnswer } from "@cyberlearn/lib/social/duel";
 import { quizSourcesOf } from "@/lib/exam/quiz-sources";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { recordQuestProgress } from "@/lib/quests/progress";
 import { creditXp } from "@/lib/xp/credit";
 
@@ -323,6 +324,9 @@ async function handIn(
   if (credited) {
     await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
   }
+
+  // Badges: the recalls handed in.
+  if (credited) await evaluateAndAwardBadges(userId, ["DAILY_RECALLS"], { day: dayKey(now) });
   return credited;
 }
 

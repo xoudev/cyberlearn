@@ -76,6 +76,7 @@
 | `/api/cron/review-reminders` | Cron - rappel du jour prêt, sans nombre (quotidien) |
 | `/api/cron/streak-reset` | Cron - reset du streak à minuit |
 | `/api/cron/season-rollover` | Cron - clôture de saison, promotions et relégations |
+| `/api/cron/tournament-badges` | Cron - badges de la place prise par l'équipe, pour les tournois finis depuis une semaine |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
 | `/api/paths/[slug]/sheet?module=N` | Fiche de révision d'un module, en PDF (les points « à retenir » de ses leçons) |

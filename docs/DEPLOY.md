@@ -206,15 +206,18 @@ déclenchent ni migration ni déploiement de function.
 
 ## Crons
 
-`apps/web/vercel.json` déclare trois crons Vercel :
+`apps/web/vercel.json` déclare six crons Vercel :
 
 | Chemin | Cadence |
 |---|---|
 | `/api/cron/streak-reset` | `0 0 * * *` |
-| `/api/cron/review-reminders` | `0 8 * * *` |
 | `/api/cron/season-rollover` | `0 1 * * *` |
+| `/api/cron/tournament-badges` | `0 2 * * *` |
+| `/api/cron/retention` | `30 3 * * *` |
+| `/api/cron/inactive-accounts` | `0 4 * * *` |
+| `/api/cron/review-reminders` | `0 8 * * *` |
 
-Un quatrième, `/api/cron/keep-alive`, est appelé depuis l'extérieur toutes les
+Un septième, `/api/cron/keep-alive`, est appelé depuis l'extérieur toutes les
 6 h pour empêcher Supabase Free de mettre la base en pause — voir
 [docs/infra/keep-alive.md](infra/keep-alive.md).
 

@@ -19,6 +19,7 @@ import {
   phaseTallyWord,
   placeLabel,
   playerStandings,
+  playerTeamRank,
   standingFigures,
   teamClassOf,
   teamFoundLabel,
@@ -440,6 +441,49 @@ describe("tournamentTeams", () => {
     ]);
     expect(teamOfClass.get("a")).toBe("jm");
     expect(teamOfClass.get("c")).toBe("vh");
+  });
+});
+
+describe("playerTeamRank", () => {
+  const classes = [
+    { id: "a", name: "SIO1-A", schoolId: "jm", schoolName: "Lycée Jean Moulin" },
+    { id: "b", name: "SIO1-B", schoolId: "jm", schoolName: "Lycée Jean Moulin" },
+    { id: "c", name: "BTS CIEL", schoolId: "vh", schoolName: "Lycée Victor Hugo" },
+  ];
+  const flag = (challengeId: string, userId: string | null, classId: string, points: number) => ({
+    challengeId,
+    userId,
+    classId,
+    points,
+    solvedAt: at("2026-10-16T12:00:00Z"),
+  });
+
+  it("gives the place of the class the player scored for", () => {
+    const solves = [flag("web", "ana", "a", 100), flag("crypto", "zoe", "b", 300)];
+    expect(playerTeamRank("CLASS", classes, solves, "zoe")).toBe(1);
+    expect(playerTeamRank("CLASS", classes, solves, "ana")).toBe(2);
+  });
+
+  it("gives the place of the school when schools play each other", () => {
+    const solves = [flag("web", "ana", "a", 100), flag("crypto", "leo", "c", 300)];
+    expect(playerTeamRank("ESTABLISHMENT", classes, solves, "ana")).toBe(2);
+    expect(playerTeamRank("ESTABLISHMENT", classes, solves, "leo")).toBe(1);
+  });
+
+  it("shares a place between teams tied at the same moment", () => {
+    const solves = [flag("web", "ana", "a", 100), flag("web", "zoe", "b", 100)];
+    expect(playerTeamRank("CLASS", classes, solves, "ana")).toBe(1);
+    expect(playerTeamRank("CLASS", classes, solves, "zoe")).toBe(1);
+  });
+
+  it("is null for a player without a counting flag, or a team at zero", () => {
+    const solves = [flag("web", "ana", "a", 0), flag("crypto", "zoe", "b", 300)];
+    expect(playerTeamRank("CLASS", classes, solves, "leo")).toBeNull();
+    expect(playerTeamRank("CLASS", classes, solves, "ana")).toBeNull();
+  });
+
+  it("ignores a flag scored for a class no longer in the tournament", () => {
+    expect(playerTeamRank("CLASS", classes, [flag("web", "ana", "gone", 100)], "ana")).toBeNull();
   });
 });
 
