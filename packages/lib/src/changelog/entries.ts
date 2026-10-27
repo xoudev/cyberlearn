@@ -59,7 +59,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fixed",
-        text: "Ta photo de profil se voit dans la barre latérale et la barre du haut, même orange : elle repose sur un fond sombre avec un contour. Sur le tableau de bord, un module de nombreuses leçons ne déroule plus toute sa liste : cinq étapes autour de la leçon en cours, et le reste compté. L'étiquette « Fermé » d'un sujet du forum est lisible, la fin d'un sujet fermé le dit clairement, et ton historique de modération dans les paramètres passe aux couleurs du site.",
+        text: "Ta photo de profil se voit dans la barre latérale et la barre du haut, même orange : elle repose sur un fond sombre avec un contour. Sur le tableau de bord, un module de nombreuses leçons ne déroule plus toute sa liste : trois étapes, de la leçon d'avant à la suivante, et le reste compté. L'étiquette « Fermé » d'un sujet du forum est lisible, la fin d'un sujet fermé le dit clairement, et ton historique de modération dans les paramètres passe aux couleurs du site.",
       },
     ],
   },

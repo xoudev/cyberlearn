@@ -128,11 +128,13 @@ export interface RouteWindow {
  * At most `size` lessons of a module, around the one offered now.
  *
  * A module can hold fifteen lessons, and drawn whole its route pushed the
- * card three screens tall. The window keeps the lesson just behind (where the
- * reader comes from), the current one, and what comes next; the rest is
- * counted, not drawn. A finished module (no lesson "now") shows its end.
+ * card three screens tall; five still made it the tallest block of the page.
+ * The window keeps three by default: the lesson just behind (where the reader
+ * comes from), the current one and the next; the rest is counted, not drawn.
+ * A module just begun shows its first three, a finished one (no lesson
+ * "now") its last three.
  */
-export function routeWindow(nodes: readonly RouteNode[], size = 5): RouteWindow {
+export function routeWindow(nodes: readonly RouteNode[], size = 3): RouteWindow {
   const all = nodes.map((node, position) => ({ node, position }));
   if (nodes.length <= size) return { hiddenBefore: 0, hiddenAfter: 0, nodes: all };
   const now = nodes.findIndex((node) => node.state === "now");

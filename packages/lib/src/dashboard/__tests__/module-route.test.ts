@@ -134,26 +134,33 @@ describe("routeWindow", () => {
     expect(route.nodes.map((n) => n.position)).toEqual([0, 1, 2]);
   });
 
-  it("keeps one lesson behind the current one and counts the rest", () => {
+  it("keeps the lesson behind, the current one and the next, and counts the rest", () => {
     const states = Array.from({ length: 15 }, (_, i) =>
       i < 7 ? "done" : i === 7 ? "now" : "todo",
     );
     const route = routeWindow(nodes(states));
-    expect(route.nodes.map((n) => n.position)).toEqual([6, 7, 8, 9, 10]);
-    expect(route).toMatchObject({ hiddenBefore: 6, hiddenAfter: 4 });
+    expect(route.nodes.map((n) => n.position)).toEqual([6, 7, 8]);
+    expect(route).toMatchObject({ hiddenBefore: 6, hiddenAfter: 6 });
   });
 
   it("starts at the first lesson when the module has just begun", () => {
     const states = Array.from({ length: 12 }, (_, i) => (i === 0 ? "now" : "todo"));
     const route = routeWindow(nodes(states));
-    expect(route.nodes.map((n) => n.position)).toEqual([0, 1, 2, 3, 4]);
-    expect(route).toMatchObject({ hiddenBefore: 0, hiddenAfter: 7 });
+    expect(route.nodes.map((n) => n.position)).toEqual([0, 1, 2]);
+    expect(route).toMatchObject({ hiddenBefore: 0, hiddenAfter: 9 });
   });
 
   it("ends at the last lesson near the end, and when the module is done", () => {
     const near = Array.from({ length: 10 }, (_, i) => (i === 9 ? "now" : "done"));
-    expect(routeWindow(nodes(near)).nodes.map((n) => n.position)).toEqual([5, 6, 7, 8, 9]);
+    expect(routeWindow(nodes(near)).nodes.map((n) => n.position)).toEqual([7, 8, 9]);
     const done = routeWindow(nodes(Array.from({ length: 10 }, () => "done")));
-    expect(done).toMatchObject({ hiddenBefore: 5, hiddenAfter: 0 });
+    expect(done).toMatchObject({ hiddenBefore: 7, hiddenAfter: 0 });
+  });
+
+  it("takes a wider window when asked", () => {
+    const states = Array.from({ length: 15 }, (_, i) =>
+      i < 7 ? "done" : i === 7 ? "now" : "todo",
+    );
+    expect(routeWindow(nodes(states), 5).nodes.map((n) => n.position)).toEqual([6, 7, 8, 9, 10]);
   });
 });

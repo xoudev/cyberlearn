@@ -103,7 +103,7 @@ Les domaines sont organisés en lignes. La méthode utilise une bande craie. Les
 
 La mission craie rassemble contexte, titre, explication, durée, XP et action principale. Le logo en grand sert de signature en arrière-plan. À droite, l'itinéraire sombre situe la leçon dans son module avec des états textuels : « En cours », « À suivre », « Validée ».
 
-L'itinéraire montre cinq leçons au plus (`routeWindow`) : celle d'avant, la leçon en cours et les suivantes ; le reste du module est compté sur une ligne, pour que la carte garde la hauteur de la mission. Les quêtes et la série restent sous la mission. Les révisions et le bilan complètent la page avec moins de poids visuel. Les règles de sélection de leçon, de progression et de révision restent côté serveur.
+L'itinéraire montre trois leçons au plus (`routeWindow`) : celle d'avant, la leçon en cours et la suivante ; le reste du module est compté sur une ligne, pour que la carte garde la hauteur de la mission. Les quêtes et la série restent sous la mission. Les révisions et le bilan complètent la page avec moins de poids visuel. Les règles de sélection de leçon, de progression et de révision restent côté serveur.
 
 ### Navigation
 
