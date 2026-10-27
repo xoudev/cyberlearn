@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isoWeekKey, msUntilWeekReset } from "../week.js";
+import { isoWeekKey, msUntilWeekReset, previousIsoWeekKey } from "../week.js";
 
 // Anchor: 2026-01-01 is a Thursday, so it falls in ISO week 2026-W01, whose
 // Monday is 2025-12-29. Everything below is derived from that fact.
@@ -39,5 +39,13 @@ describe("msUntilWeekReset", () => {
     // Sun 2026-01-04, Paris 11:00 → next Monday is ~13h away.
     const ms = msUntilWeekReset(new Date("2026-01-04T10:00:00Z"));
     expect(ms).toBe((86_400 - 11 * 3600) * 1000);
+  });
+});
+
+describe("previousIsoWeekKey", () => {
+  it("is the week before, across a year end", () => {
+    expect(previousIsoWeekKey(new Date("2026-10-27T10:00:00Z"))).toBe("2026-W43");
+    expect(previousIsoWeekKey(new Date("2027-01-05T10:00:00Z"))).toBe("2026-W53");
+    expect(previousIsoWeekKey(new Date("2026-01-06T10:00:00Z"))).toBe("2026-W01");
   });
 });

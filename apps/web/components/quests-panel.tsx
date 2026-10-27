@@ -1,5 +1,5 @@
 import React from "react";
-import { isoWeekKey } from "@cyberlearn/lib";
+import { isoWeekKey, previousIsoWeekKey } from "@cyberlearn/lib";
 import { questRepository } from "@cyberlearn/db";
 import type { QuestWithProgress } from "@cyberlearn/db";
 import {
@@ -67,7 +67,8 @@ export async function QuestsPanel({
 }: {
   userId: string;
 }): Promise<React.ReactElement | null> {
-  const quests = await questRepository.findWeek(userId, isoWeekKey(new Date()));
+  const now = new Date();
+  const quests = await questRepository.findWeek(userId, isoWeekKey(now), previousIsoWeekKey(now));
   if (quests.length === 0) return null;
 
   const { main, bonus } = splitWeekQuests(quests);

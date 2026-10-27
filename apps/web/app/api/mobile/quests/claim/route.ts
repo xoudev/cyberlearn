@@ -5,7 +5,7 @@ import { userFromBearer } from "../../_lib/auth";
 /**
  * Claims a completed weekly quest for the caller, `{ questId }`: the site's
  * service, so the XP, the streak-freeze and the once-only guard are the same.
- * The week's quests themselves the app reads under RLS.
+ * The week's quests themselves the app reads from GET /api/mobile/quests.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const user = await userFromBearer(request);

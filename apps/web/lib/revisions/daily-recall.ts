@@ -319,8 +319,10 @@ async function handIn(
     await creditXp(tx, userId, REVIEW_SESSION_XP, "REVIEW");
     return true;
   });
-  // Weekly quests: a day of review keeps the streak quest moving too.
+  // Weekly quests: the day's recall counts once, and keeps the streak quest
+  // moving too.
   if (credited) {
+    await recordQuestProgress(userId, "DAILY_RECALL", now, { amount: 1 });
     await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
   }
   return credited;

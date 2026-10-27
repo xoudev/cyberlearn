@@ -30,8 +30,11 @@ export const QUEST_TYPE_LABEL: Record<QuestType, string> = {
   LESSON_COMPLETED: "Leçons terminées",
   PERFECT_QUIZ: "Quiz sans faute",
   STREAK_DAYS: "Jours de série",
-  FORUM_POST: "Messages au forum",
+  FORUM_POST: "Messages d'entraide",
   WEEKLY_BONUS: "Bonus de la semaine",
+  CHALLENGE_SOLVED: "Défis résolus",
+  DAILY_RECALL: "Rappels du jour",
+  EXERCISE_PASSED: "Exercices réussis",
 };
 
 export const SEASON_STATUS_META: Record<

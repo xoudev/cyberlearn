@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
-import { prisma } from "@cyberlearn/db";
+import { prisma, questRepository } from "@cyberlearn/db";
 import type { Prisma, QuestType } from "@cyberlearn/db";
-import { isoWeekKey, nextQuestProgress } from "@cyberlearn/lib";
+import { isoWeekKey, nextQuestProgress, previousIsoWeekKey } from "@cyberlearn/lib";
 
 interface ProgressOpts {
   /** Counter increment (lessons, perfect quiz, forum post). Defaults to 1. */
@@ -11,11 +11,13 @@ interface ProgressOpts {
 }
 
 /**
- * Records weekly-quest progress for the active quest of `type`, scoped to the
- * current ISO week (Europe/Paris). Server-authoritative and best-effort: any
- * failure is reported but never propagated, so it can't break the triggering
- * action (lesson completion, quiz, etc.). Completing a real quest advances the
- * weekly-bonus tally.
+ * Records weekly-quest progress for the quest of `type` the current ISO week
+ * (Europe/Paris) asks for, if it asks for one: the week draws four quests from
+ * the pool (questRepository.ensureWeek), and a kind it did not draw counts for
+ * nothing. Server-authoritative and best-effort: any failure is reported but
+ * never propagated, so it can't break the triggering action (lesson
+ * completion, quiz, etc.). Completing a real quest advances the weekly-bonus
+ * tally.
  */
 export async function recordQuestProgress(
   userId: string,
@@ -24,9 +26,11 @@ export async function recordQuestProgress(
   opts: ProgressOpts = {},
 ): Promise<void> {
   try {
-    const quest = await prisma.quest.findFirst({ where: { type, isActive: true } });
-    if (!quest) return;
     const weekKey = isoWeekKey(now);
+    const week = await questRepository.ensureWeek(weekKey, previousIsoWeekKey(now));
+    const quest = week.find((q) => q.type === type);
+    if (!quest) return;
+    const bonus = week.find((q) => q.type === "WEEKLY_BONUS");
 
     await prisma.$transaction(async (tx) => {
       const newlyCompleted = await applyProgress(
@@ -38,11 +42,8 @@ export async function recordQuestProgress(
         now,
         opts,
       );
-      if (newlyCompleted && quest.type !== "WEEKLY_BONUS") {
-        const bonus = await tx.quest.findFirst({ where: { type: "WEEKLY_BONUS", isActive: true } });
-        if (bonus) {
-          await applyProgress(tx, userId, bonus.id, bonus.target, weekKey, now, { amount: 1 });
-        }
+      if (newlyCompleted && quest.type !== "WEEKLY_BONUS" && bonus) {
+        await applyProgress(tx, userId, bonus.id, bonus.target, weekKey, now, { amount: 1 });
       }
     });
   } catch (error) {

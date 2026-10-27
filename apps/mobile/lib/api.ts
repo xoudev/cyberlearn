@@ -316,6 +316,35 @@ export async function submitPlacementApi(
 
 // ── Weekly quests (the site's claim: XP, streak-freeze, once only) ───────────
 
+/** One of the week's quests with the caller's progress (apps/web/app/api/mobile/quests/route.ts). */
+export interface WeekQuestItem {
+  id: string;
+  title: string;
+  /** WEEKLY_BONUS is the completion bonus; the others are the quests to do. */
+  type: string;
+  target: number;
+  xpReward: number;
+  freezeReward: number;
+  progress: number;
+  completed: boolean;
+  claimed: boolean;
+}
+
+/**
+ * The quests the week asks for: four drawn from the pool, then the bonus. The
+ * site draws them (the app used to list every active quest, which with a
+ * pool would show all of it).
+ */
+export async function fetchWeekQuestsApi(): Promise<WeekQuestItem[]> {
+  const res = await authedFetch("/api/mobile/quests");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/quests/route.ts).
+  const body = (await res.json()) as
+    | { ok: true; quests: WeekQuestItem[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.quests;
+}
+
 export interface ClaimQuestReply {
   ok: boolean;
   xpGained?: number;

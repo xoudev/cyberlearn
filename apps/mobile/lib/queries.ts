@@ -11,7 +11,9 @@ import {
   fetchLessonLocksApi,
   fetchMyRankApi,
   fetchPathCoversApi,
+  fetchWeekQuestsApi,
   type LessonAccess,
+  type WeekQuestItem,
 } from "@/lib/api";
 import type { LessonLock } from "@/lib/lesson-locks";
 import { supabase } from "@/lib/supabase";
@@ -926,67 +928,17 @@ export async function markLessonOpened(userId: string, lessonId: string): Promis
 
 // ── Weekly quests (dashboard) ─────────────────────────────────────────────────
 
-export interface QuestItem {
-  id: string;
-  title: string;
-  /** WEEKLY_BONUS is the completion bonus; the others are the quests to do. */
-  type: string;
-  target: number;
-  xpReward: number;
-  freezeReward: number;
-  progress: number;
-  completed: boolean;
-  claimed: boolean;
-}
+export type QuestItem = WeekQuestItem;
 
+/**
+ * The week's quests and the caller's progress, from the site, which draws the
+ * week's four from the pool. `weekKey` keys the cache, so a new week refetches.
+ */
 export function useQuests(userId: string | undefined, weekKey: string) {
   return useQuery({
     queryKey: ["quests", userId, weekKey],
     enabled: Boolean(userId),
-    queryFn: async (): Promise<QuestItem[]> => {
-      const [questsRes, progressRes] = await Promise.all([
-        supabase
-          .from("quests")
-          .select("id,title,type,target,xpReward,freezeReward,orderIndex")
-          .eq("isActive", true)
-          .order("orderIndex"),
-        supabase
-          .from("user_quest_progress")
-          .select("questId,progress,completed,claimed")
-          .eq("userId", userId as string) // gated by `enabled`
-          .eq("weekKey", weekKey),
-      ]);
-      const progress = new Map(
-        (
-          (progressRes.data ?? []) as {
-            questId: string;
-            progress: number;
-            completed: boolean;
-            claimed: boolean;
-          }[]
-        ).map((p) => [p.questId, p]),
-      );
-      return (
-        (questsRes.data ?? []) as {
-          id: string;
-          title: string;
-          type: string;
-          target: number;
-          xpReward: number;
-          freezeReward: number;
-        }[]
-      ).map((q) => ({
-        id: q.id,
-        title: q.title,
-        type: q.type,
-        target: q.target,
-        xpReward: q.xpReward,
-        freezeReward: q.freezeReward,
-        progress: progress.get(q.id)?.progress ?? 0,
-        completed: progress.get(q.id)?.completed ?? false,
-        claimed: progress.get(q.id)?.claimed ?? false,
-      }));
-    },
+    queryFn: fetchWeekQuestsApi,
   });
 }
 

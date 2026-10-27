@@ -1,5 +1,8 @@
-import type { QuestType } from "@prisma/client";
+import type { Prisma, QuestType } from "@prisma/client";
+import { BONUS_QUEST_TYPE, pickWeekQuests } from "@cyberlearn/lib";
 import { prisma } from "../prisma.js";
+
+type QuestRow = Prisma.QuestGetPayload<Record<string, never>>;
 
 /** A quest plus the current user's progress for a given week. */
 export interface QuestWithProgress {
@@ -24,12 +27,46 @@ export const questRepository = {
   },
 
   /**
-   * Active quests joined with the user's progress for `weekKey`. Quests with no
-   * progress row yet (fresh week) come back at progress 0 / not completed.
+   * The quests `weekKey` asks for, in display order, the completion bonus
+   * last: the same for everyone. Drawn from the active pool on the week's
+   * first read (pickWeekQuests, leaving out the quests of `previousWeekKey`
+   * where it can) and stored, so that a change to the pool does not move the
+   * quests of a week under way. Two first reads racing store the same draw:
+   * the second insert skips the rows the first one wrote.
    */
-  async findWeek(userId: string, weekKey: string): Promise<QuestWithProgress[]> {
+  async ensureWeek(weekKey: string, previousWeekKey: string): Promise<QuestRow[]> {
+    const stored = await weekRows(weekKey);
+    if (stored.length > 0) return stored;
+
+    const [pool, previous] = await Promise.all([
+      prisma.quest.findMany({ where: { isActive: true } }),
+      prisma.weeklyQuestSet.findMany({
+        where: { weekKey: previousWeekKey },
+        select: { questId: true },
+      }),
+    ]);
+    const drawn = pickWeekQuests(pool, weekKey, new Set(previous.map((row) => row.questId)));
+    const bonus = pool.find((quest) => quest.type === BONUS_QUEST_TYPE);
+    const week = bonus ? [...drawn, bonus] : drawn;
+    if (week.length === 0) return [];
+    await prisma.weeklyQuestSet.createMany({
+      data: week.map((quest, position) => ({ weekKey, questId: quest.id, position })),
+      skipDuplicates: true,
+    });
+    return weekRows(weekKey);
+  },
+
+  /**
+   * The week's quests (ensureWeek) joined with the user's progress. Quests
+   * with no progress row yet come back at progress 0, not completed.
+   */
+  async findWeek(
+    userId: string,
+    weekKey: string,
+    previousWeekKey: string,
+  ): Promise<QuestWithProgress[]> {
     const [quests, rows] = await Promise.all([
-      prisma.quest.findMany({ where: { isActive: true }, orderBy: { orderIndex: "asc" } }),
+      questRepository.ensureWeek(weekKey, previousWeekKey),
       prisma.userQuestProgress.findMany({
         where: { userId, weekKey },
         select: { questId: true, progress: true, completed: true, claimed: true },
@@ -69,3 +106,13 @@ export const questRepository = {
     });
   },
 };
+
+/** The quests stored for a week, in their order. */
+async function weekRows(weekKey: string): Promise<QuestRow[]> {
+  const rows = await prisma.weeklyQuestSet.findMany({
+    where: { weekKey },
+    orderBy: { position: "asc" },
+    select: { quest: true },
+  });
+  return rows.map((row) => row.quest);
+}

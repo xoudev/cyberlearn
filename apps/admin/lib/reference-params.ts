@@ -36,6 +36,9 @@ export const QUEST_TYPE_VALUES = [
   "PERFECT_QUIZ",
   "STREAK_DAYS",
   "FORUM_POST",
+  "CHALLENGE_SOLVED",
+  "DAILY_RECALL",
+  "EXERCISE_PASSED",
   "WEEKLY_BONUS",
 ] as const satisfies readonly QuestType[];
 

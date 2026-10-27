@@ -33,6 +33,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.8",
+    date: "2026-10-27",
+    title: "Des quêtes qui changent chaque semaine",
+    changes: [
+      {
+        type: "new",
+        text: "Les quêtes de la semaine ne sont plus toujours les mêmes : chaque lundi, quatre quêtes sont tirées dans une réserve, les mêmes pour tout le monde. Il y a toujours une quête de leçons, deux quêtes courtes et une plus longue, jamais deux du même genre, et rarement celles de la semaine d'avant. Aux leçons, au quiz parfait, à la série et à l'entraide s'ajoutent les défis résolus, le rappel du jour et les exercices pratiques des leçons (terminal, Python…). Le bonus récompense toujours les quatre quêtes faites. Dans l'app aussi, une fois mise à jour.",
+      },
+    ],
+  },
+  {
     version: "3.7",
     date: "2026-10-27",
     title: "Nouvelle identité Bastion et ses finitions",
