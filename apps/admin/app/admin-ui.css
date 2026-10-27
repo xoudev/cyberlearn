@@ -1,7 +1,4 @@
-/* ─── Admin console component system ─────────────────────────────────────────
-   Class-based UI layer for the back-office, on the site's own tokens (dark
-   navy surfaces, subtle borders, turquoise accent, mono labels). It owns all
-   responsive behaviour so pages stay free of ad-hoc styling. */
+/* Bastion console: shared page frame, dense work surfaces and explicit admin identity. */
 
 /* The console's names for the shared tokens of packages/ui/src/tokens.css.
    Every value is a reference and none is a colour: the console used to restate
@@ -10,6 +7,19 @@
    resolve against. A component that needs a colour in JS writes the same
    var(--a-*) string. */
 :root {
+  --font-sans: var(--font-interface), system-ui, sans-serif;
+  --color-text-secondary: var(--color-interface-secondary);
+  --color-text-muted: var(--color-interface-muted);
+  --color-text-disabled: var(--color-interface-muted);
+  --color-text-faint: var(--color-interface-muted);
+  --color-border-subtle: var(--color-interface-separator);
+  --color-border-default: var(--color-interface-outline);
+  --color-success: var(--color-state-success);
+  --color-warning: var(--color-state-warning);
+  --color-danger: var(--color-state-danger);
+  --a-chalk: var(--color-paper);
+  --a-ink: var(--color-ink);
+  --a-accent-hover: var(--color-brand-hover);
   --a-bg: var(--color-bg-base);
   --a-surface: var(--color-bg-elevated);
   --a-surface-2: var(--color-bg-sunken);
@@ -30,6 +40,7 @@
   --a-accent: var(--color-brand-turquoise);
   --a-blue: var(--color-brand-blue);
   --a-info: var(--color-info);
+  --a-success: var(--color-success);
   --a-danger: var(--color-danger);
   --a-warning: var(--color-warning);
   --a-purple: var(--color-rarity-epic);
@@ -48,16 +59,15 @@
      values that differ here are named rather than the whole scale restated.
      They sit on :root because the open list is portalled to <body> and
      inherits from there, not from the field. */
-  --cl-select-border: var(--a-border);
+  --cl-select-border: var(--a-border-2);
   --cl-select-accent: var(--a-accent);
+  --cl-select-font: var(--font-sans);
+  --cosmetic-accent: var(--a-accent);
 }
 
 /* ─── Focus & interaction defaults ─────────────────────────── */
 
-.admin-console a:focus-visible,
-.admin-console button:focus-visible,
-.admin-console input:focus-visible,
-.admin-console select:focus-visible {
+:focus-visible {
   outline: 2px solid var(--a-accent);
   outline-offset: 2px;
 }
@@ -66,18 +76,17 @@
 
 .a-topbar {
   position: fixed;
-  top: 2px;
+  top: 0;
   left: 0;
   right: 0;
   height: 56px;
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 16px;
-  background: color-mix(in srgb, var(--a-bg) 92%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  gap: 12px;
+  padding: 0 var(--page-gutter);
+  background: var(--a-surface);
+  border-top: 2px solid var(--a-accent);
   border-bottom: 1px solid var(--a-border);
 }
 
@@ -86,7 +95,10 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font-family: var(--font-mono);
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--a-muted);
@@ -98,7 +110,7 @@
 .a-topbar-sep {
   color: var(--a-faint);
 }
-@media (min-width: 1024px) {
+@media (min-width: 1400px) {
   .a-topbar-crumbs {
     display: inline-flex;
   }
@@ -187,13 +199,13 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 34px;
+  height: 44px;
   padding: 0 12px;
   background: var(--a-surface);
-  border: 1px solid var(--a-border);
+  border: 1px solid var(--a-border-2);
   color: var(--a-muted);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
 }
 .a-topbar-search-box input {
   flex: 1;
@@ -202,8 +214,8 @@
   border: none;
   outline: none;
   color: var(--a-fg-2);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
 }
 .a-kbd {
   padding: 1px 6px;
@@ -368,6 +380,7 @@
   gap: 11px;
   margin: 0 10px;
   padding: 8px 10px;
+  min-height: 44px;
   font-size: 13px;
   color: var(--a-muted);
   transition:
@@ -379,20 +392,19 @@
   background: var(--a-hover);
 }
 .a-side-item[data-active="true"] {
-  color: var(--a-fg);
+  color: var(--a-ink);
   font-weight: 600;
-  background: color-mix(in srgb, var(--a-accent) 7%, transparent);
-  box-shadow: inset 2px 0 0 var(--a-accent);
+  background: var(--a-accent);
 }
 .a-side-item[data-active="true"] .a-side-icon {
-  color: var(--a-accent);
+  color: inherit;
 }
 .a-side-icon {
   display: inline-flex;
   flex-shrink: 0;
 }
 .a-side-count {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 700;
   padding: 1px 7px;
@@ -408,19 +420,13 @@
 /* ─── Page scaffolding ─────────────────────────────────────── */
 
 .a-page {
-  max-width: 1380px;
+  max-width: none;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0 auto;
-  padding: 24px 16px 90px;
-}
-@media (min-width: 768px) {
-  .a-page {
-    padding: 30px 28px 110px;
-  }
-}
-@media (min-width: 1280px) {
-  .a-page {
-    padding: 34px 44px 120px;
-  }
+  padding: var(--page-space-top) var(--page-gutter) var(--page-space-bottom);
+  container: admin-page / inline-size;
 }
 /* The one other width: the window's, for a page that sets an editor beside
    its preview (the lesson studio). */
@@ -437,7 +443,7 @@
 @media (min-width: 768px) {
   .a-page-head {
     flex-direction: row;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 24px;
   }
@@ -448,12 +454,10 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--a-accent);
+  color: var(--a-muted);
 }
 .a-eyebrow::before {
   content: "";
@@ -498,11 +502,12 @@
 
 .a-h1 {
   margin: 0;
-  font-family: var(--font-sans);
-  font-weight: 800;
-  font-size: clamp(26px, 3.2vw, 38px);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: clamp(40px, 3.5vw, 56px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
   color: var(--a-fg);
 }
 
@@ -536,14 +541,13 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 18px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
   cursor: pointer;
   border: 1px solid transparent;
   transition:
@@ -555,10 +559,11 @@
 .a-btn--primary {
   background: var(--a-blue);
   border-color: var(--a-blue);
-  color: var(--a-fg);
+  color: var(--a-ink);
 }
 .a-btn--primary:hover {
-  filter: brightness(1.25);
+  background: var(--a-accent-hover);
+  border-color: var(--a-accent-hover);
 }
 .a-btn--ghost {
   background: transparent;
@@ -578,9 +583,9 @@
   background: color-mix(in srgb, var(--a-danger) 10%, transparent);
 }
 .a-btn--sm {
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 12px;
-  font-size: 9.5px;
+  font-size: 12px;
 }
 /* A button whose label is a sentence (the deletion of an account), which wraps
    instead of pushing its form wider than the card: a button keeps its label on
@@ -612,18 +617,18 @@
 }
 .a-card-title {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-display), sans-serif;
   font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: 24px;
+  line-height: 1.1;
   color: var(--a-fg-2);
 }
 .a-card-link {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   color: var(--a-muted);
   transition: color 140ms ease;
 }
@@ -680,28 +685,17 @@
   border: 1px solid var(--a-border);
   overflow: hidden;
 }
-.a-kpi::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--kpi-accent, var(--a-accent));
-}
 .a-kpi-label {
   grid-column: 1 / -1;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--a-muted);
 }
 .a-kpi-value {
-  font-family: var(--font-sans);
+  font-family: var(--font-display), sans-serif;
   font-weight: 800;
-  font-size: 32px;
+  font-size: 44px;
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--a-fg);
@@ -718,8 +712,8 @@
   align-items: center;
   gap: 6px;
   margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   letter-spacing: 0.03em;
   color: var(--a-muted);
 }
@@ -735,12 +729,9 @@
   align-items: center;
   gap: 6px;
   padding: 3px 9px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 9.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-size: 11px;
   --tag: var(--a-muted);
   color: var(--tag);
   border: 1px solid color-mix(in srgb, var(--tag) 40%, transparent);
@@ -750,7 +741,6 @@
   content: "";
   width: 5px;
   height: 5px;
-  border-radius: 50%;
   background: var(--tag);
   flex-shrink: 0;
 }
@@ -762,6 +752,9 @@
 }
 .a-tag[data-tone="info"] {
   --tag: var(--a-info);
+}
+.a-tag[data-tone="success"] {
+  --tag: var(--a-success);
 }
 .a-tag[data-tone="warning"] {
   --tag: var(--a-warning);
@@ -790,7 +783,7 @@
   flex: 1;
   min-width: 200px;
   max-width: 340px;
-  height: 36px;
+  height: 44px;
   padding: 0 12px;
   background: var(--a-surface-2);
   border: 1px solid var(--a-border);
@@ -803,17 +796,18 @@
   border: none;
   outline: none;
   color: var(--a-fg);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 12px;
 }
 .a-search input::placeholder {
   color: var(--a-muted);
 }
 .a-toolbar-reset {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   color: var(--a-muted);
   transition: color 120ms ease;
 }
@@ -823,14 +817,14 @@
 }
 .a-toolbar-count {
   margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
   white-space: nowrap;
 }
 
 .a-table-wrap {
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -843,11 +837,9 @@
   top: 0;
   text-align: left;
   padding: 10px 16px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-weight: 600;
   font-size: 12px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--a-muted);
   background: var(--a-surface-2);
   border-bottom: 1px solid var(--a-border);
@@ -920,8 +912,8 @@
 }
 .a-table .num {
   text-align: right;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 .a-table .mono {
@@ -937,8 +929,8 @@
   flex-wrap: wrap;
   padding: 11px 14px;
   border-top: 1px solid var(--a-border);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
 }
 .a-pager-btns {
@@ -946,8 +938,8 @@
   gap: 6px;
 }
 .a-pager-btn {
-  min-width: 30px;
-  height: 30px;
+  min-width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -955,8 +947,8 @@
   border: 1px solid var(--a-border);
   background: transparent;
   color: var(--a-muted);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   cursor: pointer;
   transition:
     color 120ms ease,
@@ -1036,8 +1028,8 @@
   padding: 10px 14px;
   border-bottom: 1px solid color-mix(in srgb, var(--a-accent) 30%, transparent);
   background: color-mix(in srgb, var(--a-accent) 6%, transparent);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 12px;
 }
 .a-bulk-count {
   font-weight: 700;
@@ -1086,11 +1078,10 @@
   margin-bottom: -1px;
   padding: 10px 14px;
   border-bottom: 2px solid transparent;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  min-height: 44px;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--a-muted);
   transition:
     color 120ms ease,
@@ -1122,17 +1113,15 @@
 .a-filter {
   display: grid;
   gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--a-muted);
 }
 .a-filter .a-input--sm {
   width: 100%;
   min-width: 140px;
-  height: 36px;
+  height: 44px;
 }
 /* The console is dark: so is the calendar a date field opens. */
 .a-filter input[type="date"] {
@@ -1186,9 +1175,9 @@
 }
 .a-empty-title {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-display), sans-serif;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 26px;
   color: var(--a-fg);
 }
 .a-empty-text {
@@ -1240,7 +1229,6 @@
 .a-feed-dot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
   background: var(--feed-tone, var(--a-muted));
   flex-shrink: 0;
 }
@@ -1260,12 +1248,12 @@
 }
 .a-feed-meta {
   margin-top: 3px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
 }
 .a-feed-time {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   color: var(--a-muted);
   white-space: nowrap;
@@ -1286,7 +1274,7 @@
   border-bottom: none;
 }
 .a-defrow-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11.5px;
   color: var(--a-fg-2);
   overflow-wrap: anywhere;
@@ -1307,13 +1295,14 @@
 .a-meter-fill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--a-blue), var(--a-accent));
+  background: var(--a-accent);
 }
 
 /* ─── Auth screens (login / MFA) ───────────────────────────── */
 
 .a-auth {
   min-height: 100vh;
+  padding-top: 56px;
   display: grid;
   grid-template-columns: 1fr;
   background: var(--a-bg);
@@ -1332,19 +1321,8 @@
   justify-content: space-between;
   padding: 44px 48px;
   border-right: 1px solid var(--a-border);
-  /* The two halos of the learner site's sign-in panel, from the same tokens. */
-  background:
-    radial-gradient(
-      ellipse 90% 60% at 10% 0%,
-      color-mix(in srgb, var(--a-blue) 22%, transparent),
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at 90% 100%,
-      color-mix(in srgb, var(--a-accent) 7%, transparent),
-      transparent 65%
-    ),
-    var(--a-bg);
+  background: var(--a-chalk);
+  color: var(--a-ink);
   overflow: hidden;
 }
 @media (min-width: 980px) {
@@ -1353,24 +1331,7 @@
   }
 }
 .a-auth-brand::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in srgb, var(--a-border-2) 18%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--a-border-2) 18%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse at 30% 30%, black 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at 30% 30%, black 0%, transparent 75%);
-  pointer-events: none;
+  content: none;
 }
 .a-auth-brand > * {
   position: relative;
@@ -1378,18 +1339,15 @@
 }
 .a-auth-tagline {
   margin: 18px 0 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-display), sans-serif;
   font-weight: 800;
-  font-size: clamp(28px, 3vw, 40px);
+  font-size: clamp(40px, 4vw, 64px);
   line-height: 1.05;
   letter-spacing: -0.04em;
 }
 .a-auth-tagline em {
   font-style: normal;
-  background: linear-gradient(90deg, var(--a-info), var(--a-accent));
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+  color: var(--a-ink);
 }
 .a-auth-points {
   display: grid;
@@ -1402,27 +1360,26 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--a-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--a-ink);
 }
 .a-auth-points svg {
-  color: var(--a-accent);
+  color: var(--a-ink);
   flex-shrink: 0;
 }
 
 .a-auth-panel {
   display: grid;
   place-items: center;
-  padding: 32px 20px;
+  padding: var(--page-space-top) var(--page-gutter) var(--page-space-bottom);
 }
 .a-auth-card {
   width: min(100%, 400px);
 }
 /* The page title, a size down from .a-h1: the card is 400px wide. */
 .a-auth-title {
-  font-size: clamp(26px, 3vw, 34px);
+  font-size: clamp(40px, 3.5vw, 56px);
 }
 .a-auth-form {
   display: grid;
@@ -1440,11 +1397,9 @@
 }
 .a-label {
   color: var(--a-fg-2);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 /* Stacks fields at the same rhythm .a-auth-form gives the sign-in screen,
@@ -1466,8 +1421,8 @@
 
 .a-field-hint {
   color: var(--a-muted);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   line-height: 1.5;
 }
 /* One line, and sized for one: the fixed height and the zero vertical padding
@@ -1481,7 +1436,7 @@
   color: var(--a-fg);
   padding: 0 13px;
   outline: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 13px;
   transition: border-color 140ms ease;
 }
@@ -1492,7 +1447,7 @@
    everything else around. Same skin, sized for a row. */
 .a-input--sm {
   width: auto;
-  height: 32px;
+  height: 44px;
   padding: 0 9px;
   font-size: 12px;
 }
@@ -1505,7 +1460,7 @@
   padding: 11px 13px;
   outline: none;
   resize: vertical;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.55;
   transition: border-color 140ms ease;
@@ -1542,8 +1497,8 @@
   padding: 6px;
   color: var(--a-muted);
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1567,10 +1522,9 @@
   background: transparent;
   padding: 0;
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  min-height: 44px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
   transition: color 140ms ease;
 }
@@ -1584,8 +1538,8 @@
   border-left: 2px solid var(--a-danger);
   background: color-mix(in srgb, var(--a-danger) 7%, transparent);
   color: var(--a-danger);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   line-height: 1.55;
 }
 .a-form-notice {
@@ -1594,8 +1548,8 @@
   border-left: 2px solid var(--a-accent);
   background: color-mix(in srgb, var(--a-accent) 6%, transparent);
   color: var(--a-fg-2);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   line-height: 1.55;
 }
 .a-qr {
@@ -1643,11 +1597,9 @@
 
 .a-subhead {
   margin: 22px 0 10px;
-  font-family: var(--font-mono);
+  font-family: var(--font-display), sans-serif;
   font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 24px;
   color: var(--a-muted);
 }
 
@@ -1784,7 +1736,7 @@
   padding: 11px 13px;
   background: var(--a-bg);
   border-left: 2px solid var(--a-border-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 12px;
   line-height: 1.6;
   color: var(--a-fg-2);
@@ -1920,10 +1872,8 @@
   font-size: 12.5px;
 }
 .a-sync-fields dt {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--a-muted);
   padding-top: 2px;
 }
@@ -1936,15 +1886,14 @@
   color: var(--a-danger);
 }
 .a-sync-fields ins {
-  color: var(--a-accent);
+  color: var(--a-success);
   text-decoration: none;
 }
 .a-sync-details summary {
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  min-height: 44px;
   color: var(--a-fg-2);
 }
 .a-sync-details summary:hover {
@@ -1981,12 +1930,12 @@
 /* The text of a changed line: its tone, lifted towards the foreground so a
    long hunk stays readable on the tinted ground. */
 .a-diff-line[data-kind="removed"] {
-  color: color-mix(in srgb, var(--a-danger) 40%, var(--a-fg));
+  color: var(--a-danger);
   background: color-mix(in srgb, var(--a-danger) 12%, transparent);
 }
 .a-diff-line[data-kind="added"] {
-  color: color-mix(in srgb, var(--a-accent) 30%, var(--a-fg));
-  background: color-mix(in srgb, var(--a-accent) 10%, transparent);
+  color: var(--a-success);
+  background: color-mix(in srgb, var(--a-success) 10%, transparent);
 }
 .a-diff-sign {
   text-align: center;
@@ -2045,13 +1994,11 @@
   color: var(--a-fg-2);
 }
 .a-report-options li[data-correct="true"] {
-  color: var(--a-accent);
+  color: var(--a-success);
 }
 .a-report-key {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12px;
 }
 .a-report-expl {
   margin: 0;
@@ -2130,7 +2077,7 @@
 
 /* ─── Lesson studio ────────────────────────────────────────── */
 
-/* The bar stays under the top bar (56px + its 2px line) while the page
+/* The bar stays under the top bar (56px including its brand line) while the page
    scrolls; the body below it takes what is left of the window, so the
    editor and its preview are seen whole once the header is scrolled by. */
 .a-studio {
@@ -2140,7 +2087,7 @@
 }
 .a-studio-bar {
   position: sticky;
-  top: 58px;
+  top: 56px;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;

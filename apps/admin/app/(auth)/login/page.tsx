@@ -1,9 +1,11 @@
 import React from "react";
+import type { Metadata } from "next";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { type LoginError, loginErrorSchema, safeAdminRedirect } from "@/lib/auth-redirect";
 import { learnerUrl } from "@/lib/learner-url";
 import { AdminAuthShell } from "../auth-shell";
 import { AdminLoginForm } from "./login-form";
+export const metadata: Metadata = { title: "Connexion" };
 
 /**
  * What /login?error= says. The codes come from the middleware, which knows
@@ -56,7 +58,7 @@ export default async function AdminLoginPage({
 
   return (
     <AdminAuthShell
-      eyebrow="Console d'administration"
+      eyebrow="Connexion sécurisée"
       title="Accès restreint"
       description="Mot de passe et double authentification obligatoires pour chaque session administrative."
     >

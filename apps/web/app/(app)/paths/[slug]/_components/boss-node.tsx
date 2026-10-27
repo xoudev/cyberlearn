@@ -2,7 +2,6 @@ import Link from "next/link";
 import React from "react";
 import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { ClaimCertificateButton } from "./claim-certificate";
-import { Brackets } from "@/app/_components/corner-brackets";
 import { ProgressBar } from "@/components/progress-bar";
 
 interface BossNodeProps {
@@ -185,12 +184,7 @@ export function BossNode({
 
   return (
     <div className="cp-final">
-      <div className="cp-cell cp-cell--empty" />
-      <div className="cp-mid" />
-      <div className="cp-cell cp-cell--empty" />
       <div className={`cp-boss${isUnlocked ? " is-unlocked" : ""}`}>
-        <Brackets />
-        <span className="cp-boss__connector" />
         <div className="cp-boss__eyebrow">{eyebrow}</div>
         <div className="cp-boss__medal">
           {MedalIcon}

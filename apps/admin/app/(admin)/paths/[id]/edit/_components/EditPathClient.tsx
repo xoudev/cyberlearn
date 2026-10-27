@@ -3,7 +3,7 @@
 import React, { useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import { updatePathAction, type UpdatePathState } from "../actions";
-import { Select } from "@cyberlearn/ui";
+import { ModalShell, Select } from "@cyberlearn/ui";
 import { CoverUploadField } from "@/app/(admin)/lessons/_components/cover-upload-field";
 import { CONTENT_STATUS_OPTIONS } from "@/app/(admin)/_components/content-status";
 import { keepFormInput } from "@/lib/form-input";
@@ -36,13 +36,16 @@ interface PathData {
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const MONO = "var(--font-mono)";
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
+const TURQ = "var(--a-accent)";
+const MONO = "var(--font-sans)";
 const BODY_F = "var(--font-sans)";
 
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
   background: "var(--a-surface)",
-  border: "1px solid var(--a-border-2)",
+  border: `1px solid ${BORDER}`,
   color: "var(--a-fg)",
   fontFamily: MONO,
   fontSize: 13,
@@ -56,18 +59,9 @@ const BASE_INPUT: React.CSSProperties = {
 
 // The site's category colours, so a lesson reads the same in both places.
 const CAT_CHIPS: Record<string, { color: string; border: string }> = {
-  CYBERSEC: {
-    color: "var(--a-category-cybersec)",
-    border: "color-mix(in srgb, var(--a-category-cybersec) 30%, transparent)",
-  },
-  NETWORK: {
-    color: "var(--a-category-network)",
-    border: "color-mix(in srgb, var(--a-category-network) 30%, transparent)",
-  },
-  DEV: {
-    color: "var(--a-category-dev)",
-    border: "color-mix(in srgb, var(--a-category-dev) 35%, transparent)",
-  },
+  CYBERSEC: { color: "var(--color-category-cybersec)", border: "var(--a-border-2)" },
+  NETWORK: { color: "var(--color-category-network)", border: "var(--a-border-2)" },
+  DEV: { color: "var(--color-category-dev)", border: "var(--a-border-2)" },
 };
 const DIFF_DIAMONDS: Record<string, number> = {
   BEGINNER: 1,
@@ -88,21 +82,22 @@ function diamonds(difficulty: string): React.ReactElement {
 
 function Label({
   children,
+  htmlFor,
   hint,
   req,
 }: {
   children: React.ReactNode;
+  htmlFor?: string;
   hint?: string;
   req?: boolean;
 }) {
   return (
     <label
+      htmlFor={htmlFor}
       style={{
         fontFamily: MONO,
         fontWeight: 700,
-        fontSize: 10.5,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
+        fontSize: 12,
         color: "var(--a-fg-2)",
         display: "inline-flex",
         alignItems: "center",
@@ -130,7 +125,7 @@ function Label({
 }
 function Help({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--a-muted)" }}>{children}</span>
+    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>{children}</span>
   );
 }
 function FieldErr({ msg }: { msg?: string | undefined }) {
@@ -170,11 +165,12 @@ function LessonRow({
     dragState.overId === lesson.id && dragState.dragId !== null && dragState.dragId !== lesson.id;
   const cat = CAT_CHIPS[lesson.category] ?? {
     color: "var(--a-muted)",
-    border: "color-mix(in srgb, var(--a-muted) 35%, transparent)",
+    border: "var(--a-border-2)",
   };
 
   return (
     <li
+      className="a-path-lesson"
       draggable
       onDragStart={(e) => {
         onDragStart(e, lesson.id);
@@ -187,25 +183,15 @@ function LessonRow({
       }}
       onDragEnd={onDragEnd}
       style={{
-        display: "grid",
-        gridTemplateColumns: "28px 36px 1fr auto auto",
         alignItems: "center",
         gap: 14,
         padding: "12px 16px 12px 8px",
-        borderBottom: "1px solid color-mix(in srgb, var(--a-border-2) 50%, transparent)",
-        background: isDropTarget
-          ? "var(--a-hover)"
-          : isDragging
-            ? "var(--a-hover)"
-            : "var(--a-surface)",
-        outline: isDragging
-          ? "1px solid var(--a-accent)"
-          : isDropTarget
-            ? "1px dashed var(--a-accent)"
-            : "none",
+        borderBottom: `1px solid var(--a-border)`,
+        background: isDropTarget || isDragging ? "var(--a-hover)" : "var(--a-surface)",
+        outline: isDragging ? `1px solid ${TURQ}` : isDropTarget ? `1px dashed ${TURQ}` : "none",
         outlineOffset: -1,
         boxShadow: isDragging
-          ? "0 12px 32px color-mix(in srgb, var(--a-bg) 50%, transparent), 0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)"
+          ? "0 12px 32px color-mix(in srgb, var(--a-bg) 50%, transparent)"
           : "none",
         position: "relative",
         transition: "background 100ms ease",
@@ -234,7 +220,7 @@ function LessonRow({
           placeItems: "center",
           width: 28,
           height: 28,
-          color: isDragging ? "var(--a-accent)" : "var(--a-faint-2)",
+          color: isDragging ? TURQ : "var(--a-muted)",
           transition: "color 100ms ease",
         }}
       >
@@ -255,9 +241,9 @@ function LessonRow({
           fontWeight: 700,
           fontSize: 11,
           letterSpacing: "0.04em",
-          color: idx === 0 ? "var(--a-accent)" : "var(--a-muted)",
-          background: "var(--a-surface-2)",
-          border: `1px solid ${idx === 0 ? "color-mix(in srgb, var(--a-accent) 35%, transparent)" : "var(--a-border-2)"}`,
+          color: idx === 0 ? TURQ : "var(--a-muted)",
+          background: "var(--a-bg)",
+          border: `1px solid ${idx === 0 ? TURQ : BORDER}`,
           width: 36,
           height: 28,
           display: "grid",
@@ -294,7 +280,7 @@ function LessonRow({
             flexWrap: "wrap",
           }}
         >
-          <span style={{ color: "var(--a-accent)" }}>{lesson.refCode}</span>
+          <span style={{ color: TURQ }}>{lesson.refCode}</span>
           <span style={{ color: "var(--a-muted)" }}>·</span>
           {diamonds(lesson.difficulty)}
           <span style={{ color: "var(--a-muted)" }}>·</span>
@@ -333,9 +319,9 @@ function LessonRow({
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             padding: "3px 8px",
-            border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
-            color: "var(--a-accent)",
-            background: "color-mix(in srgb, var(--a-accent) 5%, transparent)",
+            border: `1px solid var(--a-accent)`,
+            color: TURQ,
+            background: "var(--a-surface)",
           }}
         >
           +{lesson.xpReward} XP
@@ -355,7 +341,7 @@ function LessonRow({
           width: 30,
           height: 30,
           background: "transparent",
-          border: "1px solid var(--a-border-2)",
+          border: `1px solid ${BORDER}`,
           color: "var(--a-muted)",
           cursor: "pointer",
           transition: "all 150ms ease",
@@ -401,22 +387,18 @@ function LessonPicker({
   );
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        display: "grid",
-        placeItems: "center",
-        background: "color-mix(in srgb, var(--a-bg) 85%, transparent)",
-      }}
-      onClick={onClose}
+    <ModalShell
+      open
+      onClose={onClose}
+      maxWidth={640}
+      eyebrow="ADMIN · Parcours"
+      title="Ajouter une leçon"
+      ariaLabel="Administration : ajouter une leçon au parcours"
     >
       <div
         style={{
-          width: "min(640px, 90vw)",
+          width: "100%",
           background: "var(--a-surface)",
-          border: "1px solid var(--a-border-2)",
           maxHeight: "70vh",
           display: "flex",
           flexDirection: "column",
@@ -428,51 +410,7 @@ function LessonPicker({
           if (e.key === "Escape") onClose();
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderBottom: "1px solid var(--a-border-2)",
-            background: "var(--a-surface-2)",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--a-fg-2)",
-            }}
-          >
-            <span style={{ color: "var(--a-muted)" }}>{"// "}</span>AJOUTER DES LEÇONS
-            <span style={{ color: "var(--a-muted)", marginLeft: 10, letterSpacing: "0.04em" }}>
-              {selected.length} dans le parcours
-            </span>
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="adm-btn-ghost"
-            style={{
-              background: "none",
-              border: "1px solid var(--a-border-2)",
-              color: "var(--a-fg-2)",
-              cursor: "pointer",
-              fontFamily: MONO,
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              padding: "6px 12px",
-            }}
-          >
-            Terminé
-          </button>
-        </div>
-        <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--a-border-2)" }}>
+        <div style={{ padding: "12px 18px", borderBottom: `1px solid ${BORDER}` }}>
           <input
             ref={searchRef}
             value={q}
@@ -502,7 +440,7 @@ function LessonPicker({
             filtered.map((l) => {
               const cat = CAT_CHIPS[l.category] ?? {
                 color: "var(--a-muted)",
-                border: "color-mix(in srgb, var(--a-muted) 35%, transparent)",
+                border: "var(--a-border-2)",
               };
               return (
                 <button
@@ -519,8 +457,7 @@ function LessonPicker({
                     width: "100%",
                     background: "none",
                     border: 0,
-                    borderBottom:
-                      "1px solid color-mix(in srgb, var(--a-border-2) 50%, transparent)",
+                    borderBottom: `1px solid var(--a-border)`,
                     padding: "12px 18px",
                     cursor: "pointer",
                     textAlign: "left",
@@ -538,14 +475,12 @@ function LessonPicker({
                         fontSize: 13,
                         color: "var(--a-fg)",
                         margin: "0 0 3px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {l.title}
                     </p>
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-muted)" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
                       {l.refCode} · {l.estimatedMinutes} min · +{l.xpReward} XP
                     </span>
                   </div>
@@ -571,7 +506,7 @@ function LessonPicker({
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -651,15 +586,6 @@ export function EditPathClient({
 
   return (
     <>
-      <style>{`
-        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:color-mix(in srgb, var(--a-fg) 18%, transparent)!important}
-        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent),inset 0 0 0 1px color-mix(in srgb, var(--a-accent) 8%, transparent)!important}
-        .le-prefix:focus-within{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)!important}
-        .le-num:focus-within{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)!important}
-        .pe-add:hover{color:var(--a-accent)!important;background:color-mix(in srgb, var(--a-accent) 4%, transparent)!important;border-top-color:color-mix(in srgb, var(--a-accent) 40%, transparent)!important;border-top-style:solid!important}
-        .adm-btn-ghost:hover{color:var(--a-fg)!important;border-color:var(--a-muted)!important;background:color-mix(in srgb, var(--a-fg) 3%, transparent)!important}
-      `}</style>
-
       {pickerOpen && (
         <LessonPicker
           available={availableLessons}
@@ -676,8 +602,8 @@ export function EditPathClient({
           style={{
             padding: "13px 16px",
             background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--a-danger) 35%, transparent)",
-            borderLeft: "3px solid var(--a-danger)",
+            border: "1px solid var(--a-danger)",
+            borderLeft: `3px solid ${DANGER}`,
             fontFamily: MONO,
             fontSize: 11,
             color: "var(--a-danger)",
@@ -695,10 +621,11 @@ export function EditPathClient({
         {/* refCode + slug */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// doit être unique">
+            <Label htmlFor="admin-editor-refCode" req hint="Doit être unique">
               Ref code
             </Label>
             <input
+              id="admin-editor-refCode"
               name="refCode"
               type="text"
               required
@@ -717,7 +644,7 @@ export function EditPathClient({
             <FieldErr msg={state.fieldErrors?.refCode} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// utilisé dans l'URL">
+            <Label htmlFor="admin-editor-slug" req hint="Utilisé dans l’URL">
               Slug
             </Label>
             <div
@@ -727,7 +654,7 @@ export function EditPathClient({
                 display: "flex",
                 alignItems: "stretch",
                 background: "var(--a-surface)",
-                border: "1px solid var(--a-border-2)",
+                border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
               }}
             >
@@ -739,13 +666,14 @@ export function EditPathClient({
                   fontFamily: MONO,
                   fontSize: 13,
                   color: "var(--a-muted)",
-                  borderRight: "1px solid var(--a-border-2)",
-                  background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
+                  borderRight: `1px solid ${BORDER}`,
+                  background: "var(--a-bg)",
                 }}
               >
                 /
               </span>
               <input
+                id="admin-editor-slug"
                 name="slug"
                 type="text"
                 required
@@ -764,10 +692,11 @@ export function EditPathClient({
 
         {/* Title */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label req hint="// 3–200 caractères">
+          <Label htmlFor="admin-editor-title" req hint="3–200 caractères">
             Titre
           </Label>
           <input
+            id="admin-editor-title"
             name="title"
             type="text"
             required
@@ -782,10 +711,15 @@ export function EditPathClient({
 
         {/* Description */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label req hint="// 10–1000 caractères · affichée sur la page parcours">
+          <Label
+            htmlFor="admin-editor-description"
+            req
+            hint="10–1000 caractères · affichée sur la page parcours"
+          >
             Description
           </Label>
           <textarea
+            id="admin-editor-description"
             name="description"
             required
             minLength={10}
@@ -802,9 +736,12 @@ export function EditPathClient({
         {/* Track: what the path is for, orthogonal to the domain it covers. */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Type de parcours</Label>
+            <Label htmlFor="admin-editor-track" req>
+              Type de parcours
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
+                id="admin-editor-track"
                 name="track"
                 required
                 defaultValue={path.track}
@@ -821,9 +758,12 @@ export function EditPathClient({
         {/* Category + Difficulty */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Catégorie</Label>
+            <Label htmlFor="admin-editor-category" req>
+              Catégorie
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
+                id="admin-editor-category"
                 name="category"
                 required
                 defaultValue={path.category}
@@ -837,9 +777,12 @@ export function EditPathClient({
             <FieldErr msg={state.fieldErrors?.category} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Difficulté</Label>
+            <Label htmlFor="admin-editor-difficulty" req>
+              Difficulté
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
+                id="admin-editor-difficulty"
                 name="difficulty"
                 required
                 defaultValue={path.difficulty}
@@ -858,7 +801,9 @@ export function EditPathClient({
         {/* Duration + Status */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Durée estimée (heures)</Label>
+            <Label htmlFor="admin-editor-estimatedHours" req>
+              Durée estimée (heures)
+            </Label>
             <div
               className="le-num"
               style={{
@@ -866,11 +811,12 @@ export function EditPathClient({
                 display: "flex",
                 alignItems: "stretch",
                 background: "var(--a-surface)",
-                border: "1px solid var(--a-border-2)",
+                border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
               }}
             >
               <input
+                id="admin-editor-estimatedHours"
                 name="estimatedHours"
                 type="number"
                 required
@@ -889,8 +835,8 @@ export function EditPathClient({
                   fontSize: 10.5,
                   letterSpacing: "0.18em",
                   color: "var(--a-muted)",
-                  borderLeft: "1px solid var(--a-border-2)",
-                  background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
+                  borderLeft: `1px solid ${BORDER}`,
+                  background: "var(--a-bg)",
                   textTransform: "uppercase",
                   whiteSpace: "nowrap",
                 }}
@@ -904,9 +850,12 @@ export function EditPathClient({
             </Help>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Statut</Label>
+            <Label htmlFor="admin-editor-status" req>
+              Statut
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
+                id="admin-editor-status"
                 name="status"
                 required
                 defaultValue={path.status}
@@ -937,15 +886,15 @@ export function EditPathClient({
         {/* Lessons section */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Label hint="// glisse pour réordonner">Leçons du parcours</Label>
-          <div style={{ border: "1px solid var(--a-border-2)", background: "var(--a-surface)" }}>
+          <div style={{ border: `1px solid ${BORDER}`, background: "var(--a-surface)" }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "14px 18px",
-                borderBottom: "1px solid var(--a-border-2)",
-                background: "var(--a-surface-2)",
+                borderBottom: `1px solid ${BORDER}`,
+                background: "var(--a-bg)",
               }}
             >
               <h3
@@ -959,12 +908,10 @@ export function EditPathClient({
                   margin: 0,
                 }}
               >
-                <span style={{ color: "var(--a-muted)" }}>{"// "}</span>
-                <b style={{ color: "var(--a-accent)" }}>{lessons.length}</b> leçons · ordre actuel
+                <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
               </h3>
-              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--a-muted)" }}>
-                <b style={{ color: "var(--a-muted)" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
-                <b style={{ color: "var(--a-muted)" }}>{totals.xp}</b> XP cumulés
+              <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
+                <b>{(totals.dur / 60).toFixed(1)} h</b> total · <b>{totals.xp}</b> XP cumulés
               </span>
             </div>
 
@@ -1051,11 +998,10 @@ export function EditPathClient({
 
             {/* Totals strip */}
             <div
+              className="a-path-totals"
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                background: "var(--a-surface-2)",
-                borderTop: "1px solid var(--a-border-2)",
+                background: "var(--a-bg)",
+                borderTop: `1px solid ${BORDER}`,
                 fontFamily: MONO,
                 fontSize: 11,
               }}
@@ -1090,7 +1036,7 @@ export function EditPathClient({
                     style={{
                       fontWeight: 700,
                       fontSize: 14,
-                      color: cell.brand ? "var(--a-accent)" : "var(--a-fg)",
+                      color: cell.brand ? TURQ : "var(--a-fg)",
                       letterSpacing: "0.02em",
                     }}
                   >
@@ -1126,7 +1072,7 @@ export function EditPathClient({
               padding: "13px 22px",
               background: "transparent",
               color: "var(--a-muted)",
-              border: "1px solid var(--a-border-2)",
+              border: `1px solid ${BORDER}`,
               transition: "all 150ms ease",
               textDecoration: "none",
               display: "inline-flex",
@@ -1148,41 +1094,15 @@ export function EditPathClient({
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               padding: "13px 22px",
-              background: "var(--a-blue)",
-              color: "var(--a-fg)",
+              background: "var(--a-accent)",
+              color: "var(--a-ink)",
               border: 0,
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
             }}
           >
-            <span
-              style={{
-                position: "absolute",
-                top: -3,
-                left: -3,
-                width: 10,
-                height: 10,
-                border: "1.5px solid var(--a-fg)",
-                borderRight: 0,
-                borderBottom: 0,
-                opacity: 0.7,
-              }}
-            />
             {isPending ? "Sauvegarde…" : "Sauvegarder les modifications"}
             <span style={{ fontWeight: 400 }}>→</span>
-            <span
-              style={{
-                position: "absolute",
-                bottom: -3,
-                right: -3,
-                width: 10,
-                height: 10,
-                border: "1.5px solid var(--a-fg)",
-                borderTop: 0,
-                borderLeft: 0,
-                opacity: 0.7,
-              }}
-            />
           </button>
         </div>
       </form>

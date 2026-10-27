@@ -18,7 +18,7 @@ export function LevelReached({
 }): React.JSX.Element {
   return (
     <div className={`level-reached${size === "sm" ? " level-reached--sm" : ""}`}>
-      <div className="level-reached__eyebrow">{"// niveau supérieur"}</div>
+      <div className="level-reached__eyebrow">Niveau supérieur</div>
       <div className="level-reached__figure" aria-hidden="true">
         {level}
       </div>

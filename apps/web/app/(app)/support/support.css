@@ -1,0 +1,197 @@
+@import "../../../components/community-workspace.css";
+
+.support-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.55fr);
+  margin: 28px 0 36px;
+  background: #eae7df;
+  color: #141518;
+  border-top: 4px solid #ff6b2b;
+}
+.support-overview__body {
+  padding: clamp(24px, 4vw, 40px);
+}
+.support-overview h2 {
+  margin: 0;
+  font:
+    600 clamp(32px, 4vw, 48px) / 1.05 var(--font-display),
+    sans-serif;
+}
+.support-overview p {
+  max-width: 560px;
+  margin: 16px 0 24px;
+  color: #55524d;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.support-overview .btn {
+  background: #141518 !important;
+  border-color: #141518 !important;
+  color: #eae7df !important;
+}
+.support-overview .btn:focus-visible {
+  outline-color: #141518;
+}
+.support-overview__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 32px;
+  background: #191c22;
+  color: #eae7df;
+}
+.support-overview__aside p {
+  margin: 0;
+  color: #c2bfb8;
+  font-size: 12px;
+}
+.support-workspace .tk-list {
+  gap: 0;
+}
+.support-workspace .tk-row {
+  padding: 24px 0;
+  border: 0;
+  border-bottom: 1px solid #303137;
+  background: none;
+}
+.support-workspace .tk-row:hover {
+  background: #121418;
+}
+.support-workspace .tk-row__subject {
+  font:
+    600 30px / 1.15 var(--font-display),
+    sans-serif;
+}
+.support-workspace .tk-row__meta {
+  margin-top: 8px;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+}
+.support-workspace .tk-status {
+  padding: 6px 10px;
+  font:
+    12px var(--font-interface),
+    sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  border-color: #74767d;
+}
+.support-workspace .tk-status[data-tone="accent"] {
+  color: #ff864f;
+}
+.support-workspace .tk-status[data-tone="warning"] {
+  color: #fbbf24;
+}
+.support-workspace .tk-head {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 18px 0;
+  margin: 8px 0 28px;
+  border-block: 1px solid #303137;
+}
+.support-workspace .tle-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 12px;
+  color: #c2bfb8;
+}
+.support-workspace .tk-thread {
+  gap: 20px;
+}
+.support-workspace .tk-msg {
+  padding: clamp(20px, 3vw, 32px);
+  background: #191c22;
+  border: 1px solid #303137;
+}
+.support-workspace .tk-msg[data-staff="true"] {
+  background: #eae7df;
+  color: #141518;
+  border-color: #eae7df;
+}
+.support-workspace .tk-msg__who {
+  margin-bottom: 18px;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #aaa79f;
+}
+.support-workspace .tk-msg__body {
+  font-size: 15px;
+  color: #f4f2ed;
+}
+.support-workspace .tk-msg[data-staff="true"] .tk-msg__who {
+  color: #55524d;
+}
+.support-workspace .tk-msg[data-staff="true"] .tk-msg__body {
+  color: #141518;
+}
+.support-workspace .tk-reply {
+  background: #191c22;
+  border-color: #303137;
+  padding: 24px;
+}
+.support-workspace .cls-field__label {
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+  color: #c2bfb8;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.support-workspace .cls-empty {
+  background: #121418;
+  border: 1px solid #303137;
+  color: #c2bfb8;
+  padding: 28px;
+  font:
+    14px / 1.7 var(--font-interface),
+    sans-serif;
+}
+.support-workspace .tk-follow-up {
+  color: #ff864f;
+}
+.request-dialog .tk-new {
+  padding: 0;
+  gap: 24px;
+}
+.request-dialog .cls-input {
+  background: #0b0c0e;
+  border-color: #74767d;
+}
+.request-dialog .tk-new__error {
+  color: #ff8b96;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 13px;
+}
+@media (max-width: 780px) {
+  .support-overview {
+    grid-template-columns: 1fr;
+  }
+  .support-overview__aside {
+    flex-direction: row;
+    align-items: center;
+    padding: 24px;
+  }
+  .support-overview__aside svg {
+    width: 48px;
+    height: 48px;
+  }
+}
+@media (max-width: 480px) {
+  .support-workspace .tk-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .support-workspace .tk-status {
+    justify-self: start;
+  }
+  .support-workspace .tk-reply {
+    padding: 20px;
+  }
+}

@@ -1,0 +1,53 @@
+.avatar-cropper__content > .card {
+  background: #121418;
+  border-color: #74767d;
+}
+.avatar-cropper .mono-label {
+  font-family: var(--font-interface), sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.avatar-cropper input[type="range"] {
+  appearance: none;
+  min-width: 0;
+  height: 44px;
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+.avatar-cropper input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: #74767d;
+}
+.avatar-cropper input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  background: #ff864f;
+  border: 0;
+  border-radius: 0;
+}
+.avatar-cropper input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: #74767d;
+}
+.avatar-cropper input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #ff864f;
+  border: 0;
+  border-radius: 0;
+}
+@media (max-width: 420px) {
+  .modal-shell:has(> .avatar-cropper) {
+    padding: 8px;
+  }
+  .avatar-cropper .modal-shell__body {
+    padding: 8px;
+  }
+  .avatar-cropper .modal-shell__head,
+  .avatar-cropper .modal-shell__actions {
+    padding: 16px 12px;
+  }
+}

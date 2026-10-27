@@ -50,10 +50,10 @@ describe("the streak card", () => {
     expect(html).toContain("Prochain palier");
     expect(html).toContain("14<small>j</small>");
     expect(html).toContain("encore 7 jours");
-    expect(html).toContain("12 derniers mois");
+    expect(html).toContain("Ton rythme, mois après mois.");
     expect(html).toContain('aria-label="Activité des douze derniers mois"');
-    // 53 weeks of 7 days, drawn as cells, past or future.
-    expect(html.match(/class="dash-heat-cell/g)?.length).toBe(53 * 7 + 4);
+    expect(html).toContain("Les jours où tu apprends apparaîtront ici");
+    expect(html).not.toContain("dash-heat-cell");
   });
 
   it("says the streak is broken the same way everywhere", async () => {

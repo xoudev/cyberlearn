@@ -1,43 +1,44 @@
 "use client";
 
+// The action result, theme-specific checklist and anti-spam timestamp need browser state.
 import React, { useActionState, useEffect, useState } from "react";
-import Link from "next/link";
 import { submitContactAction, type ContactFormState } from "./_actions/contact-actions";
 import { Select } from "@cyberlearn/ui";
 import { ESTABLISHMENT_CHECKLIST, TICKET_FORM_THEMES } from "@cyberlearn/lib/tickets/tickets";
+import { BastionLogo } from "@/components/bastion-logo";
 
-// The themes and the establishment checklist are shared with the app.
 const THEMES = TICKET_FORM_THEMES;
-
-const INPUT_STYLE: React.CSSProperties = {
-  width: "100%",
-  background: "rgba(5,4,26,0.8)",
-  border: "1px solid var(--color-border-default)",
-  color: "var(--color-text-primary)",
-  fontFamily: "var(--font-mono)",
-  fontSize: 13,
-  padding: "12px 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
 const initialState: ContactFormState = {};
+
+function FieldError({
+  field,
+  error,
+}: {
+  field: string;
+  error: string | undefined;
+}): React.ReactElement | null {
+  return error ? (
+    <p id={`contact-${field}-error`} className="contact-error" role="alert">
+      {error}
+    </p>
+  ) : null;
+}
 
 export default function ContactPage(): React.ReactElement {
   const [state, action, isPending] = useActionState(submitContactAction, initialState);
-  // Error screens link here with ?ref=<incident digest>; prefill the report.
   const [incidentRef, setIncidentRef] = useState<string | null>(null);
   const [initialSubject, setInitialSubject] = useState<string | null>(null);
   const [initialTheme, setInitialTheme] = useState("");
   const [theme, setTheme] = useState("");
-  // Anti-spam time trap: stamped on mount, checked server-side on submit.
   const [loadedAt, setLoadedAt] = useState("");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setIncidentRef(params.get("ref"));
     setInitialSubject(params.get("subject"));
     const requestedTheme = params.get("theme");
-    const known = THEMES.some((t) => t.value === requestedTheme) ? (requestedTheme ?? "") : "";
+    const known = THEMES.some((item) => item.value === requestedTheme)
+      ? (requestedTheme ?? "")
+      : "";
     setInitialTheme(known);
     setTheme(known);
     setLoadedAt(String(Date.now()));
@@ -45,370 +46,115 @@ export default function ContactPage(): React.ReactElement {
   // What the theme control starts from: what a refused send held, else the link's.
   const shownTheme = state.values?.theme ?? initialTheme;
 
-  if (state.success) {
+  if (state.success)
     return (
-      <div
-        style={{ maxWidth: 640, margin: "0 auto", padding: "40px 16px", textAlign: "center" }}
-        className="contact-success"
-      >
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            margin: "0 auto 20px",
-            background: "rgba(10,255,212,0.1)",
-            border: "1px solid rgba(10,255,212,0.3)",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--color-brand-turquoise)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-        </div>
-        <h1
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 24,
-            color: "var(--color-text-primary)",
-            margin: "0 0 10px",
-          }}
-        >
-          Message envoyé
-        </h1>
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--color-text-muted)",
-            margin: 0,
-            lineHeight: 1.6,
-          }}
-        >
-          Ton message a été reçu. Notre équipe te répondra dans les plus brefs délais.
-        </p>
+      <div className="contact-success" role="status">
+        <BastionLogo size={48} />
+        <h2>Message envoyé.</h2>
+        <p>Ton message a été reçu. L’équipe te répondra par e-mail.</p>
       </div>
     );
-  }
 
   return (
-    <div
-      style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 80px" }}
-      className="contact-wrapper"
-    >
-      <Link href="/" className="legal-back-link">
-        ← Retour à l’accueil
-      </Link>
-      {/* Header */}
-      <div style={{ marginTop: 28, marginBottom: 36 }}>
-        <div
-          className="mono-label"
-          style={{
-            color: "var(--color-text-muted)",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 10,
-          }}
-        >
-          <span
-            style={{
-              width: 16,
-              height: 1,
-              background: "var(--color-brand-turquoise)",
-              display: "inline-block",
-            }}
-          />
-          Support
-        </div>
-        <h1
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 30,
-            color: "var(--color-text-primary)",
-            margin: "0 0 8px",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Nous contacter
-        </h1>
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--color-text-muted)",
-            margin: 0,
-          }}
-        >
-          Un bug, une suggestion ou une question ? On te répond.
-        </p>
+    <form action={action} className="contact-form">
+      <p className="contact-required">Tous les champs sont obligatoires.</p>
+      <input type="hidden" name="loaded_at" value={loadedAt} readOnly />
+      <div
+        aria-hidden="true"
+        style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
+      >
+        <label>
+          Ne pas remplir
+          <input name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+        </label>
       </div>
-
-      <form action={action} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* Anti-spam (invisible to users): submission timestamp + honeypot. */}
-        <input type="hidden" name="loaded_at" value={loadedAt} readOnly />
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
-        >
-          <label>
-            Ne pas remplir
-            <input name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
-          </label>
-        </div>
-
-        {/* Email */}
-        <div>
-          <label
-            className="mono-label"
-            htmlFor="contact-email"
-            style={{
-              display: "block",
-              color: "var(--color-text-muted)",
-              marginBottom: 6,
-            }}
-          >
-            Email *
-          </label>
-          <input
-            id="contact-email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            // React empties the form once the action has run: what was typed
-            // comes back from it after a refusal.
-            defaultValue={state.values?.email}
-            placeholder="ton@email.com"
-            style={INPUT_STYLE}
-            aria-describedby={state.fieldErrors?.email ? "contact-email-error" : undefined}
-          />
-          {state.fieldErrors?.email && (
-            <p
-              id="contact-email-error"
-              role="alert"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-category-cybersec)",
-                margin: "4px 0 0",
-              }}
-            >
-              {state.fieldErrors.email}
-            </p>
-          )}
-        </div>
-
-        {/* Theme */}
-        <div>
-          <label
-            className="mono-label"
-            htmlFor="contact-theme"
-            style={{
-              display: "block",
-              color: "var(--color-text-muted)",
-              marginBottom: 6,
-            }}
-          >
-            Thème *
-          </label>
-          {/* The control keeps its choice on its own, but the field it feeds is
-              emptied by the reset like the others (back to the value it was
-              mounted with): after a refusal it is mounted again, with the theme
-              that was sent, so the next send carries it. */}
-          <Select
-            id="contact-theme"
-            key={shownTheme || "theme"}
-            name="theme"
-            required
-            defaultValue={shownTheme}
-            placeholder="Choisir un thème…"
-            options={THEMES}
-            onChange={setTheme}
-          />
-          {/* The one theme that needs saying what to put in it, said before the
-              message box rather than in a reply a day later. */}
-          {theme === "ESTABLISHMENT_REQUEST" && (
-            <div
-              style={{
-                marginTop: 10,
-                padding: "12px 14px",
-                background: "rgba(10,255,212,0.05)",
-                border: "1px solid rgba(10,255,212,0.25)",
-                borderLeft: "3px solid var(--cosmetic-accent, var(--color-brand-turquoise))",
-              }}
-            >
-              <p
-                className="mono-label"
-                style={{
-                  margin: "0 0 8px",
-                  color: "var(--cosmetic-accent, var(--color-brand-turquoise))",
-                }}
-              >
-                À mettre dans ton message
-              </p>
-              <ul
-                style={{
-                  margin: 0,
-                  paddingLeft: 18,
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                {ESTABLISHMENT_CHECKLIST.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {state.fieldErrors?.theme && (
-            <p
-              id="contact-theme-error"
-              role="alert"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-category-cybersec)",
-                margin: "4px 0 0",
-              }}
-            >
-              {state.fieldErrors.theme}
-            </p>
-          )}
-        </div>
-
-        {/* Subject */}
-        <div>
-          <label
-            className="mono-label"
-            htmlFor="contact-subject"
-            style={{
-              display: "block",
-              color: "var(--color-text-muted)",
-              marginBottom: 6,
-            }}
-          >
-            Sujet *
-          </label>
-          <input
-            id="contact-subject"
-            key={incidentRef ?? initialSubject ?? "subject"}
-            name="subject"
-            type="text"
-            required
-            minLength={5}
-            maxLength={200}
-            defaultValue={
-              state.values?.subject ??
-              (incidentRef ? `Incident ${incidentRef}` : (initialSubject ?? undefined))
-            }
-            placeholder="Résume ton problème en quelques mots"
-            style={INPUT_STYLE}
-            aria-describedby={state.fieldErrors?.subject ? "contact-subject-error" : undefined}
-          />
-          {state.fieldErrors?.subject && (
-            <p
-              id="contact-subject-error"
-              role="alert"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-category-cybersec)",
-                margin: "4px 0 0",
-              }}
-            >
-              {state.fieldErrors.subject}
-            </p>
-          )}
-        </div>
-
-        {/* Message */}
-        <div>
-          <label
-            className="mono-label"
-            htmlFor="contact-message"
-            style={{
-              display: "block",
-              color: "var(--color-text-muted)",
-              marginBottom: 6,
-            }}
-          >
-            Message *
-          </label>
-          <textarea
-            id="contact-message"
-            name="message"
-            required
-            minLength={20}
-            maxLength={5000}
-            rows={7}
-            defaultValue={state.values?.message}
-            placeholder="Décris ta demande en détail…"
-            style={{ ...INPUT_STYLE, resize: "vertical" }}
-            aria-describedby={state.fieldErrors?.message ? "contact-message-error" : undefined}
-          />
-          {state.fieldErrors?.message && (
-            <p
-              id="contact-message-error"
-              role="alert"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-category-cybersec)",
-                margin: "4px 0 0",
-              }}
-            >
-              {state.fieldErrors.message}
-            </p>
-          )}
-        </div>
-
-        {state.error && (
-          <p
-            role="alert"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--color-category-cybersec)",
-              margin: 0,
-              padding: "12px 14px",
-              background: "rgba(255,71,87,0.07)",
-              border: "1px solid rgba(255,71,87,0.3)",
-            }}
-          >
-            {state.error}
-          </p>
+      <div className="contact-field">
+        <label htmlFor="contact-email">Adresse e-mail</label>
+        <input
+          id="contact-email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          defaultValue={state.values?.email ?? ""}
+          placeholder="toi@exemple.fr"
+          aria-invalid={Boolean(state.fieldErrors?.email)}
+          aria-describedby={state.fieldErrors?.email ? "contact-email-error" : undefined}
+        />
+        <FieldError field="email" error={state.fieldErrors?.email} />
+      </div>
+      <div className="contact-field">
+        <label htmlFor="contact-theme">Thème</label>
+        <Select
+          id="contact-theme"
+          key={shownTheme || "theme"}
+          name="theme"
+          required
+          defaultValue={shownTheme}
+          placeholder="Choisir un thème…"
+          options={THEMES}
+          onChange={setTheme}
+          panelClassName="contact-options"
+        />
+        {(theme || shownTheme) === "ESTABLISHMENT_REQUEST" && (
+          <aside className="contact-checklist">
+            <h2>À mettre dans ton message</h2>
+            <ul>
+              {ESTABLISHMENT_CHECKLIST.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </aside>
         )}
-
-        <button
-          className="btn btn--lg"
-          type="submit"
-          disabled={isPending}
-          style={{
-            opacity: isPending ? 0.6 : 1,
-            alignSelf: "flex-start",
-          }}
-        >
-          {isPending ? "Envoi en cours…" : "Envoyer le message"}
-        </button>
-        <span className="sr-only" aria-live="polite">
-          {isPending ? "Envoi du message en cours" : ""}
-        </span>
-      </form>
-    </div>
+        <FieldError field="theme" error={state.fieldErrors?.theme} />
+      </div>
+      <div className="contact-field">
+        <label htmlFor="contact-subject">Sujet</label>
+        <input
+          id="contact-subject"
+          key={incidentRef ?? initialSubject ?? "subject"}
+          name="subject"
+          type="text"
+          required
+          minLength={5}
+          maxLength={200}
+          defaultValue={
+            state.values?.subject ??
+            (incidentRef ? `Incident ${incidentRef}` : (initialSubject ?? undefined))
+          }
+          placeholder="Résume ta demande en quelques mots"
+          aria-invalid={Boolean(state.fieldErrors?.subject)}
+          aria-describedby={state.fieldErrors?.subject ? "contact-subject-error" : undefined}
+        />
+        <FieldError field="subject" error={state.fieldErrors?.subject} />
+      </div>
+      <div className="contact-field">
+        <label htmlFor="contact-message">Message</label>
+        <textarea
+          id="contact-message"
+          name="message"
+          required
+          minLength={20}
+          maxLength={5000}
+          rows={7}
+          defaultValue={state.values?.message ?? ""}
+          placeholder="Décris ta demande en détail…"
+          aria-invalid={Boolean(state.fieldErrors?.message)}
+          aria-describedby={state.fieldErrors?.message ? "contact-message-error" : undefined}
+        />
+        <FieldError field="message" error={state.fieldErrors?.message} />
+      </div>
+      {state.error && (
+        <p className="contact-error contact-error--summary" role="alert">
+          {state.error}
+        </p>
+      )}
+      <button className="contact-submit" type="submit" disabled={isPending}>
+        {isPending ? "Envoi en cours…" : "Envoyer le message"}
+      </button>
+      <span className="sr-only" aria-live="polite">
+        {isPending ? "Envoi du message en cours" : ""}
+      </span>
+    </form>
   );
 }

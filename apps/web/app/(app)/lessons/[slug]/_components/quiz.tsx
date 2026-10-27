@@ -138,7 +138,7 @@ export function Quiz({
           position: "absolute",
           inset: 0,
           padding: 1,
-          background: "linear-gradient(135deg, rgba(0,36,255,0.4), transparent 50%)",
+          background: "var(--cosmetic-accent)",
           WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
           WebkitMaskComposite: "xor",
           maskComposite: "exclude",
@@ -218,29 +218,28 @@ export function Quiz({
           const isThisWrong = answered && isChosen && i !== correct;
 
           let borderLeftColor = "var(--color-border-subtle)";
-          let bg = "rgba(5,4,26,0.5)";
+          let bg = "var(--color-bg-base)";
           let textColor = "var(--color-text-secondary)";
           let letterColor = "var(--color-text-disabled)";
           let stateLabel = "";
 
           if (isThisCorrect) {
             borderLeftColor = "var(--cosmetic-accent)";
-            bg =
-              "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 8%, transparent), transparent 60%)";
+            bg = "color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-base))";
             textColor = "var(--color-text-primary)";
             letterColor = "var(--cosmetic-accent)";
             stateLabel = isChosen ? "Ton choix · bonne réponse" : "Bonne réponse";
           } else if (isThisWrong) {
             borderLeftColor = RED;
-            bg = "linear-gradient(90deg, rgba(255,71,87,0.08), transparent 60%)";
+            bg = "color-mix(in srgb, var(--color-danger) 8%, var(--color-bg-base))";
             textColor = "var(--color-text-primary)";
             letterColor = RED;
             stateLabel = "Ton choix";
           } else if (isChosen && !answered) {
             borderLeftColor = "var(--color-brand-blue)";
-            bg = "linear-gradient(90deg, rgba(0,36,255,0.1), transparent 60%)";
+            bg = "var(--color-bg-overlay)";
             textColor = "var(--color-text-primary)";
-            letterColor = "var(--color-rarity-rare)";
+            letterColor = "var(--cosmetic-accent)";
           } else if (answered) {
             textColor = "var(--color-text-muted)";
           }
@@ -274,7 +273,7 @@ export function Quiz({
                 if (!locked && !isChosen) {
                   e.currentTarget.style.borderColor = "var(--color-border-subtle)";
                   e.currentTarget.style.borderLeftColor = "var(--color-border-subtle)";
-                  e.currentTarget.style.background = "rgba(5,4,26,0.5)";
+                  e.currentTarget.style.background = "var(--color-bg-base)";
                   e.currentTarget.style.color = "var(--color-text-secondary)";
                 }
               }}
@@ -335,7 +334,6 @@ export function Quiz({
                       height: 6,
                       borderRadius: "50%",
                       background: "var(--color-brand-blue)",
-                      boxShadow: "0 0 8px rgba(0,36,255,0.7)",
                     }}
                   />
                 )}
@@ -413,23 +411,19 @@ export function Quiz({
               width: "100%",
               marginTop: 16,
               padding: "18px 24px",
-              fontFamily: "var(--font-mono, monospace)",
+              fontFamily: "var(--font-interface), sans-serif",
               fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              background: picked === null ? "rgba(30,27,71,0.5)" : "var(--color-brand-blue)",
-              color: picked === null ? "var(--color-text-disabled)" : "#ffffff",
+              fontSize: 14,
+              letterSpacing: 0,
+              textTransform: "none",
+              background: picked === null ? "var(--color-bg-elevated)" : "var(--color-brand-blue)",
+              color: picked === null ? "var(--color-text-disabled)" : "#141518",
               border:
                 picked === null
                   ? "1px solid var(--color-border-default)"
                   : "1px solid var(--color-brand-blue)",
               cursor: picked === null ? "not-allowed" : pending ? "wait" : "pointer",
               transition: "all 180ms ease",
-              boxShadow:
-                picked === null
-                  ? "none"
-                  : "0 0 24px rgba(0,36,255,0.25), inset 0 0 0 1px rgba(255,255,255,0.15)",
             }}
           >
             {pending ? "Enregistrement…" : "Valider la réponse"}

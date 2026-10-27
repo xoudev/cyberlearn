@@ -17,8 +17,18 @@ describe("every sample in the list renders", () => {
     // Rendered, not merely non-null: an empty string would pass a null check
     // and show nothing.
     expect(html?.length ?? 0).toBeGreaterThan(500);
-    expect(html).toContain("CYBER LEARN");
+    expect(html).toContain("CYBERLEARN");
   });
+
+  it.each(EMAIL_SAMPLES.map((s) => [s.key, s.label]))(
+    "%s (%s) previews the same brand image from the console's own origin",
+    async (key) => {
+      const html = await renderEmailSample(key, { localAssets: true });
+      expect(html).toContain('src="/brand/email-lockup.png"');
+      expect(html).not.toContain("https://cyberlearn.fr/brand/email-lockup.png");
+      expect(html).toContain('alt="CYBERLEARN."');
+    },
+  );
 });
 
 describe("the catalogue itself", () => {

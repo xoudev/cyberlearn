@@ -1,6 +1,7 @@
 "use client";
-
 import Link from "next/link";
+
+// TOTP entry, automatic submission and verification require browser interaction.
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import {
@@ -98,9 +99,6 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
         labelClassName={styles.label}
         inputClassName={[styles.input, styles.codeInput].join(" ")}
       />
-      {/* The code leaves on the sixth digit, with no click: a refusal has to be
-          announced by itself, or somebody who cannot see it never learns the
-          sign-in failed. */}
       {error ? (
         <p className={[styles.message, styles.error].join(" ")} role="alert">
           {error}

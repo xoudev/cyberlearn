@@ -31,7 +31,10 @@ export const dynamic = "force-dynamic";
 export default async function LabPage(): Promise<React.JSX.Element> {
   await requireAdminPage();
   const samples = await Promise.all(
-    EMAIL_SAMPLES.map(async (s) => ({ ...s, html: (await renderEmailSample(s.key)) ?? "" })),
+    EMAIL_SAMPLES.map(async (s) => ({
+      ...s,
+      html: (await renderEmailSample(s.key, { localAssets: true })) ?? "",
+    })),
   );
 
   const window = wrappedWindow(new Date());

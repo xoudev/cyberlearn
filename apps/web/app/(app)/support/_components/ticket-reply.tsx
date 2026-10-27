@@ -1,5 +1,7 @@
 "use client";
 
+// Action state resets the reply field only after a successful submission.
+
 import React, { useActionState, useRef } from "react";
 import { replyToTicketAction, type ReplyState } from "../_actions/reply-actions";
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+vi.mock("@/components/brand-typeface", () => ({ brandTypeface: "test-brand-fonts" }));
 
 /**
  * The dashboard was the one page of the signed-in site with no title of its

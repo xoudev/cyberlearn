@@ -87,7 +87,7 @@ describe("the theme mermaid is given", () => {
 
     for (const unreadable of ["var(--cosmetic-accent)", "", "rgb(1, 2, 3)", "turquoise"]) {
       const theme = variablesOf(mermaidConfig(unreadable));
-      expect(theme.activationBorderColor).toBe("#0AFFD4");
+      expect(theme.activationBorderColor).toBe("#FF6B2B");
     }
   });
 

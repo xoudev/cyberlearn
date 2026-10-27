@@ -31,7 +31,11 @@ export function WriteupsSection({
   board: WriteupBoard;
 }): React.ReactElement {
   return (
-    <section aria-label="Solutions" style={{ marginTop: 48, display: "grid", gap: 16 }}>
+    <section
+      className="challenge-solutions"
+      aria-label="Solutions"
+      style={{ marginTop: 48, display: "grid", gap: 16 }}
+    >
       <div
         className="mono-label"
         style={{

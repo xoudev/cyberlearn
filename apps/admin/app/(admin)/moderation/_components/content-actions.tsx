@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ContentGesture, ContentSurface } from "@cyberlearn/db";
 import { contentGestureQuestion } from "@/lib/content-moderation";
 import { notifyResult } from "@/lib/notify";
+import { AdminConfirmForm } from "../../_components/admin-confirmation";
 import {
   dismissContentReportsAction,
   moderateContentAction,
@@ -59,13 +60,9 @@ export function ContentActions({
     label: string,
     tone: string,
   ): React.ReactElement => (
-    <form
+    <AdminConfirmForm
       action={action}
-      onSubmit={(event) => {
-        // Cancelling the native submit also cancels the action: React only
-        // runs a form's action for a submit nobody prevented.
-        if (!window.confirm(contentGestureQuestion(gesture, subject))) event.preventDefault();
-      }}
+      question={`${contentGestureQuestion(gesture, subject)}\nContenu : ${contentId}`}
     >
       <input type="hidden" name="intent" value="gesture" />
       <input type="hidden" name="surface" value={surface} />
@@ -74,7 +71,7 @@ export function ContentActions({
       <button type="submit" disabled={pending} className={`a-btn a-btn--sm ${tone}`}>
         {label}
       </button>
-    </form>
+    </AdminConfirmForm>
   );
 
   return (

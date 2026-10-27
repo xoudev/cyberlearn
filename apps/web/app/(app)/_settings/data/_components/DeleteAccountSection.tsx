@@ -4,8 +4,9 @@ import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
-import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { SettingsCard } from "../../_components/SettingsPrimitives";
 import { ModalShell } from "@cyberlearn/ui";
+import "@/components/community-workspace.css";
 import { useSettingsDrawer } from "../../_components/SettingsDrawer";
 import { useSettingsReload } from "../../_components/settings-reload";
 
@@ -54,9 +55,10 @@ export function DeleteAccountSection({
       }}
       eyebrow="// RGPD · ART. 17 · ACTION IRRÉVERSIBLE"
       title="Suppression définitive du compte"
+      className="community-dialog account-delete-dialog"
       maxWidth={520}
     >
-      <div style={{ padding: 24 }}>
+      <div className="account-delete-dialog__content">
         {/* Description */}
         <p
           style={{
@@ -207,7 +209,10 @@ export function DeleteAccountSection({
 
         <form action={formAction}>
           <input type="hidden" name="confirmation" value={inputValue} />
-          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
+          <div
+            className="account-delete-dialog__actions"
+            style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}
+          >
             <button
               className="btn btn--ghost btn--sm"
               type="button"
@@ -218,7 +223,7 @@ export function DeleteAccountSection({
               Annuler
             </button>
             <button
-              className="mono-label mono-label--md"
+              className="mono-label mono-label--md account-delete-confirm"
               type="submit"
               disabled={!isConfirmed || pending}
               style={{
@@ -241,178 +246,36 @@ export function DeleteAccountSection({
 
   return (
     <>
-      {/* ── Card ──────────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          position: "relative",
-          background: "rgba(5,4,26,0.6)",
-          border: isPending ? "1px solid #2A1B1B" : "1px solid var(--color-border-subtle)",
-          padding: "18px 20px",
-        }}
+      <SettingsCard
+        title="Supprimer mon compte"
+        variant="danger"
+        desc="La suppression efface ou anonymise les données associées à ton compte. Tu recevras un lien par e-mail pour la confirmer."
       >
-        <CornerBrackets
-          size={20}
-          color={isPending ? "var(--color-danger)" : "var(--color-border-default)"}
-        />
-
-        {/* Eyebrow */}
-        <div
-          className="mono-label"
-          style={{
-            color: "var(--color-text-muted)",
-            marginBottom: 14,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width: 16,
-              height: 1,
-              background: isPending ? "var(--color-danger)" : "var(--color-text-disabled)",
-              display: "inline-block",
-              flexShrink: 0,
-            }}
-          />
-          Effacement
-          <span
-            style={{
-              marginLeft: "auto",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              color: isPending ? "var(--color-danger)" : "var(--color-text-disabled)",
-              letterSpacing: "0.18em",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: "50%",
-                background: isPending ? "var(--color-danger)" : "transparent",
-                border: isPending ? "none" : "1px solid var(--color-text-disabled)",
-                boxShadow: isPending ? "0 0 6px #FF475788" : "none",
-              }}
-            />
-            {isPending ? "EN ATTENTE" : "ACTIF"}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h2
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 24,
-            letterSpacing: "-0.02em",
-            color: "var(--color-text-primary)",
-            margin: "0 0 10px",
-          }}
-        >
-          Article 17 RGPD
-        </h2>
-
-        {/* Description */}
-        <p
-          style={{
-            fontSize: 14,
-            color: "var(--color-text-secondary)",
-            lineHeight: "1.6",
-            margin: "0 0 12px",
-          }}
-        >
-          Conformément à l&apos;article 17 du RGPD (droit à l&apos;effacement), tu peux supprimer
-          ton compte et toutes les données associées de manière permanente.
-        </p>
-
-        {/* Info / status row */}
-        <div
-          className="mono-label"
-          style={{
-            paddingTop: 12,
-            borderTop: "1px dashed var(--color-border-subtle)",
-            color: "var(--color-text-muted)",
-            marginBottom: 18,
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "4px 8px",
-          }}
-        >
-          {isPending ? (
-            <>
-              <span style={{ color: "var(--color-danger)" }}>
-                E-mail envoyé · regarde ta boîte de réception
-              </span>
-              <span style={{ color: "var(--color-border-subtle)" }}>·</span>
-              <span>
-                Lien valide encore{" "}
-                <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>
-                  {minutesLeft}min
-                </b>
-              </span>
-            </>
-          ) : (
-            <>
-              <span>Limite</span>
-              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>3/24H</b>
-              <span style={{ color: "var(--color-border-subtle)" }}>·</span>
-              <span>Confirmation</span>
-              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>Email</b>
-              <span style={{ color: "var(--color-border-subtle)" }}>·</span>
-              <span>Effet</span>
-              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>Immédiat</b>
-            </>
-          )}
-        </div>
-
-        {/* CTA */}
         {isPending ? (
-          <div
-            className="mono-label mono-label--md"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 20px",
-              fontWeight: 600,
-              border: "1px solid #2A1B1B",
-              color: "var(--color-text-muted)",
-              cursor: "default",
-            }}
-          >
-            <span style={{ color: "#FF475750" }}>&#9656;</span>
-            Demande en cours
+          <div className="settings-data-pending" role="status">
+            <strong>Demande en cours</strong>
+            <p>
+              E-mail envoyé : regarde ta boîte de réception. Le lien reste valide pendant{" "}
+              {minutesLeft} min.
+            </p>
           </div>
         ) : (
-          <button
-            className="mono-label mono-label--md"
-            type="button"
-            onClick={() => {
-              setOpen(true);
-            }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 20px",
-              fontWeight: 600,
-              background: "transparent",
-              border: "1px solid #FF475788",
-              color: "var(--color-text-primary)",
-              cursor: "pointer",
-            }}
-          >
-            <span style={{ color: "var(--color-danger)" }}>&#9656;</span>
-            Demander la suppression
-          </button>
+          <>
+            <p className="settings-data-meta">
+              Article 17 RGPD · confirmation par e-mail · 3 demandes par 24 h
+            </p>
+            <button
+              className="settings-button settings-button--danger"
+              type="button"
+              onClick={() => {
+                setOpen(true);
+              }}
+            >
+              Demander la suppression
+            </button>
+          </>
         )}
-      </div>
-
+      </SettingsCard>
       {modal}
     </>
   );

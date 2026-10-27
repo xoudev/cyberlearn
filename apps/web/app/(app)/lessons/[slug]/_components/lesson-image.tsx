@@ -45,7 +45,7 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
     variant === "inline"
       ? { float: "right", margin: "0 0 1rem 1.5rem", maxWidth: "320px" }
       : variant === "full"
-        ? { margin: "2rem -24px" }
+        ? { margin: "2rem 0", width: "100%" }
         : { margin: "2rem 0" };
 
   return (

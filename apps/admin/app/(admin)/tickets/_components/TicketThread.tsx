@@ -86,7 +86,7 @@ export function TicketThread({
             margin: 0,
             padding: "12px 14px",
             border: "1px solid var(--a-border)",
-            background: "color-mix(in srgb, var(--a-bg) 60%, transparent)",
+            background: "var(--a-surface)",
             fontFamily: "var(--font-mono)",
             fontSize: 11.5,
             lineHeight: 1.6,
@@ -107,7 +107,7 @@ export function TicketThread({
             style={{
               width: "100%",
               padding: "10px 12px",
-              background: "color-mix(in srgb, var(--a-bg) 60%, transparent)",
+              background: "var(--a-surface)",
               border: "1px solid var(--a-border)",
               color: "var(--a-fg)",
               fontFamily: "var(--font-mono)",
@@ -177,10 +177,8 @@ function Bubble({
     <li
       style={{
         padding: "11px 14px",
-        background: staff
-          ? "color-mix(in srgb, var(--a-accent) 5%, transparent)"
-          : "color-mix(in srgb, var(--a-surface-2) 50%, transparent)",
-        border: `1px solid ${staff ? "color-mix(in srgb, var(--a-accent) 25%, transparent)" : "var(--a-border)"}`,
+        background: "var(--a-surface)",
+        border: `1px solid ${staff ? "var(--a-border-2)" : "var(--a-border)"}`,
         borderLeft: `3px solid ${staff ? "var(--a-accent)" : "var(--a-border)"}`,
       }}
     >

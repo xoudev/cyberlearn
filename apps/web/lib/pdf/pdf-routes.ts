@@ -24,3 +24,5 @@ export const PDF_ROUTES = [
 /** pdfkit's standard fonts, from the Next.js project root (apps/web). */
 export const PDFKIT_STANDARD_FONTS =
   "../../node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/standard-fonts/*.{cjs,mjs}";
+
+export const BRAND_FONT_FILES = "./public/brand/fonts/*.ttf";

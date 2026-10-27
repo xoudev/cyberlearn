@@ -24,22 +24,23 @@ interface Props {
   paths: PathOption[];
 }
 
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
+
 const LABEL_STYLE: React.CSSProperties = {
   display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: 9.5,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   color: "var(--a-muted)",
   marginBottom: 6,
 };
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
-  background: "color-mix(in srgb, var(--a-surface-2) 80%, transparent)",
-  border: "1px solid var(--a-border-2)",
+  background: "var(--a-surface)",
+  border: `1px solid ${BORDER}`,
   color: "var(--a-fg)",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 13,
   padding: "11px 14px",
   outline: "none",
@@ -153,10 +154,10 @@ function CriterionFields({
                 name="criterion_withCertificate"
                 type="checkbox"
                 value="1"
-                style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
+                style={{ accentColor: "var(--a-accent)", width: 18, height: 18 }}
               />
               <span
-                style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-fg-2)" }}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}
               >
                 Obtenir un certificat (peu importe le parcours)
               </span>
@@ -319,8 +320,8 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
           style={{
             padding: "13px 16px",
             background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--a-danger) 35%, transparent)",
-            borderLeft: "3px solid var(--a-danger)",
+            border: "1px solid var(--a-danger)",
+            borderLeft: `3px solid ${DANGER}`,
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             color: "var(--a-danger)",
@@ -428,10 +429,9 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
             <div
               style={{
                 gridColumn: "1 / -1",
-                background: "color-mix(in srgb, var(--a-surface) 60%, transparent)",
+                background: "var(--a-surface)",
                 border: "1px solid var(--a-border)",
                 borderLeft: "3px solid var(--a-border-2)",
-                borderRadius: 8,
                 padding: "18px 20px",
               }}
             >
@@ -464,9 +464,9 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
             disabled={isPending}
             style={{
               padding: "13px 28px",
-              background: "var(--a-blue)",
-              border: "1px solid var(--a-blue)",
-              color: "var(--a-fg)",
+              background: "var(--a-accent)",
+              border: "1px solid var(--a-accent)",
+              color: "var(--a-ink)",
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 11,
@@ -488,7 +488,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               background: "transparent",
-              border: "1px solid var(--a-border-2)",
+              border: `1px solid ${BORDER}`,
               color: "var(--a-muted)",
             }}
           >

@@ -1,11 +1,11 @@
 "use client";
 
-// "use client" justification: the rarity pills and the search filter the
-// collection in place.
+// Client boundary: rarity filters and search update the collection in place.
 
 import { Pills } from "@/components/pills";
 import React, { useMemo, useRef, useState } from "react";
 import type { BadgeGroup } from "@/lib/badges/collection";
+import "@/components/progression-workspace.css";
 import { BadgeCard, rarityChrome } from "@/components/badge-card";
 import { ProgressBar } from "@/components/progress-bar";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
@@ -50,46 +50,11 @@ function SectionHeader({
 }) {
   const meta = rarityChrome(rarity);
   return (
-    <div
-      className="mono-label mono-label--md"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        marginBottom: 22,
-        fontWeight: 700,
-        color: meta.secColor,
-      }}
-    >
-      {/* Left fade rule */}
-      <span
-        style={{
-          maxWidth: 60,
-          flex: "0 0 60px",
-          height: 1,
-          background: `linear-gradient(90deg, transparent, ${meta.secColor})`,
-        }}
-      />
-      <span>── {label} ──</span>
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontWeight: 600,
-          fontSize: 11,
-          color: "var(--color-text-muted)",
-          letterSpacing: "0.14em",
-        }}
-      >
-        <b style={{ color: meta.secColor }}>{earned}</b> / {total} obtenus
+    <div className="badge-section-heading" style={{ borderColor: meta.secColor }}>
+      <h2>{label}</h2>
+      <span>
+        {earned} / {total} obtenus
       </span>
-      {/* Right fade rule */}
-      <span
-        style={{
-          flex: 1,
-          height: 1,
-          background: `linear-gradient(90deg, ${meta.secColor}, transparent)`,
-        }}
-      />
     </div>
   );
 }
@@ -140,139 +105,25 @@ export function BadgesCollection({
   ];
 
   return (
-    <div>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="catalog-header-grid" style={{ marginTop: 12 }}>
-        <div>
-          <h2
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 800,
-              fontSize: "clamp(32px, 3.6vw, 48px)",
-              lineHeight: 0.95,
-              letterSpacing: "-0.04em",
-              color: "var(--color-text-primary)",
-              margin: "0 0 14px",
-            }}
-          >
-            Ton{" "}
-            <em
-              style={{
-                fontStyle: "normal",
-                background:
-                  "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              arsenal
-            </em>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontWeight: 600,
-                fontSize: "0.42em",
-                letterSpacing: "0.04em",
-                color: "var(--color-text-muted)",
-                verticalAlign: "0.25em",
-                marginLeft: 14,
-              }}
-            >
-              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>{earnedCount}</b> /{" "}
-              {totalCount}
-            </span>
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 15,
-              color: "var(--color-text-secondary)",
-              margin: 0,
-              maxWidth: 520,
-              lineHeight: 1.55,
-            }}
-          >
-            Badges groupés par rareté. Continue à grinder pour débloquer le reste, chaque palier
-            raconte une compétence.
+    <div className="progression-workspace badges-workspace">
+      <h2>Tes badges</h2>
+      <div className="progression-summary">
+        <div className="progression-summary__count">
+          <strong>{String(earnedCount).padStart(2, "0")}</strong>
+          <span>sur {totalCount} badges obtenus</span>
+        </div>
+        <div className="progression-summary__details">
+          <p>
+            <span>{rarityEarned.LEGENDARY ?? 0} légendaire</span>
+            <span>{rarityEarned.EPIC ?? 0} épiques</span>
+            <span>{rarityEarned.RARE ?? 0} rares</span>
+            <span>{rarityEarned.COMMON ?? 0} communs</span>
           </p>
+          <ProgressBar value={pct} size="md" label="Badges obtenus" />
         </div>
-
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}
-        >
-          {/* Rarity breakdown */}
-          <div
-            className="mono-label"
-            style={{
-              display: "flex",
-              gap: 18,
-              color: "var(--color-text-muted)",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>
-              <b style={{ color: "var(--color-rarity-legendary)" }}>
-                {rarityEarned.LEGENDARY ?? 0}
-              </b>{" "}
-              légendaire
-            </span>
-            <span style={{ color: "var(--color-text-faint)" }}>/</span>
-            <span>
-              <b style={{ color: "var(--color-rarity-epic)" }}>{rarityEarned.EPIC ?? 0}</b> épiques
-            </span>
-            <span style={{ color: "var(--color-text-faint)" }}>/</span>
-            <span>
-              <b style={{ color: "var(--color-rarity-rare)" }}>{rarityEarned.RARE ?? 0}</b> rares
-            </span>
-            <span style={{ color: "var(--color-text-faint)" }}>/</span>
-            <span>
-              <b style={{ color: "var(--color-rarity-common)" }}>{rarityEarned.COMMON ?? 0}</b>{" "}
-              communs
-            </span>
-          </div>
-
-          {/* Global progress bar */}
-          <ProgressBar
-            value={pct}
-            size="md"
-            tip
-            label="Badges obtenus"
-            // In a column aligned to the start, the bar takes its width from
-            // here, not from the column: without one it shrank to 2px.
-            style={{ width: "100%", maxWidth: 320 }}
-          />
-
-          <div
-            className="mono-label"
-            style={{
-              display: "flex",
-              gap: 14,
-              color: "var(--color-text-muted)",
-            }}
-          >
-            <span>
-              PROGRESSION · <b style={{ color: "var(--color-text-primary)" }}>{Math.round(pct)}%</b>
-            </span>
-          </div>
-        </div>
+        <span>{Math.round(pct)} %</span>
       </div>
-
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div
-        suppressHydrationWarning
-        style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}
-      >
-        <span
-          className="mono-label"
-          style={{
-            color: "var(--color-text-muted)",
-            marginRight: 6,
-          }}
-        >
-          › RARETÉ
-        </span>
-
+      <div className="progression-tools">
         <Pills
           label="Rareté"
           items={pills.map((pill) => ({
@@ -286,32 +137,18 @@ export function BadgesCollection({
         />
 
         {/* Search input */}
-        <label
-          style={{
-            marginLeft: "auto",
-            position: "relative",
-            height: 34,
-            minWidth: 220,
-            display: "block",
-          }}
-        >
+        <label className="catalogue-search">
           <svg
             width="14"
             height="14"
             viewBox="0 0 16 16"
             fill="none"
-            style={{
-              position: "absolute",
-              left: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "var(--color-text-muted)",
-              pointerEvents: "none",
-            }}
+            stroke="currentColor"
+            strokeWidth="1.5"
             aria-hidden="true"
           >
-            <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M11 11 L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="7" cy="7" r="5" />
+            <path d="m11 11 3 3" />
           </svg>
           <input
             ref={searchRef}
@@ -323,17 +160,6 @@ export function BadgesCollection({
             placeholder="/ chercher un badge..."
             aria-label="Chercher un badge"
             aria-keyshortcuts="/"
-            style={{
-              width: "100%",
-              height: "100%",
-              padding: "0 12px 0 36px",
-              background: "var(--color-bg-sunken)",
-              border: "1px solid var(--color-border-default)",
-              color: "var(--color-text-primary)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              outline: "none",
-            }}
           />
         </label>
       </div>
@@ -361,7 +187,17 @@ export function BadgesCollection({
       {/* Empty state when search returns nothing */}
       {visibleGroups.length === 0 && (
         <div style={{ textAlign: "center", padding: "80px 0", color: "var(--color-text-muted)" }}>
-          <p className="mono-label mono-label--md">{"// Aucun badge trouvé"}</p>
+          <h2>Aucun badge trouvé</h2>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => {
+              setSearch("");
+              setActiveFilter("all");
+            }}
+          >
+            Réinitialiser les filtres
+          </button>
         </div>
       )}
     </div>

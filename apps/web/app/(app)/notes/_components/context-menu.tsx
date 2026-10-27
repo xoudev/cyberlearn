@@ -249,11 +249,11 @@ export function ContextMenu({
         maxHeight: `calc(100vh - ${String(MARGIN * 2)}px)`,
         overflowY: "auto",
         padding: 4,
-        background: "#0B0A2A",
-        border: "1px solid var(--color-border-default)",
-        boxShadow: "0 18px 40px rgba(0,0,0,0.55)",
-        fontFamily: "var(--font-mono)",
-        fontSize: 12,
+        background: "#191c22",
+        border: "1px solid #74767d",
+        boxShadow: "0 12px 24px #0006",
+        fontFamily: "var(--font-sans), sans-serif",
+        fontSize: 13,
         outline: "none",
       }}
     >
@@ -353,17 +353,18 @@ export function ContextMenu({
                   alignItems: "center",
                   gap: 8,
                   width: "100%",
-                  padding: "8px 10px",
+                  padding: "10px 12px",
+                  minHeight: 44,
                   background: "transparent",
                   border: "none",
                   textAlign: "left",
                   font: "inherit",
                   color:
                     entry.disabled === true
-                      ? "#4A4775"
+                      ? "#aaa79f"
                       : entry.danger === true
                         ? "#FF6B7A"
-                        : "#E6E4F0",
+                        : "#f4f2ed",
                   cursor: entry.disabled === true ? "default" : "pointer",
                 }}
               >

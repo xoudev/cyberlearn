@@ -64,7 +64,7 @@ describe("MfaResetEmail - rendered HTML", () => {
 
   it("carries no sign-in link: its only links are the settings, the site and the contact", async () => {
     const html = await render(MfaResetEmail(BASE));
-    const hrefs = [...html.matchAll(/href="([^"]*)"/gu)].map((m) => m[1] ?? "");
+    const hrefs = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/gu)].map((m) => m[1] ?? "");
     for (const href of hrefs) {
       expect([BASE.securityUrl, BASE.siteUrl, BASE.contactUrl]).toContain(href);
     }

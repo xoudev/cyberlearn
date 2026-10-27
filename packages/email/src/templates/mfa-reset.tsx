@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 import { stampedSubject } from "../subject.js";
 
@@ -58,14 +58,12 @@ export function MfaResetEmail({
   siteUrl,
 }: MfaResetEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>La double authentification de ton compte CyberLearn a été retirée</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>Ta double authentification a été réinitialisée</Heading>

@@ -23,8 +23,37 @@ The tracked compositions generate:
 - a 28.5-second 1920 × 1080 H.264 promo video (855 frames at 30 fps);
 - a 21.5-second 1080 × 1080 H.264 cut for a LinkedIn post (645 frames at 30 fps).
 
-Every composition is declared in `src/root.tsx`, which is where the real
-dimensions live if this list ever drifts.
+These store and social compositions are declared in `src/root.tsx`, which is
+where their real dimensions live if this list ever drifts.
+
+## Videos embedded in the web application
+
+`src/web-entry.tsx` is a separate entry for the Bastion web interface. It does
+not change the native app's store campaign. `WebLaunch` is 30 seconds and
+`WebWelcome` is 21 seconds; both use 1920 × 1080 at 30 fps, local licensed fonts
+and the site's canonical Bastion mark. Chapter transitions last eight frames.
+
+```bash
+pnpm --filter @cyberlearn/marketing render:web-launch --concurrency=2
+pnpm --filter @cyberlearn/marketing render:web-welcome --concurrency=2
+pnpm --filter @cyberlearn/marketing exec remotion still src/web-entry.tsx WebLaunch ../web/public/videos/launch-poster.jpg --frame=150 --image-format=jpeg
+pnpm --filter @cyberlearn/marketing exec remotion still src/web-entry.tsx WebWelcome ../web/public/videos/welcome-poster.jpg --frame=150 --image-format=jpeg
+```
+
+These outputs intentionally replace the four tracked files in
+`apps/web/public/videos/`. Their routes and the existing video player's controls
+stay the same. The original audio streams are kept in
+`public/web-demo/*-audio.m4a`; playback remains muted by default.
+
+`public/web-demo/{dashboard,paths,lesson}.png` are captures of the actual web
+application, with a requested 1280 × 750 viewport in a local production build
+(the browser capture is 1265 × 741). They use the
+local test account and seeded catalogue. Every video frame identifies them as
+demonstration data. To refresh them, navigate the three screens with that test
+account, close panels, clear incidental focus outlines by clicking the page
+heading, and capture the viewport. Do not use real learners' data, fabricated
+progress, or drawn substitutes for product screens. Recapture when these
+screens change. The adjacent OFL files cover the two local font files.
 
 ## Two videos, two jobs
 

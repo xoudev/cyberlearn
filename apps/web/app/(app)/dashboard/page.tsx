@@ -34,6 +34,8 @@ import { listTournamentsFor } from "@/lib/tournaments/tournaments";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
+import "./dashboard.css";
+import { brandTypeface } from "@/components/brand-typeface";
 
 // The tab said the site's generic title: the dashboard was the one page of the
 // signed-in site that named nothing.
@@ -189,16 +191,19 @@ async function DashboardContent(): Promise<React.ReactElement> {
   });
 
   return (
-    <div className="page-container">
+    <div className={`learning-dashboard ${brandTypeface}`}>
       {/* The welcome's button opens what the mission card offers, not a list. */}
       <WelcomeModal cta={mission.cta} />
-      <div className="dash">
+      <div className="dash learning-dashboard-inner">
         {/* ── Hero: the greeting, and the level ───────────────────────────── */}
         <section className="dash-hero">
           <div>
-            <div className="dash-hero-date">{dateLabel}</div>
+            <div className="dash-hero-date">
+              <span>Ton espace d&apos;apprentissage</span>
+              <span>{dateLabel}</span>
+            </div>
             <h1>
-              Bonjour, <em>{firstName}</em>.
+              À toi de jouer, <em>{firstName}.</em>
             </h1>
             <p className="dash-hero-sub">
               {heroNotes.map((note, i) => (
@@ -220,10 +225,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
           />
         </section>
 
-        {/* ── The mission ─────────────────────────────────────────────────── */}
         <MissionCard {...mission} />
-
-        {/* ── What will not wait: a duel received, a tournament under way ─── */}
         {(duelInvites.length > 0 || liveTournaments.length > 0) && (
           <div
             className={`dash-cols${duelInvites.length > 0 && liveTournaments.length > 0 ? "" : " dash-cols--single"}`}
@@ -235,29 +237,27 @@ async function DashboardContent(): Promise<React.ReactElement> {
           </div>
         )}
 
-        {/* ── What is due, and the week ────────────────────────────────────── */}
-        <div className={`dash-cols${wantsRevisions ? "" : " dash-cols--single"}`}>
-          {wantsRevisions && <DailyRecallCard state={recallState} />}
+        <div className="learning-grid">
+          <div className="learning-primary">
+            {/* ── This week: Quests & Streak calendar ─────────────────────── */}
+            <section id="learning-week" className="dash-sec" aria-labelledby="dash-week-title">
+              <div className="dash-sec-head">
+                <h2 id="dash-week-title">Cette semaine</h2>
+                <span className="dash-sec-count">Encore {fmtWeekReset(msUntilWeekReset(now))}</span>
+              </div>
+              <div className="dash-week">
+                <QuestsPanel userId={authUser.id} />
+                <StreakCard userId={authUser.id} />
+              </div>
+            </section>
+          </div>
 
-          <section className="dash-sec" aria-labelledby="dash-week-title">
-            <div className="dash-sec-head">
-              <h2 id="dash-week-title">Cette semaine</h2>
-              <span className="dash-sec-count">
-                reset dans {fmtWeekReset(msUntilWeekReset(now))}
-              </span>
-            </div>
-            <div className="dash-week">
-              <QuestsPanel userId={authUser.id} />
-              <StreakCard userId={authUser.id} />
-            </div>
-          </section>
+          <aside className="learning-aside" aria-label="Révisions et progression">
+            {wantsRevisions && <DailyRecallCard state={recallState} />}
+            <Standing stats={stats} badges={badges.recent} badgeTotal={badges.total} />
+          </aside>
         </div>
-
-        {/* ── The reader's friends ─────────────────────────────────────────── */}
         {friends.hasFriends && <FriendsActivity items={friends.items} now={now.getTime()} />}
-
-        {/* ── Where the reader stands ──────────────────────────────────────── */}
-        <Standing stats={stats} badges={badges.recent} badgeTotal={badges.total} />
       </div>
     </div>
   );

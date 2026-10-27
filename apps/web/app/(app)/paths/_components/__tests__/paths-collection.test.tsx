@@ -165,7 +165,7 @@ describe("PathsCollection", () => {
 
   it("clears every filter from the empty result", () => {
     renderCollection([path({})]);
-    fireEvent.change(screen.getByPlaceholderText(/chercher un parcours/), {
+    fireEvent.change(screen.getByRole("textbox", { name: "Chercher un parcours" }), {
       target: { value: "introuvable" },
     });
     expect(screen.getByText("Aucun parcours trouvé")).toBeTruthy();
@@ -174,7 +174,10 @@ describe("PathsCollection", () => {
 
     expect(screen.queryByText("Aucun parcours trouvé")).toBeNull();
     expect(screen.getByText("Python")).toBeTruthy();
-    expect(screen.getByPlaceholderText(/chercher un parcours/)).toHaveProperty("value", "");
+    expect(screen.getByRole("textbox", { name: "Chercher un parcours" })).toHaveProperty(
+      "value",
+      "",
+    );
   });
 
   it("offers no reset when nothing is filtered, as there is nothing to clear", () => {

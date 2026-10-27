@@ -1,3 +1,5 @@
+@import "../../../components/profile-workspace.css";
+
 /* A public profile (/u/[username]) and its skeleton: the player card, the
    stats strip and the sections under them. Square like the rest of the site.
 
@@ -28,6 +30,212 @@
     44px 44px,
     44px 44px,
     auto;
+}
+
+.pp-standalone {
+  min-height: 100dvh;
+  background: #0b0c0e;
+}
+.pp-standalone .pp-standalone__home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 12px;
+  font:
+    700 28px / 1 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
+  letter-spacing: -0.02em;
+}
+.public-profile-workspace .pp-hero {
+  border: 0;
+  border-top: 4px solid #ff6b2b;
+  background: #191c22;
+  margin-bottom: 0;
+  padding: clamp(24px, 3vw, 40px);
+}
+.public-profile-workspace .pp-hero__strip {
+  display: none;
+}
+.public-profile-workspace .pg-title.pp-title {
+  font:
+    700 clamp(52px, 6vw, 94px) / 0.95 var(--font-display),
+    sans-serif;
+}
+.public-profile-workspace .pp-title em {
+  color: #f4f2ed;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.public-profile-workspace .pp-handle {
+  color: #ff864f;
+  font-family: var(--font-interface), sans-serif;
+  font-size: 14px;
+}
+.public-profile-workspace .pg-eyebrow {
+  text-transform: none;
+  letter-spacing: 0;
+  color: #aaa79f;
+  font-family: var(--font-interface), sans-serif;
+}
+.public-profile-workspace .pg-eyebrow::before {
+  content: none;
+}
+.public-profile-workspace .pp-owner .pg-eyebrow b {
+  color: #c2bfb8;
+}
+.public-profile-workspace .pp-avatar__ring {
+  background: var(--cosmetic-accent);
+}
+.public-profile-workspace .pp-avatar__face {
+  background: #121418;
+}
+.public-profile-workspace span.pp-avatar__img {
+  background: none;
+  color: #f4f2ed;
+  font:
+    600 38px / 1 var(--font-display),
+    sans-serif;
+}
+.public-profile-workspace .pp-stats {
+  margin-top: 28px;
+  margin-bottom: 36px;
+  border: 0;
+  border-block: 1px solid #303137;
+  background: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.public-profile-workspace .stat-tile {
+  background: none;
+  box-shadow: none;
+  border-left: 1px solid #303137;
+  padding: 24px 20px;
+}
+.public-profile-workspace .stat-tile:first-child {
+  border-left: 0;
+}
+.public-profile-workspace .stat-tile__value {
+  font:
+    600 52px / 1 var(--font-display),
+    sans-serif;
+  color: #f4f2ed !important;
+}
+.public-profile-workspace :is(.stat-tile__label, .stat-tile__sub) {
+  font-family: var(--font-interface), sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #aaa79f;
+}
+.public-profile-workspace .pp-section {
+  margin-bottom: 40px;
+}
+.public-profile-workspace .pp-sec__eyebrow {
+  color: #aaa79f;
+  font:
+    11px / 1.5 var(--font-interface),
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.public-profile-workspace .pp-sec__eyebrow::before {
+  content: none;
+}
+.public-profile-workspace .pp-sec__title {
+  font:
+    600 clamp(30px, 4vw, 42px) / 1.05 var(--font-display),
+    sans-serif;
+}
+.public-profile-workspace .pp-owner .card {
+  background: #191c22;
+  box-shadow: none;
+  border-color: #303137;
+}
+.public-profile-workspace .pp-row {
+  padding-block: 24px;
+  border-color: #303137;
+}
+.public-profile-workspace .pp-row__title {
+  font:
+    600 28px / 1.15 var(--font-display),
+    sans-serif;
+}
+.public-profile-workspace .pp-row__title--clip {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.public-profile-workspace
+  :is(
+    .pp-kicker,
+    .pp-row__date,
+    .pp-badge__name,
+    .pp-more,
+    .pp-rarest__holders,
+    .pp-year__figs,
+    .pp-figures span,
+    .pp-versus__draws
+  ) {
+  font-family: var(--font-interface), sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.public-profile-workspace :is(.pp-row__date, .pp-more, .pp-rarest__holders, .pp-versus__draws) {
+  color: #aaa79f;
+}
+.public-profile-workspace .pp-figures b {
+  font-family: var(--font-display), sans-serif;
+}
+.public-profile-workspace .pp-row__dot {
+  box-shadow: none;
+}
+.public-profile-workspace .pp-versus__score {
+  font-family: var(--font-display), sans-serif;
+}
+.public-profile-workspace .pp-certificates > .card {
+  --color-text-primary: #141518;
+  --color-text-secondary: #55524d;
+  --color-text-muted: #55524d;
+  background: #eae7df;
+  border: 0;
+  color: #141518;
+}
+.public-profile-workspace .pp-certificates .pp-row {
+  border-color: #bdbab3;
+}
+.public-profile-workspace .pp-certificates .pp-kicker {
+  color: #923200;
+}
+.public-profile-workspace .pp-certificates .btn {
+  color: #141518;
+  border-color: #74767d;
+}
+.public-profile-workspace .pp-certificates a:focus-visible {
+  outline-color: #141518;
+}
+.public-profile-workspace .pp-friend__menu {
+  background: #191c22;
+  border: 1px solid #74767d;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .public-profile-workspace .pp-hero {
+    animation: catalogue-heading-in 400ms ease-out;
+  }
+}
+@media (max-width: 700px) {
+  .public-profile-workspace .pp-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .public-profile-workspace .stat-tile:nth-child(3) {
+    border-left: 0;
+  }
+  .public-profile-workspace .stat-tile:nth-child(n + 3) {
+    border-top: 1px solid #303137;
+  }
+  .public-profile-workspace .stat-tile {
+    padding: 20px 12px;
+  }
 }
 .pp-standalone__bar {
   display: flex;

@@ -101,7 +101,8 @@ describe("LessonQA", () => {
       />,
     );
 
-    const footer = /<div style="([^"]*)">(?:(?!<div).)*Signaler/su.exec(html);
+    const footer =
+      /<div class="lesson-question__meta" style="([^"]*)">(?:(?!<div).)*Signaler/su.exec(html);
     expect(footer?.[1]).toContain("flex-wrap:wrap");
     expect(footer?.[1]).toContain("row-gap:8px");
   });

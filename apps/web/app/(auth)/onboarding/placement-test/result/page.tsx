@@ -1,509 +1,101 @@
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
-import type { SearchParams } from "next/dist/server/request/search-params";
+import { z } from "zod";
 import {
+  PLACEMENT_CATEGORIES,
   PLACEMENT_CATEGORY_LABEL,
   PLACEMENT_COPY,
   masteredPlacementDomains,
   placementLevelFor,
   placementStartCopy,
+  placementScoreOf,
+  strongestPlacementDomain,
 } from "@cyberlearn/lib/onboarding/placement";
 import { ProgressBar } from "@/components/progress-bar";
+import { PlacementShell } from "../../_components/onboarding-shell";
 
 interface ResultPageProps {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const CAT_COLORS: Record<string, string> = {
-  DEV: "var(--color-rarity-rare)",
-  CYBERSEC: "var(--color-category-cybersec)",
-  NETWORK: "var(--color-brand-turquoise)",
-};
+const scoreSchema = z.string().transform(Number).pipe(z.number());
+const pathSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
-function ScoreBar({
-  label,
-  score,
-  color,
-}: {
-  label: string;
-  score: number;
-  color: string;
-}): React.ReactElement {
-  const level = placementLevelFor(score);
-  return (
-    <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-border-default)" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          marginBottom: 10,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span
-            style={{
-              width: 3,
-              height: 14,
-              background: color,
-              boxShadow: `0 0 8px ${color}`,
-              flexShrink: 0,
-              display: "inline-block",
-            }}
-            aria-hidden="true"
-          />
-          <span
-            className="mono-label"
-            style={{
-              fontWeight: 600,
-              color: "var(--color-text-primary)",
-            }}
-          >
-            {label}
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color,
-              padding: "2px 8px",
-              background: `color-mix(in srgb, ${color} 10%, transparent)`,
-              border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
-            }}
-          >
-            {level}
-          </span>
-        </div>
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 800,
-            fontSize: 28,
-            letterSpacing: "-0.03em",
-            color: "var(--color-text-primary)",
-            lineHeight: 1,
-          }}
-        >
-          {score}
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--color-text-muted)",
-              letterSpacing: 0,
-            }}
-          >
-            %
-          </span>
-        </span>
-      </div>
-      <ProgressBar
-        value={score}
-        size="md"
-        color={color}
-        animated
-        label="Score au test de positionnement"
-      />
-    </div>
-  );
+function readScore(value: unknown): number {
+  const parsed = scoreSchema.safeParse(value);
+  return parsed.success ? Math.min(100, Math.max(0, parsed.data)) : 0;
 }
 
 export default async function PlacementResultPage({
   searchParams,
 }: ResultPageProps): Promise<React.ReactElement> {
   const params = await searchParams;
-  const devScore = Math.min(100, Math.max(0, Number(params.dev ?? 0)));
-  const cyberSec = Math.min(100, Math.max(0, Number(params.cybersec ?? 0)));
-  const network = Math.min(100, Math.max(0, Number(params.network ?? 0)));
-  const recPath = typeof params.path === "string" ? params.path : null;
-
-  const scores = [
-    {
-      label: PLACEMENT_CATEGORY_LABEL.DEV,
-      score: devScore,
-      color: CAT_COLORS.DEV ?? "var(--color-rarity-rare)",
-    },
-    {
-      label: PLACEMENT_CATEGORY_LABEL.CYBERSEC,
-      score: cyberSec,
-      color: CAT_COLORS.CYBERSEC ?? "var(--color-category-cybersec)",
-    },
-    {
-      label: PLACEMENT_CATEGORY_LABEL.NETWORK,
-      score: network,
-      color: CAT_COLORS.NETWORK ?? "var(--color-brand-turquoise)",
-    },
-  ];
-
-  const bestDomain = scores.reduce((a, b) => (a.score >= b.score ? a : b));
-  // The same reading as the app's result screen (apps/mobile/app/placement.tsx).
-  const byDomain = { devScore, cybersecScore: cyberSec, networkScore: network };
-  const waivedSomething = masteredPlacementDomains(byDomain).length > 0;
-  const startCopy = placementStartCopy(byDomain);
+  // Query values only describe the result screen; scoring and waivers stay in the service.
+  const scores = {
+    devScore: readScore(params.dev),
+    cybersecScore: readScore(params.cybersec),
+    networkScore: readScore(params.network),
+  };
+  const path = pathSchema.safeParse(params.path);
+  const bestDomain = strongestPlacementDomain(scores);
+  const waivedSomething = masteredPlacementDomains(scores).length > 0;
+  const startCopy = placementStartCopy(scores);
 
   return (
-    <div
-      style={{
-        background: "var(--color-bg-base)",
-        minHeight: "100vh",
-        position: "relative",
-        color: "var(--color-text-primary)",
-      }}
-    >
-      {/* ── Ambient glows ─────────────────────────────────────────────── */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 0,
-          background: [
-            "radial-gradient(ellipse 1100px 600px at 20% 10%, rgba(0,36,255,0.22), transparent 60%)",
-            "radial-gradient(ellipse 900px 500px at 85% 80%, rgba(10,255,212,0.08), transparent 65%)",
-          ].join(", "),
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 0,
-          backgroundImage: [
-            "linear-gradient(to right, rgba(42,37,96,0.16) 1px, transparent 1px)",
-            "linear-gradient(to bottom, rgba(42,37,96,0.16) 1px, transparent 1px)",
-          ].join(", "),
-          backgroundSize: "48px 48px",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%)",
-          maskImage: "radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%)",
-        }}
-      />
-
-      {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <header
-        className="mono-label"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 44,
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-          padding: "0 32px",
-          background: "rgba(3,2,25,0.65)",
-          backdropFilter: "blur(20px) saturate(140%)",
-          WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          borderBottom: "1px solid var(--color-border-default)",
-          color: "var(--color-text-muted)",
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: -1,
-            height: 1,
-            background:
-              "linear-gradient(90deg, transparent, rgba(10,255,212,0.35) 20%, rgba(0,36,255,0.35) 80%, transparent)",
-          }}
-        />
-        <Image
-          src="/icon_app.png"
-          alt="CyberLearn"
-          width={20}
-          height={20}
-          priority
-          style={{ flexShrink: 0 }}
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--color-text-primary)",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
-        </span>
-        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
-          /
-        </span>
-        <span className="onboarding-bar__label">RÉSULTATS · TEST DE PLACEMENT</span>
-        <span
-          className="onboarding-bar__label"
-          style={{
-            marginLeft: "auto",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--color-brand-turquoise)",
-            letterSpacing: "0.14em",
-          }}
-        >
-          ANALYSE COMPLÈTE
-        </span>
-      </header>
-
-      {/* ── Content ───────────────────────────────────────────────────── */}
-      <div
-        className="onboarding-content"
-        style={{
-          position: "relative",
-          zIndex: 1,
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 640, marginTop: 56 }}>
-          {/* Header */}
-          <div style={{ marginBottom: 36 }}>
-            <div
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 16,
-              }}
-            >
-              <span
-                style={{
-                  width: 32,
-                  height: 1,
-                  background: "var(--color-brand-turquoise)",
-                  boxShadow: "0 0 6px var(--color-brand-turquoise)",
-                  display: "inline-block",
-                }}
-              />
-              ANALYSE TERMINÉE
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: "clamp(40px, 5vw, 64px)",
-                lineHeight: 0.95,
-                letterSpacing: "-0.04em",
-                color: "var(--color-text-primary)",
-                margin: 0,
-              }}
-            >
-              Ton profil,{" "}
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                cartographié.
-              </em>
-            </h1>
-          </div>
-
-          {/* Scores panel */}
-          <div
-            className="card"
-            style={{
-              position: "relative",
-              marginBottom: 24,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: -1,
-                zIndex: -1,
-                background:
-                  "linear-gradient(135deg, rgba(10,255,212,0.25), rgba(0,36,255,0.15) 50%, transparent 100%)",
-                filter: "blur(16px)",
-                opacity: 0.55,
-              }}
-            />
-
-            {/* Panel header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px 24px",
-                borderBottom: "1px solid var(--color-border-subtle)",
-              }}
-            >
-              <span
-                className="mono-label"
-                style={{
-                  fontWeight: 600,
-                  color: "var(--color-text-primary)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <span style={{ color: "var(--color-brand-turquoise)" }}>›</span> SCORES PAR DOMAINE
-              </span>
-              <span
-                className="mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                POINT FORT ·{" "}
-                <b style={{ color: bestDomain.color, fontWeight: 600 }}>
-                  {bestDomain.label.split(" ")[0]}
-                </b>
-              </span>
-            </div>
-
-            {scores.map((s) => (
-              <ScoreBar key={s.label} {...s} />
-            ))}
-
-            {/* Footer note: only when the test waived something, which takes 70 in a domain */}
-            {waivedSomething && (
-              <div
-                style={{
-                  padding: "14px 24px",
-                  background: "rgba(5,4,26,0.5)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10.5,
-                  color: "var(--color-text-muted)",
-                  letterSpacing: "0.04em",
-                  borderTop: "1px solid var(--color-border-subtle)",
-                }}
-              >
-                {PLACEMENT_COPY.waived}
-              </div>
-            )}
-          </div>
-
-          {/* Recommendation */}
-          {recPath ? (
-            <div
-              style={{
-                position: "relative",
-                padding: "28px 32px",
-                background: "rgba(10,8,38,0.85)",
-                border: "1px solid rgba(10,255,212,0.3)",
-                marginBottom: 24,
-                overflow: "hidden",
-              }}
-            >
-              <span
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  background:
-                    "linear-gradient(90deg, transparent, var(--color-brand-turquoise), transparent)",
-                  boxShadow: "0 0 12px var(--color-brand-turquoise)",
-                }}
-                aria-hidden="true"
-              />
-              <div
-                className="mono-label"
-                style={{
-                  color: "var(--color-brand-turquoise)",
-                  marginBottom: 14,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontWeight: 700 }}>›</span> PARCOURS RECOMMANDÉ
-              </div>
-              <p
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 14,
-                  color: "var(--color-text-secondary)",
-                  lineHeight: 1.6,
-                  margin: "0 0 20px",
-                  maxWidth: 480,
-                }}
-              >
-                {PLACEMENT_COPY.recommended}
-              </p>
-              <Link href={`/paths/${recPath}`} className="btn btn--accent">
-                Voir le parcours
-                <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                  <path
-                    d="M3 7 H11 M8 4 L11 7 L8 10"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </Link>
-            </div>
-          ) : (
-            startCopy !== null && (
-              <div
-                className="card"
-                style={{
-                  padding: "24px 28px",
-                  marginBottom: 24,
-                }}
-              >
-                <p
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 14,
-                    color: "var(--color-text-secondary)",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  {startCopy}
-                </p>
-              </div>
-            )
-          )}
-
-          {/* CTA */}
-          <div className="onboarding-actions">
-            <Link href="/dashboard" className="btn btn--lg">
-              Accéder au tableau de bord
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                <path
-                  d="M3 7 H11 M8 4 L11 7 L8 10"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Link>
-            <Link href="/lessons" className="btn btn--ghost btn--lg">
-              Explorer les leçons
-            </Link>
-          </div>
+    <PlacementShell>
+      <h1 className="ob-shell__title">Ton profil, cartographié.</h1>
+      <p className="ob-shell__lede">
+        Voici ton point de départ dans les trois domaines. Le catalogue reste ouvert pour la suite.
+      </p>
+      <section className="ob-scores" aria-labelledby="placement-scores">
+        <div className="ob-scores__head">
+          <h2 id="placement-scores">Scores par domaine</h2>
+          <p>
+            Point fort · <b>{PLACEMENT_CATEGORY_LABEL[bestDomain]}</b>
+          </p>
         </div>
+        {PLACEMENT_CATEGORIES.map((category) => {
+          const score = placementScoreOf(scores, category);
+          return (
+            <div className="ob-score" key={category}>
+              <div>
+                <h3>{PLACEMENT_CATEGORY_LABEL[category]}</h3>
+                <p>{placementLevelFor(score)}</p>
+              </div>
+              <strong>{score}%</strong>
+              <ProgressBar
+                value={score}
+                label={`Score en ${PLACEMENT_CATEGORY_LABEL[category]}`}
+                color="#923200"
+              />
+            </div>
+          );
+        })}
+        {waivedSomething && <p className="ob-scores__note">{PLACEMENT_COPY.waived}</p>}
+      </section>
+      {path.success ? (
+        <section className="ob-recommendation" aria-labelledby="recommended-path">
+          <h2 id="recommended-path">Ton parcours recommandé</h2>
+          <p>{PLACEMENT_COPY.recommended}</p>
+          <Link href={`/paths/${path.data}`} className="btn">
+            Voir le parcours
+          </Link>
+        </section>
+      ) : (
+        startCopy !== null && <p className="ob-note">{startCopy}</p>
+      )}
+      <div className="ob-form__actions">
+        <Link href="/dashboard" className="btn btn--lg">
+          Accéder au tableau de bord
+        </Link>
+        <Link href="/lessons" className="ob-shell__link">
+          Explorer les leçons
+        </Link>
       </div>
-    </div>
+    </PlacementShell>
   );
 }

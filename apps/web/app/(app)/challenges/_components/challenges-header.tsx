@@ -5,7 +5,7 @@ import {
   challengesTabHref,
   type ChallengesTab,
 } from "@cyberlearn/lib/challenges/tabs";
-import { Crumb } from "@/components/crumb";
+import { ProgressionHeading } from "@/components/progression-heading";
 
 const LABELS: Record<ChallengesTab, string> = {
   defis: "Défis",
@@ -23,14 +23,11 @@ const LABELS: Record<ChallengesTab, string> = {
 export function ChallengesHeader({ tab }: { tab: ChallengesTab }): React.ReactElement {
   return (
     <>
-      <Crumb
-        segments={
-          tab === "tournois"
-            ? [{ label: "défis", href: challengesTabHref("defis") }, "tournois"]
-            : ["défis"]
-        }
+      <ProgressionHeading
+        eyebrow="Pratiquer / Mettre ses réflexes à l’épreuve"
+        title="Les défis"
+        description="Un exercice à résoudre ou un tournoi à rejoindre."
       />
-      <h1 className="pg-title">Défis</h1>
       <nav className="tabs dfx-tabs" aria-label="Sections des défis">
         {CHALLENGES_TABS.map((key) => (
           <Link

@@ -95,7 +95,7 @@ describe("the console palette", () => {
   });
 
   it("gives every tone a token, so a role colour follows the site's", () => {
-    const tones: Tone[] = ["neutral", "accent", "info", "warning", "danger", "purple"];
+    const tones: Tone[] = ["neutral", "accent", "success", "info", "warning", "danger", "purple"];
     for (const tone of tones) expect(toneColor(tone)).toMatch(/^var\(--a-[\w-]+\)$/u);
   });
 
@@ -346,13 +346,9 @@ describe("the console stylesheet", () => {
   });
 
   it("gives the primary button and the diff lines their colours by name", () => {
-    expect(rule(".a-btn--primary")).toMatch(/\bcolor: var\(--a-fg\);/u);
-    expect(rule('.a-diff-line[data-kind="added"]')).toMatch(
-      /\bcolor: color-mix\(in srgb, var\(--a-accent\) \d+%, var\(--a-fg\)\);/u,
-    );
-    expect(rule('.a-diff-line[data-kind="removed"]')).toMatch(
-      /\bcolor: color-mix\(in srgb, var\(--a-danger\) \d+%, var\(--a-fg\)\);/u,
-    );
+    expect(rule(".a-btn--primary")).toMatch(/\bcolor: var\(--a-ink\);/u);
+    expect(rule('.a-diff-line[data-kind="added"]')).toMatch(/\bcolor: var\(--a-success\);/u);
+    expect(rule('.a-diff-line[data-kind="removed"]')).toMatch(/\bcolor: var\(--a-danger\);/u);
   });
 });
 
@@ -360,7 +356,7 @@ describe("the content status", () => {
   it("gives the edit forms' status field the labels and colours of the list badge", () => {
     expect(CONTENT_STATUS_OPTIONS).toEqual([
       { value: "DRAFT", label: "Brouillon", tone: "var(--a-muted)" },
-      { value: "PUBLISHED", label: "Publié", tone: "var(--a-accent)" },
+      { value: "PUBLISHED", label: "Publié", tone: "var(--a-success)" },
       { value: "ARCHIVED", label: "Archivé", tone: "var(--a-danger)" },
     ]);
     for (const form of [

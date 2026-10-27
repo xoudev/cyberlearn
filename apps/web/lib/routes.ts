@@ -95,6 +95,8 @@ export const APP_ROUTES: readonly AppRoute[] = [
   signedIn("/wrapped"),
   // The bell's history, opened from its panel in the top bar.
   signedIn("/notifications"),
+  // The component workshop is an authenticated authoring surface, never indexed.
+  signedIn("/dev"),
   // Under (auth), with its own layout: the steps before the app opens.
   signedIn("/onboarding"),
 

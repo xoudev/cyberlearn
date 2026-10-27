@@ -1,10 +1,13 @@
 "use client";
 
+// Story navigation, its clock and pause controls share local state.
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { SLIDE_MS, buildStorySlides, type Slide } from "@cyberlearn/lib/gamification/wrapped-story";
 import { useStoryClock } from "./use-story-clock";
 import { ModalShell } from "@cyberlearn/ui";
+import { BastionLogo } from "@/components/bastion-logo";
 import "./story.css";
 
 /**
@@ -165,6 +168,12 @@ export function WrappedStory({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
+      if (
+        (event.key === " " || event.key === "Spacebar") &&
+        event.target instanceof HTMLElement &&
+        event.target.closest("button, a, input, textarea, select, [contenteditable='true']")
+      )
+        return;
       if (event.key === "ArrowRight") next();
       else if (event.key === "ArrowLeft") previous();
       else if (event.key === " " || event.key === "Spacebar") {
@@ -213,7 +222,7 @@ export function WrappedStory({
 
           <div className="ws-chrome">
             <span className="ws-brand">
-              <b>cyber</b> learn
+              <BastionLogo size={28} /> CyberLearn
             </span>
             <span className="ws-chrome__actions">
               <button

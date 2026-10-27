@@ -30,7 +30,7 @@ export function ActiveToggle({
     });
   }
 
-  const color = optimisticActive ? "var(--a-accent)" : "var(--a-muted)";
+  const color = optimisticActive ? "var(--color-success)" : "var(--a-muted)";
 
   return (
     <button
@@ -51,7 +51,7 @@ export function ActiveToggle({
         fontWeight: 700,
         letterSpacing: "0.12em",
         textTransform: "uppercase",
-        color: isPending ? "var(--a-faint-2)" : color,
+        color: isPending ? "var(--a-muted)" : color,
         whiteSpace: "nowrap",
         transition: "all 120ms ease",
       }}
@@ -63,11 +63,7 @@ export function ActiveToggle({
           style={{
             width: 5,
             height: 5,
-            borderRadius: "50%",
             background: color,
-            boxShadow: optimisticActive
-              ? "0 0 6px color-mix(in srgb, var(--a-accent) 50%, transparent)"
-              : "none",
             flexShrink: 0,
           }}
         />

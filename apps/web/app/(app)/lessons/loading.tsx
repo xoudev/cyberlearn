@@ -1,17 +1,17 @@
 import React from "react";
-import { Skeleton } from "@cyberlearn/ui";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
+import "./lessons-catalogue.css";
 
 /**
- * The lessons catalogue while it loads: the page's `.page-container` and its
- * breadcrumb, then the same body skeleton the page's `<Suspense>` shows.
+ * The route and Suspense share the catalogue's loading composition.
  */
 export default function LessonsLoading(): React.ReactElement {
   return (
-    <div className="page-container" aria-busy="true" aria-label="Chargement des leçons">
-      <div className="pg-crumb" aria-hidden="true">
-        <Skeleton w={195} h={14} />
-      </div>
+    <div
+      className="page-container lessons-catalogue learning-catalogue"
+      aria-busy="true"
+      aria-label="Chargement des leçons"
+    >
       <LessonsBodySkeleton />
     </div>
   );

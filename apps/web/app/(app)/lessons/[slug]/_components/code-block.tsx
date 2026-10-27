@@ -103,6 +103,7 @@ export function CodeBlock({
         {/* Right: copy button */}
         <button
           type="button"
+          className="lesson-code-copy"
           onClick={handleCopy}
           style={{
             display: "flex",

@@ -9,13 +9,13 @@ import type { CSSProperties } from "react";
  * that ignored the accent somebody had equipped. One module; the values are
  * the tokens stylesheet's.
  */
-export const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
+export const ACCENT = "var(--cosmetic-accent, #FF6B2B)";
 export const MONO = "var(--font-mono, monospace)";
 export const RED = "#FF4757";
 export const DANGER = "#FF4D6D";
 export const AMBER = "#FFB020";
-export const BORDER = "#2A2560";
-export const MUTED = "#7F7BA9";
+export const BORDER = "#74767D";
+export const MUTED = "#AAA79F";
 
 /** The font as a style object, to spread into one. */
 export const MONO_STYLE: CSSProperties = { fontFamily: MONO };

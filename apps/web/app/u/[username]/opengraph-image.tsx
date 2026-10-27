@@ -1,46 +1,30 @@
+import path from "node:path";
+import { readFile } from "node:fs/promises";
 import React from "react";
 import { ImageResponse } from "next/og";
 import { userRepository } from "@cyberlearn/db";
 import { previewCardText, previewHandle } from "@/lib/profile/preview-card";
-
-/**
- * A profile's link preview: its owner's name, handle and figures on the
- * site's dark ground, for a public profile; the same card without a name for
- * a private one or a handle that does not exist (previewCardText).
- *
- * Read as a stranger reads it, whoever asks: a shared link travels, and the
- * crawler that fetches it is nobody's friend. Drawn on each request rather
- * than cached, so a profile closed a minute ago stops naming its owner a
- * minute later. The font is ImageResponse's own, and the text is cut down to
- * what it draws (drawableText): a glyph it lacks would make next/og fetch a
- * font or an emoji from a CDN while drawing.
- */
+import { BASTION_MARK_PATHS } from "@/components/bastion-logo";
 
 export const alt = "Un profil CyberLearn";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const dynamic = "force-dynamic";
 
-// The site's tokens (packages/ui/src/tokens.css, dark theme), as values: a
-// picture has no CSS variables.
-const BG = "#030219";
-const PANEL = "#0a0826";
-const BORDER = "#2a2560";
-const TEXT = "#f5f5fa";
-const MUTED = "#7f7ba9";
-const ACCENT = "#0affd4";
-const BRAND = "#0024ff";
-
 export default async function ProfilePreviewImage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }): Promise<ImageResponse> {
-  // A handle no profile could have draws the card without a name, unread.
+  // A link preview always reads as a stranger, including for an authenticated request.
   const handle = previewHandle((await params).username);
   const card = handle === null ? null : await userRepository.findPreviewCard(handle);
   const text = previewCardText(card);
-
+  const [displayFont, bodyFont, fallbackFont] = await Promise.all([
+    readFile(path.join(process.cwd(), "public/brand/fonts/BarlowCondensed-SemiBold.ttf")),
+    readFile(path.join(process.cwd(), "public/brand/fonts/SpaceGrotesk-Regular.ttf")),
+    readFile(path.join(process.cwd(), "public/brand/fonts/NotoSans-Regular.ttf")),
+  ]);
   return new ImageResponse(
     <div
       style={{
@@ -49,76 +33,99 @@ export default async function ProfilePreviewImage({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "64px 72px",
-        background: `linear-gradient(135deg, ${BG} 0%, ${PANEL} 100%)`,
-        color: TEXT,
-        borderTop: `6px solid ${ACCENT}`,
+        padding: "48px 64px",
+        background: "#0B0C0E",
+        color: "#F4F2ED",
+        fontFamily: "Space Grotesk",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div
           style={{
             display: "flex",
-            fontSize: 26,
-            letterSpacing: 6,
-            textTransform: "uppercase",
-            color: ACCENT,
+            alignItems: "center",
+            gap: 16,
+            background: "#EAE7DF",
+            color: "#141518",
+            padding: "12px 20px",
           }}
         >
-          {text.eyebrow}
+          <svg width="42" height="42" viewBox="0 0 256 256">
+            <path d={BASTION_MARK_PATHS.top} fill="#FF6B2B" />
+            <path d={BASTION_MARK_PATHS.left} fill="#141518" />
+            <path d={BASTION_MARK_PATHS.right} fill="#141518" />
+            <path d={BASTION_MARK_PATHS.core} fill="#FF6B2B" />
+          </svg>
+          <span style={{ fontFamily: "Barlow Condensed", fontSize: 34, fontWeight: 600 }}>
+            CYBERLEARN.
+          </span>
         </div>
+        <span style={{ fontSize: 20, color: "#AAA79F" }}>{text.eyebrow}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 24, marginBottom: 24 }}>
         <div
           style={{
             display: "flex",
-            marginTop: 28,
-            fontSize: text.title.length > 22 ? 76 : 96,
-            fontWeight: 800,
+            fontFamily: "Barlow Condensed",
+            fontSize: text.title.length > 32 ? 76 : 96,
+            fontWeight: 600,
             lineHeight: 1.05,
-            letterSpacing: -2,
           }}
         >
           {text.title}
         </div>
-        <div style={{ display: "flex", marginTop: 18, fontSize: 34, color: MUTED }}>
+        <div style={{ display: "flex", marginTop: 16, fontSize: 27, color: "#C2BFB8" }}>
           {text.subtitle}
         </div>
       </div>
-
       {text.stats.length > 0 ? (
-        <div style={{ display: "flex", gap: 20 }}>
+        <div
+          style={{ display: "flex", background: "#EAE7DF", color: "#141518", padding: "24px 28px" }}
+        >
           {text.stats.map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                flex: 1,
-                padding: "22px 26px",
-                border: `2px solid ${BORDER}`,
-                background: "rgba(10, 8, 38, 0.8)",
-              }}
-            >
-              <div
+            <div key={stat.label} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              <span style={{ fontSize: 18, color: "#55524D" }}>{stat.label}</span>
+              <span
                 style={{
-                  display: "flex",
-                  fontSize: 22,
-                  letterSpacing: 4,
-                  textTransform: "uppercase",
-                  color: MUTED,
+                  fontFamily: "Barlow Condensed",
+                  fontSize: 52,
+                  fontWeight: 600,
+                  marginTop: 5,
                 }}
               >
-                {stat.label}
-              </div>
-              <div style={{ display: "flex", marginTop: 8, fontSize: 52, fontWeight: 800 }}>
                 {stat.value}
-              </div>
+              </span>
             </div>
           ))}
         </div>
       ) : (
-        <div style={{ display: "flex", height: 8, width: 240, background: BRAND }} />
+        <div style={{ display: "flex", fontSize: 22, color: "#FF864F" }}>
+          Apprendre. Pratiquer. Progresser.
+        </div>
       )}
     </div>,
-    size,
+    {
+      ...size,
+      fonts: [
+        {
+          name: "Barlow Condensed",
+          data: Uint8Array.from(displayFont).buffer,
+          weight: 600,
+          style: "normal",
+        },
+        {
+          name: "Space Grotesk",
+          data: Uint8Array.from(bodyFont).buffer,
+          weight: 400,
+          style: "normal",
+        },
+        {
+          name: "Noto Sans",
+          data: Uint8Array.from(fallbackFont).buffer,
+          weight: 400,
+          style: "normal",
+        },
+      ],
+    },
   );
 }

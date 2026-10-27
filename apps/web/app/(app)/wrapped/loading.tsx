@@ -17,28 +17,25 @@ const SLIDE_COUNT = 9;
 function ClosedSkeleton(): React.ReactElement {
   return (
     <div
-      className="page-container wr-closed"
+      className="page-container learning-catalogue learning-workspace wrapped-workspace wr-closed"
       aria-busy="true"
       aria-label="Chargement de ton Wrapped"
     >
-      <Skeleton w={190} h={11} />
-      <Skeleton
-        w="clamp(150px, 42vw, 380px)"
-        h="clamp(56px, 16vw, 140px)"
-        style={{ margin: "4px 0" }}
-      />
-      <SkeletonText
-        lines={3}
-        lastWidth="50%"
-        lineHeight={14}
-        gap={12}
-        style={{ width: "min(360px, 100%)", alignItems: "center", padding: "6px 0" }}
-      />
-      <div className="wr-closed__when">
-        <Skeleton w={240} h={12} style={{ maxWidth: "100%", margin: "2px 0" }} />
+      <div className="wr-closed__poster" aria-hidden="true">
+        <Skeleton w={180} h={36} />
+        <Skeleton w="90%" h="clamp(112px, 16vw, 240px)" style={{ marginBlock: 30 }} />
+        <Skeleton w={160} h={14} />
       </div>
-      <Skeleton w={330} h={11} style={{ maxWidth: "100%" }} />
-      <Skeleton w={230} h={34} style={{ marginTop: 10 }} />
+      <div className="wr-closed__content" aria-hidden="true">
+        <Skeleton w={110} h={12} />
+        <Skeleton w="80%" h={60} style={{ marginBlock: 20 }} />
+        <SkeletonText lines={3} lastWidth="50%" lineHeight={15} gap={11} />
+        <div className="wr-closed__when">
+          <Skeleton w="90%" h={14} />
+        </div>
+        <Skeleton w="85%" h={12} style={{ marginBlock: 18 }} />
+        <Skeleton w={230} h={44} style={{ maxWidth: "100%" }} />
+      </div>
     </div>
   );
 }

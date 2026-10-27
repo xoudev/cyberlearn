@@ -1,6 +1,8 @@
 "use client";
 
-import { cn } from "@cyberlearn/ui";
+// Client boundary: editing, folder management, drag-and-drop and contextual menus share local state.
+
+import { cn, ModalShell } from "@cyberlearn/ui";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -38,6 +40,8 @@ import {
   type MenuEntry,
 } from "./context-menu";
 import styles from "./notes-library.module.css";
+import "./notes.css";
+import Link from "next/link";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
 import {
   downloadMarkdown,
@@ -93,6 +97,9 @@ export function NotesLibrary({
   const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
   const [focusedFolder, setFocusedFolder] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
+  const [deletion, setDeletion] = useState<
+    { kind: "folder"; folder: SerializedFolder } | { kind: "note"; note: SerializedNote } | null
+  >(null);
   const [readerId, setReaderId] = useState<string | null>(openNoteId);
   const [readerMode, setReaderMode] = useState<ReaderMode>("read");
   const [incomingMode, setIncomingMode] = useState<ReaderMode>("read");
@@ -246,13 +253,9 @@ export function NotesLibrary({
   };
 
   const handleDeleteFolder = (folder: SerializedFolder): void => {
-    if (
-      !window.confirm(
-        `Supprimer le dossier « ${folder.name} » ? Les notes iront dans Sans dossier.`,
-      )
-    ) {
-      return;
-    }
+    setDeletion({ kind: "folder", folder });
+  };
+  const removeFolder = (folder: SerializedFolder): void => {
     const prevFolders = folders;
     const affected = notes.filter((n) => n.folderId === folder.id).map((n) => n.id);
     setFolders((prev) => prev.filter((f) => f.id !== folder.id));
@@ -375,13 +378,9 @@ export function NotesLibrary({
   // Saving an empty note is how a note is deleted (noteRepository.upsert): the
   // same action, the same rules, and its shares go with it.
   const handleDeleteNote = (note: SerializedNote): void => {
-    if (
-      !window.confirm(
-        `Supprimer ta note sur « ${note.lessonTitle} » ? Elle sera aussi retirée de tes partages.`,
-      )
-    ) {
-      return;
-    }
+    setDeletion({ kind: "note", note });
+  };
+  const removeNote = (note: SerializedNote): void => {
     const index = notes.findIndex((n) => n.id === note.id);
     setNotes((prev) => prev.filter((n) => n.id !== note.id));
     void saveNoteAction({ lessonId: note.lessonId, content: "" }).then((res) => {
@@ -594,10 +593,7 @@ export function NotesLibrary({
             label: `Couleur ${color}`,
             active: folder.color === color,
             render: (
-              <span
-                aria-hidden="true"
-                style={{ width: 12, height: 12, borderRadius: "50%", background: color }}
-              />
+              <span aria-hidden="true" style={{ width: 12, height: 12, background: color }} />
             ),
           })),
           {
@@ -709,54 +705,34 @@ export function NotesLibrary({
 
   return (
     <div
-      className="page-container"
-      style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,48px)" }}
+      className="page-container learning-catalogue learning-workspace notes-workspace"
       onContextMenu={onContextMenu}
     >
-      {/* Header */}
-      <div
-        className="mono-label"
-        style={{
-          color: "var(--cosmetic-accent)",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 14,
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{ width: 24, height: 1, background: "var(--color-border-default)" }}
-        />
-        Cyber Learn · Apprentissage
+      <header className="catalogue-masthead">
+        <div className="catalogue-masthead__title">
+          <p className="catalogue-masthead__eyebrow">Conserver / Ton savoir, avec tes mots</p>
+          <h1>
+            Bloc-notes<span>.</span>
+          </h1>
+          <p>Les notes de tes leçons, organisées à ta façon.</p>
+        </div>
+      </header>
+      <div className="catalogue-ledger">
+        <span>
+          <b>{notes.length}</b> note{notes.length > 1 ? "s" : ""}
+        </span>
+        <span>
+          <b>{folders.length}</b> dossier{folders.length > 1 ? "s" : ""}
+        </span>
+        <span>
+          <b>{incoming.length}</b> reçue{incoming.length > 1 ? "s" : ""}
+        </span>
+        <span className="catalogue-ledger__total">Ton carnet personnel</span>
       </div>
-      <h1
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 800,
-          fontSize: "clamp(34px,5vw,52px)",
-          letterSpacing: "-0.03em",
-          color: "var(--color-text-primary)",
-          margin: "0 0 10px",
-        }}
-      >
-        Bloc-<span style={{ color: "var(--cosmetic-accent)" }}>notes</span>
-      </h1>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 15,
-          color: "var(--color-text-secondary)",
-          maxWidth: 620,
-          margin: "0 0 30px",
-        }}
-      >
-        Relis tes notes sans rouvrir la leçon, range-les dans des dossiers, et exporte-les en
-        markdown quand tu veux.
-      </p>
 
       {/* Search + domain filters */}
       <div
+        className="notes-search-row"
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -805,38 +781,16 @@ export function NotesLibrary({
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginLeft: "auto" }}>
           {FILTERS.map((f) => {
             const active = filter === f.key;
-            const color = f.key === "ALL" ? "var(--cosmetic-accent)" : CAT[f.key].color;
             return (
               <button
-                className="mono-label"
+                className="catalogue-domain"
                 key={f.key}
                 type="button"
+                aria-pressed={active}
                 onClick={() => {
                   setFilter(f.key);
                 }}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  fontWeight: 700,
-                  color: active ? "var(--color-bg-sunken)" : "var(--color-text-secondary)",
-                  background: active ? color : "transparent",
-                  border: `1px solid ${active ? color : "var(--color-border-default)"}`,
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                }}
               >
-                {f.key !== "ALL" && (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: active ? "var(--color-bg-sunken)" : color,
-                    }}
-                  />
-                )}
                 {f.label}
               </button>
             );
@@ -846,6 +800,7 @@ export function NotesLibrary({
 
       {/* Folder bar */}
       <div
+        className="notes-folder-bar"
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -893,8 +848,9 @@ export function NotesLibrary({
           </span>
         ) : null}
         <button
-          className="mono-label"
+          className="notes-manage-toggle"
           type="button"
+          aria-expanded={manageOpen}
           onClick={() => {
             setManageOpen((v) => !v);
           }}
@@ -907,7 +863,7 @@ export function NotesLibrary({
             cursor: "pointer",
           }}
         >
-          ⚙ Gérer
+          Gérer les dossiers
         </button>
         <button
           className="btn btn--ghost btn--sm"
@@ -924,7 +880,7 @@ export function NotesLibrary({
       {/* Manage folders panel */}
       {manageOpen && (
         <div
-          className="card"
+          className="card notes-management"
           style={{
             padding: 18,
             marginBottom: 26,
@@ -1119,7 +1075,7 @@ export function NotesLibrary({
                   }}
                 >
                   <span
-                    className="mono-label mono-label--xs"
+                    className="mono-label mono-label--xs notes-document__category"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -1130,7 +1086,7 @@ export function NotesLibrary({
                   >
                     <span
                       aria-hidden="true"
-                      style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
+                      style={{ width: 6, height: 6, background: cat.color }}
                     />
                     {cat.label}
                   </span>
@@ -1254,22 +1210,35 @@ export function NotesLibrary({
 
       {/* Groups */}
       {groups.length === 0 && visibleFolders.length > 0 ? null : groups.length === 0 ? (
-        <div
-          style={{
-            border: "1px dashed var(--color-border-default)",
-            padding: "48px 24px",
-            textAlign: "center",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            color: "var(--color-text-muted)",
-          }}
-        >
-          {notes.length === 0
-            ? "Aucune note pour l'instant. Ouvre une leçon et note ce qui compte, ça apparaîtra ici."
-            : selectedFolder !== ALL && !query.trim() && filter === "ALL"
-              ? "Ce dossier est vide. Déplace une note ici depuis son menu."
-              : "Aucune note ne correspond à ta recherche."}
-        </div>
+        <section className="notes-empty">
+          <AllNotesGlyph color="currentColor" size={42} />
+          <h2>{notes.length === 0 ? "Ton carnet commence ici." : "Aucune note ici."}</h2>
+          <p>
+            {notes.length === 0
+              ? "Dans une leçon, note ce qui compte. Tu retrouveras tes notes ici, prêtes à relire et à ranger."
+              : selectedFolder !== ALL && !query.trim() && filter === "ALL"
+                ? "Ce dossier est vide. Déplace une note ici depuis son menu."
+                : "Aucune note ne correspond à ta recherche."}
+          </p>
+          {notes.length === 0 && (
+            <Link href="/lessons" className="btn">
+              Choisir une leçon <span aria-hidden="true">↗</span>
+            </Link>
+          )}
+          {notes.length > 0 && (
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => {
+                setQuery("");
+                setFilter("ALL");
+                setSelectedFolder(ALL);
+              }}
+            >
+              Afficher toutes mes notes
+            </button>
+          )}
+        </section>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {showIncoming && (
@@ -1298,7 +1267,7 @@ export function NotesLibrary({
                           openReader(n.id, "read");
                         }}
                         {...dragProps(n.id)}
-                        className="note-card"
+                        className="note-card notes-document"
                         title="Clique pour l'ouvrir, glisse-la vers un dossier, clic droit pour plus d'actions"
                         style={{
                           display: "flex",
@@ -1331,7 +1300,6 @@ export function NotesLibrary({
                             style={{
                               width: 6,
                               height: 6,
-                              borderRadius: "50%",
                               background: cat.color,
                             }}
                           />
@@ -1445,6 +1413,47 @@ export function NotesLibrary({
         />
       )}
 
+      <ModalShell
+        open={deletion !== null}
+        onClose={() => {
+          setDeletion(null);
+        }}
+        title={deletion?.kind === "folder" ? "Supprimer ce dossier ?" : "Supprimer cette note ?"}
+        maxWidth={520}
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => {
+                setDeletion(null);
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="btn notes-confirm-delete"
+              onClick={() => {
+                const selected = deletion;
+                setDeletion(null);
+                if (selected?.kind === "folder") removeFolder(selected.folder);
+                else if (selected?.kind === "note") removeNote(selected.note);
+              }}
+            >
+              Supprimer
+            </button>
+          </>
+        }
+      >
+        <p className="notes-confirm-copy">
+          {deletion?.kind === "folder"
+            ? `Le dossier « ${deletion.folder.name} » sera supprimé. Les notes iront dans Sans dossier.`
+            : deletion?.kind === "note"
+              ? `Ta note sur « ${deletion.note.lessonTitle} » sera supprimée et retirée de tes partages.`
+              : ""}
+        </p>
+      </ModalShell>
       {menu ? <ContextMenu menu={menu} onClose={closeMenu} /> : null}
     </div>
   );
@@ -1542,7 +1551,10 @@ function IconDots({
   onPick: (icon: FolderIconName) => void;
 }): React.JSX.Element {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+    <div
+      className="notes-icon-options"
+      style={{ display: "inline-flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}
+    >
       {FOLDER_ICON_NAMES.map((name) => {
         const active = value === name;
         return (
@@ -1553,13 +1565,11 @@ function IconDots({
               onPick(name);
             }}
             aria-label={`Icône ${name}`}
+            aria-pressed={active}
             title={name}
             style={{
               display: "grid",
               placeItems: "center",
-              width: 24,
-              height: 24,
-              borderRadius: 4,
               background: active
                 ? "color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
                 : "transparent",
@@ -1584,7 +1594,10 @@ function PaletteDots({
   onPick: (color: string | null) => void;
 }): React.JSX.Element {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+    <div
+      className="notes-color-options"
+      style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+    >
       {FOLDER_PALETTE.map((c) => (
         <button
           key={c}
@@ -1593,10 +1606,8 @@ function PaletteDots({
             onPick(c);
           }}
           aria-label={`Couleur ${c}`}
+          aria-pressed={value === c}
           style={{
-            width: 18,
-            height: 18,
-            borderRadius: "50%",
             background: c,
             border: value === c ? "2px solid var(--color-text-primary)" : "2px solid transparent",
             cursor: "pointer",
@@ -1610,11 +1621,9 @@ function PaletteDots({
           onPick(null);
         }}
         aria-label="Aucune couleur"
+        aria-pressed={value === null}
         title="Aucune couleur"
         style={{
-          width: 18,
-          height: 18,
-          borderRadius: "50%",
           background: "transparent",
           border:
             value === null

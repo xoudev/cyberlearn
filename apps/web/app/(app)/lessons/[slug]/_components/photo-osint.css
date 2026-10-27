@@ -19,8 +19,8 @@
    the land is drawn by the GeoJSON layer, the towns are permanent tooltips. */
 
 .osint-map.leaflet-container {
-  background: #08072a;
-  font-family: var(--font-mono, monospace);
+  background: #0b0c0e;
+  font-family: var(--font-interface, Arial), sans-serif;
 }
 
 .osint-map.leaflet-grab {
@@ -51,12 +51,12 @@
 }
 
 .osint-map .leaflet-control-attribution {
-  background: rgba(3, 2, 25, 0.75);
+  background: #121418;
   color: var(--color-text-muted);
 }
 
 .osint-map .leaflet-control-zoom a {
   background: var(--color-bg-elevated);
-  color: #d8d6ea;
+  color: #f4f2ed;
   border-color: var(--color-border-default);
 }

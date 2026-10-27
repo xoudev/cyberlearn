@@ -31,6 +31,7 @@ import { LESSON_MDX_COMPONENTS } from "./_components/lesson-mdx-components";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
+import "./lesson-detail.css";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -205,7 +206,7 @@ export default async function LessonPage({
   );
 
   return (
-    <div className="lesson-page">
+    <div className="lesson-page learning-catalogue learning-workspace lesson-workspace">
       <LessonHeader
         title={lesson.title}
         description={lesson.description}

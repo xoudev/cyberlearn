@@ -143,6 +143,26 @@ describe("ModalShell", () => {
     expect(screen.getByRole("dialog").className).toBe("modal-shell modal-shell--bare");
   });
 
+  it("returns focus to its trigger when it closes", () => {
+    function Window({ open }: { open: boolean }): React.JSX.Element {
+      return (
+        <>
+          <button type="button">Ouvrir</button>
+          <ModalShell open={open} onClose={vi.fn()} title="Fenêtre">
+            <p>contenu</p>
+          </ModalShell>
+        </>
+      );
+    }
+    const { rerender } = render(<Window open={false} />);
+    const trigger = screen.getByRole("button", { name: "Ouvrir" });
+    trigger.focus();
+    rerender(<Window open />);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Fermer" }));
+    rerender(<Window open={false} />);
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("does not close on a click when there is no frame: the content is the whole thing", () => {
     const onClose = vi.fn();
     render(
@@ -200,6 +220,7 @@ describe("ModalShell", () => {
     expect(closeReader).not.toHaveBeenCalled();
 
     rerender(<Nested sharing={false} />);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Fermer" }));
     fireEvent.keyDown(document, { key: "Escape" });
     expect(closeReader).toHaveBeenCalledTimes(1);
     expect(closeShare).toHaveBeenCalledTimes(1);

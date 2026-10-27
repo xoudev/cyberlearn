@@ -12,11 +12,12 @@ import Link from "next/link";
  * site's.
  */
 
-export type Tone = "neutral" | "accent" | "info" | "warning" | "danger" | "purple";
+export type Tone = "neutral" | "accent" | "success" | "info" | "warning" | "danger" | "purple";
 
 const TONE_COLOR: Record<Tone, string> = {
   neutral: "var(--a-muted)",
   accent: "var(--a-accent)",
+  success: "var(--a-success)",
   info: "var(--a-info)",
   warning: "var(--a-warning)",
   danger: "var(--a-danger)",

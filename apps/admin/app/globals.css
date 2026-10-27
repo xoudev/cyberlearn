@@ -1,9 +1,9 @@
 @import "@cyberlearn/ui/tokens.css";
+@import "@cyberlearn/ui/layout.css";
 @import "@cyberlearn/ui/dialogs.css";
 @import "./admin-ui.css";
-/* After admin-ui.css: a shimmer laid on a control's class (the search box of
-   a loading grid) paints over that class's fill. */
 @import "@cyberlearn/ui/skeleton.css";
+@import "./console-shell.css";
 
 /* ─── Base reset ─────────────────────────────────────────── */
 *,
@@ -13,12 +13,14 @@
 }
 
 html {
+  color-scheme: dark;
   background-color: var(--a-bg);
   color: var(--a-fg);
   scroll-behavior: smooth;
 }
 
 body {
+  margin: 0;
   font-family: var(--font-sans), system-ui, sans-serif;
   background: var(--a-bg);
   min-height: 100vh;
@@ -38,19 +40,6 @@ input {
   font-family: inherit;
 }
 
-/* ─── Admin context signal: 2px brand top bar ────────────── */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--a-blue), var(--a-accent));
-  z-index: 9999;
-  pointer-events: none;
-}
-
 /* Sidebar sign-out hover */
 .admin-signout {
   transition:
@@ -63,6 +52,27 @@ body::before {
 }
 
 /* ─── Keyframes ─────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -800px 0;
+  }
+  100% {
+    background-position: 800px 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: var(--a-border);
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--a-border);
+  }
+}
 
 @keyframes blink {
   0%,
@@ -99,9 +109,10 @@ body::before {
 /* Content area shifts left of sidebar */
 .admin-content-area {
   margin-left: 240px;
-  padding-top: 58px;
+  padding-top: 56px;
+  min-width: 0;
 }
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .admin-content-area {
     margin-left: 0;
   }
@@ -111,12 +122,18 @@ body::before {
 .admin-sidebar-fixed {
   transition: transform 200ms ease;
 }
-@media (max-width: 767px) {
+.a-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--a-border-2) transparent;
+}
+@media (max-width: 1023px) {
   .admin-sidebar-fixed {
     transform: translateX(-240px);
+    visibility: hidden;
   }
   .admin-sidebar-fixed.sidebar-mobile-open {
     transform: translateX(0);
+    visibility: visible;
   }
 }
 
@@ -125,15 +142,15 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   background: transparent;
   border: none;
   color: var(--a-muted);
   cursor: pointer;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .admin-hamburger {
     display: none;
   }
@@ -182,7 +199,6 @@ body::before {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  max-width: 1000px;
 }
 @media (min-width: 768px) {
   .admin-settings-grid {
@@ -193,12 +209,12 @@ body::before {
 /* Form 2-col grid: 1-col mobile → 2-col desktop */
 .admin-form-grid-2 {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
 }
 @media (min-width: 768px) {
   .admin-form-grid-2 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -218,16 +234,12 @@ body::before {
   flex-direction: column;
   gap: 16px;
 }
-.import-files {
+.import-files,
+.import-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-}
-.import-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 .import-editor,
 .import-preview {
@@ -235,28 +247,20 @@ body::before {
   flex-direction: column;
   min-width: 0;
   border: 1px solid var(--a-border);
+  background: var(--a-surface);
 }
 .import-editor {
-  /* Stacked, the editor is what the page is for: a screen of its own, not the
-     two lines a textarea has by default. */
   min-height: min(70vh, 640px);
-  background: color-mix(in srgb, var(--a-surface-2) 60%, transparent);
 }
 .import-preview {
   overflow: hidden;
-  background: color-mix(in srgb, var(--a-surface-2) 40%, transparent);
 }
 @media (min-width: 1100px) {
   .import-grid {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr);
-    /* The files take what height they need. The metadata is capped, and its
-       body scrolls inside the pane, so a long batch is not pushed out of
-       sight by it. */
     grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "files editor"
-      "preview editor";
+    grid-template-areas: "files editor" "preview editor";
     height: calc(100vh - 200px);
     min-height: 600px;
   }
@@ -425,7 +429,7 @@ body::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (min-width: 1100px) {
+@media (min-width: 1400px) {
   .admin-compose-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

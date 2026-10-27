@@ -70,7 +70,7 @@ describe("the challenges page", () => {
     m.challengeCatalogueFor.mockResolvedValue({ items: [], weekly: null });
     const html = await render({});
 
-    expect(html).toContain("Les défis arrivent");
+    expect(html).toContain("Les défis se préparent");
     expect(html).toContain('href="/challenges?tab=tournois"');
   });
 
@@ -78,7 +78,7 @@ describe("the challenges page", () => {
     const html = await render({ tab: "tournois" });
 
     expect(currentTab(html)).toBe("Tournois");
-    expect(html).toMatch(/<h1 class="pg-title">Défis<\/h1>/u);
+    expect(html).toMatch(/<h1>Les défis<span/iu);
     expect(html).toContain("Un flag, des points");
     expect(m.tournamentListFor).toHaveBeenCalledWith("u1");
     expect(m.challengeCatalogueFor).not.toHaveBeenCalled();

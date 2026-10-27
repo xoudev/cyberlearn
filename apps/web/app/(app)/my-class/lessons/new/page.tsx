@@ -40,7 +40,7 @@ export default async function NewClassLessonPage({
   if (!klass) notFound();
 
   return (
-    <div className="tle-page">
+    <div className="tle-page learning-catalogue learning-workspace class-workspace">
       <PageHeader
         crumb="my-class/new-lesson"
         eyebrow={`Classe · ${klass.name}`}

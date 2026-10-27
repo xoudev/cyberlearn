@@ -206,6 +206,7 @@ des free tiers et plan d'évolution : [docs/infra/cost-roadmap.md](docs/infra/co
 | [docs/authentication.md](docs/authentication.md) | Flux de connexion, MFA, migration des comptes |
 | [docs/IMPLEMENTED.md](docs/IMPLEMENTED.md) | Inventaire des routes et des fonctionnalités |
 | [docs/MOBILE_PARITY.md](docs/MOBILE_PARITY.md) | Ce que l'app mobile a, ce qui lui est dû, ce qui est web-only |
+| [Direction artistique](docs/design/direction-artistique.md) | Identité Bastion, palette, typographie, motion et règles du rework |
 | [docs/security/](docs/security/) | Journalisation, configuration Sentry |
 | [docs/infra/](docs/infra/) | Coûts, maintien en vie des free tiers |
 | [content/README.md](content/README.md) | Le catalogue : les 16 parcours, l'import MDX |

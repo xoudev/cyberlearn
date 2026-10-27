@@ -8,6 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css",
+    "./layout.css": "./src/layout.css",
+    "./brand-typeface": "./src/brand-typeface.ts",
     "./dialogs.css": "./src/dialogs.css",
     "./skeleton.css": "./src/skeleton.css",
     "./mdx-editor": "./src/components/mdx-editor-panel.tsx",

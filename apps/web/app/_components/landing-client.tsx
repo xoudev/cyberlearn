@@ -1,1002 +1,267 @@
-"use client";
-
-import React, { useState } from "react";
-import Image from "next/image";
+import type React from "react";
 import Link from "next/link";
+import { ArrowDown, ArrowUpRight, BookOpen, CodeXml, Network, ShieldCheck } from "lucide-react";
 import type { FeaturedPath, LandingStats } from "@cyberlearn/db";
-import { VideoModal } from "@/components/video-modal";
-import { LandingTerminal } from "./landing-terminal";
-import { PublicNavbar } from "./public-navbar";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { BastionLogo } from "@/components/bastion-logo";
+import { brandTypeface } from "@/components/brand-typeface";
+import { PublicNavbar } from "./public-navbar";
+import { LandingDemo, PracticePreview } from "./landing-interactions";
+import { HomeMotion } from "./home-motion";
+import "./landing.css";
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function PathIcon({ kind }: { kind: "cyber" | "dev" | "net" }) {
-  const s: React.SVGProps<SVGSVGElement> = {
-    width: 56,
-    height: 56,
-    viewBox: "0 0 64 64",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.4,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  };
-  if (kind === "cyber")
-    return (
-      <svg {...s}>
-        <path d="M32 6 L52 14 V32 C52 44 42 52 32 58 C22 52 12 44 12 32 V14 Z" />
-        <path d="M24 32 L30 38 L42 24" />
-      </svg>
-    );
-  if (kind === "dev")
-    return (
-      <svg {...s}>
-        <path d="M22 20 L8 32 L22 44" />
-        <path d="M42 20 L56 32 L42 44" />
-        <path d="M36 14 L28 50" />
-      </svg>
-    );
-  return (
-    <svg {...s}>
-      <circle cx="32" cy="14" r="4" />
-      <circle cx="14" cy="48" r="4" />
-      <circle cx="50" cy="48" r="4" />
-      <path d="M32 18 L14 44 M32 18 L50 44 M18 48 L46 48" />
-    </svg>
-  );
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-// "use client" justification: the landing is animation/interaction heavy
-// (terminal animation, hover states, decorative canvases). Data fetching
-// lives in the RSC page (app/page.tsx), which passes the stats down.
-/** The stylesheet's name for each category, on the featured cards' classes. */
-const CATEGORY_KIND = { CYBERSEC: "cyber", DEV: "dev", NETWORK: "net" } as const;
+const DOMAINS = [
+  {
+    name: "Cybersécurité",
+    detail: "Comprendre les attaques. Apprendre à défendre.",
+    topics: "Sécurité web · CTF · Blue team",
+    Icon: ShieldCheck,
+  },
+  {
+    name: "Développement",
+    detail: "Du premier programme aux applications qui fonctionnent.",
+    topics: "Python · Web · Algorithmique",
+    Icon: CodeXml,
+  },
+  {
+    name: "Réseaux & systèmes",
+    detail: "Savoir ce qui se passe derrière chaque connexion.",
+    topics: "Linux · TCP/IP · Administration",
+    Icon: Network,
+  },
+];
 
 export function LandingClient({
   stats,
   featuredPaths,
 }: {
-  stats: LandingStats;
+  stats: LandingStats | null;
   featuredPaths: FeaturedPath[];
-}): React.ReactElement {
-  const [demoOpen, setDemoOpen] = useState(false);
+}): React.JSX.Element {
   return (
-    <div
-      style={{
-        background: "var(--color-bg-base)",
-        color: "var(--color-text-primary)",
-        position: "relative",
-      }}
-    >
-      <VideoModal
-        open={demoOpen}
-        onClose={() => {
-          setDemoOpen(false);
-        }}
-        src="/videos/launch.mp4"
-        poster="/videos/launch-poster.jpg"
-        eyebrow="La démo"
-        title="CyberLearn en 30 secondes"
-        actions={
-          <Link className="btn" href="/register">
-            Commencer gratuitement →
-          </Link>
-        }
-      />
-      {/* Ambient glows */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: [
-            "radial-gradient(ellipse 1400px 700px at 20% -10%, rgba(0,36,255,0.25), transparent 60%)",
-            "radial-gradient(ellipse 1000px 600px at 100% 20%, rgba(10,255,212,0.10), transparent 65%)",
-            "radial-gradient(ellipse 800px 500px at 50% 110%, rgba(0,36,255,0.14), transparent 60%)",
-          ].join(", "),
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          backgroundImage:
-            "linear-gradient(to right, rgba(42,37,96,0.16) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.16) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-          maskImage: "radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
-
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <PublicNavbar />
-
-        {/* ── Hero ──────────────────────────────────────────────────────────── */}
-        <section
-          className="landing-hero-grid"
-          style={{
-            maxWidth: 1320,
-            margin: "0 auto",
-          }}
-        >
-          {/* Left */}
-          <div>
-            {/* Eyebrow */}
-            <div
-              className="mono-label card card--sunken"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                color: "var(--color-text-muted)",
-                marginBottom: 28,
-                padding: "6px 12px",
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "var(--color-brand-turquoise)",
-                  boxShadow: "0 0 6px var(--color-brand-turquoise)",
-                  display: "inline-block",
-                }}
-              />
-              <span>
-                <b style={{ color: "var(--color-text-secondary)" }}>Plateforme FR</b> · 100% en
-                ligne · sans installation
-              </span>
-            </div>
-
-            <h1
-              aria-label="Maîtrise la cybersécurité, le dev et les réseaux."
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: "clamp(44px, 5.5vw, 80px)",
-                lineHeight: 0.95,
-                letterSpacing: "-0.04em",
-                color: "var(--color-text-primary)",
-                margin: "0 0 24px",
-              }}
-            >
-              Maîtrise la{" "}
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                cybersécurité
-              </em>
-              , le dev et les réseaux.
+    <div className={`cl-home ${brandTypeface}`}>
+      <HomeMotion />
+      <a href="#home-content" className="skip-link">
+        Aller au contenu
+      </a>
+      <PublicNavbar />
+      <main id="home-content">
+        <section className="home-hero home-wrap" aria-labelledby="home-title">
+          <div className="home-hero-copy">
+            <p className="home-eyebrow">L&apos;apprentissage technique, par la pratique.</p>
+            <h1 id="home-title">
+              <span className="home-title-line">Le savoir.</span>
+              <span className="home-title-line">Le faire.</span>
+              <span className="home-title-line home-title-accent">À toi de jouer.</span>
             </h1>
-
-            <p
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 17,
-                lineHeight: 1.6,
-                color: "var(--color-text-secondary)",
-                margin: "0 0 36px",
-                maxWidth: 520,
-              }}
-            >
-              Tu écris et exécutes ton code directement dans le navigateur, tu valides étape par
-              étape, et chaque parcours terminé délivre un certificat vérifiable. Rien à installer.
+            <p className="home-intro">
+              Cybersécurité, développement, réseaux. Apprends les concepts, mets-les à
+              l&apos;épreuve et construis tes compétences. Directement dans ton navigateur.
             </p>
-
-            <div className="landing-cta-row" style={{ marginBottom: 32 }}>
-              <Link className="btn btn--lg" href="/register">
-                Commencer gratuitement
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 8 H13 M9 4 L13 8 L9 12" />
-                </svg>
+            <div className="home-actions">
+              <Link href="/register" className="home-button home-button--primary">
+                Commencer gratuitement <ArrowUpRight aria-hidden="true" size={18} />
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setDemoOpen(true);
-                }}
-                className="btn btn--ghost btn--lg"
-              >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M4 3 L13 8 L4 13 Z" />
-                </svg>
-                Voir la démo
-              </button>
-              <Link href="/catalogue" className="btn btn--ghost btn--lg">
-                Voir les parcours
-              </Link>
+              <LandingDemo />
+            </div>
+            <div className="home-hero-note">
+              <span>En français.</span>
+              <span>À ton rythme.</span>
+              <span>Rien à installer.</span>
             </div>
           </div>
-
-          {/* Right: terminal */}
-          <LandingTerminal />
+          <div className="home-hero-practice">
+            <div className="home-preview-heading">
+              <span>Un aperçu de la pratique</span>
+              <span className="home-mono">HTTP / 01</span>
+            </div>
+            <PracticePreview />
+            <div className="home-preview-foot">
+              <BookOpen size={15} aria-hidden="true" />
+              <span>Comprendre, essayer, puis vérifier.</span>
+              <a href="#methode" aria-label="Découvrir la méthode d'apprentissage">
+                <ArrowDown size={16} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+          <div className="home-hero-bottom">
+            <span>Un terrain pour apprendre.</span>
+            <a href="#domaines">
+              Trouve ton point de départ <ArrowDown size={15} aria-hidden="true" />
+            </a>
+          </div>
         </section>
-
-        {/* ── Stats strip ───────────────────────────────────────────────────── */}
-        <div
-          style={{
-            borderTop: "1px solid var(--color-border-subtle)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-            background: "rgba(10,8,38,0.4)",
-          }}
-        >
-          <div
-            className="mono-label mono-label--md landing-stats-strip"
-            style={{
-              maxWidth: 1320,
-              margin: "0 auto",
-              padding: "16px 16px",
-              display: "flex",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 0,
-            }}
-          >
-            {[
-              { num: String(stats.domains), label: "Domaines" },
-              { num: String(stats.publishedLessons), label: "Leçons" },
-              { num: String(stats.publishedPaths), label: "Parcours" },
-              { num: null, label: "Certifications vérifiables" },
-            ].map(({ num, label }, i) => (
-              <React.Fragment key={label}>
-                {i > 0 && (
-                  <span
-                    style={{
-                      width: 1,
-                      height: 18,
-                      background: "var(--color-border-subtle)",
-                      margin: "0 28px",
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-                <span style={{ color: "var(--color-text-muted)" }}>
-                  {num && (
-                    <b style={{ color: "var(--color-text-primary)", marginRight: 6 }}>{num}</b>
-                  )}
-                  {label}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Features ──────────────────────────────────────────────────────── */}
-        <section style={{ maxWidth: 1320, margin: "0 auto" }} className="landing-section-pad">
-          {/* Section header */}
-          <div style={{ maxWidth: 720, marginBottom: 64 }}>
-            <div
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-                marginBottom: 16,
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <span
-                style={{
-                  width: 20,
-                  height: 1,
-                  background: "var(--color-brand-turquoise)",
-                  display: "inline-block",
-                }}
-              />
-              02 · LE SYSTÈME
-            </div>
-            <h2
-              aria-label="Une plateforme pensée pour les hackers en herbe."
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: "clamp(36px, 4.5vw, 60px)",
-                lineHeight: 1.0,
-                letterSpacing: "-0.035em",
-                color: "var(--color-text-primary)",
-                margin: "0 0 18px",
-              }}
-            >
-              Une plateforme pensée pour{" "}
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                les hackers en herbe
-              </em>
-              .
+        <section id="domaines" className="home-domains home-wrap" aria-labelledby="domains-title">
+          <div className="home-section-intro">
+            <p className="home-eyebrow">Les domaines</p>
+            <h2 id="domains-title">
+              Trois portes d&apos;entrée.
+              <br />
+              Le même goût de comprendre.
             </h2>
-            <p
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 16,
-                color: "var(--color-text-secondary)",
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
-              Pas de slides poussiéreuses. Du code, des labs, et un parcours de progression qui rend
-              la pratique addictive.
+            <p>
+              Que tu partes de zéro ou que tu veuilles aller plus loin, avance dans un parcours
+              structuré.
             </p>
+            <Link href="/catalogue" className="home-text-link">
+              Voir le catalogue <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
           </div>
-
-          {/* Feature cards */}
-          <div className="grid-3-col">
-            {[
-              {
-                num: "/ 01 ·",
-                label: "PRATIQUE",
-                title: "Leçons interactives",
-                desc: "Code dans un éditeur intégré, exécute dans ton navigateur, valide étape par étape. Aucune installation, aucun compte à configurer.",
-                visual: (
-                  <div
-                    className="card card--sunken"
-                    style={{
-                      padding: "20px",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 12,
-                      borderLeft: "3px solid var(--color-brand-turquoise)",
-                    }}
-                  >
-                    {[
-                      { num: "01", text: "# nmap quickscan", comment: true },
-                      { num: "02", text: "def scan(host):", comment: false },
-                      { num: "03", text: "  ports = [22, 80, 443]", comment: false },
-                      { num: "04", text: "  return probe(host)", comment: false },
-                      { num: "06", text: 'scan("10.0.0.1")', comment: false },
-                    ].map(({ num, text, comment }) => (
-                      <div key={num} style={{ display: "flex", gap: 16, lineHeight: 1.7 }}>
-                        <span style={{ color: "var(--color-text-muted)", minWidth: 20 }}>
-                          {num}
-                        </span>
-                        <span
-                          style={{
-                            color: comment
-                              ? "var(--color-text-disabled)"
-                              : "var(--color-text-secondary)",
-                          }}
-                        >
-                          {text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                num: "/ 02 ·",
-                label: "PROGRESSION",
-                title: "Gamification complète",
-                desc: "XP, niveaux, badges hexagonaux, streaks, classement FR. La courbe d'apprentissage devient une courbe de score.",
-                visual: (
-                  <div className="card card--sunken" style={{ padding: "20px" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 10,
-                        color: "var(--color-text-muted)",
-                        marginBottom: 8,
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      <span>LVL · 14 → 15</span>
-                      <span>
-                        <b style={{ color: "var(--color-text-primary)" }}>2840</b> / 3500 XP
-                      </span>
-                    </div>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          fontWeight: 800,
-                          fontSize: 32,
-                          letterSpacing: "-0.04em",
-                          color: "var(--color-text-primary)",
-                          lineHeight: 1,
-                        }}
-                      >
-                        14
-                      </span>
-                      <div
-                        style={{
-                          flex: 1,
-                          height: 8,
-                          background: "var(--color-border-subtle)",
-                          borderRadius: 999,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "81%",
-                            height: "100%",
-                            background:
-                              "linear-gradient(90deg, var(--color-brand-blue), var(--color-brand-turquoise))",
-                            boxShadow: "0 0 12px rgba(10,255,212,0.5)",
-                            borderRadius: 999,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      {(
-                        [
-                          "var(--color-rarity-legendary)",
-                          "var(--color-brand-turquoise)",
-                          "var(--color-rarity-rare)",
-                        ] as const
-                      ).map((color) => (
-                        <div
-                          key={color}
-                          style={{
-                            width: 44,
-                            height: 50,
-                            display: "grid",
-                            placeItems: "center",
-                            background: `color-mix(in srgb, ${color} 10%, transparent)`,
-                            border: `1px solid color-mix(in srgb, ${color} 33%, transparent)`,
-                            clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              background: color,
-                              transform: "rotate(45deg)",
-                              display: "block",
-                              boxShadow: `0 0 6px ${color}`,
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                num: "/ 03 ·",
-                label: "PREUVE",
-                title: "Certifications signées",
-                desc: "Chaque parcours validé délivre un certificat avec son empreinte SHA-256, vérifiable publiquement sur le site. Affichable sur LinkedIn.",
-                visual: (
-                  <div
-                    className="card card--sunken"
-                    style={{
-                      padding: "20px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <div>
-                      <div
-                        className="mono-label mono-label--xs"
-                        style={{
-                          color: "var(--color-brand-turquoise)",
-                          marginBottom: 10,
-                        }}
-                      >
-                        {"// CYL-CERT · VERIFIED"}
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          fontWeight: 700,
-                          fontSize: 14,
-                          color: "var(--color-text-primary)",
-                          marginBottom: 12,
-                        }}
-                      >
-                        Fondamentaux
-                        <br />
-                        Cybersécurité
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 9,
-                          color: "var(--color-text-muted)",
-                          lineHeight: 1.8,
-                          letterSpacing: "0.04em",
-                        }}
-                      >
-                        SHA-256
-                        <br />
-                        7f3a9e2c · 4b1d8f6a
-                        <br />
-                        5e2b0c9d · 3a4f1e8b
-                      </div>
-                    </div>
-                    <div
-                      style={{ display: "grid", gridTemplateColumns: "repeat(8, 8px)", gap: 1.5 }}
-                    >
-                      {Array.from({ length: 64 }, (_, i) => {
-                        const x = i % 8;
-                        const y = Math.floor(i / 8);
-                        // SAFETY: deterministic visual pattern only
-                        const on = (x * 3 + y * 5 + x * y) % 3 === 0;
-                        return (
-                          <span
-                            key={i}
-                            style={{
-                              width: 8,
-                              height: 8,
-                              background: on ? "var(--color-brand-turquoise)" : "transparent",
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                ),
-              },
-            ].map(({ num, label, title, desc, visual }) => (
-              <div
-                key={title}
-                className="card-lift card card--sunken"
-                style={{
-                  padding: "28px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 20,
-                }}
-              >
-                {visual}
+          <div className="home-domain-list">
+            {DOMAINS.map(({ name, detail, topics, Icon }, index) => (
+              <Link href="/catalogue" className="home-domain" key={name} data-home-reveal>
+                <span className="home-domain-index home-mono">0{index + 1}</span>
+                <Icon size={27} strokeWidth={1.5} aria-hidden="true" />
                 <div>
-                  <div
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      letterSpacing: "0.18em",
-                      color: "var(--color-text-muted)",
-                      marginBottom: 10,
-                    }}
-                  >
-                    {num} <b style={{ color: "var(--color-text-secondary)" }}>{label}</b>
-                  </div>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontWeight: 700,
-                      fontSize: 20,
-                      letterSpacing: "-0.02em",
-                      color: "var(--color-text-primary)",
-                      margin: "0 0 10px",
-                    }}
-                  >
-                    {title}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      color: "var(--color-text-secondary)",
-                      margin: 0,
-                    }}
-                  >
-                    {desc}
-                  </p>
+                  <h3>{name}</h3>
+                  <p>{detail}</p>
+                  <span className="home-domain-topics">{topics}</span>
                 </div>
-              </div>
+                <ArrowUpRight className="home-domain-arrow" size={23} aria-hidden="true" />
+              </Link>
             ))}
           </div>
         </section>
-
-        {/* ── Paths preview ─────────────────────────────────────────────────── */}
-        <section
-          style={{ maxWidth: 1320, margin: "0 auto" }}
-          className="landing-section-pad-bottom"
-        >
-          <div style={{ maxWidth: 720, marginBottom: 56 }}>
-            <div
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-                marginBottom: 16,
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <span
-                style={{
-                  width: 20,
-                  height: 1,
-                  background: "var(--color-brand-turquoise)",
-                  display: "inline-block",
-                }}
-              />
-              03 · LES PARCOURS
+        <section id="methode" className="home-method" aria-labelledby="method-title">
+          <div className="home-wrap home-method-inner">
+            <div className="home-method-heading">
+              <p className="home-eyebrow">La méthode CyberLearn</p>
+              <h2 id="method-title">
+                Ce que tu apprends,
+                <br />
+                <span>tu le mets en pratique.</span>
+              </h2>
+              <p>Lis une explication, essaie par toi-même et vérifie ce que tu as compris.</p>
             </div>
-            <h2
-              aria-label="Choisis ta spécialité."
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: "clamp(36px, 4.5vw, 60px)",
-                lineHeight: 1.0,
-                letterSpacing: "-0.035em",
-                color: "var(--color-text-primary)",
-                margin: "0 0 18px",
-              }}
-            >
-              Choisis ta{" "}
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                spécialité
-              </em>
-              .
-            </h2>
-            <p
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 16,
-                color: "var(--color-text-secondary)",
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
-              {stats.publishedPaths} parcours structurés. Chacun te mène d&apos;une compétence brute
-              à un certificat vérifiable.
-            </p>
+            <div className="home-method-body">
+              <article data-home-reveal>
+                <span className="home-mono">01 / Comprendre</span>
+                <h3>Les concepts, à portée de main.</h3>
+                <p>
+                  Des leçons en français, des exemples expliqués et des quiz pour vérifier ce que tu
+                  as retenu.
+                </p>
+              </article>
+              <article data-home-reveal>
+                <span className="home-mono">02 / Pratiquer</span>
+                <h3>Écris ton code et vois le résultat.</h3>
+                <p>
+                  Écris et exécute ton code dans la leçon. Résous des exercices, explore les labs et
+                  progresse en faisant.
+                </p>
+              </article>
+              <article data-home-reveal>
+                <span className="home-mono">03 / Ancrer</span>
+                <h3>Une progression qui reste.</h3>
+                <p>
+                  Retrouve tes révisions au bon moment, suis ton niveau et tes badges, puis valide
+                  ton parcours avec un examen final.
+                </p>
+              </article>
+              <div className="home-certificate">
+                <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
+                <p>
+                  <strong>Valide tes compétences.</strong>Un certificat vérifiable en ligne après la
+                  réussite de ton parcours certifiant.
+                </p>
+                <Link href="/verify" aria-label="Vérifier un certificat">
+                  <ArrowUpRight size={20} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
           </div>
-
-          <div className="grid-3-col">
-            {featuredPaths
-              .map((p) => ({
-                path: p,
-                kind: CATEGORY_KIND[p.category],
-                tag: categoryMeta(p.category).short.toUpperCase(),
-                color: categoryMeta(p.category).color,
-                lvl: difficultyMeta(p.difficulty).label.toUpperCase(),
-              }))
-              .map(({ path, kind, tag, color, lvl }) => (
+        </section>
+        <section id="parcours" className="home-catalogue home-wrap" aria-labelledby="paths-title">
+          <div className="home-catalogue-head">
+            <div>
+              <p className="home-eyebrow">Le catalogue</p>
+              <h2 id="paths-title">La suite commence ici.</h2>
+            </div>
+            <Link href="/catalogue" className="home-text-link">
+              Tous les parcours <ArrowUpRight size={18} aria-hidden="true" />
+            </Link>
+          </div>
+          {featuredPaths.length > 0 ? (
+            <div className="home-path-list">
+              {featuredPaths.map((path, index) => (
                 <Link
                   key={path.slug}
                   href={`/catalogue#${path.slug}`}
-                  style={{
-                    position: "relative",
-                    background: "var(--color-bg-elevated)",
-                    border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
-                    padding: "24px 24px 22px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                    textDecoration: "none",
-                    color: "inherit",
-                    overflow: "hidden",
-                    transition: "border-color 200ms ease, transform 200ms ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = `color-mix(in srgb, ${color} 40%, transparent)`;
-                    e.currentTarget.style.transform = "translateY(-3px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = `color-mix(in srgb, ${color} 20%, transparent)`;
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
+                  className="home-path"
+                  data-home-reveal
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: `radial-gradient(ellipse 100% 70% at 50% 120%, color-mix(in srgb, ${color} 9%, transparent), transparent 70%)`,
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      className="mono-label mono-label--xs"
-                      style={{
-                        fontWeight: 700,
-                        color: color,
-                        background: `color-mix(in srgb, ${color} 8%, transparent)`,
-                        border: `1px solid color-mix(in srgb, ${color} 27%, transparent)`,
-                        padding: "4px 10px",
-                      }}
-                    >
-                      {tag}
-                    </span>
-                    <span
-                      className="mono-label mono-label--xs"
-                      style={{
-                        color: "var(--color-text-muted)",
-                      }}
-                    >
-                      {lvl}
-                    </span>
+                  <span className="home-path-index home-mono">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="home-path-body">
+                    <div className="home-path-labels">
+                      <span>{categoryMeta(path.category).label}</span>
+                      <span>{difficultyMeta(path.difficulty).label}</span>
+                    </div>
+                    <h3>{path.title}</h3>
+                    <p>{path.description}</p>
                   </div>
-                  <div style={{ color: color, filter: `drop-shadow(0 0 12px ${color})` }}>
-                    <PathIcon kind={kind} />
+                  <div className="home-path-meta">
+                    <span>{path.lessons} leçons</span>
+                    <span>{formatNumberFr(path.xp)} XP</span>
                   </div>
-                  <div>
-                    <h3
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontWeight: 700,
-                        fontSize: 20,
-                        letterSpacing: "-0.02em",
-                        color: "var(--color-text-primary)",
-                        margin: "0 0 10px",
-                      }}
-                    >
-                      {path.title}
-                    </h3>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontSize: 13.5,
-                        lineHeight: 1.55,
-                        color: "var(--color-text-secondary)",
-                        margin: 0,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {path.description}
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      paddingTop: 8,
-                      borderTop: "1px solid var(--color-border-subtle)",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: "var(--color-text-muted)",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    <span>
-                      <b style={{ color: "var(--color-text-primary)" }}>{path.lessons}</b> leçons ·{" "}
-                      <b style={{ color: "var(--color-brand-turquoise)" }}>
-                        {formatNumberFr(path.xp)}
-                      </b>{" "}
-                      XP
-                    </span>
-                    <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>
-                      →
-                    </span>
-                  </div>
+                  <ArrowUpRight size={22} aria-hidden="true" />
                 </Link>
               ))}
-          </div>
-        </section>
-
-        {/* ── CTA section ───────────────────────────────────────────────────── */}
-        <section
-          className="landing-cta-section"
-          style={{
-            position: "relative",
-            borderTop: "1px solid var(--color-border-subtle)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-            textAlign: "center",
-            overflow: "hidden",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "linear-gradient(to right, rgba(42,37,96,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.3) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-              pointerEvents: "none",
-            }}
-          />
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(ellipse 700px 400px at 50% 50%, rgba(0,36,255,0.15), transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
-          <div style={{ position: "relative" }}>
-            <div
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-                marginBottom: 24,
-              }}
-            >
-              {"// READY · PLAYER · ONE"}
             </div>
-            <h2
-              aria-label="Prêt à commencer ta mission ?"
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: "clamp(44px, 6vw, 88px)",
-                lineHeight: 0.95,
-                letterSpacing: "-0.04em",
-                color: "var(--color-text-primary)",
-                margin: "0 0 40px",
-              }}
-            >
-              Prêt à commencer{" "}
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                ta mission
-              </em>{" "}
-              ?
-            </h2>
-            <Link className="btn btn--lg" href="/register">
-              Commencer gratuitement
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 8 H13 M9 4 L13 8 L9 12" />
-              </svg>
-            </Link>
-          </div>
-        </section>
-
-        {/* ── Footer ────────────────────────────────────────────────────────── */}
-        <footer style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
-          <div
-            className="landing-footer-inner"
-            style={{
-              maxWidth: 1320,
-              margin: "0 auto",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 24,
-            }}
-          >
-            <Link
-              href="/"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                textDecoration: "none",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              <Image
-                src="/icon_app.png"
-                alt="CyberLearn"
-                width={26}
-                height={26}
-                style={{ objectFit: "contain" }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
+          ) : (
+            <p className="home-catalogue-empty">
+              Les parcours sont en cours de préparation. Retrouve les contenus disponibles dans le
+              catalogue.
+            </p>
+          )}
+          {stats !== null && (
+            <div className="home-catalogue-counts">
+              <span>
+                <b>{formatNumberFr(stats.publishedLessons)}</b> leçons disponibles
               </span>
-            </Link>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0 28px" }}>
-              {(
-                [
-                  { label: "Application", href: "/download" },
-                  { label: "Vérifier un certificat", href: "/verify" },
-                  { label: "Contact", href: "/contact" },
-                  { label: "Confidentialité", href: "/privacy" },
-                  { label: "Mentions légales", href: "/legal" },
-                ] as { label: string; href: string }[]
-              ).map(({ label, href }) => (
-                // Every one of them is a page of the site: the router's link,
-                // not a full reload of the landing's scripts.
-                <Link
-                  key={label}
-                  href={href}
-                  className="footer-link mono-label"
-                  style={{
-                    color: "var(--color-text-muted)",
-                    textDecoration: "none",
-                  }}
-                >
-                  {label}
-                </Link>
-              ))}
+              <span>
+                <b>{formatNumberFr(stats.publishedPaths)}</b> parcours à explorer
+              </span>
+              <span>
+                Un apprentissage <b>en français</b>
+              </span>
             </div>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {/* Rendered on the server and again in the browser, which can
-                  straddle midnight on 31 December. The text is allowed to
-                  differ; React is told so rather than left to rebuild the page. */}
-              <span suppressHydrationWarning>© {new Date().getFullYear()}</span> Cyber Learn
-            </span>
+          )}
+        </section>
+        <section className="home-start home-wrap" aria-labelledby="start-title">
+          <div className="home-start-mark" aria-hidden="true">
+            <BastionLogo size={96} />
           </div>
-        </footer>
-      </div>
+          <div>
+            <p className="home-eyebrow">Ton premier pas</p>
+            <h2 id="start-title">
+              La curiosité suffit
+              <br />
+              pour commencer.
+            </h2>
+            <p>Choisis un parcours. On avance à partir de là.</p>
+          </div>
+          <Link href="/register" className="home-button home-button--primary">
+            Créer mon compte <ArrowUpRight size={18} aria-hidden="true" />
+          </Link>
+        </section>
+      </main>
+      <footer className="home-footer home-wrap">
+        <Link href="/" className="home-wordmark" aria-label="CyberLearn, accueil">
+          <BastionLogo size={27} />
+          CyberLearn
+        </Link>
+        <nav aria-label="Liens utiles">
+          <Link href="/download">Application</Link>
+          <Link href="/verify">Vérifier un certificat</Link>
+          <Link href="/contact">Contact</Link>
+          <Link href="/privacy">Confidentialité</Link>
+          <Link href="/legal">Mentions légales</Link>
+        </nav>
+        <span>© {new Date().getFullYear()} CyberLearn</span>
+      </footer>
     </div>
   );
 }

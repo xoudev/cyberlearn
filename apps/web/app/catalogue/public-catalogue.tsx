@@ -5,6 +5,7 @@ import type { PublicCatalogPath } from "@cyberlearn/db";
 import { PathCatalogCard } from "@/app/_components/path-catalog-card";
 import "@/app/(app)/paths/_components/paths-catalog-v2.css";
 import { EmptyState } from "@/components/empty-state";
+import { brandTypeface } from "@/components/brand-typeface";
 
 type Category = "ALL" | "CYBERSEC" | "DEV" | "NETWORK";
 
@@ -39,35 +40,43 @@ export function PublicCatalogue({
   }, [category, paths, search]);
 
   return (
-    <div className="public-catalogue__main">
-      <div className="public-catalogue__crumb" aria-hidden="true">
-        <span>$</span> ~/ cyberlearn / catalogue
-      </div>
-      <section className="public-catalogue__hero" aria-labelledby="catalogue-title">
+    <div className={`public-catalogue__main learning-catalogue ${brandTypeface}`}>
+      <section className="catalogue-heading" aria-labelledby="catalogue-title">
         <div>
-          <p>{member ? "Catalogue" : "Catalogue public"}</p>
+          <p className="catalogue-heading__index">
+            {member ? "Apprendre / Parcours" : "Le catalogue Bastion"}
+          </p>
           <h1 id="catalogue-title">
-            Choisis ton <em>parcours.</em>
+            Un cap.
+            <br />
+            <em>Des compétences.</em>
           </h1>
-          <span>
+          <p className="catalogue-heading__description">
             {member
               ? "Explore les compétences, le niveau et le contenu de chaque parcours, puis ouvre celui qui te tente."
               : "Explore les compétences, le niveau et le contenu avant de créer ton compte. Ton premier parcours commencera après l’inscription."}
-          </span>
+          </p>
         </div>
-        <dl>
-          <div>
-            <dt>Parcours</dt>
-            <dd>{paths.length}</dd>
+        <aside className="catalogue-summary">
+          <div className="catalogue-summary__count">
+            <strong>{String(paths.length).padStart(2, "0")}</strong>
+            <span>parcours au catalogue</span>
           </div>
-          <div>
-            <dt>Domaines</dt>
-            <dd>{new Set(paths.map((path) => path.category)).size}</dd>
-          </div>
-        </dl>
+          <p className="catalogue-summary__stats">
+            {new Set(paths.map((path) => path.category)).size} domaines à travailler
+          </p>
+          <p className="catalogue-summary__note">
+            {member
+              ? "Ouvre un parcours pour retrouver ses missions."
+              : "Crée ton compte pour commencer un parcours et suivre ta progression."}
+          </p>
+        </aside>
       </section>
 
-      <section className="public-catalogue__filters" aria-label="Filtrer les parcours">
+      <section
+        className="public-catalogue__filters catalogue-tools"
+        aria-label="Filtrer les parcours"
+      >
         <div className="public-catalogue__pills">
           {(
             [
@@ -80,7 +89,7 @@ export function PublicCatalogue({
             <button
               key={value}
               type="button"
-              className={category === value ? "is-active" : undefined}
+              className="catalogue-domain"
               aria-pressed={category === value}
               onClick={() => {
                 setCategory(value);
@@ -90,10 +99,10 @@ export function PublicCatalogue({
             </button>
           ))}
         </div>
-        <label>
-          <span>Rechercher</span>
+        <label className="catalogue-search">
           <input
             type="search"
+            aria-label="Rechercher un parcours"
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -126,10 +135,18 @@ export function PublicCatalogue({
           </div>
         </section>
       ) : (
-        <EmptyState
-          title="Aucun parcours trouvé"
-          message="Modifie les filtres ou réessaie dans quelques instants."
-        />
+        <EmptyState title="Aucun parcours trouvé" message="Modifie les filtres ou ta recherche.">
+          <button
+            type="button"
+            className="catalogue-domain"
+            onClick={() => {
+              setCategory("ALL");
+              setSearch("");
+            }}
+          >
+            Voir tous les parcours
+          </button>
+        </EmptyState>
       )}
     </div>
   );

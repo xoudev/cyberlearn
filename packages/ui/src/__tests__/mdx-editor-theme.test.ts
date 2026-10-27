@@ -62,4 +62,29 @@ describe("the MDX editor's Monaco theme", () => {
     broken.colors["editor.foreground"] = "var(--color-text-secondary)";
     expect(unreadable(broken)).toEqual(["editor.foreground: var(--color-text-secondary)"]);
   });
+
+  it("resolves the scoped class palette without passing CSS expressions to Monaco", () => {
+    const tokens: Record<string, string> = {
+      "--mdx-editor-background": "#0b0c0e",
+      "--mdx-editor-foreground": "#c2bfb8",
+      "--mdx-editor-panel": "#191c22",
+      "--mdx-editor-border": "#44454a",
+      "--mdx-editor-muted": "#aaa79f",
+      "--mdx-editor-selection": "#44454a88",
+    };
+    vi.spyOn(globalThis, "getComputedStyle").mockImplementation((element) => {
+      const name = element.getAttribute("style")?.match(/var\((--[a-z-]+)\)/)?.[1] ?? "";
+      // cssColor only reads these two members from the browser's resolved style.
+      return {
+        color: tokens[name] ?? "#ff6b2b",
+        getPropertyValue: (key: string) => tokens[key] ?? "",
+      } as unknown as CSSStyleDeclaration;
+    });
+    const theme = mdxEditorTheme(document.body);
+    expect(theme.colors["editor.background"]).toBe("#0b0c0e");
+    expect(theme.colors["editor.foreground"]).toBe("#c2bfb8");
+    expect(theme.colors["editorWidget.border"]).toBe("#44454a");
+    expect(theme.rules.find((rule) => rule.token === "comment")?.foreground).toBe("aaa79f");
+    expect(unreadable(theme)).toEqual([]);
+  });
 });

@@ -23,11 +23,7 @@ export function BriefCertificate({
         title="Un parcours construit pour ta classe : il ne délivre pas de certificat, ses leçons te rapportent leur XP."
       >
         <Users size={18} strokeWidth={1.6} aria-hidden="true" />
-        <span>
-          Parcours
-          <br />
-          de classe
-        </span>
+        <span>Parcours de classe</span>
       </div>
     );
   }
@@ -64,11 +60,7 @@ export function BriefCertificate({
           <path d="M7 11.5 L6 17 L10 15 L14 17 L13 11.5" />
         </svg>
       )}
-      <span>
-        Certificat
-        <br />
-        {certObtained ? "disponible" : "inclus"}
-      </span>
+      <span>Certificat {certObtained ? "disponible" : "inclus"}</span>
     </div>
   );
 }

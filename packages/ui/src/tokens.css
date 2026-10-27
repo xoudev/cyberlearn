@@ -14,43 +14,53 @@
 /* ─── Light theme (:root) ─────────────────────────────────────────────────── */
 
 :root {
-  /* Brand (same in both themes) */
-  --color-brand-blue: #0024ff;
-  --color-brand-turquoise: #0affd4;
+  /* Brand (Cuivre Signal in Atelier Carbone & Cuivre) */
+  --color-brand-blue: #ff6b2b;
+  --color-brand-turquoise: #ff6b2b;
+  --color-brand-hover: #ff864f;
+  --color-paper: #eae7df;
+  --color-ink: #141518;
+  --color-interface-secondary: #c2bfb8;
+  --color-interface-muted: #aaa79f;
+  --color-interface-separator: #303137;
+  --color-interface-outline: #74767d;
+  --color-state-success: #62d4a1;
+  --color-state-warning: #ffc36e;
+  --color-state-danger: #ff929b;
 
-  /* Backgrounds */
-  --color-bg-base: #ffffff;
-  --color-bg-elevated: #f8f9fc;
-  --color-bg-overlay: #f0f2f8;
-  --color-bg-sunken: #f3f4f9;
+  /* Backgrounds (Mode Clair Papier Craie) */
+  --color-bg-base: #f2f1ed;
+  --color-bg-elevated: #faf9f6;
+  --color-bg-overlay: #ffffff;
+  --color-bg-sunken: #efece6;
 
   /* Borders */
-  --color-border-subtle: #e5e7f0;
-  --color-border-default: #d1d5e0;
+  --color-border-subtle: #e2dfd7;
+  --color-border-default: #d0ccc2;
 
   /* Text */
-  --color-text-primary: #030219;
-  --color-text-secondary: #4a4960;
-  --color-text-muted: #8b8aa3;
-  --color-text-disabled: #c8c7d6;
-  --color-text-faint: #b5b4c8;
+  --color-text-primary: #141518;
+  --color-text-secondary: #5c5952;
+  --color-text-muted: #858178;
+  --color-text-disabled: #b8b4aa;
+  --color-text-faint: #9e9a90;
 
   /* Semantic */
-  --color-success: #00b899;
+  --color-success: #10b981;
   --color-warning: #d97706;
-  --color-danger: #e11d48;
-  --color-info: #2563eb;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
 
   /* Badge rarities */
-  --color-rarity-common: #64748b;
-  --color-rarity-rare: #2563eb;
-  --color-rarity-epic: #9333ea;
-  --color-rarity-legendary: #d97706;
+  --color-rarity-common: #858178;
+  --color-rarity-rare: #3b82f6;
+  --color-rarity-epic: #a855f7;
+  --color-rarity-legendary: #f59e0b;
 
-  /* The three domains, the same in both themes: they are the brand's, not the page's */
-  --color-category-cybersec: #ff4757;
-  --color-category-dev: #6e8bff;
-  --color-category-network: #0affd4;
+  /* The three domains */
+  --color-category-cybersec: #ff6b2b;
+  --color-category-dev: #3b82f6;
+  --color-category-network: #10b981;
 
   /* Border radius: none. The site is square; a component that rounds a corner
      is wrong, not a case the token should leave room for. */
@@ -72,9 +82,9 @@
   --primary-foreground: #ffffff;
   /* secondary/muted intentionally more contrasting than bg-elevated/bg-overlay
      so Progress tracks and Skeleton are visible against card backgrounds */
-  --secondary: #e4e6f4;
+  --secondary: #e5e1d8;
   --secondary-foreground: var(--color-text-secondary);
-  --muted: #dddff0;
+  --muted: #dedad0;
   --muted-foreground: var(--color-text-muted);
   --accent: var(--cosmetic-accent);
   --accent-foreground: var(--color-bg-base);
@@ -85,7 +95,7 @@
   --ring: var(--color-brand-blue);
 
   /* Sidebar shadcn vars */
-  --sidebar: var(--color-bg-elevated);
+  --sidebar: var(--color-bg-base);
   --sidebar-foreground: var(--color-text-secondary);
   --sidebar-primary: var(--color-brand-blue);
   --sidebar-primary-foreground: #ffffff;
@@ -98,54 +108,59 @@
 /* ─── Dark theme (.dark class on <html>, set by next-themes) ─────────────── */
 
 .dark {
-  /* Backgrounds */
-  --color-bg-base: #030219;
-  --color-bg-elevated: #0a0826;
-  --color-bg-overlay: #110f33;
-  --color-bg-sunken: #05041a;
+  /* Backgrounds - 4-level surface depth (Atelier Carbone & Cuivre)
+   * Base / Canvas  : #0B0C0E
+   * Elevated / Card: #121418
+   * Sunken / Tray  : #0D0E12
+   * Overlay / Focus: #191C22
+   */
+  --color-bg-base: #0b0c0e;
+  --color-bg-elevated: #121418;
+  --color-bg-overlay: #191c22;
+  --color-bg-sunken: #0d0e12;
 
   /* Borders */
-  --color-border-subtle: #1f1b47;
-  --color-border-default: #2a2560;
+  --color-border-subtle: #1e222a;
+  --color-border-default: #282c35;
 
   /* Text */
-  --color-text-primary: #f5f5fa;
-  --color-text-secondary: #b8b5d1;
-  --color-text-muted: #7f7ba9;
-  --color-text-disabled: #3f3d5c;
-  --color-text-faint: #44406b;
+  --color-text-primary: #f4f2ed;
+  --color-text-secondary: #9e9b93;
+  --color-text-muted: #6e6b64;
+  --color-text-disabled: #4a4843;
+  --color-text-faint: #848078;
 
   /* Semantic */
-  --color-success: #0affd4;
-  --color-warning: #ffb020;
-  --color-danger: #ff4d6d;
-  --color-info: #4d8bff;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --color-info: #60a5fa;
 
-  /* Badge rarities - single canonical ramp (epic is purple, NOT brand turquoise) */
-  --color-rarity-common: #b8b5d1;
-  --color-rarity-rare: #6e8bff;
-  --color-rarity-epic: #b14dff;
-  --color-rarity-legendary: #ffb547;
+  /* Badge rarities */
+  --color-rarity-common: #9e9b93;
+  --color-rarity-rare: #60a5fa;
+  --color-rarity-epic: #c084fc;
+  --color-rarity-legendary: #fbbf24;
 
-  /* The three domains, the same in both themes: they are the brand's, not the page's */
-  --color-category-cybersec: #ff4757;
-  --color-category-dev: #6e8bff;
-  --color-category-network: #0affd4;
+  /* The three domains */
+  --color-category-cybersec: #ff6b2b;
+  --color-category-dev: #60a5fa;
+  --color-category-network: #34d399;
 
   /* shadcn aliases update automatically via var(--color-*) chain */
   --ring: var(--cosmetic-accent);
-  --secondary: #1e1a50;
+  --secondary: #191c22;
   --secondary-foreground: var(--color-text-secondary);
-  --muted: #1e1a50;
+  --muted: #191c22;
   --muted-foreground: var(--color-text-muted);
-  /* Sidebar - spec: design-system.md */
-  --sidebar: #030219;
-  --sidebar-foreground: #7f7ba9;
+  /* Sidebar - Atelier Carbone & Cuivre */
+  --sidebar: #0b0c0e;
+  --sidebar-foreground: #9e9b93;
   --sidebar-primary: var(--cosmetic-accent);
-  --sidebar-primary-foreground: #030219;
-  --sidebar-accent: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  --sidebar-primary-foreground: #0b0c0e;
+  --sidebar-accent: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
   --sidebar-accent-foreground: var(--cosmetic-accent);
-  --sidebar-border: #1f1b47;
+  --sidebar-border: #1e222a;
   --sidebar-ring: var(--cosmetic-accent);
 }
 
@@ -317,23 +332,19 @@
 /* ─── Component: LessonCard ──────────────────────────────────────────────── */
 
 .lesson-card {
-  background: #0a0826;
-  border: 1px solid #1f1b47;
-  border-radius: 12px;
-  box-shadow:
-    0 0 0 1px #1f1b47,
-    0 4px 24px rgba(10, 255, 212, 0.04);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
   transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease,
-    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lesson-card:hover {
-  border-color: #2a2560;
-  box-shadow:
-    0 0 0 1px #2a2560,
-    0 4px 32px rgba(10, 255, 212, 0.08);
+  border-color: var(--color-border-default);
+  background: var(--color-bg-overlay);
   transform: translateY(-2px);
 }
 

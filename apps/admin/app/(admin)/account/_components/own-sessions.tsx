@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../_components/admin-confirmation";
 import { signOutMySessionsAction, type AccountActionState } from "../../_actions/account-actions";
 
 const OTHERS_QUESTION =
@@ -27,29 +28,18 @@ export function OwnSessions(): React.ReactElement {
         jeton déjà délivré reste accepté par l&apos;API de données une heure au plus.
       </p>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <form
-          action={action}
-          onSubmit={(event) => {
-            // Cancelling the native submit also cancels the action.
-            if (!window.confirm(OTHERS_QUESTION)) event.preventDefault();
-          }}
-        >
+        <AdminConfirmForm action={action} question={OTHERS_QUESTION}>
           <input type="hidden" name="scope" value="others" />
           <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
             {pending ? "Déconnexion…" : "Fermer mes autres sessions"}
           </button>
-        </form>
-        <form
-          action={action}
-          onSubmit={(event) => {
-            if (!window.confirm(GLOBAL_QUESTION)) event.preventDefault();
-          }}
-        >
+        </AdminConfirmForm>
+        <AdminConfirmForm action={action} question={GLOBAL_QUESTION}>
           <input type="hidden" name="scope" value="global" />
           <button type="submit" disabled={pending} className="a-btn a-btn--danger a-btn--sm">
             Me déconnecter partout
           </button>
-        </form>
+        </AdminConfirmForm>
       </div>
       {state.error !== undefined && (
         <p className="a-form-error" role="alert">

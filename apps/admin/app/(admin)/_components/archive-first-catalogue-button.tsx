@@ -43,6 +43,7 @@ export function ArchiveFirstCatalogueButton({
   if (step === "confirm" || step === "running") {
     return (
       <div className="a-sync-confirm">
+        <strong>Administration · Archiver l’ancien catalogue</strong>
         <p>
           {paths} parcours et {lessons} leçon{lessons > 1 ? "s" : ""} de l&apos;ancien catalogue
           quitteront le site et l&apos;app, et rejoindront les archives. Les progressions sont

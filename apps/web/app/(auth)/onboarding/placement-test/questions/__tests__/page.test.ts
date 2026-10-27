@@ -69,6 +69,6 @@ describe("the placement test's questions page", () => {
       estimatedMinutes: 1,
     });
     const html = renderToStaticMarkup(await PlacementQuestionsPage());
-    expect(html).toContain("TEST DE PLACEMENT");
+    expect(html).toContain("Test de positionnement");
   });
 });

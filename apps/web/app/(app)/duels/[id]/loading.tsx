@@ -31,7 +31,11 @@ function SideSkeleton({ side }: { side: "reader" | "other" }): React.ReactElemen
 
 export default function DuelLoading(): React.ReactElement {
   return (
-    <div className="page-container dl" aria-busy="true" aria-label="Chargement du duel">
+    <div
+      className="page-container dl learning-catalogue learning-workspace community-workspace"
+      aria-busy="true"
+      aria-label="Chargement du duel"
+    >
       <div className="pg-crumb" aria-hidden="true">
         <Skeleton w={200} h={12} style={{ margin: "3px 0" }} />
       </div>

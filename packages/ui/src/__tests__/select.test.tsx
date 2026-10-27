@@ -2,6 +2,7 @@ import React from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Select, type SelectOption } from "../components/select.js";
+import { ModalShell } from "../components/modal-shell.js";
 
 const OPTIONS: SelectOption[] = [
   { value: "CYBERSEC", label: "Cybersécurité" },
@@ -21,6 +22,23 @@ function open(): HTMLElement {
 }
 
 describe("Select", () => {
+  it("closes its menu before the dialog behind it on Escape", () => {
+    const close = vi.fn();
+    render(
+      <ModalShell open onClose={close} title="Ranger la note">
+        <Select options={OPTIONS} value="NETWORK" aria-label="Dossier" />
+      </ModalShell>,
+    );
+    const trigger = screen.getByRole("combobox");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(close).toHaveBeenCalledOnce();
+  });
   it("shows the chosen option, and the placeholder when there is none", () => {
     const { rerender } = render(
       <Select options={OPTIONS} value="NETWORK" aria-label="Catégorie" />,

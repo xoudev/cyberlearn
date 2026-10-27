@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 
 /**
@@ -46,14 +46,12 @@ export function TicketReplyEmail({
   siteUrl,
 }: TicketReplyEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>{`Réponse à ta demande : ${subject}`}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>Réponse à ta demande</Heading>
@@ -72,7 +70,7 @@ export function TicketReplyEmail({
 
             <Section style={styles.buttonWrap}>
               <Button style={styles.button} href={ticketUrl}>
-                Voir la demande →
+                Voir la demande
               </Button>
             </Section>
 

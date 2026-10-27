@@ -14,11 +14,12 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/image", () => ({
   default: ({ src, alt }: { src: string; alt: string }) => React.createElement("img", { src, alt }),
 }));
+vi.mock("@/components/brand-typeface", () => ({ brandTypeface: "test-brand-fonts" }));
 
 const { PublicNavbar } = await import("../public-navbar");
 
 // Without its comments, which hold braces and selectors of their own.
-const STYLES = readFileSync(path.resolve(__dirname, "../../globals.css"), "utf8").replace(
+const STYLES = readFileSync(path.resolve(__dirname, "../landing.css"), "utf8").replace(
   /\/\*[\s\S]*?\*\//gu,
   "",
 );
@@ -43,18 +44,18 @@ describe("PublicNavbar", () => {
   });
 
   it("never hides 'Connexion', at any width", () => {
-    const rules = declarationsOf(".landing-nav-signin");
+    const rules = declarationsOf(".home-nav-login");
     expect(rules.length).toBeGreaterThan(0);
     for (const declarations of rules) expect(declarations).not.toMatch(/display:\s*none/u);
   });
 
-  it("lets the app link and the brand's name give way on a phone instead", () => {
-    expect(declarationsOf(".landing-nav-download").join(" ")).toMatch(/display:\s*none/u);
-    expect(declarationsOf(".landing-nav-wordmark").join(" ")).toMatch(/display:\s*none/u);
-    expect(renderToStaticMarkup(<PublicNavbar />)).toContain("landing-nav-wordmark");
+  it("lets secondary links give way while keeping the Bastion wordmark", () => {
+    expect(declarationsOf(".home-nav-links").join(" ")).toMatch(/display:\s*none/u);
+    expect(declarationsOf(".home-wordmark").join(" ")).not.toMatch(/display:\s*none/u);
+    expect(renderToStaticMarkup(<PublicNavbar />)).toContain("home-wordmark");
   });
 
   it("keeps the app link a finger's height", () => {
-    expect(declarationsOf(".landing-nav-download").join(" ")).toMatch(/min-height:\s*44px/u);
+    expect(declarationsOf(".home-nav-links a").join(" ")).toMatch(/min-height:\s*44px/u);
   });
 });

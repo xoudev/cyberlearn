@@ -22,7 +22,7 @@ import {
 import { PostCard } from "../../_components/post-card";
 import { ReplyBox } from "../../_components/reply-box";
 import { TopicTools } from "../../_components/topic-tools";
-import "../../forum.css";
+import "../../community-forum.css";
 import { EmptyState } from "@/components/empty-state";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +76,7 @@ export default async function ForumTopicPage({
   const pages = Math.max(1, Math.ceil(view.postCount / POSTS_PER_PAGE));
 
   return (
-    <div className="fo-page">
+    <div className="fo-page learning-catalogue learning-workspace community-workspace">
       <Crumbs
         trail={[
           { label: "Forum", href: "/forum" },

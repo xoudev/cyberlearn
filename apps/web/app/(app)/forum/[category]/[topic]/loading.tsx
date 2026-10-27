@@ -5,10 +5,10 @@ import {
   FieldSkeleton,
   ForumHeaderSkeleton,
 } from "../../_components/forum-skeleton";
-import "../../forum.css";
+import "../../community-forum.css";
 
 /**
- * A thread while it loads, drawn on the page's own classes (forum.css): the
+ * A thread while it loads, drawn on the page's own classes (community-forum.css): the
  * crumbs, the header, three messages with their author's column, then the
  * reply box.
  */
@@ -53,7 +53,7 @@ export default function ForumTopicLoading(): React.ReactElement {
     // .fo-page is a flex item with auto margins: the real page reaches its
     // max-width through its text, which bars do not have, hence the width.
     <div
-      className="fo-page"
+      className="fo-page learning-catalogue learning-workspace community-workspace"
       style={{ width: "100%" }}
       aria-busy="true"
       aria-label="Chargement du sujet"

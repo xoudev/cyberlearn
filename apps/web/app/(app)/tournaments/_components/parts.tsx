@@ -37,7 +37,7 @@ export function SectionHead({
   );
 }
 
-/** A tournament's phase in words and in its colour; the dot pulses while it runs. */
+/** A tournament's phase in words and in its colour. */
 export function PhaseBadge({ phase }: { phase: TournamentPhase }): React.JSX.Element {
   return (
     <span className="trn-phase" data-phase={phase}>

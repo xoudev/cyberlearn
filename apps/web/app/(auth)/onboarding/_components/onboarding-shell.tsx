@@ -1,17 +1,36 @@
 import React from "react";
-import Image from "next/image";
+import Link from "next/link";
+import { BastionLogo } from "@/components/bastion-logo";
 import "./onboarding-shell.css";
 import { ProgressBar } from "@/components/progress-bar";
 import { OnboardingSignOut } from "./onboarding-sign-out";
 
 const STEPS = ["Identité", "Avatar", "Objectif"] as const;
 
-const CORNERS = ["tl", "tr", "bl", "br"] as const;
+function OnboardingBar({ title }: { title: string }): React.ReactElement {
+  return (
+    <header className="ob-shell__bar">
+      <Link href="/" className="ob-shell__brand" aria-label="CyberLearn · accueil">
+        <BastionLogo size={28} /> CyberLearn<span>.</span>
+      </Link>
+      <span className="ob-shell__crumb">{title}</span>
+      <div className="ob-shell__signout">
+        <OnboardingSignOut />
+      </div>
+    </header>
+  );
+}
 
-/**
- * The frame of an onboarding step: top bar, progress over the three steps,
- * and the bracketed panel the step's content sits in.
- */
+export function PlacementShell({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="ob-shell">
+      <OnboardingBar title="Test de positionnement" />
+      <main className="ob-shell__body">
+        <section className="ob-placement">{children}</section>
+      </main>
+    </div>
+  );
+}
 export function OnboardingShell({
   step,
   stepName,
@@ -30,20 +49,7 @@ export function OnboardingShell({
   const current = String(step).padStart(2, "0");
   return (
     <div className="ob-shell">
-      <div aria-hidden="true" className="ob-shell__glow" />
-      <div aria-hidden="true" className="ob-shell__grid" />
-
-      <header className="ob-shell__bar">
-        <Image src="/icon_app.png" alt="CyberLearn" width={20} height={20} priority />
-        <span className="ob-shell__brand">
-          cyber<b>learn</b>
-        </span>
-        <span className="ob-shell__slash">/</span>
-        <span className="ob-shell__crumb">Onboarding · {stepName}</span>
-        <span className="ob-shell__signout">
-          <OnboardingSignOut />
-        </span>
-      </header>
+      <OnboardingBar title={`Bienvenue / ${stepName}`} />
 
       <main className="ob-shell__body">
         <div className="ob-shell__progress">
@@ -70,18 +76,9 @@ export function OnboardingShell({
           </ol>
         </div>
 
-        <section className="ob-shell__panel">
-          {CORNERS.map((c) => (
-            <span
-              key={c}
-              aria-hidden="true"
-              className={`ob-shell__corner ob-shell__corner--${c}`}
-            />
-          ))}
+        <section className="ob-shell__panel" aria-label={panelTitle}>
           <div className="ob-shell__panel-head">
-            <h2 className="ob-shell__panel-title">
-              <b>›</b> {panelTitle}
-            </h2>
+            <p className="ob-shell__panel-title">{panelTitle}</p>
             {panelTag !== undefined && <span>{panelTag}</span>}
           </div>
           {children}

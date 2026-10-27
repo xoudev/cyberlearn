@@ -137,7 +137,7 @@ describe("the profile page", () => {
     // The Activité tab's counter and the "Leçons terminées" tile.
     const tabs = props.find((bag) => "counts" in bag && "panels" in bag);
     expect(tabs?.counts).toMatchObject({ activite: 35 });
-    const tile = props.find((bag) => bag.label === "Leçons");
+    const tile = props.find((bag) => bag.className === "profile-totals");
     expect(JSON.stringify(collectProps(tile?.children).map((bag) => bag.children))).toContain("35");
     // The list says it stops short.
     const feed = props.find((bag) => "lessons" in bag && "total" in bag);

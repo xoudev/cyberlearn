@@ -919,7 +919,6 @@ function FileRow({
           style={{
             width: 7,
             height: 7,
-            borderRadius: 999,
             background: status.color,
             boxShadow: `0 0 5px color-mix(in srgb, ${status.color} 50%, transparent)`,
             flexShrink: 0,
@@ -1051,10 +1050,8 @@ function ValidationPanel({
           style={{
             width: 8,
             height: 8,
-            borderRadius: 999,
             background: tone,
             display: "inline-block",
-            boxShadow: `0 0 6px color-mix(in srgb, ${tone} 60%, transparent)`,
           }}
         />
         <span

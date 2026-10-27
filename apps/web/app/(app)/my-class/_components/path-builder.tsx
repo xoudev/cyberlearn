@@ -1,5 +1,7 @@
 "use client";
 
+// The ordered lesson selection and form submission are interactive.
+
 import React, { useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -148,6 +150,7 @@ export function PathBuilder({
             <span className="cls-field__label">Catégorie</span>
             <Select
               name="category"
+              panelClassName="class-select-panel"
               required
               defaultValue={draft?.category ?? "CYBERSEC"}
               options={CATEGORIES}
@@ -158,6 +161,7 @@ export function PathBuilder({
             <span className="cls-field__label">Niveau</span>
             <Select
               name="difficulty"
+              panelClassName="class-select-panel"
               required
               defaultValue={draft?.difficulty ?? "BEGINNER"}
               options={DIFFICULTIES}
@@ -193,8 +197,8 @@ export function PathBuilder({
 
           {chosen.length === 0 ? (
             <p className="cls-empty">
-              Ajoute des leçons depuis la liste à droite. L&apos;ordre ici est celui que tes élèves
-              suivront.
+              Ajoute des leçons depuis « Leçons disponibles ». L&apos;ordre ici est celui que tes
+              élèves suivront.
             </p>
           ) : (
             <ol className="pb-chosen">
@@ -212,6 +216,7 @@ export function PathBuilder({
                         type="button"
                         className="pb-icon"
                         title="Monter"
+                        aria-label={`Monter ${lesson?.title ?? "la leçon"}`}
                         disabled={i === 0}
                         onClick={() => {
                           move(i, i - 1);
@@ -223,6 +228,7 @@ export function PathBuilder({
                         type="button"
                         className="pb-icon"
                         title="Descendre"
+                        aria-label={`Descendre ${lesson?.title ?? "la leçon"}`}
                         disabled={i === chosen.length - 1}
                         onClick={() => {
                           move(i, i + 1);
@@ -234,6 +240,7 @@ export function PathBuilder({
                         type="button"
                         className="pb-icon"
                         title="Retirer"
+                        aria-label={`Retirer ${lesson?.title ?? "la leçon"}`}
                         data-tone="bad"
                         onClick={() => {
                           setChosen((prev) => prev.filter((x) => x !== id));
@@ -276,6 +283,7 @@ export function PathBuilder({
                   <button
                     type="button"
                     className="pb-pool__row"
+                    aria-label={`Ajouter ${l.title}`}
                     onClick={() => {
                       setChosen((prev) => [...prev, l.id]);
                     }}
@@ -314,11 +322,15 @@ export function PathBuilder({
         <p className="cls-field__hint">Un parcours sans leçon ne mène nulle part.</p>
       )}
       {state.error !== undefined && (
-        <p className="cls-alert" data-tone="bad">
+        <p className="cls-alert" data-tone="bad" role="alert">
           {state.error}
         </p>
       )}
-      {mode === "edit" && state.ok === true && <p className="cls-alert">Enregistré.</p>}
+      {mode === "edit" && state.ok === true && (
+        <p className="cls-alert" role="status">
+          Enregistré.
+        </p>
+      )}
     </form>
   );
 }

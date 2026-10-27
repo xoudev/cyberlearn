@@ -8,10 +8,10 @@
  * covering the quick search is the kind of bug nobody traces back to a number.
  */
 
-/** The brand line across the top of every console page (body::before in globals.css). */
-export const BRAND_STRIP_HEIGHT = 2;
+/** The copper border is included in the top bar's 56px, without a separate offset. */
+export const BRAND_STRIP_HEIGHT = 0;
 
-/** The top bar sits under the brand line and is this tall at every width. */
+/** The top bar includes its brand line and is this tall at every width. */
 export const TOPBAR_HEIGHT = 56;
 
 /** Where the page under the fixed chrome starts: the sidebar's top. */

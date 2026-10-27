@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../_components/admin-confirmation";
 import { keepFormInput } from "@/lib/form-input";
 import { reinstatementQuestion, revocationQuestion } from "@/lib/certificate-notice";
 import { notifyResult } from "@/lib/notify";
@@ -53,15 +54,9 @@ export function CertificateActionsMenu({
 
   if (revoked) {
     return (
-      <form
+      <AdminConfirmForm
         action={action}
-        onSubmit={(event) => {
-          // Cancelling the native submit also cancels the action: React only
-          // runs a form's action for a submit nobody prevented.
-          if (!window.confirm(reinstatementQuestion(code, holder, pathTitle))) {
-            event.preventDefault();
-          }
-        }}
+        question={reinstatementQuestion(code, holder, pathTitle)}
         style={{ display: "grid", gap: 8, minWidth: 180 }}
       >
         <input type="hidden" name="intent" value="reinstate" />
@@ -75,7 +70,7 @@ export function CertificateActionsMenu({
           {pending ? "Rétablissement…" : "Rétablir"}
         </button>
         {refusal}
-      </form>
+      </AdminConfirmForm>
     );
   }
 
@@ -85,14 +80,10 @@ export function CertificateActionsMenu({
         <summary className="a-disclosure-head">
           <span className="a-disclosure-title">Révoquer…</span>
         </summary>
-        <form
+        <AdminConfirmForm
           action={action}
           onReset={keepFormInput}
-          onSubmit={(event) => {
-            if (!window.confirm(revocationQuestion(code, holder, pathTitle))) {
-              event.preventDefault();
-            }
-          }}
+          question={revocationQuestion(code, holder, pathTitle)}
           className="a-form a-disclosure-body"
           style={{ paddingTop: 12 }}
         >
@@ -117,7 +108,7 @@ export function CertificateActionsMenu({
           <button type="submit" disabled={pending} className="a-btn a-btn--danger a-btn--sm">
             {pending ? "Révocation…" : "Révoquer le certificat"}
           </button>
-        </form>
+        </AdminConfirmForm>
       </details>
       {/* Outside the fold: a refused reinstatement redraws the row here, folded. */}
       {refusal}

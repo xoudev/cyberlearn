@@ -100,8 +100,8 @@ describe("the reader's accent", () => {
     expect(terminal.green).toBe("#ff4dd2");
   });
 
-  it("falls back to the brand turquoise where nothing resolves it", () => {
-    expect(lessonEditorTheme(null).colors["editorCursor.foreground"]).toBe("#0AFFD4");
+  it("falls back to the editor brand and terminal defaults where nothing resolves them", () => {
+    expect(lessonEditorTheme(null).colors["editorCursor.foreground"]).toBe("#FF6B2B");
     expect(simulatedTerminalTheme("bash", null).cursor).toBe("#0AFFD4");
   });
 

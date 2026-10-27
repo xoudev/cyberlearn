@@ -78,7 +78,7 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
           paddingBottom,
           height: 0,
           overflow: "hidden",
-          background: "#050419",
+          background: "var(--color-bg-base)",
           border: "1px solid var(--color-border-subtle)",
         }}
       >

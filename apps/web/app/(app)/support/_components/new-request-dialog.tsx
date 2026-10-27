@@ -6,6 +6,7 @@
 import React, { useId, useState, useTransition } from "react";
 import Link from "next/link";
 import { ModalShell, Select } from "@cyberlearn/ui";
+import "../support.css";
 import {
   ESTABLISHMENT_CHECKLIST,
   TICKET_FORM_THEMES,
@@ -91,6 +92,7 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
         onClose={onClose}
         eyebrow="Support"
         title="Demande envoyée"
+        className="community-dialog request-dialog"
         maxWidth={560}
         actions={
           <>
@@ -121,6 +123,7 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
       onClose={onClose}
       eyebrow="Support"
       title="Nouvelle demande"
+      className="community-dialog request-dialog"
       meta="L'équipe te répond ici et par e-mail, à l'adresse de ton compte."
       maxWidth={640}
       dismissable={!pending && !written}
@@ -146,6 +149,7 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
             Thème
           </label>
           <Select
+            panelClassName="community-select-panel"
             id={`${formId}-theme`}
             name="theme"
             value={theme}

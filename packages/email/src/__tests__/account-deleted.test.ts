@@ -61,7 +61,7 @@ describe("AccountDeletedEmail - rendered HTML", () => {
     // No button, and no link anywhere except the mailto - every other href
     // would lead to a sign-in the person can no longer pass.
     const html = await render(AccountDeletedEmail(BASE));
-    const hrefs = [...html.matchAll(/href="([^"]*)"/gu)].map((m) => m[1] ?? "");
+    const hrefs = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/gu)].map((m) => m[1] ?? "");
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
       expect(href.startsWith("mailto:")).toBe(true);

@@ -1,5 +1,7 @@
 "use client";
 
+// Client: the debounced search updates URL filters and follows browser navigation.
+
 import React, { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
@@ -64,22 +66,8 @@ export function LessonsSearchBar(): React.ReactElement {
   }
 
   return (
-    <div style={{ position: "relative", height: 34, minWidth: 220 }}>
-      <svg
-        viewBox="0 0 16 16"
-        width={14}
-        height={14}
-        fill="none"
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          left: 12,
-          top: "50%",
-          transform: "translateY(-50%)",
-          color: "var(--color-text-muted)",
-          pointerEvents: "none",
-        }}
-      >
+    <label className="catalogue-search">
+      <svg viewBox="0 0 16 16" width={14} height={14} fill="none" aria-hidden="true">
         <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth={1.5} />
         <path d="M11 11 L14 14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
       </svg>
@@ -89,22 +77,10 @@ export function LessonsSearchBar(): React.ReactElement {
         value={value}
         onChange={handleChange}
         maxLength={CATALOG_SEARCH_MAX}
-        placeholder="/ rechercher une leçon..."
+        placeholder="Rechercher une leçon…"
         aria-label="Rechercher une leçon"
         aria-keyshortcuts="/"
-        style={{
-          width: "100%",
-          height: "100%",
-          padding: "0 12px 0 36px",
-          background: "var(--color-bg-sunken)",
-          border: "1px solid var(--color-border-default)",
-          color: "var(--color-text-primary)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          outline: "none",
-          boxSizing: "border-box",
-        }}
       />
-    </div>
+    </label>
   );
 }

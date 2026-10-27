@@ -549,7 +549,7 @@ function Subsection({
 
 function LegalTable({ headers, rows }: { headers: string[]; rows: string[][] }): React.JSX.Element {
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div style={{ overflowX: "auto" }} role="region" aria-label={headers.join(" · ")} tabIndex={0}>
       <table
         style={{
           width: "100%",

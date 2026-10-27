@@ -21,7 +21,12 @@ import { relative, resolve } from "node:path";
 
 const EM_DASH = "—";
 const IN_SCOPE = /^(apps|packages|content)\//;
-const OUT_OF_SCOPE = [/^packages\/db\/prisma\/migrations\//, /\/node_modules\//];
+const OUT_OF_SCOPE = [
+  /^packages\/db\/prisma\/migrations\//,
+  /\/node_modules\//,
+  // Next generates these English tooling instructions; neither app serves them.
+  /^apps\/(web|admin)\/(AGENTS|CLAUDE)\.md$/,
+];
 const TEXT = /\.(tsx?|jsx?|mjs|cjs|mdx?|json|css|html|txt|ya?ml)$/;
 
 const root = resolve(import.meta.dirname, "..");

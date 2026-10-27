@@ -2,7 +2,7 @@ import path from "path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import { loadRootEnv } from "../../scripts/load-root-env.mjs";
-import { PDF_ROUTES, PDFKIT_STANDARD_FONTS } from "./lib/pdf/pdf-routes";
+import { BRAND_FONT_FILES, PDF_ROUTES, PDFKIT_STANDARD_FONTS } from "./lib/pdf/pdf-routes";
 
 // Load the monorepo-root .env files so NEXT_PUBLIC_* vars are inlined at build
 // time. `next dev` runs from this app dir and won't read the root .env itself.
@@ -34,9 +34,13 @@ const nextConfig: NextConfig = {
   // and a route rendering a PDF answered 500 ("Cannot find module
   // …/pdfkit/js/standard-fonts/Helvetica.cjs"). Listed here for every route
   // that can render one (lib/pdf/pdf-routes.ts says which, and why).
-  outputFileTracingIncludes: Object.fromEntries(
-    PDF_ROUTES.map((route) => [route, [PDFKIT_STANDARD_FONTS]]),
-  ),
+  outputFileTracingIncludes: Object.fromEntries([
+    ...PDF_ROUTES.map((route): [string, string[]] => [
+      route,
+      [PDFKIT_STANDARD_FONTS, BRAND_FONT_FILES],
+    ]),
+    ["/u/*/opengraph-image*", [BRAND_FONT_FILES]],
+  ]),
   // @react-pdf/renderer uses native canvas - must not be bundled by webpack
   serverExternalPackages: ["@react-pdf/renderer", "canvas"],
   // Validate env at build time (fail fast if required vars are missing)

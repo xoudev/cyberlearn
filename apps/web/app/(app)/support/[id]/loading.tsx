@@ -1,5 +1,6 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@cyberlearn/ui";
+import "../support.css";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { SupportHeaderSkeleton } from "../_components/support-skeleton";
 
 /**
@@ -16,7 +17,11 @@ const MESSAGES = [
 
 export default function TicketLoading(): React.ReactElement {
   return (
-    <div className="page-container" aria-busy="true" aria-label="Chargement de ta demande">
+    <div
+      className="page-container learning-catalogue learning-workspace community-workspace support-workspace"
+      aria-busy="true"
+      aria-label="Chargement de ta demande"
+    >
       <SupportHeaderSkeleton crumb={304} eyebrow={120} title="9em" />
 
       <div className="tk-head" aria-hidden="true">

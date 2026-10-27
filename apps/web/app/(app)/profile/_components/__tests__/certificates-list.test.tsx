@@ -47,7 +47,8 @@ describe("CertificatesList", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("1 certificat délivré.");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Tes certificats");
+    expect(screen.getByText("actif", { exact: false })).toBeTruthy();
     const titles = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(titles).toEqual(["Parcours 1", "Parcours 2"]);
 
@@ -71,8 +72,8 @@ describe("CertificatesList", () => {
 
   it("leads to the paths when there is none yet", () => {
     render(<CertificatesList certs={[]} />);
-    expect(screen.getByText("Aucun certificat pour l'instant")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Explorer les parcours/ }).getAttribute("href")).toBe(
+    expect(screen.getByText(/Ton prochain cap/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Choisir un parcours/ }).getAttribute("href")).toBe(
       "/paths",
     );
   });

@@ -1,5 +1,7 @@
 "use client";
 
+// Client boundary: the reader edits drafts, saves content and opens sharing controls.
+
 import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
@@ -292,6 +294,7 @@ export function NoteReader({
           <div style={{ padding: "20px 22px", flex: 1 }}>
             {editing ? (
               <textarea
+                aria-label="Contenu de la note"
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value);
@@ -398,10 +401,10 @@ const READER_CSS = `
 .note-md a { color: var(--cosmetic-accent); text-decoration: underline; text-underline-offset: 2px; }
 .note-md code {
   font-family: var(--font-mono); font-size: 0.88em; background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
-  border: 1px solid var(--color-border-default); border-radius: 3px; padding: 1px 5px; color: #B8FBEB;
+  border: 1px solid var(--color-border-default); border-radius: 0; padding: 1px 5px; color: var(--cosmetic-accent);
 }
 .note-md pre {
-  background: var(--cosmetic-terminal-bg); border: 1px solid var(--color-border-subtle); border-radius: 4px;
+  background: var(--cosmetic-terminal-bg); border: 1px solid var(--color-border-subtle); border-radius: 0;
   padding: 14px 16px; overflow-x: auto; margin: 0 0 14px;
 }
 .note-md pre code {

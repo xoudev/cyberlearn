@@ -1,4 +1,5 @@
 import { render } from "@react-email/components";
+import { EMAIL_BRAND_IMAGE } from "./shell.js";
 import { AccountDeletedEmail } from "./templates/account-deleted.js";
 import { AccountDeletionConfirmEmail } from "./templates/account-deletion-confirm.js";
 import { BanNoticeEmail } from "./templates/ban-notice.js";
@@ -43,6 +44,17 @@ export interface EmailSample {
 export const EMAIL_SAMPLES: EmailSample[] = [
   { key: "magic-link", label: "Lien de connexion", when: "à chaque connexion par e-mail" },
   { key: "magic-link-signup", label: "Lien d'inscription", when: "à la création du compte" },
+  {
+    key: "magic-link-recovery",
+    label: "Récupération d’accès",
+    when: "demande de mot de passe oublié",
+  },
+  { key: "magic-link-invite", label: "Invitation au compte", when: "invitation d’accès" },
+  {
+    key: "magic-link-email-change",
+    label: "Changement d’adresse",
+    when: "confirmation de nouvelle adresse",
+  },
   { key: "class-invitation", label: "Invitation en classe", when: "invitation d'un externe" },
   { key: "class-enrolled", label: "Inscription en classe", when: "ajout à une classe" },
   { key: "work-assigned", label: "Travail assigné", when: "leçon ou parcours donné à une classe" },
@@ -68,13 +80,39 @@ export const EMAIL_SAMPLES: EmailSample[] = [
 ];
 
 /** The rendered HTML for one sample, or null for a key nothing matches. */
-export async function renderEmailSample(key: string): Promise<string | null> {
+export async function renderEmailSample(
+  key: string,
+  options: { localAssets?: boolean } = {},
+): Promise<string | null> {
+  const html = await renderSample(key);
+  // The console serves the same image locally, without widening its CSP to the public site.
+  return options.localAssets && html !== null
+    ? html.replaceAll(EMAIL_BRAND_IMAGE, "/brand/email-lockup.png")
+    : html;
+}
+
+async function renderSample(key: string): Promise<string | null> {
   switch (key) {
     case "magic-link":
       return render(MagicLinkEmail({ magicLink: `${SITE}/auth/callback?token=exemple` }));
     case "magic-link-signup":
       return render(
         MagicLinkEmail({ magicLink: `${SITE}/auth/callback?token=exemple`, type: "signup" }),
+      );
+    case "magic-link-recovery":
+    case "magic-link-invite":
+    case "magic-link-email-change":
+      return render(
+        MagicLinkEmail({
+          magicLink: `${SITE}/auth/callback?token=exemple`,
+          type:
+            key === "magic-link-recovery"
+              ? "recovery"
+              : key === "magic-link-invite"
+                ? "invite"
+                : "email_change",
+          code: key === "magic-link-recovery" ? "483920" : undefined,
+        }),
       );
     case "class-invitation":
       return render(
@@ -84,7 +122,7 @@ export async function renderEmailSample(key: string): Promise<string | null> {
           promotionName: "2025-2026",
           email: "eleve@ecole.fr",
           expiresAt: "30 octobre 2026",
-          signUpUrl: `${SITE}/signup?invitation=exemple`,
+          signUpUrl: `${SITE}/register`,
         }),
       );
     case "class-enrolled":
@@ -95,7 +133,7 @@ export async function renderEmailSample(key: string): Promise<string | null> {
           establishmentName: "Lycée Jean-Moulin",
           promotionName: "2025-2026",
           teacherNames: ["Claire Fontaine", "Marc Olivier"],
-          profileUrl: `${SITE}/profile`,
+          profileUrl: `${SITE}/my-class`,
         }),
       );
     case "work-assigned":
@@ -146,7 +184,7 @@ export async function renderEmailSample(key: string): Promise<string | null> {
           reason: "Propos insultants répétés dans le forum, après un premier avertissement.",
           durationLabel: "7 jours",
           endsOn: "28 septembre 2026",
-          appealUrl: `${SITE}/support`,
+          appealUrl: `${SITE}/banned`,
           siteUrl: SITE,
         }),
       );
@@ -154,7 +192,7 @@ export async function renderEmailSample(key: string): Promise<string | null> {
       return render(
         AccountDeletionConfirmEmail({
           displayName: "Amélie",
-          confirmUrl: `${SITE}/settings/data/confirm?token=exemple`,
+          confirmUrl: `${SITE}/account/delete/confirm?token=exemple`,
         }),
       );
     case "account-deleted":

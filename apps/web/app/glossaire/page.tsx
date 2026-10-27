@@ -39,18 +39,25 @@ export default function GlossaryPage(): React.JSX.Element {
   const collator = new Intl.Collator("fr", { sensitivity: "base" });
   return (
     <div className="glossary-page__main">
-      <div className="glossary-page__crumb" aria-hidden="true">
-        <span>$</span> ~/ cyberlearn / glossaire
-      </div>
       <header className="glossary-page__hero">
-        <p>Glossaire</p>
-        <h1>
-          Les mots du <em>métier.</em>
-        </h1>
-        <span>
-          Les {GLOSSARY.length} termes techniques que les leçons soulignent, chacun expliqué en une
-          phrase. Dans une leçon, survole un mot souligné en pointillés pour lire sa définition.
-        </span>
+        <div>
+          <p className="glossary-page__label">Lire / Retrouver une définition</p>
+          <h1>
+            Les mots du <em>métier.</em>
+          </h1>
+          <p className="glossary-page__intro">
+            Les termes techniques des leçons, chacun expliqué en une phrase. Dans une leçon, survole
+            un mot souligné en pointillés pour lire sa définition.
+          </p>
+        </div>
+        <aside
+          className="glossary-page__count"
+          aria-label={`${String(GLOSSARY.length)} termes dans ${String(CATEGORIES.length)} catégories`}
+        >
+          <strong>{GLOSSARY.length}</strong>
+          <span>termes à retrouver</span>
+          <p>{CATEGORIES.length} catégories · les mêmes définitions que dans les leçons</p>
+        </aside>
       </header>
 
       <nav className="glossary-page__index" aria-label="Catégories du glossaire">
@@ -61,7 +68,7 @@ export default function GlossaryPage(): React.JSX.Element {
         ))}
       </nav>
 
-      {CATEGORIES.map((category) => {
+      {CATEGORIES.map((category, index) => {
         const terms = GLOSSARY.filter((t) => t.category === category).sort((a, b) =>
           collator.compare(a.term, b.term),
         );
@@ -72,7 +79,10 @@ export default function GlossaryPage(): React.JSX.Element {
             className="glossary-page__section"
             aria-labelledby={`${anchor(category)}-title`}
           >
-            <h2 id={`${anchor(category)}-title`}>{category}</h2>
+            <h2 id={`${anchor(category)}-title`}>
+              <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              {category}
+            </h2>
             <dl>
               {terms.map((term) => (
                 <div key={term.slug} id={term.slug} className="glossary-page__entry">

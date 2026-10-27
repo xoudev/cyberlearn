@@ -1,8 +1,11 @@
 "use client";
 
+// Client boundary: equipment previews update optimistically before the server action returns.
+
 import { Tabs } from "@/components/tabs";
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { equipCosmeticAction } from "../_actions/cosmetic-actions";
 import { useCosmetics } from "@/components/cosmetics-provider";
@@ -13,6 +16,7 @@ import { BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
 import "./locker.css";
+import { ProgressionHeading } from "@/components/progression-heading";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -192,6 +196,9 @@ function Card({
       : 0;
   return (
     <div
+      className="locker-item"
+      data-equipped={item.equipped}
+      data-locked={!item.unlocked}
       style={{
         border: `1px solid ${item.equipped ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
         background: "rgba(5,4,26,0.5)",
@@ -285,7 +292,7 @@ function Card({
               color: "var(--cosmetic-accent)",
             }}
           >
-            🔒 Comment débloquer
+            À débloquer
           </span>
           <span
             style={{
@@ -369,41 +376,21 @@ export function LockerClient({
   };
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,48px)" }}>
-      <div
-        className="mono-label"
-        style={{
-          color: "var(--cosmetic-accent)",
-          marginBottom: 10,
-        }}
-      >
-        Cyber Learn · Personnalisation
+    <div className="page-container learning-catalogue learning-workspace progression-workspace locker-workspace">
+      <ProgressionHeading
+        eyebrow="Progression / Ta signature personnelle"
+        title="Le casier"
+        description="Tes succès débloquent de nouveaux détails. À toi de choisir ta signature."
+      />
+      <div className="catalogue-ledger">
+        <span>
+          <b>{liveItems.filter((item) => item.unlocked).length}</b> cosmétiques débloqués
+        </span>
+        <span>
+          <b>{liveItems.length}</b> au catalogue
+        </span>
+        <span className="catalogue-ledger__total">{SLOTS.length} emplacements à personnaliser</span>
       </div>
-      <h1
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 800,
-          fontSize: "clamp(34px,5vw,52px)",
-          letterSpacing: "-0.03em",
-          color: "var(--color-text-primary)",
-          margin: "0 0 10px",
-        }}
-      >
-        Casier <span style={{ color: "var(--cosmetic-accent)" }}>cosmétiques</span>
-      </h1>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 14,
-          color: "var(--color-text-secondary)",
-          maxWidth: 560,
-          margin: "0 0 28px",
-        }}
-      >
-        Débloque par niveau et par succès, zéro pay-to-win. Équipe thèmes, hexagones, cadres et
-        accents : ta carte de profil change en direct.
-      </p>
-
       <div className="casier-layout">
         {/* Left: tabs + grid */}
         <div>
@@ -422,10 +409,22 @@ export function LockerClient({
             onChange={setActiveTab}
           />
 
+          {tabItems.length === 0 && (
+            <section className="locker-empty">
+              <h2>Rien dans cet emplacement.</h2>
+              <p>
+                Aucun cosmétique n’est proposé ici pour le moment. L’aperçu conserve ta signature
+                actuelle.
+              </p>
+              <Link href="/badges" className="workspace-link">
+                Voir mes badges ↗
+              </Link>
+            </section>
+          )}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
               gap: 14,
             }}
           >
@@ -454,7 +453,7 @@ export function LockerClient({
             }}
           >
             <span>Aperçu en direct</span>
-            <span style={{ color: "var(--cosmetic-accent)" }}>● live</span>
+            <span style={{ color: "var(--cosmetic-accent)" }}>Ton profil</span>
           </div>
 
           <div style={{ display: "grid", placeItems: "center", gap: 12, marginBottom: 18 }}>
@@ -517,6 +516,7 @@ export function LockerClient({
 
           {/* Mini terminal, so the equipped terminal-theme reads at a glance */}
           <div
+            aria-label="Aperçu des couleurs du terminal"
             style={{
               border: "1px solid var(--color-border-subtle)",
               background: "var(--cosmetic-terminal-bg)",

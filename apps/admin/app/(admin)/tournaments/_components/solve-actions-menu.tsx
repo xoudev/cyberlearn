@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../_components/admin-confirmation";
 import { keepFormInput } from "@/lib/form-input";
 import {
   disqualifySolveAction,
@@ -42,18 +43,9 @@ export function SolveActionsMenu({
 
   if (disqualified) {
     return (
-      <form
+      <AdminConfirmForm
         action={action}
-        onSubmit={(event) => {
-          // Cancelling the native submit also cancels the action.
-          if (
-            !window.confirm(
-              `Rétablir le flag de ${player} sur « ${challenge} » ? Il compte de nouveau pour son équipe, à l'heure où il a été trouvé.`,
-            )
-          ) {
-            event.preventDefault();
-          }
-        }}
+        question={`Rétablir le flag de ${player} sur « ${challenge} » ? Il compte de nouveau pour son équipe, à l’heure où il a été trouvé.`}
         style={{ display: "grid", gap: 8, minWidth: 160 }}
       >
         <input type="hidden" name="intent" value="requalify" />
@@ -68,7 +60,7 @@ export function SolveActionsMenu({
           {pending ? "Rétablissement…" : "Rétablir"}
         </button>
         {refusal}
-      </form>
+      </AdminConfirmForm>
     );
   }
 
@@ -78,18 +70,10 @@ export function SolveActionsMenu({
         <summary className="a-disclosure-head">
           <span className="a-disclosure-title">Disqualifier…</span>
         </summary>
-        <form
+        <AdminConfirmForm
           action={action}
           onReset={keepFormInput}
-          onSubmit={(event) => {
-            if (
-              !window.confirm(
-                `Disqualifier le flag de ${player} sur « ${challenge} » ? Il ne compte plus pour personne, et ne peut pas être soumis de nouveau.`,
-              )
-            ) {
-              event.preventDefault();
-            }
-          }}
+          question={`Disqualifier le flag de ${player} sur « ${challenge} » ? Il ne compte plus pour personne, et ne peut pas être soumis de nouveau.`}
           className="a-form a-disclosure-body"
           style={{ paddingTop: 12 }}
         >
@@ -115,7 +99,7 @@ export function SolveActionsMenu({
           <button type="submit" disabled={pending} className="a-btn a-btn--danger a-btn--sm">
             {pending ? "Disqualification…" : "Disqualifier le flag"}
           </button>
-        </form>
+        </AdminConfirmForm>
       </details>
       {refusal}
     </div>

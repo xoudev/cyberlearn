@@ -1,22 +1,17 @@
 import React from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
+import { brandTypeface } from "@cyberlearn/ui/brand-typeface";
 import { AdminSplashScreen } from "@/components/splash-screen";
 import "@/components/splash-screen.css";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Admin · Cyber Learn", template: "%s · Admin" },
+  title: { default: "ADMIN · Console · CyberLearn", template: "ADMIN · %s · CyberLearn" },
   description: "Administration dashboard · CyberLearn Platform",
-  icons: {
-    icon: "/Admin_logo.png",
-    shortcut: "/Admin_logo.png",
-    apple: "/Admin_logo.png",
-  },
 };
 
 export default async function RootLayout({
@@ -29,8 +24,9 @@ export default async function RootLayout({
   return (
     <html
       lang="fr"
+      suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`dark ${jakarta.variable} ${jetbrains.variable}`}
+      className={`dark ${brandTypeface} ${jetbrains.variable}`}
     >
       <body>
         <AdminSplashScreen nonce={nonce} />

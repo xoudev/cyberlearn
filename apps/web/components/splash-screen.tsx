@@ -1,5 +1,5 @@
-import Image from "next/image";
 import React from "react";
+import { BastionLogo } from "./bastion-logo";
 
 const SESSION_KEY = "cl-splash-shown";
 
@@ -75,21 +75,14 @@ export function SplashScreen({ nonce }: { nonce?: string }): React.ReactElement 
       <div aria-hidden="true" data-splash="true">
         <div className="cl-splash-mark">
           <span className="cl-splash-ring" />
-          <Image
-            src="/Logo_principal.png"
-            alt=""
-            width={52}
-            height={52}
-            priority
-            style={{ objectFit: "contain" }}
-          />
+          <BastionLogo size={64} />
         </div>
 
         <div className="cl-splash-words">
           <div className="cl-splash-wordmark">
             cyber<em>learn</em>
           </div>
-          <div className="cl-splash-caption">Chargement sécurisé</div>
+          <div className="cl-splash-caption">Ton espace d’apprentissage</div>
         </div>
 
         <div className="cl-splash-bar">

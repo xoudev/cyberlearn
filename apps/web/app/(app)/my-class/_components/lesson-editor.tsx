@@ -1,5 +1,7 @@
 "use client";
 
+// Editing the draft, submitting it and refreshing its preview share local state.
+
 import React, { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -193,6 +195,7 @@ export function LessonEditor({
             <span className="cls-field__label">Catégorie</span>
             <Select
               name="category"
+              panelClassName="class-select-panel"
               required
               defaultValue={draft?.category ?? "CYBERSEC"}
               options={CATEGORIES}
@@ -204,6 +207,7 @@ export function LessonEditor({
             <span className="cls-field__label">Niveau</span>
             <Select
               name="difficulty"
+              panelClassName="class-select-panel"
               required
               defaultValue={draft?.difficulty ?? "BEGINNER"}
               options={DIFFICULTIES}
@@ -246,7 +250,7 @@ export function LessonEditor({
         <div className="tle-editor__head">
           <span className="cls-field__label">Contenu</span>
           <span className="cls-field__hint">
-            Blocs ou code · aperçu rendu par le site · le même éditeur que la console
+            Compose par blocs ou en MDX. Vérifie l’aperçu avant de publier.
           </span>
         </div>
         <MdxEditorPanel
@@ -276,11 +280,15 @@ export function LessonEditor({
       </div>
 
       {state.error !== undefined && (
-        <p className="cls-alert" data-tone="bad">
+        <p className="cls-alert" data-tone="bad" role="alert">
           {state.error}
         </p>
       )}
-      {mode === "edit" && state.ok === true && <p className="cls-alert">Enregistré.</p>}
+      {mode === "edit" && state.ok === true && (
+        <p className="cls-alert" role="status">
+          Enregistré.
+        </p>
+      )}
     </form>
   );
 }

@@ -1,0 +1,21 @@
+:root {
+  --page-gutter: 16px;
+  --page-space-top: 24px;
+  --page-space-bottom: 80px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --page-gutter: 28px;
+    --page-space-top: 28px;
+    --page-space-bottom: 96px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --page-gutter: 36px;
+    --page-space-top: 32px;
+    --page-space-bottom: 110px;
+  }
+}

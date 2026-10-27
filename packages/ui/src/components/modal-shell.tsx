@@ -47,6 +47,8 @@ export interface ModalShellProps {
    * be answered.
    */
   dismissable?: boolean;
+  /** SideDrawer manages its own conditional focus return after navigation. */
+  returnFocus?: boolean;
   /** A coloured top edge on the frame. */
   accent?: string;
   /**
@@ -102,6 +104,7 @@ export function ModalShell({
   maxWidth = 1040,
   chrome = "panel",
   dismissable = true,
+  returnFocus = true,
   accent,
   className,
   children,
@@ -113,19 +116,21 @@ export function ModalShell({
   // Read at the time of the key press, so a caller passing a fresh arrow on
   // every render does not re-run the opening effect - which would put this
   // dialog back on top of one opened over it.
-  const latest = useRef({ onClose, dismissable });
+  const latest = useRef({ onClose, dismissable, returnFocus });
   useEffect(() => {
-    latest.current = { onClose, dismissable };
+    latest.current = { onClose, dismissable, returnFocus };
   });
 
   useEffect(() => {
     if (!open) return;
     const me = token.current;
+    const previousFocus = document.activeElement;
     openDialogs.push(me);
 
     const onKey = (event: KeyboardEvent): void => {
       if (openDialogs[openDialogs.length - 1] !== me) return;
       if (event.key === "Escape") {
+        if (event.defaultPrevented) return;
         if (latest.current.dismissable) latest.current.onClose();
         return;
       }
@@ -139,9 +144,19 @@ export function ModalShell({
 
     return () => {
       document.removeEventListener("keydown", onKey);
+      const wasTop = openDialogs[openDialogs.length - 1] === me;
       const at = openDialogs.lastIndexOf(me);
       if (at >= 0) openDialogs.splice(at, 1);
       document.body.style.overflow = prevOverflow;
+      if (
+        latest.current.returnFocus &&
+        wasTop &&
+        previousFocus instanceof HTMLElement &&
+        previousFocus.isConnected &&
+        !previousFocus.closest("[inert]")
+      ) {
+        previousFocus.focus({ preventScroll: true });
+      }
     };
   }, [open]);
 

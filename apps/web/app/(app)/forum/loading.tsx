@@ -1,62 +1,57 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@cyberlearn/ui";
-import { ForumHeaderSkeleton, TopicRowSkeleton } from "./_components/forum-skeleton";
-import "./forum.css";
-
-/**
- * The forum's front page while it loads, drawn on the page's own classes
- * (forum.css): the header, the grid of the five sections, then the latest
- * threads.
- */
-
-const TOPIC_TITLES = ["62%", "48%", "70%", "40%", "56%", "66%", "44%", "58%"] as const;
-
-/** One section's card (.fo-cat): its name, its description, its counts. */
-function CategorySkeleton(): React.ReactElement {
-  return (
-    <div className="fo-cat">
-      <Skeleton w="44%" h={17} style={{ margin: "4px 0" }} />
-      <SkeletonText
-        lines={2}
-        lastWidth="62%"
-        lineHeight={12}
-        gap={8}
-        style={{ flex: 1, paddingBlock: 4 }}
-      />
-      <div className="fo-cat-meta">
-        <Skeleton w={62} h={10} style={{ margin: "2px 0" }} />
-        <Skeleton w={112} h={10} style={{ margin: "2px 0" }} />
-      </div>
-    </div>
-  );
-}
+import { Skeleton } from "@/components/ui/skeleton";
+import { TopicRowSkeleton } from "./_components/forum-skeleton";
+import "./community-forum.css";
+import "./forum-home.css";
 
 export default function ForumLoading(): React.ReactElement {
   return (
-    // .fo-page is a flex item with auto margins: the real page reaches its
-    // max-width through its text, which bars do not have, hence the width.
     <div
-      className="fo-page"
-      style={{ width: "100%" }}
+      className="fo-page fo-home learning-catalogue learning-workspace community-workspace"
       aria-busy="true"
       aria-label="Chargement du forum"
     >
-      <ForumHeaderSkeleton eyebrow={232} title="4.4em" ledeLines={2} ledeLast="55%" />
-
-      <div className="fo-grid" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <CategorySkeleton key={i} />
-        ))}
+      <div className="forum-home-head" aria-hidden="true">
+        <div>
+          <div className="forum-home-kicker">
+            <Skeleton w={220} h={12} />
+          </div>
+          <Skeleton w="min(80vw, 300px)" h={64} />
+          <div className="forum-home-intro">
+            <Skeleton w="min(75vw, 380px)" h={14} />
+          </div>
+        </div>
+        <Skeleton w={174} h={48} />
       </div>
-
-      <div className="fo-section-head" aria-hidden="true">
-        <Skeleton w={188} h={12} style={{ margin: "2px 0" }} />
+      <div className="forum-home-ledger" aria-hidden="true">
+        <Skeleton w={76} h={28} />
+        <Skeleton w={76} h={28} />
       </div>
-      <ul className="fo-list" aria-hidden="true">
-        {TOPIC_TITLES.map((title, i) => (
-          <TopicRowSkeleton key={i} title={title} />
-        ))}
-      </ul>
+      <div className="forum-home-board" aria-hidden="true">
+        <div className="forum-home-feed">
+          <div className="forum-home-section-head">
+            <Skeleton w={180} h={28} />
+          </div>
+          <ul className="fo-list forum-home-topics">
+            <TopicRowSkeleton title="70%" />
+            <TopicRowSkeleton title="55%" />
+          </ul>
+        </div>
+        <div className="forum-home-directory">
+          <div className="forum-home-section-head">
+            <Skeleton w={150} h={28} />
+          </div>
+          <ol>
+            {[0, 1, 2, 3, 4].map((index) => (
+              <li key={index}>
+                <div style={{ minHeight: 78, padding: 16 }}>
+                  <Skeleton w="75%" h={24} />
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
     </div>
   );
 }

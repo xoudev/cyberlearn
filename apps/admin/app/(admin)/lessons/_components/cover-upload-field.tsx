@@ -4,6 +4,9 @@ import React, { useRef, useState, useTransition } from "react";
 import { COVER_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { importLessonCoverFromUrlAction, uploadLessonCoverAction } from "../_actions/cover-actions";
 
+// ── Design tokens (match the lesson form) ───────────────────────────────────────
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
 const MONO = "var(--font-mono)";
 
 const btnBase: React.CSSProperties = {
@@ -13,7 +16,7 @@ const btnBase: React.CSSProperties = {
   letterSpacing: "0.14em",
   textTransform: "uppercase",
   padding: "10px 16px",
-  border: "1px solid var(--a-border-2)",
+  border: `1px solid ${BORDER}`,
   background: "var(--a-surface)",
   color: "var(--a-fg)",
   whiteSpace: "nowrap",
@@ -106,6 +109,7 @@ export function CoverUploadField({
       <input
         ref={inputRef}
         type="file"
+        aria-label="Importer une image de couverture"
         accept={COVER_UPLOAD_ALLOWED_MIME.join(",")}
         onChange={handleFile}
         style={{ display: "none" }}
@@ -118,8 +122,8 @@ export function CoverUploadField({
           width: 176,
           aspectRatio: "16 / 9",
           flexShrink: 0,
-          border: "1px solid var(--a-border-2)",
-          background: "var(--a-surface-2)",
+          border: `1px solid ${BORDER}`,
+          background: "var(--a-bg)",
           overflow: "hidden",
           display: "grid",
           placeItems: "center",
@@ -149,7 +153,15 @@ export function CoverUploadField({
       </div>
 
       {/* Controls */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 240 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          flex: 1,
+          minWidth: "min(240px, 100%)",
+        }}
+      >
         {/* Option 1: paste a link */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <input
@@ -172,7 +184,7 @@ export function CoverUploadField({
               flex: 1,
               minWidth: 160,
               background: "var(--a-surface)",
-              border: "1px solid var(--a-border-2)",
+              border: `1px solid ${BORDER}`,
               color: "var(--a-fg)",
               fontFamily: MONO,
               fontSize: 12,
@@ -198,14 +210,7 @@ export function CoverUploadField({
 
         {/* Option 2: upload a file */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <span
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: "0.16em",
-              color: "var(--a-muted)",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
             OU
           </span>
           <button
@@ -228,8 +233,8 @@ export function CoverUploadField({
               style={{
                 ...btnBase,
                 background: "transparent",
-                color: "var(--a-danger)",
-                borderColor: "color-mix(in srgb, var(--a-danger) 40%, transparent)",
+                color: DANGER,
+                borderColor: "var(--a-danger)",
                 cursor: busy ? "not-allowed" : "pointer",
               }}
             >
@@ -238,14 +243,7 @@ export function CoverUploadField({
           )}
         </div>
 
-        <span
-          style={{
-            fontFamily: MONO,
-            fontSize: 10.5,
-            letterSpacing: "0.04em",
-            color: "var(--a-muted)",
-          }}
-        >
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
           JPEG, PNG ou WebP · 4 Mo max · 1280×720 recommandé · le lien est ré-hébergé
         </span>
         {error !== null && (

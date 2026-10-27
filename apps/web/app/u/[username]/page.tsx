@@ -31,7 +31,6 @@ import {
 } from "@/lib/profile/public-profile-read";
 import { scopedCosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { pageAddressWithOwnImage } from "@/app/page-metadata";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { AvatarView } from "@/components/avatar-view";
@@ -39,7 +38,7 @@ import { CopyButton } from "@/components/copy-button";
 import { Crumb } from "@/components/crumb";
 import { ProgressBar } from "@/components/progress-bar";
 import { StatTile } from "@/components/stat-tile";
-import { XpProgress } from "@/components/xp-progress";
+import { ProfileProgress } from "@/components/profile-progress";
 import { FriendshipActions } from "./_components/friendship-actions";
 import "./public-profile.css";
 
@@ -199,13 +198,12 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   ]);
 
   return (
-    <div className="page-container">
+    <div className="page-container learning-catalogue learning-workspace progression-workspace profile-workspace public-profile-workspace">
       <Crumb segments={["u", `@${handle}`]} />
 
       <div className="pp-owner" {...cosmetics}>
         {/* ── Hero: player card ──────────────────────────────────────── */}
         <header className="pp-hero">
-          <CornerBrackets opacity={0.8} />
           <span className="pp-hero__strip" aria-hidden="true" />
 
           <div className="pp-avatar" style={cosmeticAvatarFilter(0.6)}>
@@ -248,33 +246,16 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               ) : null}
             </div>
           </div>
-
-          <div className="pp-level">
-            <p className="pp-level__eyebrow">
-              <b>&gt;</b> Niveau actuel
-            </p>
-            <div className="pp-level__row">
-              <span className="pp-level__n">{level}</span>
-              <span className="pp-level__next">→ LVL {level + 1}</span>
-            </div>
-            <XpProgress current={current} needed={needed} level={level} />
-          </div>
         </header>
+        <ProfileProgress current={current} needed={needed} level={level} total={user.xpTotal} />
 
         {/* ── Stats strip ────────────────────────────────────────────── */}
         <div className="pp-stats card">
           <StatTile
             size="lg"
-            label="XP total"
-            value={`+${user.xpTotal.toLocaleString("fr-FR")}`}
-            sub="expérience cumulée"
-            color="var(--cosmetic-accent)"
-          />
-          <StatTile
-            size="lg"
             label="Série en cours"
             value={`${String(user.streakDays)}j`}
-            sub={user.streakDays > 0 ? "🔥 en cours" : "à relancer"}
+            sub={user.streakDays > 0 ? "en cours" : "à relancer"}
             color={
               user.streakDays > 0 ? "var(--color-rarity-legendary)" : "var(--color-text-muted)"
             }
@@ -322,6 +303,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               activity={extras.activity.days}
               today={dayKey(new Date())}
               label={`Activité de ${name} sur les douze derniers mois`}
+              personal={isSelf}
             />
           </div>
         </section>
@@ -476,7 +458,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
 
         {/* ── Certificates: the proof, and the way to a LinkedIn profile ── */}
         {user.certificates.length > 0 && (
-          <section className="pp-section">
+          <section className="pp-section pp-certificates">
             <SectionLabel
               eyebrow={`${no("certificates")} · certificats · ${String(counts.certificates)}`}
               title="Attestations obtenues."

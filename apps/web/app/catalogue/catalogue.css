@@ -1,172 +1,48 @@
 .public-catalogue {
   min-height: 100vh;
-  color: var(--fg-primary);
-  background:
-    radial-gradient(ellipse 900px 500px at 100% 0%, rgba(10, 255, 212, 0.08), transparent 65%),
-    radial-gradient(ellipse 900px 500px at 0% 0%, rgba(0, 36, 255, 0.16), transparent 65%),
-    var(--bg-primary);
+  color: #f4f2ed;
+  background: #0b0c0e;
 }
-
 .public-catalogue__main {
-  width: min(1320px, calc(100% - 48px));
+  width: 100%;
   margin: 0 auto;
-  padding: 54px 0 96px;
+  padding: 8px var(--page-gutter) 80px;
 }
-
-.public-catalogue__crumb,
-.public-catalogue__hero > div > p,
-.public-catalogue__result-count {
-  color: var(--fg-tertiary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+.public-catalogue > main > .public-catalogue__main {
+  max-width: 1400px;
 }
-
-.public-catalogue__crumb span,
-.public-catalogue__hero > div > p {
-  color: var(--brand-turquoise);
-}
-
-.public-catalogue__hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 48px;
-  align-items: end;
-  padding: 54px 0 46px;
-  border-bottom: 1px solid var(--border);
-}
-
-.public-catalogue__hero h1 {
-  margin: 12px 0 18px;
-  max-width: 780px;
-  color: var(--fg-primary);
-  font-family: var(--font-display);
-  font-size: clamp(44px, 6vw, 82px);
-  font-weight: 800;
-  line-height: 0.96;
-  letter-spacing: -0.045em;
-}
-
-.public-catalogue__hero h1 em {
-  color: var(--brand-turquoise);
-  font-style: normal;
-}
-
-.public-catalogue__hero > div > span {
-  display: block;
-  max-width: 650px;
-  color: var(--fg-secondary);
-  font-size: 16px;
-  line-height: 1.65;
-}
-
-.public-catalogue__hero dl {
-  display: flex;
-  margin: 0;
-  border: 1px solid var(--border);
-}
-
-.public-catalogue__hero dl div {
-  min-width: 130px;
-  padding: 18px 22px;
-}
-
-.public-catalogue__hero dl div + div {
-  border-left: 1px solid var(--border);
-}
-
-.public-catalogue__hero dt {
-  color: var(--fg-tertiary);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.public-catalogue__hero dd {
-  margin: 6px 0 0;
-  color: var(--brand-turquoise);
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 800;
-}
-
 .public-catalogue__filters {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 28px 0 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
 }
-
 .public-catalogue__pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
 }
-
-.public-catalogue__pills button,
+.public-catalogue__filters .catalogue-search {
+  flex: 1 1 240px;
+  max-width: 360px;
+  margin-left: auto;
+}
 .public-catalogue__filters input {
-  min-height: 44px;
-  border: 1px solid var(--border);
-  color: var(--fg-secondary);
-  background: rgba(10, 8, 38, 0.7);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  padding-left: 14px;
 }
-
-.public-catalogue__pills button {
-  padding: 0 18px;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-.public-catalogue__pills button.is-active {
-  border-color: var(--brand-turquoise);
-  color: var(--bg-primary);
-  background: var(--brand-turquoise);
-}
-
-.public-catalogue__filters label span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-}
-
-.public-catalogue__filters input {
-  width: min(310px, 38vw);
-  padding: 0 14px;
-}
-
 .public-catalogue__result-count {
-  margin: 0 0 18px;
+  margin: 28px 0 20px;
+  color: #aaa79f;
+  font-size: 12px;
 }
-
-@media (max-width: 1000px) {
-  .public-catalogue__hero {
-    grid-template-columns: 1fr;
-  }
+.public-catalogue__paths {
+  scroll-margin-top: 80px;
 }
-
-@media (max-width: 720px) {
-  .public-catalogue__main {
-    width: min(100% - 32px, 1320px);
-    padding-top: 32px;
-  }
-
-  .public-catalogue__hero {
-    gap: 28px;
-    padding: 36px 0;
-  }
-
-  .public-catalogue__filters {
-    flex-direction: column;
-  }
-
-  .public-catalogue__filters input {
-    width: 100%;
+.public-catalogue__paths .game-card {
+  scroll-margin-top: 80px;
+}
+@media (max-width: 650px) {
+  .public-catalogue__filters .catalogue-search {
+    max-width: none;
   }
 }

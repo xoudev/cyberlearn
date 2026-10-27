@@ -102,8 +102,8 @@ export function LandingTerminal(): React.ReactElement {
       className="card card--sunken"
       style={{
         overflow: "hidden",
-        boxShadow:
-          "0 0 0 1px var(--color-border-default), 0 32px 64px rgba(0,36,255,0.15), 0 0 80px rgba(10,255,212,0.06)",
+        border: "1px solid var(--color-border-default)",
+        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.35)",
         fontFamily: "var(--font-mono)",
       }}
     >
@@ -115,26 +115,22 @@ export function LandingTerminal(): React.ReactElement {
           gap: 8,
           padding: "12px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
-          background: "#07062A",
+          background: "var(--color-bg-elevated)",
         }}
       >
         <span
           style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
+            width: 8,
+            height: 8,
             background: "var(--color-category-cybersec)",
           }}
         />
-        <span
-          style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--color-warning)" }}
-        />
+        <span style={{ width: 8, height: 8, background: "var(--color-warning)" }} />
         <span
           style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: "var(--color-brand-turquoise)",
+            width: 8,
+            height: 8,
+            background: "var(--color-success)",
           }}
         />
         <span
@@ -154,7 +150,7 @@ export function LandingTerminal(): React.ReactElement {
             marginLeft: "auto",
             fontWeight: 700,
             color: "var(--color-bg-base)",
-            background: "var(--color-brand-turquoise)",
+            background: "var(--color-success)",
             padding: "3px 8px",
           }}
         >
@@ -192,8 +188,7 @@ export function LandingTerminal(): React.ReactElement {
                   display: "inline-block",
                   width: 7,
                   height: 13,
-                  background: "var(--color-brand-turquoise)",
-                  boxShadow: "0 0 8px var(--color-brand-turquoise)",
+                  background: "var(--color-brand-blue)",
                   verticalAlign: "-2px",
                   marginLeft: 2,
                   animation: "blink 1s step-end infinite",
@@ -213,20 +208,19 @@ export function LandingTerminal(): React.ReactElement {
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 12,
-              letterSpacing: "0.14em",
+              letterSpacing: "0.12em",
               color: "var(--color-bg-base)",
-              background: "var(--color-brand-turquoise)",
+              background: "var(--color-success)",
               padding: "8px 16px",
-              boxShadow: "0 0 24px rgba(10,255,212,0.6)",
             }}
           >
             ● ACCESS GRANTED
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontWeight: 400,
+                fontWeight: 600,
                 fontSize: 10,
-                color: "#0A3028",
+                color: "var(--color-bg-base)",
                 letterSpacing: "0.06em",
               }}
             >

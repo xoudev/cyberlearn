@@ -1,0 +1,18 @@
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("../public/web-demo/BarlowCondensed-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../public/web-demo/SpaceGrotesk-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: #0b0c0e;
+}

@@ -67,20 +67,23 @@ describe("a path to discover", () => {
 });
 
 describe("a path's cover on its card", () => {
-  it("is drawn under the chips, in place of the glyph", () => {
+  it("layers the supplied image under the branded poster", () => {
     const html = renderToStaticMarkup(
       React.createElement(PathCatalogCard, {
         path: { ...PATH, coverSrc: "/covers/paths/reseaux.svg" },
       }),
     );
-    expect(html).toContain("game-card__cover game-card__cover--image");
+    expect(html).toContain("game-card__cover game-card__cover--poster");
     expect(html).toContain("background-image:url(&quot;/covers/paths/reseaux.svg&quot;)");
-    expect(html).toContain('class="game-card__img" aria-hidden="true"');
+    expect(html).toContain('class="catalogue-artwork__cover"');
+    expect(html).toContain('class="catalogue-artwork__brand"');
   });
 
-  it("leaves the glyph in place without one", () => {
+  it("keeps the brand, domain and reference without an image", () => {
     const html = renderToStaticMarkup(React.createElement(PathCatalogCard, { path: PATH }));
-    expect(html).not.toContain("game-card__img");
-    expect(html).toContain('class="game-card__cover"');
+    expect(html).not.toContain('class="catalogue-artwork__cover"');
+    expect(html).toContain('class="catalogue-artwork__brand"');
+    expect(html).toContain('data-category="NETWORK"');
+    expect(html).toContain("NET-101");
   });
 });

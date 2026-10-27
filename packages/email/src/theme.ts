@@ -1,198 +1,144 @@
 import type React from "react";
 
-/**
- * The site's design system, for a medium that cannot read a stylesheet.
- *
- * Every template carried its own copy of this - nine of them, a hundred-odd
- * lines each, all nearly the same. That is not only repetition: it is the
- * mechanism by which the mails drifted away from the site. A rounded corner
- * introduced once has to be unpicked nine times, so it never is, and after a
- * while the mails are a second design nobody decided on.
- *
- * The colours here are the dark-theme values from packages/ui/src/tokens.css,
- * written out rather than referenced because a custom property does not survive
- * a mail client. Their names are the token names, so a reader can check one
- * against the other. The shape and the type are where the mails had actually
- * left the system:
- *
- *   Corners. The site is square - `border-radius: 0` is its dominant rule and
- *   the exceptions are 2px. The mails had a 12px card and an 8px button, which
- *   is the single loudest reason they did not look like the product.
- *
- *   Type. The site pairs Plus Jakarta Sans with JetBrains Mono, and uses the
- *   mono uppercase with wide tracking for every eyebrow and small label. The
- *   mails named Inter - a font the site does not use anywhere - and set the
- *   wordmark in it.
- *
- * Fonts are named first and fall back: a client that has them, or honours the
- * webfont, matches the site; the rest degrade to the system stack rather than
- * to something that was never the brand.
- */
-
+// Mail clients need literal colours and font fallbacks rather than CSS variables.
 export const tokens = {
-  bgBase: "#030219",
-  bgElevated: "#0A0826",
-  bgOverlay: "#110F33",
-
-  borderSubtle: "#1F1B47",
-  borderDefault: "#2A2560",
-
-  textPrimary: "#F5F5FA",
-  textSecondary: "#B8B5D1",
-  textMuted: "#7F7BA9",
-  textDisabled: "#3F3D5C",
-
-  brandBlue: "#0024FF",
-  brandTurquoise: "#0AFFD4",
-
-  /** The lighter blue the app uses for links on dark panels. */
-  link: "#4D8BFF",
-  warning: "#FFB020",
-  danger: "#FF6B7A",
+  bgBase: "#0B0C0E",
+  bgElevated: "#121418",
+  bgOverlay: "#191C22",
+  paper: "#EAE7DF",
+  ink: "#141518",
+  borderSubtle: "#44454A",
+  borderDefault: "#74767D",
+  textPrimary: "#F4F2ED",
+  textSecondary: "#C2BFB8",
+  textMuted: "#AAA79F",
+  textDisabled: "#AAA79F",
+  brandBlue: "#FF6B2B",
+  brandTurquoise: "#FF6B2B",
+  link: "#FF864F",
+  warning: "#FFC36E",
+  danger: "#FF929B",
 } as const;
 
 export const fonts = {
-  sans: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  sans: "'Space Grotesk', Arial, Helvetica, sans-serif",
+  display: "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif",
   mono: "'JetBrains Mono', 'Courier New', monospace",
 } as const;
 
-/**
- * The shared vocabulary. A template picks from it and adds only what is its
- * own - the code block on a login link, the two nouns on a piece of work.
- */
 export const styles = {
   main: {
     backgroundColor: tokens.bgBase,
+    color: tokens.textPrimary,
     fontFamily: fonts.sans,
-    padding: "40px 0",
-  } satisfies React.CSSProperties,
-
-  container: {
-    maxWidth: "520px",
-    margin: "0 auto",
-  } satisfies React.CSSProperties,
-
-  logoSection: {
-    paddingBottom: "20px",
-    textAlign: "center" as const,
-  } satisfies React.CSSProperties,
-
-  /** The wordmark, in the mono the site sets every eyebrow in. */
-  logoText: {
-    fontFamily: fonts.mono,
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.25em",
-    color: tokens.brandTurquoise,
+    padding: "28px 12px",
     margin: "0",
   } satisfies React.CSSProperties,
-
+  container: {
+    width: "100%",
+    maxWidth: "560px",
+    margin: "0 auto",
+  } satisfies React.CSSProperties,
+  logoSection: {
+    backgroundColor: tokens.paper,
+    padding: "18px 24px",
+  } satisfies React.CSSProperties,
   card: {
     backgroundColor: tokens.bgElevated,
-    // The hairline the app draws its panels with, not the subtler one: on a
-    // flat card at this size the subtle border disappears entirely.
     border: `1px solid ${tokens.borderDefault}`,
-    padding: "40px 36px",
+    borderTop: `4px solid ${tokens.brandBlue}`,
+    padding: "32px 24px",
   } satisfies React.CSSProperties,
-
   heading: {
-    fontFamily: fonts.sans,
-    fontSize: "24px",
-    fontWeight: "800",
+    fontFamily: fonts.display,
+    fontSize: "36px",
+    lineHeight: "1.1",
+    fontWeight: "600",
     color: tokens.textPrimary,
-    margin: "0 0 16px",
+    margin: "0 0 24px",
     letterSpacing: "-0.02em",
   } satisfies React.CSSProperties,
-
   paragraph: {
-    fontSize: "14px",
+    fontSize: "16px",
     color: tokens.textSecondary,
-    lineHeight: "1.65",
-    margin: "0 0 14px",
+    lineHeight: "1.7",
+    margin: "0 0 16px",
+    overflowWrap: "anywhere",
   } satisfies React.CSSProperties,
-
   listItem: {
-    fontSize: "14px",
+    fontSize: "15px",
     color: tokens.textSecondary,
-    lineHeight: "1.65",
-    margin: "0 0 6px",
+    lineHeight: "1.7",
+    margin: "0 0 8px",
   } satisfies React.CSSProperties,
-
-  /** The accent-edged block the app uses to set a fact apart. */
   detail: {
     borderLeft: `3px solid ${tokens.brandTurquoise}`,
-    paddingLeft: "14px",
-    margin: "22px 0 4px",
+    paddingLeft: "16px",
+    margin: "24px 0 8px",
   } satisfies React.CSSProperties,
-
   detailLine: {
-    fontSize: "15px",
+    fontSize: "16px",
+    lineHeight: "1.7",
     color: tokens.textPrimary,
-    margin: "0 0 4px",
+    margin: "0 0 6px",
+    overflowWrap: "anywhere",
   } satisfies React.CSSProperties,
-
   detailStrong: {
     color: tokens.textPrimary,
   } satisfies React.CSSProperties,
-
-  /** The mono micro-label above a fact, as on every panel in the app. */
   detailMuted: {
-    fontFamily: fonts.mono,
-    fontSize: "10px",
-    letterSpacing: "0.14em",
-    textTransform: "uppercase" as const,
+    fontFamily: fonts.sans,
+    fontSize: "13px",
+    lineHeight: "1.6",
     color: tokens.textMuted,
-    margin: "0 0 3px",
+    margin: "0 0 6px",
   } satisfies React.CSSProperties,
-
   buttonWrap: {
     margin: "28px 0",
-    textAlign: "center" as const,
   } satisfies React.CSSProperties,
-
   button: {
     backgroundColor: tokens.brandBlue,
-    color: "#ffffff",
-    fontFamily: fonts.mono,
-    fontSize: "12px",
+    color: tokens.ink,
+    fontFamily: fonts.sans,
+    fontSize: "15px",
+    lineHeight: "20px",
     fontWeight: "700",
-    letterSpacing: "0.12em",
-    textTransform: "uppercase" as const,
-    padding: "14px 32px",
+    padding: "15px 22px",
     textDecoration: "none",
+    textAlign: "center",
     display: "inline-block",
+    boxSizing: "border-box",
+    maxWidth: "100%",
   } satisfies React.CSSProperties,
-
   hr: {
     borderColor: tokens.borderSubtle,
-    margin: "24px 0",
+    margin: "28px 0",
   } satisfies React.CSSProperties,
-
+  dangerButton: {
+    backgroundColor: tokens.danger,
+    color: tokens.ink,
+  } satisfies React.CSSProperties,
   muted: {
-    fontSize: "12px",
+    fontSize: "14px",
     color: tokens.textMuted,
-    lineHeight: "1.5",
+    lineHeight: "1.7",
     margin: "0",
   } satisfies React.CSSProperties,
-
   footer: {
-    paddingTop: "20px",
-    textAlign: "center" as const,
+    padding: "24px 12px 0",
   } satisfies React.CSSProperties,
-
   footerText: {
-    fontFamily: fonts.mono,
-    fontSize: "10px",
-    letterSpacing: "0.06em",
-    color: tokens.textDisabled,
+    fontFamily: fonts.sans,
+    fontSize: "13px",
+    lineHeight: "1.7",
+    color: tokens.textMuted,
     margin: "0 0 4px",
   } satisfies React.CSSProperties,
-
   footerLink: {
-    // Named, not inherited from the mono footer around it: a mail client that
-    // injects its own link styling resets the family along with the colour.
-    fontFamily: fonts.mono,
+    fontFamily: fonts.sans,
     color: tokens.link,
-    textDecoration: "none",
+    textDecoration: "underline",
+    display: "inline-block",
+    padding: "12px 0",
   } satisfies React.CSSProperties,
 } as const;

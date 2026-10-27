@@ -1,9 +1,9 @@
-import { MONO_STYLE as MONO } from "@cyberlearn/ui";
 import React from "react";
 import Link from "next/link";
-import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
+import { BastionLogo } from "@/components/bastion-logo";
+import "./certificates.css";
 
 /** One certificate as the tab shows it (certificateRepository.listForUser). */
 export interface CertificateRow {
@@ -22,45 +22,6 @@ export interface CertificateRow {
   };
 }
 
-const GOLD = "var(--color-rarity-legendary)";
-
-// ── Shared bits ───────────────────────────────────────────────────────────────
-
-/** Gold hexagonal seal: same regular pointy-top geometry as the badge medallion. */
-function CertSeal(): React.ReactElement {
-  return (
-    <svg
-      width="30"
-      height="34"
-      viewBox="0 0 86.6 100"
-      aria-hidden="true"
-      style={{ filter: `drop-shadow(0 0 8px color-mix(in oklab, ${GOLD} 55%, transparent))` }}
-    >
-      <polygon
-        points="43.3,0 86.6,25 86.6,75 43.3,100 0,75 0,25"
-        fill="rgba(255,181,71,0.07)"
-        stroke={GOLD}
-        strokeWidth="3"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-      <g
-        fill="none"
-        stroke={GOLD}
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        transform="translate(20.3, 27) scale(2)"
-      >
-        <circle cx="11.5" cy="9" r="6.5" />
-        <path d="M7 14 L5 23 L11.5 19.5 L18 23 L16 14" />
-      </g>
-    </svg>
-  );
-}
-
-// ── The tab ───────────────────────────────────────────────────────────────────
-
 /**
  * The profile's Certificats tab: every certificate of the account, a revoked
  * one kept, dimmed, with its reason. It was the /certificates page; the
@@ -77,229 +38,43 @@ export function CertificatesList({
   const isEmpty = certs.length === 0;
 
   return (
-    <div>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="catalog-header-grid" style={{ marginTop: 12, marginBottom: 40 }}>
-        <div>
-          <div
-            style={{
-              ...MONO,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--color-text-muted)",
-              marginBottom: 14,
-            }}
-          >
-            <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
-            REGISTRE · <b style={{ color: GOLD, fontWeight: 500 }}>SHA-256</b> · VÉRIFIABLE
-          </div>
-          <h2
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 800,
-              fontSize: "clamp(32px, 3.6vw, 48px)",
-              lineHeight: 1,
-              letterSpacing: "-0.035em",
-              color: "var(--color-text-primary)",
-              margin: "0 0 16px",
-            }}
-          >
-            {isEmpty ? (
-              <>
-                Ton premier{" "}
-                <em
-                  style={{
-                    fontStyle: "normal",
-                    background:
-                      "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  certificat
-                </em>{" "}
-                {"t'attend."}
-              </>
-            ) : (
-              <>
-                <em
-                  style={{
-                    fontStyle: "normal",
-                    background:
-                      "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  {activeCerts.length} certificat{activeCerts.length !== 1 ? "s" : ""}
-                </em>{" "}
-                délivré{activeCerts.length !== 1 ? "s" : ""}.
-              </>
-            )}
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 15,
-              color: "var(--color-text-secondary)",
-              margin: 0,
-              maxWidth: 520,
-              lineHeight: 1.55,
-            }}
-          >
-            Chaque certificat est signé SHA-256, horodaté et vérifiable publiquement. Télécharge le
-            PDF officiel ou partage son lien de vérification.
-          </p>
-        </div>
-
-        {/* Right: telemetry */}
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              gap: 18,
-              ...MONO,
-              fontSize: 11,
-              color: "var(--color-text-muted)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>
-              <b style={{ color: GOLD }}>{activeCerts.length}</b> actif
-              {activeCerts.length !== 1 ? "s" : ""}
-            </span>
-            <span style={{ color: "var(--color-text-faint)" }}>/</span>
-            <span>
-              <b
-                style={{
-                  color:
-                    revokedCerts.length > 0
-                      ? "var(--color-category-cybersec)"
-                      : "var(--color-text-muted)",
-                }}
-              >
-                {revokedCerts.length}
-              </b>{" "}
-              révoqué{revokedCerts.length !== 1 ? "s" : ""}
-            </span>
-            <span style={{ color: "var(--color-text-faint)" }}>/</span>
-            <span>
-              <b style={{ color: "var(--color-text-primary)" }}>~{totalHours}h</b> validées
-            </span>
-          </div>
-          <div
-            style={{
-              width: 320,
-              maxWidth: "100%",
-              height: 1,
-              background: "linear-gradient(90deg, var(--color-border-default), transparent)",
-            }}
-            aria-hidden="true"
-          />
-          <div
-            style={{
-              ...MONO,
-              fontSize: 11,
-              color: "var(--color-text-muted)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Authentique · signature SHA-256 · QR de vérification
-          </div>
-        </div>
+    <div className="progression-workspace certificates-workspace">
+      <h2>Tes certificats</h2>
+      <div className="catalogue-ledger">
+        <span>
+          <b>{activeCerts.length}</b> actif{activeCerts.length !== 1 ? "s" : ""}
+        </span>
+        <span>
+          <b>{revokedCerts.length}</b> révoqué{revokedCerts.length !== 1 ? "s" : ""}
+        </span>
+        <span className="catalogue-ledger__total">~{totalHours} h validées</span>
       </div>
-
       {isEmpty ? (
-        /* ── Empty state ──────────────────────────────────────────────────── */
-        <div
-          style={{
-            padding: "80px 40px",
-            textAlign: "center",
-            border: "1px dashed var(--color-border-default)",
-            background: "rgba(5,4,26,0.4)",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{ display: "flex", justifyContent: "center", marginBottom: 18, opacity: 0.5 }}
-          >
-            <CertSeal />
+        <section className="certificate-next">
+          <div className="certificate-next__brand">
+            <BastionLogo size={64} />
+            <span>Bastion / CyberLearn</span>
           </div>
-          <p
-            style={{
-              ...MONO,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--color-text-muted)",
-              margin: "0 0 10px",
-            }}
-          >
-            {"// registre vide"}
-          </p>
-          <p
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 700,
-              fontSize: 20,
-              color: "var(--color-text-primary)",
-              margin: "0 0 8px",
-            }}
-          >
-            Aucun certificat pour l&apos;instant
-          </p>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 14,
-              color: "var(--color-text-secondary)",
-              margin: "0 auto 26px",
-              maxWidth: 380,
-              lineHeight: 1.55,
-            }}
-          >
-            Complète un parcours entier (toutes les missions, puis l&apos;examen final) pour
-            décrocher ton premier certificat vérifiable.
-          </p>
-          <Link
-            href="/paths"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "14px 28px",
-              background: "var(--color-brand-blue)",
-              border: "1px solid var(--color-brand-blue)",
-              color: "#fff",
-              ...MONO,
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              textDecoration: "none",
-              boxShadow: "0 0 24px rgba(0,36,255,0.35)",
-            }}
-          >
-            Explorer les parcours →
-          </Link>
-        </div>
+          <div className="certificate-next__body">
+            <p className="workspace-kicker">Ton prochain cap</p>
+            <h2>
+              Un parcours terminé.
+              <br />
+              Une trace à partager.
+            </h2>
+            <p>
+              Termine toutes les missions d’un parcours, puis son examen final. Ton certificat
+              apparaîtra ici, avec son PDF et son lien de vérification.
+            </p>
+            <div className="workspace-actions">
+              <Link href="/paths" className="btn">
+                Choisir un parcours <span aria-hidden="true">↗</span>
+              </Link>
+            </div>
+          </div>
+        </section>
       ) : (
-        /* ── Certificate cards ────────────────────────────────────────────── */
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))",
-            gap: 18,
-          }}
-        >
+        <div className="certificate-grid">
           {certs.map((cert) => {
             const diff = difficultyMeta(cert.path.difficulty);
             const cat = categoryMeta(cert.path.category).label;
@@ -309,271 +84,49 @@ export function CertificatesList({
               year: "numeric",
             }).format(cert.issuedAt);
             const isRevoked = !!cert.revokedAt;
-            // The number printed on the PDF and shown on the verification page.
             const certRef = certificateCode(cert.publicId, cert.issuedAt);
             const hashSnippet = `${cert.sha256Hash.slice(0, 10)}…${cert.sha256Hash.slice(-4)}`;
-            const accent = isRevoked ? "var(--color-text-faint)" : GOLD;
-
             return (
-              <article
-                key={cert.id}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  background: isRevoked ? "rgba(7,5,32,0.4)" : "rgba(10,8,38,0.5)",
-                  border: `1px solid ${
-                    isRevoked
-                      ? "var(--color-border-subtle)"
-                      : `color-mix(in oklab, ${GOLD} 28%, #1f1b47)`
-                  }`,
-                  opacity: isRevoked ? 0.65 : 1,
-                  overflow: "hidden",
-                }}
-              >
-                {/* Top strip */}
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 2,
-                    background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-                    boxShadow: isRevoked
-                      ? "none"
-                      : `0 0 12px color-mix(in oklab, ${GOLD} 55%, transparent)`,
-                  }}
-                />
-                {!isRevoked && <CornerBrackets size={12} opacity={0.7} color={GOLD} />}
-
-                <div style={{ padding: "22px 24px 20px", flex: 1 }}>
-                  {/* Header row: eyebrow + seal / revoked chip */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      marginBottom: 14,
-                    }}
-                  >
+              <article key={cert.id} className="certificate-record" data-revoked={isRevoked}>
+                <div className="certificate-record__top">
+                  <BastionLogo size={42} />
+                  <span>{isRevoked ? "Révoqué" : "Certificat délivré"}</span>
+                </div>
+                <div className="certificate-record__body">
+                  <p className="certificate-record__reference">{certRef}</p>
+                  <h3>{cert.path.title}</h3>
+                  <p className="certificate-record__meta">
+                    <span>{cat}</span>
+                    <span>{diff.label}</span>
+                    <span>~{cert.path.estimatedHours} h</span>
+                  </p>
+                  <dl>
                     <div>
-                      <div
-                        style={{
-                          ...MONO,
-                          fontWeight: 700,
-                          fontSize: 9.5,
-                          letterSpacing: "0.22em",
-                          textTransform: "uppercase",
-                          color: accent,
-                          marginBottom: 8,
-                        }}
-                      >
-                        - CERTIFIÉ
-                      </div>
-                      <div
-                        style={{
-                          ...MONO,
-                          fontSize: 9,
-                          letterSpacing: "0.14em",
-                          textTransform: "uppercase",
-                          color: "var(--color-text-muted)",
-                        }}
-                      >
-                        {"// "}
-                        <b
-                          style={{
-                            color: isRevoked
-                              ? "var(--color-text-faint)"
-                              : "var(--color-text-secondary)",
-                          }}
-                        >
-                          {certRef}
-                        </b>
-                      </div>
-                    </div>
-                    {isRevoked ? (
-                      <span
-                        style={{
-                          ...MONO,
-                          fontSize: 9,
-                          fontWeight: 700,
-                          letterSpacing: "0.18em",
-                          textTransform: "uppercase",
-                          color: "var(--color-category-cybersec)",
-                          background: "rgba(255,71,87,0.1)",
-                          border: "1px solid rgba(255,71,87,0.3)",
-                          padding: "4px 10px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        Révoqué
-                      </span>
-                    ) : (
-                      <CertSeal />
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontWeight: 700,
-                      fontSize: 21,
-                      lineHeight: 1.15,
-                      letterSpacing: "-0.015em",
-                      color: isRevoked ? "var(--color-text-muted)" : "var(--color-text-primary)",
-                      margin: "0 0 12px",
-                    }}
-                  >
-                    {cert.path.title}
-                  </h3>
-
-                  {/* Meta row */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      flexWrap: "wrap",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <span style={{ ...MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
-                      {cat}
-                    </span>
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        padding: "2px 8px",
-                        background: `color-mix(in oklab, ${diff.color} 8%, transparent)`,
-                        border: `1px solid color-mix(in oklab, ${diff.color} 20%, transparent)`,
-                        color: diff.color,
-                        fontSize: 10,
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        ...MONO,
-                      }}
-                    >
-                      {diff.label}
-                    </span>
-                    <span style={{ ...MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
-                      ~{String(cert.path.estimatedHours)}h
-                    </span>
-                  </div>
-
-                  {/* Authenticity block */}
-                  <div
-                    style={{
-                      borderTop: "1px solid #1A1640",
-                      paddingTop: 14,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 7,
-                      ...MONO,
-                      fontSize: 10.5,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--color-text-muted)",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                      <span>Délivré le</span>
-                      <b
-                        style={{
-                          color: isRevoked
-                            ? "var(--color-text-muted)"
-                            : "var(--color-text-primary)",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {issuedAt}
-                      </b>
+                      <dt>Délivré le</dt>
+                      <dd>{issuedAt}</dd>
                     </div>
                     {cert.score !== null && (
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <span>Score examen</span>
-                        <b
-                          style={{
-                            color: isRevoked ? "var(--color-text-muted)" : "var(--cosmetic-accent)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {cert.score}%
-                        </b>
+                      <div>
+                        <dt>Score examen</dt>
+                        <dd>{cert.score}%</dd>
                       </div>
                     )}
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                      <span>SHA-256</span>
-                      <span style={{ color: "var(--color-text-faint)", textTransform: "none" }}>
-                        {hashSnippet}
-                      </span>
+                    <div>
+                      <dt>SHA-256</dt>
+                      <dd>{hashSnippet}</dd>
                     </div>
                     {isRevoked && cert.revokedReason && (
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <span style={{ color: "var(--color-category-cybersec)" }}>Motif</span>
-                        <span
-                          style={{ color: "var(--color-category-cybersec)", textTransform: "none" }}
-                        >
-                          {cert.revokedReason}
-                        </span>
+                      <div>
+                        <dt>Motif</dt>
+                        <dd>{cert.revokedReason}</dd>
                       </div>
                     )}
-                  </div>
+                  </dl>
                 </div>
-
-                {/* Actions */}
                 {!isRevoked && (
-                  <div style={{ display: "flex", borderTop: "1px solid #1A1640" }}>
-                    <Link
-                      href={`/verify/${cert.publicId}`}
-                      className="link-action"
-                      style={{
-                        flex: 1,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        padding: "13px 16px",
-                        ...MONO,
-                        fontWeight: 700,
-                        fontSize: 10,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        color: "var(--color-text-secondary)",
-                        textDecoration: "none",
-                        borderRight: "1px solid #1A1640",
-                      }}
-                    >
-                      Vérifier ↗
-                    </Link>
-                    {/* A file from a route handler, not a page: a plain link,
-                        so the router does not try to render it. */}
-                    <a
-                      href={`/api/certificates/${cert.id}/download`}
-                      download
-                      style={{
-                        flex: 1.3,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        padding: "13px 16px",
-                        ...MONO,
-                        fontWeight: 700,
-                        fontSize: 10,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        background: "var(--color-brand-blue)",
-                        color: "#fff",
-                        textDecoration: "none",
-                        boxShadow: "0 0 16px rgba(0,36,255,0.3)",
-                      }}
-                    >
+                  <div className="certificate-record__actions">
+                    <Link href={`/verify/${cert.publicId}`}>Vérifier ↗</Link>
+                    <a href={`/api/certificates/${cert.id}/download`} download>
                       Télécharger PDF ↓
                     </a>
                   </div>

@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityLine, installIntro } from "../availability";
 
+vi.mock("@/components/brand-typeface", () => ({ brandTypeface: "test-brand-fonts" }));
+
 /**
  * What /download says about where the app can be had. It said it twice, and
  * not the same thing: a hero offering to install the Android app above a line

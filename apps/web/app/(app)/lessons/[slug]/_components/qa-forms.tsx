@@ -101,6 +101,7 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
           setTitle(e.target.value);
         }}
         placeholder="Titre de ta question (10–200 caractères)"
+        aria-label="Titre de ta question"
         maxLength={200}
         required
         style={INPUT_STYLE}
@@ -111,6 +112,7 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
           setContent(e.target.value);
         }}
         placeholder="Décris ta question en détail (20–5000 caractères)"
+        aria-label="Détail de ta question"
         maxLength={5000}
         required
         rows={5}
@@ -228,6 +230,7 @@ export function PostAnswerForm({ questionId }: { questionId: string }): React.JS
           setContent(e.target.value);
         }}
         placeholder="Ta réponse (10–5000 caractères)"
+        aria-label="Ta réponse"
         maxLength={5000}
         required
         rows={4}

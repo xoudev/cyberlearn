@@ -16,6 +16,7 @@ const auth = vi.hoisted(() => ({
   getActiveBan: vi.fn<() => Promise<{ id: string } | null>>(),
 }));
 vi.mock("@/lib/auth", () => auth);
+vi.mock("@/components/brand-typeface", () => ({ brandTypeface: "test-brand-typeface" }));
 
 vi.mock("@/components/app-shell", () => ({
   AppShell: ({ userId, children }: { userId: string; children: React.ReactNode }) =>

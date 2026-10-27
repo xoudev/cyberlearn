@@ -32,9 +32,10 @@ function Line({
 /** SectionHead: the turquoise label and its grey hint, on one baseline. */
 function HeadSkeleton({ label, hint }: { label: number; hint: number }): React.ReactElement {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 4 }}>
-      <Skeleton w={label} h={11} />
-      <Skeleton w={hint} h={10} />
+    <div className="settings-section-heading">
+      <Skeleton w={150} h={12} style={{ marginBottom: 18 }} />
+      <Skeleton w={Math.min(280, label * 2)} h={58} />
+      <Skeleton w={hint} h={12} style={{ marginTop: 18 }} />
     </div>
   );
 }
@@ -50,8 +51,8 @@ function CardSkeleton({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <section className="card" style={{ position: "relative", padding: "28px 30px" }}>
-      <Line w={title} h={20} style={{ margin: "5px 0 11px" }} />
+    <section className="settings-card">
+      <Line w={title} h={32} style={{ margin: "0 0 24px" }} />
       {desc && (
         <SkeletonText
           lines={2}
@@ -70,9 +71,9 @@ function CardSkeleton({
 type Control = "switch" | "choice2" | "choice3";
 
 const CONTROL_SIZE: Record<Control, { w: number; h: number }> = {
-  switch: { w: 44, h: 24 },
-  choice2: { w: 96, h: 36 },
-  choice3: { w: 236, h: 36 },
+  switch: { w: 52, h: 44 },
+  choice2: { w: 96, h: 44 },
+  choice3: { w: 236, h: 44 },
 };
 
 /**
@@ -141,8 +142,8 @@ function SaveBarSkeleton(): React.ReactElement {
           gap: 10,
         }}
       >
-        <Skeleton w={100} h={40} />
-        <Skeleton w={144} h={40} />
+        <Skeleton w={100} h={44} />
+        <Skeleton w={144} h={44} />
       </div>
     </div>
   );

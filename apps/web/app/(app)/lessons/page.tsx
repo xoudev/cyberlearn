@@ -2,9 +2,9 @@ import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
-import { LessonCard } from "@cyberlearn/ui";
 import type { Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
+import { CatalogueLessonCard } from "./_components/catalogue-lesson-card";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
@@ -13,39 +13,32 @@ import { catalogHref, parseCatalogFilters, type RawParams } from "@/lib/lessons/
 import { CatalogFilterSelect } from "./_components/catalog-filter-select";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
-import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
+import { CatalogueDomainIcon } from "@/components/catalogue-domain-icon";
+import "./lessons-catalogue.css";
 
 export const metadata: Metadata = { title: "Leçons" };
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const CATEGORIES = [
-  { value: "ALL" as const, label: "TOUS", dot: "var(--color-text-secondary)" },
-  { value: "DEV" as const, label: "DEV", dot: "var(--color-rarity-rare)" },
-  { value: "CYBERSEC" as const, label: "CYBERSEC", dot: "var(--color-category-cybersec)" },
-  { value: "NETWORK" as const, label: "RÉSEAU", dot: "var(--color-brand-turquoise)" },
+const CATEGORIES: { value: "ALL" | "DEV" | "CYBERSEC" | "NETWORK"; label: string }[] = [
+  { value: "ALL", label: "Toutes" },
+  { value: "DEV", label: "Dev" },
+  { value: "CYBERSEC", label: "Cybersec" },
+  { value: "NETWORK", label: "Réseau" },
 ];
-
-// "ALL" is the option that clears the filter; the control reads it as "none".
 const DIFFICULTIES: { value: Difficulty | "ALL"; label: string }[] = [
-  { value: "ALL", label: "TOUS" },
-  { value: "BEGINNER", label: "DÉBUTANT" },
-  { value: "INTERMEDIATE", label: "INTERMÉDIAIRE" },
-  { value: "ADVANCED", label: "AVANCÉ" },
-  { value: "EXPERT", label: "EXPERT" },
+  { value: "ALL", label: "Tous les niveaux" },
+  { value: "BEGINNER", label: "Débutant" },
+  { value: "INTERMEDIATE", label: "Intermédiaire" },
+  { value: "ADVANCED", label: "Avancé" },
+  { value: "EXPERT", label: "Expert" },
 ];
-
 const STATUSES: { value: ProgressStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "TOUS" },
-  { value: "NOT_STARTED", label: "NON COMMENCÉES" },
-  { value: "IN_PROGRESS", label: "EN COURS" },
-  { value: "COMPLETED", label: "TERMINÉES" },
+  { value: "ALL", label: "Tous les statuts" },
+  { value: "NOT_STARTED", label: "Non commencées" },
+  { value: "IN_PROGRESS", label: "En cours" },
+  { value: "COMPLETED", label: "Terminées" },
 ];
-
 const PAGE_SIZE = 9;
-
-// ── Page ──────────────────────────────────────────────────────────────────────
 
 interface PageProps {
   searchParams: Promise<RawParams>;
@@ -56,9 +49,7 @@ export default async function LessonsPage({
 }: PageProps): Promise<React.ReactElement> {
   const p = await searchParams;
   return (
-    <div className="page-container">
-      {/* ── Breadcrumb (static, renders immediately) ─────────────────────── */}
-      <Crumb segments={["leçons"]} />
+    <div className="page-container lessons-catalogue learning-catalogue">
       <Suspense fallback={<LessonsBodySkeleton />}>
         <LessonsBody p={p} />
       </Suspense>
@@ -69,16 +60,13 @@ export default async function LessonsPage({
 async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement> {
   const filters = parseCatalogFilters(p);
   const { category: activeCategory, page } = filters;
-  // The filters every count shares. The category is not among them: each
-  // pill counts its own.
+  // Counts share the current search, level and status, but each counts its own category.
   const shared = {
     difficulty: filters.difficulty,
     progressStatus: filters.status,
     search: filters.q,
   };
-
   const authUser = await requireRequestUser();
-
   const [{ total, lessons: matchingLessons }, categoryCounts] = await Promise.all([
     lessonRepository.findManyWithProgress(authUser.id, {
       ...shared,
@@ -87,11 +75,9 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
     }),
     lessonRepository.countByCategory(authUser.id, shared),
   ]);
-  // What "TOUS" would list: every category, under the same filters.
   const allCount = Object.values(categoryCounts).reduce((sum, n) => sum + n, 0);
 
-  // Resolve availability across the matching catalogue before paginating.
-  // Sign cover URLs only for the cards on the resulting page.
+  // Availability is resolved before pagination; signed covers are limited to the visible page.
   const [pathContexts, unlockAll] = await Promise.all([
     lessonRepository.findPathContexts(
       authUser.id,
@@ -108,274 +94,222 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
     page * PAGE_SIZE,
   );
   const coverSrcs = await resolveLessonCoverSrcMany(lessons.map((l) => l.coverImageUrl));
-
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const startIdx = (page - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(page * PAGE_SIZE, total);
-
-  // Over every matching lesson, as `total` next to them is: counted over the
-  // page on screen, the strip said "1 en cours" while the dashboard said 2.
   const inProgressCount = matchingLessons.filter((l) => l.progressStatus === "IN_PROGRESS").length;
   const completedCount = matchingLessons.filter((l) => l.progressStatus === "COMPLETED").length;
+  const hasFilters = [filters.category, filters.difficulty, filters.status, filters.q].some(
+    (value) => Boolean(value),
+  );
+  const featuredIndex =
+    lessons.length >= 3
+      ? lessons.findIndex(
+          (lesson) =>
+            lesson.progressStatus === "IN_PROGRESS" &&
+            placements.get(lesson.id)?.state !== "locked",
+        )
+      : -1;
+  const featuredLesson = lessons[featuredIndex];
 
   return (
     <>
-      {/* ── Header: two-column grid ──────────────────────────────────────── */}
-      <div className="catalog-header-grid">
-        {/* Left: title + subtitle */}
-        <div>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: "clamp(42px, 5vw, 68px)",
-              lineHeight: 0.95,
-              letterSpacing: "-0.04em",
-              color: "var(--color-text-primary)",
-              margin: "0 0 14px",
-            }}
-          >
-            {total}{" "}
-            <em
-              style={{
-                fontStyle: "normal",
-                background:
-                  "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
-              {total > 1 ? "missions" : "mission"}
-            </em>
-            <br />
-            {total > 1 ? "disponibles" : "disponible"}
+      <header className="catalogue-masthead">
+        <div className="catalogue-masthead__title">
+          <p className="catalogue-masthead__eyebrow">Apprendre / Une notion à la fois</p>
+          <h1>
+            Les leçons<span>.</span>
           </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 16,
-              color: "var(--color-text-secondary)",
-              margin: 0,
-              maxWidth: 520,
-              lineHeight: 1.55,
-            }}
-          >
-            Filtre par domaine, niveau ou statut. Chaque leçon te fait progresser dans ton parcours
-            et alimente ton XP.
-          </p>
+          <p>Comprendre. Essayer. Savoir refaire.</p>
         </div>
+        <div className="lessons-catalogue__edition" aria-label="Leçons correspondant aux filtres">
+          <strong>{String(total).padStart(2, "0")}</strong>
+          <span>{hasFilters ? "dans ta sélection" : "leçons au catalogue"}</span>
+        </div>
+      </header>
+      <div className="catalogue-ledger">
+        <span>
+          <b>{inProgressCount}</b> en cours
+        </span>
+        <span>
+          <b>{completedCount}</b> terminées
+        </span>
+        <span className="catalogue-ledger__total">
+          Les accessibles d’abord. Les autres se débloquent dans leur parcours.
+        </span>
+      </div>
 
-        {/* Right: meta stats */}
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}
-        >
-          <div
-            className="mono-label"
-            style={{
-              display: "flex",
-              gap: 18,
-              color: "var(--color-text-muted)",
-            }}
-          >
-            <span>
-              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{total}</b> total
-            </span>
-            <span style={{ color: "var(--color-border-default)" }}>/</span>
-            <span>
-              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{inProgressCount}</b>{" "}
-              en cours
-            </span>
-            <span style={{ color: "var(--color-border-default)" }}>/</span>
-            <span>
-              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{completedCount}</b>{" "}
-              terminées
-            </span>
+      {featuredLesson && (
+        <section className="lessons-catalogue__featured" aria-label="Une leçon à reprendre">
+          <div className="catalogue-results">
+            <h2>Reprends le fil</h2>
+            <p>Ta leçon en cours</p>
           </div>
-        </div>
-      </div>
-
-      {/* ── Filters ──────────────────────────────────────────────────────── */}
-      <div className="filter-bar" style={{ alignItems: "center" }}>
-        {/* Category pills with colored dots */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <span
-            className="mono-label"
-            style={{
-              color: "var(--color-text-muted)",
-              marginRight: 6,
-            }}
+          <Link
+            href={`/lessons/${featuredLesson.slug}`}
+            className="lessons-catalogue__card-link"
+            aria-label={`Reprendre ${featuredLesson.title}`}
           >
-            › DOMAINE
-          </span>
-          {CATEGORIES.map((c) => {
-            const isActive =
-              c.value === "ALL" ? activeCategory === undefined : activeCategory === c.value;
-            const count = c.value !== "ALL" ? (categoryCounts[c.value] ?? 0) : allCount;
-            return (
-              <CategoryPill
-                key={c.value}
-                href={catalogHref(filters, { category: c.value === "ALL" ? null : c.value })}
-                active={isActive}
-                dot={c.dot}
-                count={count}
-              >
-                {c.label}
-              </CategoryPill>
-            );
-          })}
-        </div>
+            <CatalogueLessonCard
+              featured
+              title={featuredLesson.title}
+              description={featuredLesson.description}
+              difficulty={featuredLesson.difficulty}
+              category={featuredLesson.category}
+              durationMinutes={featuredLesson.estimatedMinutes}
+              xpReward={featuredLesson.xpReward}
+              status={featuredLesson.progressStatus ?? "IN_PROGRESS"}
+              refCode={featuredLesson.refCode}
+              coverSrc={coverSrcs[featuredIndex] ?? null}
+              quizScore={featuredLesson.quizScore}
+              lockedPath={null}
+            />
+          </Link>
+        </section>
+      )}
 
-        <CatalogFilterSelect
-          label="Niveau"
-          value={filters.difficulty ?? "ALL"}
-          options={DIFFICULTIES.map((d) => ({
-            ...d,
-            href: catalogHref(filters, { difficulty: d.value === "ALL" ? null : d.value }),
-          }))}
-        />
+      <div className="lessons-catalogue__workspace">
+        <aside
+          className="catalogue-tools lessons-catalogue__filters"
+          aria-label="Affiner les leçons"
+        >
+          <nav className="catalogue-tools__domains" aria-label="Domaine des leçons">
+            <span className="catalogue-tools__label">Choisis un domaine</span>
+            <div className="lessons-catalogue__domains">
+              {CATEGORIES.map((c) => {
+                const active =
+                  c.value === "ALL" ? activeCategory === undefined : activeCategory === c.value;
+                const count = c.value === "ALL" ? allCount : (categoryCounts[c.value] ?? 0);
+                return (
+                  <Link
+                    key={c.value}
+                    href={catalogHref(filters, { category: c.value === "ALL" ? null : c.value })}
+                    className="catalogue-domain lesson-domain"
+                    aria-current={active ? "true" : undefined}
+                  >
+                    <CatalogueDomainIcon category={c.value} />
+                    <span>{c.value === "ALL" ? "Tout explorer" : c.label}</span>
+                    <b>
+                      {count} leçon{count > 1 ? "s" : ""}
+                    </b>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+          <div className="lessons-catalogue__refine">
+            <CatalogFilterSelect
+              label="Niveau"
+              value={filters.difficulty ?? "ALL"}
+              options={DIFFICULTIES.map((d) => ({
+                ...d,
+                href: catalogHref(filters, { difficulty: d.value === "ALL" ? null : d.value }),
+              }))}
+            />
+            <CatalogFilterSelect
+              label="Statut"
+              value={filters.status ?? "ALL"}
+              options={STATUSES.map((s) => ({
+                ...s,
+                href: catalogHref(filters, { status: s.value === "ALL" ? null : s.value }),
+              }))}
+            />
+            <LessonsSearchBar />
+          </div>
+        </aside>
 
-        <CatalogFilterSelect
-          label="Statut"
-          value={filters.status ?? "ALL"}
-          options={STATUSES.map((s) => ({
-            ...s,
-            href: catalogHref(filters, { status: s.value === "ALL" ? null : s.value }),
-          }))}
-        />
-
-        {/* Search */}
-        <LessonsSearchBar />
-      </div>
-
-      {/* ── Grid ─────────────────────────────────────────────────────────── */}
-      {lessons.length === 0 ? (
-        <LessonsEmpty />
-      ) : (
-        <div className="lessons-catalog-grid">
-          {lessons.map((lesson, i) => {
-            const placement = placements.get(lesson.id);
-            const locked = placement?.state === "locked";
-            return (
-              <Link
-                key={lesson.id}
-                // A locked card leads to the path that opens it, not to a page
-                // that would only bounce back here.
-                href={locked ? `/paths/${placement.path.slug}` : `/lessons/${lesson.slug}`}
-                className={locked ? "lesson-locked" : undefined}
-                aria-label={
-                  locked
-                    ? `${lesson.title}. Leçon verrouillée, à débloquer dans le parcours ${placement.path.title}`
-                    : undefined
-                }
-                style={
-                  locked ? undefined : { display: "block", height: "100%", textDecoration: "none" }
-                }
-              >
-                <LessonCard
-                  title={lesson.title}
-                  slug={lesson.slug}
-                  description={lesson.description}
-                  difficulty={lesson.difficulty}
-                  category={lesson.category}
-                  durationMinutes={lesson.estimatedMinutes}
-                  xpReward={lesson.xpReward}
-                  status={lesson.progressStatus ?? "NOT_STARTED"}
-                  refCode={lesson.refCode}
-                  coverSrc={coverSrcs[i] ?? null}
-                  quizScore={lesson.quizScore}
-                  variant="catalog"
-                />
-                {locked && (
-                  <span className="lesson-locked__chip">
-                    <svg viewBox="0 0 12 14" width={10} height={11} fill="none" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="6"
-                        width="10"
-                        height="7"
-                        rx="1"
-                        stroke="currentColor"
-                        strokeWidth="1.3"
-                      />
-                      <path
-                        d="M3.5 6V4a2.5 2.5 0 0 1 5 0v2"
-                        stroke="currentColor"
-                        strokeWidth="1.3"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <span className="lesson-locked__path">{placement.path.title}</span>
-                  </span>
-                )}
+        <section className="lessons-catalogue__results" aria-label="Résultats du catalogue">
+          <div className="catalogue-results">
+            <h2>{hasFilters ? "Ta sélection" : "Le catalogue"}</h2>
+            <p>
+              {total} résultat{total > 1 ? "s" : ""}
+            </p>
+            {hasFilters && (
+              <Link href="/lessons" className="catalogue-results__link">
+                Réinitialiser les filtres
               </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Footer strip - pagination ────────────────────────────────────── */}
-      {totalPages > 1 && (
-        <div
-          style={{
-            marginTop: 40,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            // wrap so the page-number cluster drops below the count on narrow
-            // screens instead of the "SUIV" button spilling past the strip edge
-            flexWrap: "wrap",
-            gap: 12,
-            padding: "14px 20px",
-            border: "1px solid var(--color-border-default)",
-            background: "rgba(5,4,26,0.5)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--color-text-muted)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
-          <span>
-            Affichage{" "}
-            <b style={{ color: "var(--color-text-primary)" }}>
-              {startIdx}–{endIdx}
-            </b>{" "}
-            sur <b style={{ color: "var(--color-text-primary)" }}>{total}</b>
-          </span>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            {page > 1 && (
-              <PageBtn href={catalogHref(filters, { page: String(page - 1) })}>← PRÉC</PageBtn>
-            )}
-            {buildPageRange(page, totalPages).map((n, i) =>
-              n === "…" ? (
-                <span
-                  key={`ellipsis-${String(i)}`}
-                  style={{ padding: "0 6px", color: "var(--color-border-default)" }}
-                >
-                  …
-                </span>
-              ) : (
-                <PageBtn
-                  key={n}
-                  href={catalogHref(filters, { page: String(n) })}
-                  active={n === page}
-                >
-                  {String(n).padStart(2, "0")}
-                </PageBtn>
-              ),
-            )}
-            {page < totalPages && (
-              <PageBtn href={catalogHref(filters, { page: String(page + 1) })}>SUIV →</PageBtn>
             )}
           </div>
-        </div>
-      )}
+
+          {lessons.length === 0 ? (
+            <LessonsEmpty />
+          ) : (
+            <div className="lessons-catalogue__grid">
+              {lessons.map((lesson, i) => {
+                if (lesson.id === featuredLesson?.id) return null;
+                const placement = placements.get(lesson.id);
+                const locked = placement?.state === "locked";
+                return (
+                  <Link
+                    key={lesson.id}
+                    href={locked ? `/paths/${placement.path.slug}` : `/lessons/${lesson.slug}`}
+                    className="lessons-catalogue__card-link"
+                    aria-label={
+                      locked
+                        ? `${lesson.title}. Leçon verrouillée, à débloquer dans le parcours ${placement.path.title}`
+                        : lesson.title
+                    }
+                  >
+                    <CatalogueLessonCard
+                      title={lesson.title}
+                      description={lesson.description}
+                      difficulty={lesson.difficulty}
+                      category={lesson.category}
+                      durationMinutes={lesson.estimatedMinutes}
+                      xpReward={lesson.xpReward}
+                      status={lesson.progressStatus ?? "NOT_STARTED"}
+                      refCode={lesson.refCode}
+                      coverSrc={coverSrcs[i] ?? null}
+                      quizScore={lesson.quizScore}
+                      lockedPath={locked ? placement.path.title : null}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <nav className="lessons-catalogue__pagination" aria-label="Pagination des leçons">
+              <span>
+                Affichage{" "}
+                <b>
+                  {startIdx}–{endIdx}
+                </b>{" "}
+                sur <b>{total}</b>
+              </span>
+              <div>
+                {page > 1 && (
+                  <PageBtn href={catalogHref(filters, { page: String(page - 1) })}>
+                    ← Précédent
+                  </PageBtn>
+                )}
+                {buildPageRange(page, totalPages).map((n, i) =>
+                  n === "…" ? (
+                    <span key={`ellipsis-${String(i)}`}>…</span>
+                  ) : (
+                    <PageBtn
+                      key={n}
+                      href={catalogHref(filters, { page: String(n) })}
+                      active={n === page}
+                    >
+                      {String(n).padStart(2, "0")}
+                    </PageBtn>
+                  ),
+                )}
+                {page < totalPages && (
+                  <PageBtn href={catalogHref(filters, { page: String(page + 1) })}>
+                    Suivant →
+                  </PageBtn>
+                )}
+              </div>
+            </nav>
+          )}
+        </section>
+      </div>
     </>
   );
 }
-
-// ── Page range helper ─────────────────────────────────────────────────────────
 
 function buildPageRange(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -387,95 +321,17 @@ function buildPageRange(current: number, total: number): (number | "…")[] {
   return pages;
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function CategoryPill({
-  href,
-  active,
-  dot,
-  count,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  dot: string;
-  count: number;
-  children: React.ReactNode;
-}): React.ReactElement {
-  return (
-    <Link
-      className="mono-label"
-      href={href}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        height: 34,
-        padding: "0 14px",
-        background: active
-          ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
-          : "transparent",
-        border: active
-          ? "1px solid var(--cosmetic-accent)"
-          : "1px solid var(--color-border-default)",
-        color: active ? "var(--cosmetic-accent)" : "var(--color-text-secondary)",
-        fontWeight: 600,
-        textDecoration: "none",
-        boxShadow: active
-          ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
-          : "none",
-        transition: "all 180ms ease",
-        whiteSpace: "nowrap",
-      }}
-    >
-      <span
-        style={{ width: 6, height: 6, borderRadius: "50%", background: dot, flexShrink: 0 }}
-        aria-hidden="true"
-      />
-      <span>{children}</span>
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          color: active ? "var(--cosmetic-accent)" : "var(--color-text-disabled)",
-          padding: "1px 6px",
-          border: `1px solid ${active ? "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)" : "var(--color-border-default)"}`,
-          letterSpacing: "0.04em",
-        }}
-      >
-        {count}
-      </span>
-    </Link>
-  );
-}
-
 function PageBtn({
   href,
   active,
   children,
 }: {
   href: string;
-  active?: boolean | undefined;
+  active?: boolean;
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <Link
-      className="mono-label"
-      href={href}
-      style={{
-        padding: "6px 12px",
-        color: active ? "var(--cosmetic-accent)" : "var(--color-text-secondary)",
-        background: active
-          ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
-          : "transparent",
-        border: active
-          ? "1px solid var(--cosmetic-accent)"
-          : "1px solid var(--color-border-default)",
-        textDecoration: "none",
-        transition: "all 180ms ease",
-        whiteSpace: "nowrap",
-      }}
-    >
+    <Link className="catalogue-domain" href={href} aria-current={active ? "page" : undefined}>
       {children}
     </Link>
   );
@@ -485,42 +341,9 @@ function LessonsEmpty(): React.ReactElement {
   return (
     <EmptyState
       title="Aucune leçon trouvée"
-      message="Modifie tes filtres ou ta recherche pour explorer d'autres leçons."
-      glyph={
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
-          <rect
-            x="8"
-            y="20"
-            width="56"
-            height="40"
-            stroke="var(--color-border-default)"
-            strokeWidth="2"
-          />
-          <line x1="8" y1="20" x2="8" y2="60" stroke="var(--color-brand-blue)" strokeWidth="3" />
-          <path
-            d="M22 36h28M22 44h18"
-            stroke="var(--color-border-default)"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <circle
-            cx="58"
-            cy="58"
-            r="11"
-            fill="#07051E"
-            stroke="var(--color-border-default)"
-            strokeWidth="2"
-          />
-          <path
-            d="M54 58h8M58 54v8"
-            stroke="var(--color-text-disabled)"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      }
+      message="Modifie tes filtres ou ta recherche pour trouver une leçon."
     >
-      <Link href="/lessons" className="btn">
+      <Link href="/lessons" className="btn btn--ghost btn--sm">
         Réinitialiser les filtres
       </Link>
     </EmptyState>

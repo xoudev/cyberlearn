@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../../_components/admin-confirmation";
 import { MAX_FREEZES } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput, useSuccessKey } from "@/lib/form-input";
@@ -84,19 +85,18 @@ export function XpAdjustForm({
 
   return (
     <div className="a-form">
-      <form
+      <AdminConfirmForm
         key={formKey}
         action={action}
         onReset={keepFormInput}
-        onSubmit={(event) => {
-          const data = new FormData(event.currentTarget);
+        question={(form) => {
+          const data = new FormData(form);
           const amount = Number(data.get("amount"));
           const question =
             data.get("direction") === "remove"
               ? `Retirer ${amount.toLocaleString("fr-FR")} XP à ${handle} ? Son total ne descend pas sous zéro, et son niveau peut baisser. Personne n'est notifié.`
               : `Ajouter ${amount.toLocaleString("fr-FR")} XP à ${handle} ? Son niveau peut monter, sans notification.`;
-          // Cancelling the native submit also cancels the action.
-          if (!window.confirm(question)) event.preventDefault();
+          return question;
         }}
         className="a-form"
       >
@@ -134,7 +134,7 @@ export function XpAdjustForm({
         <button type="submit" disabled={pending} className="a-btn a-btn--ghost">
           {pending ? "Correction…" : "Corriger l'XP"}
         </button>
-      </form>
+      </AdminConfirmForm>
       <Outcome state={state} />
     </div>
   );
@@ -163,18 +163,18 @@ export function StreakCorrectionForm({
 
   return (
     <div className="a-form">
-      <form
+      <AdminConfirmForm
         key={formKey}
         action={action}
         onReset={keepFormInput}
-        onSubmit={(event) => {
-          const data = new FormData(event.currentTarget);
+        question={(form) => {
+          const data = new FormData(form);
           const days = Number(data.get("streakDays"));
           // The record the correction leaves: never under the streak.
           const record = Math.max(days, Number(data.get("longestStreak")));
           const freezes = Number(data.get("streakFreezes"));
           const question = `Mettre la série de ${handle} à ${String(days)} jour${days > 1 ? "s" : ""}, record ${String(record)}, avec ${String(freezes)} gel${freezes > 1 ? "s" : ""} en réserve ?`;
-          if (!window.confirm(question)) event.preventDefault();
+          return question;
         }}
         className="a-form"
       >
@@ -239,7 +239,7 @@ export function StreakCorrectionForm({
         <button type="submit" disabled={pending} className="a-btn a-btn--ghost">
           {pending ? "Correction…" : "Corriger la série"}
         </button>
-      </form>
+      </AdminConfirmForm>
       <Outcome state={state} />
     </div>
   );
@@ -267,20 +267,20 @@ export function BadgeGrantForm({
       {badges.length === 0 ? (
         <p className="a-field-hint">Ce compte a déjà tous les badges actifs.</p>
       ) : (
-        <form
+        <AdminConfirmForm
           key={formKey}
           action={action}
           onReset={keepFormInput}
-          onSubmit={(event) => {
-            const data = new FormData(event.currentTarget);
+          question={(form) => {
+            const data = new FormData(form);
             const badge = badges.find((entry) => entry.id === data.get("badgeId"));
-            if (badge === undefined) return;
+            if (badge === undefined) return null;
             const xp =
               badge.xpReward > 0
                 ? ` Il rapporte ${badge.xpReward.toLocaleString("fr-FR")} XP.`
                 : "";
             const question = `Attribuer « ${badge.name} » à ${handle} ?${xp} La personne reçoit la notification d'un badge obtenu.`;
-            if (!window.confirm(question)) event.preventDefault();
+            return question;
           }}
           className="a-form"
         >
@@ -304,7 +304,7 @@ export function BadgeGrantForm({
           <button type="submit" disabled={pending} className="a-btn a-btn--ghost">
             {pending ? "Attribution…" : "Attribuer le badge"}
           </button>
-        </form>
+        </AdminConfirmForm>
       )}
       <Outcome state={state} />
     </div>
@@ -334,20 +334,20 @@ export function BadgeRevokeForm({
 
   return (
     <div className="a-form">
-      <form
+      <AdminConfirmForm
         key={formKey}
         action={action}
         onReset={keepFormInput}
-        onSubmit={(event) => {
-          const data = new FormData(event.currentTarget);
+        question={(form) => {
+          const data = new FormData(form);
           const badge = badges.find((entry) => entry.id === data.get("badgeId"));
-          if (badge === undefined) return;
+          if (badge === undefined) return null;
           const xp =
             data.get("takeBackXp") === "on" && badge.xpCredited > 0
               ? ` Les ${badge.xpCredited.toLocaleString("fr-FR")} XP qu'il a rapportés sont repris.`
               : " Les XP qu'il a rapportés restent acquis.";
           const question = `Retirer « ${badge.name} » à ${handle} ?${xp} Refusé si son critère est encore rempli : il reviendrait tout seul.`;
-          if (!window.confirm(question)) event.preventDefault();
+          return question;
         }}
         className="a-form"
       >
@@ -380,7 +380,7 @@ export function BadgeRevokeForm({
         <button type="submit" disabled={pending} className="a-btn a-btn--danger">
           {pending ? "Retrait…" : "Retirer le badge"}
         </button>
-      </form>
+      </AdminConfirmForm>
       <Outcome state={state} />
     </div>
   );

@@ -1,6 +1,6 @@
 import React from "react";
-import { Skeleton } from "@cyberlearn/ui";
-import { SupportHeaderSkeleton } from "./_components/support-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import "./support.css";
 
 /**
  * The list of requests while it loads, drawn on the page's own classes: the
@@ -12,11 +12,32 @@ const SUBJECTS = ["46%", "62%", "38%", "54%", "44%"] as const;
 
 export default function SupportLoading(): React.ReactElement {
   return (
-    <div className="page-container" aria-busy="true" aria-label="Chargement de tes demandes">
-      <SupportHeaderSkeleton crumb={250} eyebrow={197} title="6.2em" ledeLines={2} ledeLast="32%" />
-
-      <div style={{ marginBottom: 24 }} aria-hidden="true">
-        <Skeleton w={146} h={34} />
+    <div
+      className="page-container learning-catalogue learning-workspace community-workspace support-workspace"
+      aria-busy="true"
+      aria-label="Chargement de tes demandes"
+    >
+      <div className="catalogue-masthead" aria-hidden="true">
+        <div>
+          <Skeleton w={197} h={12} style={{ marginBottom: 20 }} />
+          <Skeleton w="min(65vw,600px)" h={76} />
+          <Skeleton w="min(65vw,420px)" h={14} style={{ marginTop: 20 }} />
+        </div>
+      </div>
+      <div className="catalogue-ledger" aria-hidden="true">
+        <Skeleton w={110} h={26} />
+        <Skeleton w={110} h={26} />
+      </div>
+      <div className="support-overview" aria-hidden="true">
+        <div className="support-overview__body">
+          <Skeleton w="70%" h={44} />
+          <Skeleton w="90%" h={48} style={{ marginBlock: 24 }} />
+          <Skeleton w={160} h={44} />
+        </div>
+        <div className="support-overview__aside">
+          <Skeleton w={64} h={64} />
+          <Skeleton w="90%" h={48} />
+        </div>
       </div>
 
       <ul className="tk-list" aria-hidden="true">

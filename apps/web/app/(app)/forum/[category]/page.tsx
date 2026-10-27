@@ -6,7 +6,7 @@ import { TOPICS_PER_PAGE, forumRepository, friendshipRepository } from "@cyberle
 import { requireRequestUser } from "@/lib/auth";
 import { Crumbs, ForumHeader, TopicRow, authorIsFriend } from "../_components/forum-bits";
 import { NewTopicDialog } from "../_components/new-topic-dialog";
-import "../forum.css";
+import "../community-forum.css";
 import { EmptyState } from "@/components/empty-state";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export default async function ForumCategoryPage({
   const pages = Math.max(1, Math.ceil(data.total / TOPICS_PER_PAGE));
 
   return (
-    <div className="fo-page">
+    <div className="fo-page learning-catalogue learning-workspace community-workspace">
       <Crumbs trail={[{ label: "Forum", href: "/forum" }, { label: data.category.name }]} />
       <ForumHeader
         eyebrow={`${String(data.total)} sujet${data.total > 1 ? "s" : ""}`}
@@ -53,7 +53,10 @@ export default async function ForumCategoryPage({
       />
 
       {data.topics.length === 0 ? (
-        <EmptyState message="Cette section est vide. Le premier sujet est souvent le plus lu : ouvre-le." />
+        <EmptyState
+          title="La discussion commence avec toi."
+          message="Cette section n’a pas encore de sujet. Utilise Nouveau sujet pour poser ta question ou partager une découverte."
+        />
       ) : (
         <ul className="fo-list">
           {data.topics.map((t) => (

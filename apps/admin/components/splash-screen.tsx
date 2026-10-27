@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BastionLogo } from "@cyberlearn/ui";
 import React from "react";
 
 const SESSION_KEY = "cl-admin-splash-shown";
@@ -53,14 +53,7 @@ export function AdminSplashScreen({ nonce }: { nonce?: string }): React.ReactEle
 
       <div aria-hidden="true" data-splash="true">
         <div className="cl-splash-mark">
-          <Image
-            src="/Admin_logo.png"
-            alt=""
-            width={190}
-            height={42}
-            priority
-            style={{ width: "auto", height: 42, objectFit: "contain" }}
-          />
+          <BastionLogo size={64} />
         </div>
 
         <div className="cl-splash-caption">Console d&apos;administration</div>

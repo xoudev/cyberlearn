@@ -1,5 +1,7 @@
 "use client";
 
+// Client: local domain/type/search filters and the path guide update in place.
+
 import { type PillItem, Pills } from "@/components/pills";
 import React, { useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -19,15 +21,16 @@ import {
 } from "@cyberlearn/lib/content/vocabulary";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
+import "./paths-workshop.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { Brackets } from "@/app/_components/corner-brackets";
-import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import { ProgressBar } from "@/components/progress-bar";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
 import type { LearningAnswers, SuggestedPath } from "@/lib/paths/guide-answers";
 import { PathGuideDialog } from "./path-guide-dialog";
+import { CatalogueArtwork } from "@/components/catalogue-artwork";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -87,7 +90,7 @@ const TRACK_DEFAULT = { label: "Compétence", short: "Compétence" };
 type Filter = DomainFilter;
 // The track row is a different axis from the domain row, so it gets its own
 // neutral accent rather than borrowing a domain colour.
-const TRACK_COLOR = "#b388ff";
+const TRACK_COLOR = "#aaa79f";
 const TRACK_PILLS: PillItem<TrackFilter>[] = [
   { key: "all", label: "Tous", color: TRACK_COLOR },
   { key: "SKILL", label: "Compétence", color: TRACK_COLOR },
@@ -185,6 +188,13 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   return (
     <article className={`hero-path hero-path--${kind}`}>
       <Brackets />
+      <div className="hero-path__poster">
+        <CatalogueArtwork
+          category={path.category}
+          reference={path.refCode}
+          coverSrc={path.coverSrc}
+        />
+      </div>
       <div className="hero-path__main">
         <div className="hero-path__topline">
           <span className="state-chip">
@@ -199,10 +209,6 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           <span className="diff-tag">
             <DiffBars level={barsOf(diff.level)} />
             {diff.label}
-          </span>
-          <span className="refcode">
-            {"// "}
-            <b>{path.refCode}</b>
           </span>
         </div>
         <h2 className="hero-path__title">{path.title}</h2>
@@ -241,6 +247,15 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
             <span className="pct">{pct}%</span>
           </div>
           <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
+          <div
+            className="hero-path__segments"
+            aria-hidden="true"
+            style={{ gap: Math.min(4, 100 / Math.max(path.progressTotal, 1)) }}
+          >
+            {Array.from({ length: path.progressTotal }, (_, index) => (
+              <span key={index} data-done={index < path.progressDone} />
+            ))}
+          </div>
           <div className="hero-path__cta-row">
             <Link href={cta.href} className="btn btn--lg">
               {cta.label} {ARROW}
@@ -253,23 +268,7 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
         </div>
       </div>
-      <div className={`hero-path__console${path.coverSrc ? " hero-path__console--image" : ""}`}>
-        {path.coverSrc ? (
-          <>
-            <span
-              className="hero-path__img"
-              aria-hidden="true"
-              style={{ backgroundImage: `url("${path.coverSrc}")` }}
-            />
-            {/* Holds the room above the next mission, as the glyph does. */}
-            <div className="hero-glyph" />
-          </>
-        ) : (
-          <div className="hero-glyph">
-            <span className="hero-glyph__halo" />
-            <KindGlyph kind={kind} size={132} />
-          </div>
-        )}
+      <div className="hero-path__console">
         {path.nextLesson && (
           <Link href={`/lessons/${path.nextLesson.slug}`} className="hero-next">
             <div className="hero-next__lbl">Prochaine mission · {path.nextLesson.n}</div>
@@ -488,7 +487,7 @@ function PathsEmpty({
   return (
     <EmptyState
       title="Aucun parcours trouvé"
-      message={`// 0 résultat pour le filtre « ${filterLabel} »`}
+      message={`Aucun résultat pour « ${filterLabel} ». Essaie un autre domaine ou une autre recherche.`}
       glyph={
         <svg
           width="48"
@@ -550,64 +549,51 @@ export function PathsCollection({
   ];
 
   return (
-    <div className="pc2-root">
+    <div className="pc2-root learning-catalogue paths-workshop">
       <div className="pc2">
-        {/* breadcrumb */}
-        <Crumb segments={["parcours"]} />
-
-        {/* header */}
-        <header className="pc2-head">
-          <div>
-            <h1 className="pc2-title gradient-title">
-              <em>{paths.length}</em> parcours disponibles
+        <header className="catalogue-masthead">
+          <div className="catalogue-masthead__title">
+            <p className="catalogue-masthead__eyebrow">Apprendre / Choisir un cap</p>
+            <h1>
+              Les parcours<span>.</span>
             </h1>
-            <p className="pc2-sub">
-              {
-                "Chaque parcours mène d'une compétence brute à un certificat vérifiable. Tu progresses mission par mission."
-              }
-            </p>
+            <p>Du premier réflexe à la maîtrise. Une mission après l’autre.</p>
+          </div>
+          <div className="catalogue-masthead__guide">
             <PathGuideDialog catalogue={guide.catalogue} saved={guide.saved} />
           </div>
-          <div className="pc2-telemetry">
-            <div className="pc2-telemetry__row">
-              <span>
-                <b className="ip">{inProgCount}</b> en cours
-              </span>
-              <span className="pc2-telemetry__sep" />
-              <span>
-                <b className="cp">{doneCount}</b> certifié
-              </span>
-              <span className="pc2-telemetry__sep" />
-              <span>
-                <b>{idleCount}</b> à découvrir
-              </span>
-            </div>
-            <div className="pc2-telemetry__rule" />
-            <div className="pc2-telemetry__row">
-              <span>
-                <b>{totalHours}</b> H de contenu
-              </span>
-              <span className="pc2-telemetry__sep" />
-              <span>
-                <b>{fmtXp(totalXp)}</b> XP total
-              </span>
-            </div>
-          </div>
         </header>
+        <div className="catalogue-ledger" aria-label="Ton catalogue de parcours">
+          <span>
+            <b>{String(paths.length).padStart(2, "0")}</b> parcours
+          </span>
+          <span>
+            <b>{inProgCount}</b> en cours
+          </span>
+          <span>
+            <b>{doneCount}</b> terminés
+          </span>
+          <span>
+            <b>{idleCount}</b> à découvrir
+          </span>
+          <span className="catalogue-ledger__total">
+            {totalHours} h de contenu <i>·</i> {fmtXp(totalXp)} XP
+          </span>
+        </div>
 
         {/* filters */}
-        <div className="pc2-filters">
-          <span className="pc2-filters__label">› DOMAINE</span>
+        <div className="pc2-filters catalogue-tools">
+          <span className="pc2-filters__label">Domaine</span>
           <div className="pc2-filters__group">
             <Pills label="Domaine" items={PILLS} value={filter} onChange={setFilter} />
           </div>
           <span className="pc2-filters__sep" />
-          <span className="pc2-filters__label">› TYPE</span>
+          <span className="pc2-filters__label">Objectif</span>
           <div className="pc2-filters__group">
             <Pills label="Type" items={TRACK_PILLS} value={trackFilter} onChange={setTrackFilter} />
           </div>
           <span className="pc2-filters__sep" />
-          <label className="pc2-search">
+          <label className="pc2-search catalogue-search">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
               <path
@@ -620,7 +606,7 @@ export function PathsCollection({
             <input
               ref={searchRef}
               type="text"
-              placeholder="/ chercher un parcours..."
+              placeholder="Chercher un parcours…"
               aria-label="Chercher un parcours"
               aria-keyshortcuts="/"
               value={search}
@@ -647,7 +633,7 @@ export function PathsCollection({
           <>
             <SectionLabel
               tag="Reprendre"
-              count={`// ${String(inprog.length)} parcours actif${inprog.length > 1 ? "s" : ""}`}
+              count={`${String(inprog.length)} parcours actif${inprog.length > 1 ? "s" : ""}`}
             />
             <HeroPath path={hero} />
           </>
@@ -655,7 +641,7 @@ export function PathsCollection({
 
         {secondary.length > 0 && (
           <>
-            <SectionLabel tag="Progression" count="// secondaires · certifiés" />
+            <SectionLabel tag="Ta progression" count="En cours et terminés" />
             <div className="pc2-duo">
               {secondary.map(({ p, type }) =>
                 type === "active" ? (
@@ -670,7 +656,7 @@ export function PathsCollection({
 
         {idle.length > 0 && (
           <>
-            <SectionLabel tag="À découvrir" count={`// ${String(idle.length)} parcours`} />
+            <SectionLabel tag="À découvrir" count={`${String(idle.length)} parcours`} />
             <div className="pc2-discover">
               {idle.map((p) => (
                 <PathCatalogCard key={p.id} path={p} />

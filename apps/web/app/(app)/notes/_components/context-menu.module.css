@@ -1,3 +1,8 @@
+.item,
+.swatch {
+  border-radius: 0 !important;
+}
+
 .item:hover:not([aria-disabled="true"]),
 .item:focus-visible,
 .item:focus {

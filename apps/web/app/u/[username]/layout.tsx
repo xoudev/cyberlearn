@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { profileOpensFor, profileReaderId } from "@/lib/profile/public-profile-read";
 import { AppShell } from "@/components/app-shell";
+import { BastionLogo } from "@/components/bastion-logo";
 import "./public-profile.css";
 
 /**
@@ -47,7 +48,7 @@ export default async function PublicProfileLayout({
     <div className="pp-standalone">
       <div className="pp-standalone__bar">
         <Link href="/" className="pp-standalone__home">
-          ← cyberlearn
+          <BastionLogo size={30} /> CyberLearn
         </Link>
       </div>
       <main id="contenu">{children}</main>

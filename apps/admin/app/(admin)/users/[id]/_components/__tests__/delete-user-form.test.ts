@@ -40,8 +40,8 @@ function value(declarations: string, property: string): string | undefined {
 }
 
 describe("the console's buttons", () => {
-  it("keep their label on one line, as they always did", () => {
-    expect(value(rule(".a-btn"), "white-space")).toBe("nowrap");
+  it("let long labels wrap within narrow forms", () => {
+    expect(value(rule(".a-btn"), "white-space")).not.toBe("nowrap");
   });
 
   it("wrap when they are given the modifier, within the width of their form", () => {

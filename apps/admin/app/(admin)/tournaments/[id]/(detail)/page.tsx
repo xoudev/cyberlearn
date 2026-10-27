@@ -130,7 +130,11 @@ export default async function AdminTournamentPage({ params }: Props): Promise<Re
             {standings.map((s) => (
               <li
                 key={s.teamId}
-                style={{ display: "grid", gridTemplateColumns: "48px 1fr auto", gap: 12 }}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "48px minmax(0, 1fr) auto",
+                  gap: 12,
+                }}
               >
                 <span className="mono">{placeLabel(s.rank)}</span>
                 <span>{nameOf.get(s.teamId)}</span>

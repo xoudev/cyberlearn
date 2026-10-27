@@ -1,10 +1,12 @@
 import React from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
 import { ACCESS_DENIED_PATH, safeAdminRedirect, withReturnPath } from "@/lib/auth-redirect";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { AdminAuthShell } from "../../auth-shell";
 import { AdminMfaSetup } from "./admin-mfa-setup";
+export const metadata: Metadata = { title: "Activation du MFA" };
 
 export default async function AdminMfaSetupPage({
   searchParams,

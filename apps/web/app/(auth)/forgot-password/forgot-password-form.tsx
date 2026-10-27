@@ -18,6 +18,7 @@ export function ForgotPasswordForm(): React.JSX.Element {
 
       {state.message ? (
         <p
+          role={state.status === "error" ? "alert" : "status"}
           className={[styles.message, state.status === "error" ? styles.error : undefined]
             .filter(Boolean)
             .join(" ")}

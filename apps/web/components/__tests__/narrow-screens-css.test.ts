@@ -12,7 +12,7 @@ const GLOBALS = read("../../app/globals.css");
 const DIALOGS = read("../../../../packages/ui/src/dialogs.css");
 const RAPPEL = read("../rappel/rappel.css");
 const TWO_MACHINES = read("../../app/(app)/lessons/[slug]/_components/two-machine-lab.css");
-const NAVBAR = read("../navbar.tsx");
+const CHROME = read("../app-chrome.css");
 
 function read(relative: string): string {
   return readFileSync(path.resolve(__dirname, relative), "utf8");
@@ -96,7 +96,9 @@ describe("the stylesheet reader", () => {
 
 describe("the notes docked beside a lesson", () => {
   it("sit under the navbar, whose panels would otherwise open beneath them", () => {
-    const navbarLayer = Number(/zIndex:\s*(\d+)/u.exec(NAVBAR)?.[1]);
+    const navbarLayer = Number(
+      blocks(CHROME, ".app-frame .navbar-header").flatMap((body) => values(body, "z-index"))[0],
+    );
     const dockedLayer = Number(values(rule(DIALOGS, ".side-drawer--docked"), "z-index")[0]);
     expect(navbarLayer).toBeGreaterThan(0);
     // The navbar is a stacking context, so what it opens is held at its own

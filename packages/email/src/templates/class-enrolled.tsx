@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 
 interface ClassEnrolledEmailProps {
@@ -34,14 +34,12 @@ export function ClassEnrolledEmail({
   profileUrl,
 }: ClassEnrolledEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>{`Tu fais maintenant partie de ${className}`}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>Tu as rejoint {className}</Heading>
@@ -70,7 +68,7 @@ export function ClassEnrolledEmail({
 
             <Section style={styles.buttonWrap}>
               <Button style={styles.button} href={profileUrl}>
-                Voir ma classe →
+                Voir ma classe
               </Button>
             </Section>
 

@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { notifyResult } from "@/lib/notify";
+import { useAdminConfirmation } from "../../_components/admin-confirmation";
 import { deleteLessonAction } from "../_actions/lesson-actions";
 
 function TrashIcon() {
@@ -38,14 +39,15 @@ export function DeleteLessonButton({
   disabledReason?: string;
 }): React.JSX.Element {
   const router = useRouter();
+  const confirm = useAdminConfirmation();
   const [isPending, startTransition] = useTransition();
   const [hov, setHov] = useState(false);
 
-  function handleDelete() {
+  async function handleDelete(): Promise<void> {
     if (
-      !window.confirm(
+      !(await confirm(
         `Supprimer définitivement "${lessonTitle}" ?\n\nCette action est irréversible.`,
-      )
+      ))
     )
       return;
 
@@ -73,7 +75,7 @@ export function DeleteLessonButton({
         title={disabled ? (disabledReason ?? "Action non disponible") : "Supprimer la leçon"}
         disabled={(disabled ?? false) || isPending}
         onClick={() => {
-          handleDelete();
+          void handleDelete();
         }}
         onMouseEnter={() => {
           setHov(true);
@@ -92,7 +94,6 @@ export function DeleteLessonButton({
               ? "color-mix(in srgb, var(--a-danger) 8%, transparent)"
               : "transparent",
           border: `1px solid ${hov && !disabled ? "color-mix(in srgb, var(--a-danger) 30%, transparent)" : "transparent"}`,
-          borderRadius: 4,
           color: disabled ? "var(--a-border-2)" : "var(--a-danger)",
           cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",

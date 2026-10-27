@@ -45,6 +45,7 @@ export {
   type SkeletonProps,
 } from "./components/skeleton.js";
 export { cn } from "./lib/utils.js";
+export { BastionLogo, BASTION_MARK_PATHS } from "./components/bastion-logo.js";
 export { ACCENT, AMBER, BORDER, DANGER, MONO, MONO_STYLE, MUTED, RED } from "./lib/palette.js";
 export { cssColor, cssToken, toHexColor } from "./lib/css-color.js";
 export type { MonacoTheme, MonacoTokenRule } from "./lib/monaco-theme.js";

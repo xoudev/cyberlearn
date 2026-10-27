@@ -1,3 +1,78 @@
+@import "../../../../components/progression-workspace.css";
+
+.leaderboard-workspace .section-head::before {
+  display: none;
+}
+
+.league-position {
+  background: #eae7df !important;
+  color: #141518;
+  --cosmetic-accent: #923200;
+  --color-text-primary: #141518;
+  --color-text-secondary: #55524d;
+  --color-text-muted: #55524d;
+  --color-text-faint: #55524d;
+  --color-promote: #1d6845;
+  --color-relegate: #9a2b36;
+}
+.league-player__you {
+  display: block;
+  font:
+    11px var(--font-interface),
+    sans-serif;
+  margin-top: 4px;
+  color: #ff864f;
+}
+.league-workspace .league-ladder {
+  border-color: #44454a;
+  background: #121418;
+}
+.league-workspace > div:first-child {
+  font-family: var(--font-interface), sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.league-workspace .league-player > div:nth-child(2) > div > span:first-child {
+  font-size: 24px !important;
+}
+.league-workspace .league-player > div:nth-child(3) {
+  font-size: 30px !important;
+}
+@media (max-width: 1100px) {
+  .league-position {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+    padding: 24px !important;
+  }
+  .league-workspace .league-ladder__head {
+    display: none !important;
+  }
+  .league-workspace .league-player {
+    grid-template-columns: 40px minmax(0, 1fr) auto !important;
+    gap: 14px !important;
+    padding: 18px 16px !important;
+  }
+  .league-player > div:nth-child(4) {
+    grid-column: 2;
+    font-size: 13px !important;
+  }
+  .league-player > div:nth-child(4)::before {
+    content: "Niveau ";
+    font-family: var(--font-interface), sans-serif;
+  }
+  .league-player > div:nth-child(5) {
+    grid-column: 3;
+  }
+}
+@media (max-width: 480px) {
+  .league-position {
+    grid-template-columns: 1fr !important;
+  }
+  .league-position > div {
+    text-align: left !important;
+  }
+}
+
 /* The leaderboard's global rules: the caret and live dot's motion, the row
    hover, and the podium's stacking. Shared by LeaderboardClient and the
    page's loading skeleton, so the two stack the podium alike. */
@@ -10,6 +85,106 @@
   50.01%,
   100% {
     opacity: 0;
+  }
+}
+.leaderboard-workspace .leaderboard-meta {
+  font-family: var(--font-interface), sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  border-bottom: 1px solid #44454a !important;
+  margin-bottom: 30px !important;
+}
+.leaderboard-workspace .cl-podium {
+  gap: 18px !important;
+  align-items: stretch !important;
+  margin-block: 32px !important;
+}
+.leaderboard-podium-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 26px;
+  min-width: 0;
+  border: 1px solid #44454a;
+  background: #191c22;
+  color: #f4f2ed;
+}
+.leaderboard-podium-card[data-rank="1"] {
+  background: #eae7df;
+  color: #141518;
+  border-top: 4px solid #ff6b2b;
+  --color-bg-elevated: #eae7df;
+}
+.leaderboard-podium-card__rank {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-size: 11px;
+}
+.leaderboard-podium-card__rank strong {
+  font:
+    500 56px / 1 var(--font-display),
+    sans-serif;
+}
+.leaderboard-podium-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin: 0;
+  font:
+    600 32px / 1 var(--font-display),
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+.leaderboard-podium-card p {
+  margin: 0;
+  font-size: 12px;
+}
+.leaderboard-podium-card__xp {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: auto;
+}
+.leaderboard-podium-card__xp strong {
+  font:
+    600 64px / 1 var(--font-display),
+    sans-serif;
+}
+.leaderboard-podium-card__xp > span {
+  font-size: 11px;
+}
+.leaderboard-podium-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  font-size: 11px;
+  padding-top: 16px;
+  width: 100%;
+  border-top: 1px solid #44454a;
+}
+.leaderboard-podium-card[data-rank="1"] .leaderboard-podium-card__footer {
+  border-color: #bdbab3;
+}
+.leaderboard-podium-card__footer > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.leaderboard-workspace .section-head {
+  font:
+    600 32px / 1.1 var(--font-display),
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+@media (min-width: 900px) and (max-width: 1279px) {
+  .leaderboard-workspace .cl-podium {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 @keyframes cl-pulse {

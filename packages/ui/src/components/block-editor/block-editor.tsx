@@ -98,11 +98,12 @@ export function BlockEditor({ value, onChange }: BlockEditorProps): React.ReactE
   const [list, commit] = useSyncedList(value, onChange);
   return (
     <div
+      className="mdx-block-editor"
       style={{
         height: "100%",
         overflowY: "auto",
         padding: "10px 16px 48px",
-        background: "#07051E",
+        background: "var(--color-bg-base)",
         boxSizing: "border-box",
       }}
     >
@@ -199,9 +200,11 @@ function InsertPoint({
   taken: ReadonlySet<string>;
 }): React.ReactElement {
   return (
-    <div style={{ padding: "4px 0" }}>
+    <div className="mdx-insert-point" style={{ padding: "4px 0" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ flex: 1, height: 1, background: open ? BORDER : "#15123A" }} />
+        <div
+          style={{ flex: 1, height: 1, background: open ? BORDER : "var(--color-border-subtle)" }}
+        />
         <button
           type="button"
           title={open ? "Fermer" : "Ajouter un bloc ici"}
@@ -212,10 +215,9 @@ function InsertPoint({
             width: 22,
             height: 22,
             border: `1px solid ${open ? "var(--cosmetic-accent)" : BORDER}`,
-            borderRadius: "50%",
             background: open
               ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
-              : "#07051E",
+              : "var(--color-bg-base)",
             color: open ? "var(--cosmetic-accent)" : MUTED,
             fontFamily: MONO,
             fontSize: 13,
@@ -226,7 +228,9 @@ function InsertPoint({
         >
           {open ? "×" : "+"}
         </button>
-        <div style={{ flex: 1, height: 1, background: open ? BORDER : "#15123A" }} />
+        <div
+          style={{ flex: 1, height: 1, background: open ? BORDER : "var(--color-border-subtle)" }}
+        />
       </div>
       {open && <InsertMenu allowed={allowed} taken={taken} onPick={onPick} />}
     </div>
@@ -362,11 +366,10 @@ function MenuButton({
         height: 26,
         padding: "0 10px",
         border: `1px solid ${BORDER}`,
-        background: "#07051E",
+        background: "var(--color-bg-base)",
         color: TEXT,
         fontSize: 12,
         cursor: "pointer",
-        borderRadius: 2,
       }}
     >
       {children}
@@ -428,10 +431,11 @@ function BlockCard({
   return (
     <section
       aria-label={label}
+      className="mdx-block"
       style={{
         border: `1px solid ${errorCount > 0 ? `color-mix(in srgb, ${DANGER} 40%, transparent)` : "var(--color-border-subtle)"}`,
         borderLeft: `3px solid ${errorCount > 0 ? DANGER : accent}`,
-        background: "#060422",
+        background: "var(--color-bg-elevated)",
       }}
     >
       <header
@@ -440,7 +444,7 @@ function BlockCard({
           alignItems: "center",
           gap: 8,
           padding: "6px 8px 6px 12px",
-          borderBottom: "1px solid #15123A",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {block.kind === "component" && (
@@ -506,7 +510,7 @@ function BlockCard({
               margin: "0 0 10px",
               padding: "6px 10px",
               border: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
-              background: "rgba(255,77,109,0.07)",
+              background: "color-mix(in srgb, var(--color-danger) 7%, transparent)",
               fontFamily: MONO,
               fontSize: 10.5,
               lineHeight: 1.5,
@@ -522,7 +526,7 @@ function BlockCard({
             style={{
               margin: "12px 0 0",
               padding: "8px 10px",
-              background: "#07051E",
+              background: "var(--color-bg-base)",
               border: `1px solid ${BORDER}`,
               fontFamily: MONO,
               fontSize: 11,
@@ -577,7 +581,7 @@ function HeadingBody({
   onChange: (block: LessonBlock) => void;
 }): React.ReactElement {
   return (
-    <div style={{ display: "flex", gap: 8 }}>
+    <div className="mdx-block-heading" style={{ display: "flex", gap: 8 }}>
       <SelectInput
         value={String(block.depth)}
         options={
@@ -620,7 +624,10 @@ function TextBody({
           onChange(updateText(block, source));
         }}
       />
-      <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}>
+      <span
+        className="mdx-field-hint"
+        style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-muted)" }}
+      >
         Markdown : **gras**, *italique*, `code`, - liste, ```langage pour un bloc de code.
       </span>
     </div>
@@ -648,7 +655,7 @@ function SourceBody({
         }}
       />
       {spec ? (
-        <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}>
+        <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-muted)" }}>
           {spec.description}{" "}
           <a
             href={guideUrl(spec)}

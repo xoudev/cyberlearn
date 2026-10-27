@@ -38,7 +38,7 @@ export function OnboardingSignOut(): React.ReactElement {
       }}
       style={{
         flexShrink: 0,
-        minHeight: 32,
+        minHeight: 44,
         padding: "0 10px",
         background: "transparent",
         border: "1px solid var(--color-border-default)",

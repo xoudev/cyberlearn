@@ -30,7 +30,7 @@ export default async function MockExamPage({ params }: Props): Promise<React.Rea
   if (overview === null) notFound();
 
   return (
-    <div className="page-container mkx">
+    <div className="page-container mkx learning-catalogue learning-workspace assessment-workspace">
       <Crumb
         segments={[
           { label: "parcours", href: "/paths" },

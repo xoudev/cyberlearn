@@ -33,6 +33,7 @@ describe("RLS policies (integration)", () => {
   let draftLessonId: string;
   let createdDraftLessonId: string; // Created by test setup, cleaned up in afterAll
   let quizId: string; // Created by test setup (with a question + a User B attempt)
+  let quizPathId: string;
 
   beforeAll(async () => {
     supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
@@ -152,13 +153,26 @@ describe("RLS policies (integration)", () => {
       throw new Error(`Failed to insert progress: ${progressInsertError.message}`);
 
     // ── Quiz fixtures (created via service_role; clients must NOT write these) ──
-    const { data: anyPath } = await adminClient.from("paths").select("id").limit(1).single();
-    if (!anyPath) throw new Error("No paths - run seed first");
+    // A seeded path can already have its unique exam: the fixture owns its path.
+    quizPathId = randomUUID();
+    const { error: pathError } = await adminClient.from("paths").insert({
+      id: quizPathId,
+      refCode: `CL-PATH-RLS-${quizPathId}`,
+      slug: `rls-quiz-${quizPathId}`,
+      title: "RLS quiz fixture",
+      description: "Isolated path for the quiz access checks",
+      category: "CYBERSEC",
+      difficulty: "BEGINNER",
+      estimatedHours: 1,
+      status: "PUBLISHED",
+      updatedAt: now,
+    });
+    if (pathError) throw new Error(`Failed to insert quiz path: ${pathError.message}`);
 
     quizId = randomUUID();
     const { error: quizErr } = await adminClient.from("quiz").insert({
       id: quizId,
-      pathId: anyPath.id,
+      pathId: quizPathId,
       questionsToDraw: 5,
       updatedAt: new Date().toISOString(),
     });
@@ -238,6 +252,7 @@ describe("RLS policies (integration)", () => {
       // Cascades to quiz_questions + quiz_attempts.
       await adminClient.from("quiz").delete().eq("id", quizId);
     }
+    if (quizPathId) await adminClient.from("paths").delete().eq("id", quizPathId);
     if (createdDraftLessonId) {
       await adminClient.from("lessons").delete().eq("id", createdDraftLessonId);
     }

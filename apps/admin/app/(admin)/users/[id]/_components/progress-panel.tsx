@@ -22,7 +22,7 @@ type LessonRow = Awaited<ReturnType<typeof lessonProgressRepository.recentForCon
 const LESSON_STATUS: Record<ProgressStatus, { label: string; tone: Tone }> = {
   NOT_STARTED: { label: "pas commencée", tone: "neutral" },
   IN_PROGRESS: { label: "en cours", tone: "warning" },
-  COMPLETED: { label: "terminée", tone: "accent" },
+  COMPLETED: { label: "terminée", tone: "success" },
 };
 
 const stamp = new Intl.DateTimeFormat("fr-FR", {

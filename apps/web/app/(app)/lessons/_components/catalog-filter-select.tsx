@@ -44,10 +44,9 @@ export function CatalogFilterSelect({
   const active = shown !== ALL;
 
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+    <div className="catalogue-select" data-filtered={active}>
       {/* The control's name: the glyph is decoration, kept out of it. */}
-      <span id={labelId} className="mono-label" style={{ color: "var(--color-text-muted)" }}>
-        <span aria-hidden="true">› </span>
+      <span id={labelId} className="catalogue-select__label">
         {label}
       </span>
       <Select
@@ -63,21 +62,24 @@ export function CatalogFilterSelect({
             router.replace(option.href, { scroll: false });
           });
         }}
-        style={{ minWidth: 168 }}
+        style={{ width: "100%", minWidth: 0 }}
         triggerStyle={{
-          height: 34,
+          height: 46,
           padding: "0 12px",
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
+          fontFamily: "var(--font-interface), sans-serif",
+          fontSize: 13,
+          fontWeight: 400,
+          letterSpacing: 0,
+          textTransform: "none",
+          background: "#0d0e12",
+          border: "1px solid #4e4e52",
+          color: "#c2bfb8",
           ...(active
             ? {
-                background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
-                border: "1px solid var(--cosmetic-accent)",
-                color: "var(--cosmetic-accent)",
+                border: "1px solid #ff6b2b",
+                color: "#ff864f",
               }
-            : { color: "var(--color-text-secondary)" }),
+            : {}),
         }}
       />
     </div>

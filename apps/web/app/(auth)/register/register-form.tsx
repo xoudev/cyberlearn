@@ -1,5 +1,7 @@
 "use client";
 
+// The action result and password visibility update without leaving the form.
+
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { initialAuthActionState } from "../_actions/auth-action-state";
@@ -14,7 +16,9 @@ export function RegisterForm(): React.JSX.Element {
   if (state.status === "check_email") {
     return (
       <div className={styles.form}>
-        <p className={styles.message}>{state.message}</p>
+        <p className={styles.message} role="status">
+          {state.message}
+        </p>
         {/* The mail can land in spam or never arrive; asking again here saves
             a trip through the sign-in form to find out. */}
         {state.email ? <ResendConfirmation email={state.email} /> : null}
@@ -47,6 +51,7 @@ export function RegisterForm(): React.JSX.Element {
             className={[styles.input, styles.passwordInput].join(" ")}
             type={showPassword ? "text" : "password"}
             name="password"
+            aria-label="Mot de passe"
             autoComplete="new-password"
             minLength={12}
             required
@@ -54,6 +59,7 @@ export function RegisterForm(): React.JSX.Element {
           <button
             className={styles.reveal}
             type="button"
+            aria-pressed={showPassword}
             onClick={() => {
               setShowPassword((value) => !value);
             }}
@@ -78,7 +84,9 @@ export function RegisterForm(): React.JSX.Element {
       </label>
 
       {state.status === "error" ? (
-        <p className={[styles.message, styles.error].join(" ")}>{state.message}</p>
+        <p className={[styles.message, styles.error].join(" ")} role="alert">
+          {state.message}
+        </p>
       ) : null}
 
       <button className={styles.submit} type="submit" disabled={pending}>

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import type React from "react";
+import { BastionLogo } from "@/components/bastion-logo";
 import styles from "./auth-shell.module.css";
 
 export function AuthShell({
@@ -20,31 +20,26 @@ export function AuthShell({
 }): React.JSX.Element {
   return (
     <main className={styles.page}>
-      <section className={styles.context}>
-        <Link className={styles.brand} href="/">
-          <Image src="/icon_app.png" alt="" width={30} height={30} priority />
+      <section className={styles.context} aria-label="CyberLearn">
+        <Link className={styles.brand} href="/" aria-label="CyberLearn · accueil">
+          <BastionLogo size={36} />
           <span>
-            cyber<span className={styles.brandAccent}>learn</span>
+            CYBERLEARN<span className={styles.brandAccent}>.</span>
           </span>
         </Link>
-
         <div className={styles.contextCopy}>
-          <span className={styles.eyebrow}>{eyebrow}</span>
-          <h1 className={styles.contextTitle}>{contextTitle}</h1>
+          <p className={styles.eyebrow}>{eyebrow}</p>
+          <h2 className={styles.contextTitle}>{contextTitle}</h2>
           <p className={styles.contextText}>{contextText}</p>
         </div>
-
-        <div className={styles.contextFoot}>
-          <span>Session chiffrée</span>
-          <span>Mot de passe protégé</span>
-          <span>MFA TOTP</span>
-        </div>
+        <p className={styles.contextFoot}>Développement / Cybersécurité / Réseaux</p>
       </section>
-
-      <section className={styles.panel}>
+      <section className={styles.panel} aria-labelledby="auth-title">
         <div className={styles.card}>
           <header className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>{title}</h2>
+            <h1 id="auth-title" className={styles.cardTitle}>
+              {title}
+            </h1>
             <p className={styles.cardText}>{description}</p>
           </header>
           {children}

@@ -263,7 +263,7 @@ export function NotificationPanel({
 
       {/* Panel */}
       {open && (
-        <div className="card notif-panel" ref={panelRef}>
+        <div className="card notif-panel chrome-notifications" ref={panelRef}>
           {/* Header */}
           <div
             style={{
@@ -280,7 +280,7 @@ export function NotificationPanel({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span
-                className="mono-label"
+                className="mono-label chrome-panel-title"
                 style={{
                   color: "var(--color-text-muted)",
                   display: "flex",
@@ -378,6 +378,7 @@ export function NotificationPanel({
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               <p
+                className="chrome-panel-empty"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
@@ -591,7 +592,7 @@ function NoticeRow({
             height: 32,
             background: isUnread
               ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
-              : "rgba(42,37,96,0.3)",
+              : "var(--color-bg-overlay)",
             border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 26%, transparent)" : "var(--color-border-subtle)"}`,
             display: "flex",
             alignItems: "center",
@@ -609,7 +610,7 @@ function NoticeRow({
             height: 32,
             background: isUnread
               ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
-              : "rgba(42,37,96,0.3)",
+              : "var(--color-bg-overlay)",
             border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "var(--color-border-subtle)"}`,
             display: "flex",
             alignItems: "center",
@@ -673,7 +674,7 @@ function NoticeRow({
             width: 6,
             height: 6,
             background: "var(--cosmetic-accent)",
-            borderRadius: 999,
+            borderRadius: 0,
             marginTop: 6,
             flexShrink: 0,
             boxShadow: "0 0 6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",

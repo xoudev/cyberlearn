@@ -7,6 +7,7 @@ import { notifyResult } from "@/lib/notify";
 import { ROLE_LABEL, isUserRole, roleChangeQuestion, roleTone } from "@/lib/roles";
 import { toneColor } from "../../_components/admin-ui";
 import { updateUserRoleAction } from "../../_actions/user-actions";
+import { useAdminConfirmation } from "../../_components/admin-confirmation";
 
 /**
  * The role, stated and changed by the same control.
@@ -44,40 +45,43 @@ export function RoleSelect({
   currentRole: string;
 }): React.ReactElement {
   const [isPending, startTransition] = useTransition();
+  const confirm = useAdminConfirmation();
+
+  async function changeRole(next: string): Promise<void> {
+    if (!isUserRole(next) || next === currentRole) return;
+    if (!(await confirm(roleChangeQuestion(handle, currentRole, next)))) return;
+    startTransition(async () => {
+      const result = await updateUserRoleAction(userId, next);
+      notifyResult(result, {
+        success: `${handle} a désormais le rôle ${ROLE_LABEL[next]}.`,
+        error: "Le changement de rôle a échoué.",
+      });
+    });
+  }
 
   return (
-    <Select
-      block={false}
-      triggerStyle={{
-        height: 26,
-        padding: "0 9px",
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-        background: `color-mix(in srgb, ${toneColor(roleTone(currentRole))} 8%, transparent)`,
-      }}
-      value={currentRole}
-      disabled={isPending}
-      aria-label="Rôle de l'utilisateur"
-      options={ROLE_ORDER.map((r) => ({
-        value: r,
-        label: ROLE_LABEL[r],
-        tone: toneColor(roleTone(r)),
-      }))}
-      onChange={(next) => {
-        // Guard rather than cast: the option list is ours, but the value comes
-        // back out of the control as a plain string.
-        if (!isUserRole(next) || next === currentRole) return;
-        if (!window.confirm(roleChangeQuestion(handle, currentRole, next))) return;
-        startTransition(async () => {
-          const result = await updateUserRoleAction(userId, next);
-          notifyResult(result, {
-            success: `${handle} a désormais le rôle ${ROLE_LABEL[next]}.`,
-            error: "Le changement de rôle a échoué.",
-          });
-        });
-      }}
-    />
+    <span style={{ display: "inline-grid", gap: 4 }}>
+      <Select
+        block={false}
+        triggerStyle={{
+          height: 44,
+          padding: "0 9px",
+          fontSize: 12,
+          fontWeight: 700,
+          background: `color-mix(in srgb, ${toneColor(roleTone(currentRole))} 8%, transparent)`,
+        }}
+        value={currentRole}
+        disabled={isPending}
+        aria-label="Rôle de l'utilisateur"
+        options={ROLE_ORDER.map((r) => ({
+          value: r,
+          label: ROLE_LABEL[r],
+          tone: toneColor(roleTone(r)),
+        }))}
+        onChange={(next) => {
+          void changeRole(next);
+        }}
+      />
+    </span>
   );
 }

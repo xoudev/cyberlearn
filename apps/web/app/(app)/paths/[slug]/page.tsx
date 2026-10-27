@@ -2,13 +2,12 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileDown, RotateCcw } from "lucide-react";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState, resumeLesson } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
-import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
+import { groupIntoModules } from "@cyberlearn/lib/paths/modules";
 import { isCertifiablePath } from "@cyberlearn/lib/paths/certificate";
 import {
   PUBLISHED_PATH_LESSON,
@@ -22,16 +21,12 @@ import { BossNode } from "./_components/boss-node";
 import { BriefCertificate } from "./_components/brief-certificate";
 import { MockExamDialog } from "./_components/mock-exam-dialog";
 import { PathRating } from "./_components/path-rating";
-import { Brackets } from "@/app/_components/corner-brackets";
+import { PathCurriculum } from "./_components/path-curriculum";
 import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { averageLine, formatAverage } from "@cyberlearn/lib/content/rating";
-import { MODULE_REVIEW_ACTION, MODULE_REVIEW_HINT } from "@cyberlearn/lib/revisions/recall-copy";
-import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
-import { RappelButton } from "@/components/rappel/rappel-button";
-import { moduleRappelValue } from "@/components/rappel/rappel-query";
 import { builtInPathCover, resolvePathCovers } from "@/lib/paths/cover";
 
 export async function generateMetadata({
@@ -43,153 +38,7 @@ export async function generateMetadata({
   return { title: (await visiblePathTitle(slug)) ?? "Parcours" };
 }
 
-// ── Design meta maps ────────────────────────────────────────────────────────────
-
-/** The stylesheet's names: the category on the hero tag, the difficulty on a lesson's. */
-const TAG_CLASS: Record<string, string> = { CYBERSEC: "cyber", DEV: "dev", NETWORK: "net" };
-const DIFF_ABBR: Record<string, string> = {
-  BEGINNER: "beg",
-  INTERMEDIATE: "int",
-  ADVANCED: "adv",
-  EXPERT: "exp",
-};
-
-// ── Shared markup ───────────────────────────────────────────────────────────────
-
-const ARROW = (
-  <svg
-    width="13"
-    height="13"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 8 H13 M9 4 L13 8 L9 12" />
-  </svg>
-);
-
-type CardState = "done" | "active" | "locked";
-
-interface CardLesson {
-  id: string;
-  slug: string;
-  title: string;
-  difficulty: string;
-  xpReward: number;
-  estimatedMinutes: number;
-}
-
-/** One mission card on the serpentine path. Done = whole card links to the
- *  lesson; active = card is static with an inner "Accéder" CTA link; locked =
- *  static, non-clickable. */
-function PathLessonCard({
-  lesson,
-  state,
-  num,
-}: {
-  lesson: CardLesson;
-  state: CardState;
-  num: string;
-}): React.JSX.Element {
-  const ld = difficultyMeta(lesson.difficulty);
-  const abbr = DIFF_ABBR[lesson.difficulty] ?? "beg";
-  const inner = (
-    <>
-      {state === "active" && <Brackets />}
-      <span className="cp-card__leader" />
-      <div className="cp-card__head">
-        <span className="cp-card__mn">
-          MISSION · <b>{num}</b>
-        </span>
-        {state === "done" && <span className="cp-statepill cp-statepill--done">Complété</span>}
-        {state === "active" && (
-          <span className="cp-statepill cp-statepill--active">
-            <span className="pulse-dot" />
-            En cours
-          </span>
-        )}
-        {state === "locked" && (
-          <span className="cp-statepill cp-statepill--locked">Verrouillé</span>
-        )}
-      </div>
-      <h3 className="cp-card__title">{lesson.title}</h3>
-      <div className="cp-card__meta">
-        <span className={`diff diff--${abbr}`}>{ld.label}</span>
-        <span className="xp">+{lesson.xpReward} XP</span>
-        <span className="sep">·</span>
-        <span>{lesson.estimatedMinutes} min</span>
-      </div>
-      {state === "done" && <div className="cp-card__action">↺ Revoir la mission</div>}
-      {state === "active" && (
-        <Link href={`/lessons/${lesson.slug}`} className="cp-card__cta">
-          Accéder {ARROW}
-        </Link>
-      )}
-      {state === "locked" && (
-        <div className="cp-card__action">🔒 Complète la mission précédente</div>
-      )}
-    </>
-  );
-
-  return (
-    <div className="cp-cell cp-cell--card">
-      {state === "done" ? (
-        <Link href={`/lessons/${lesson.slug}`} className="cp-card">
-          {inner}
-        </Link>
-      ) : (
-        <div className="cp-card">{inner}</div>
-      )}
-    </div>
-  );
-}
-
-function NodeContent({ state, num }: { state: CardState; num: string }): React.JSX.Element {
-  if (state === "done") {
-    return (
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 8 L7 12 L13 4" />
-      </svg>
-    );
-  }
-  if (state === "locked") {
-    return (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="3.5" y="7" width="9" height="6.5" rx="1" />
-        <path d="M5.2 7 V5 C5.2 3.4 6.4 2.2 8 2.2 C9.6 2.2 10.8 3.4 10.8 5 V7" />
-      </svg>
-    );
-  }
-  return (
-    <>
-      <span className="cp-node__ring" />
-      <span className="cp-node__n">{num}</span>
-    </>
-  );
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────────
+import { CatalogueArtwork } from "@/components/catalogue-artwork";
 
 export default async function PathDetailPage({
   params,
@@ -238,7 +87,6 @@ export default async function PathDetailPage({
   const [cover = builtInPathCover(path)] = await resolvePathCovers([path]);
 
   const cat = categoryMeta(path.category);
-  const tagClass = TAG_CLASS[path.category] ?? "cyber";
   const diff = difficultyMeta(path.difficulty);
   const trackLabel = path.track === "CAREER" ? "Métier" : "Compétence";
 
@@ -317,10 +165,6 @@ export default async function PathDetailPage({
   // MISSION.BRIEF certificate cell.
   const certObtained = userPathProgress.certificateId !== null && !certRevoked;
 
-  // serpentine state → card visual state
-  const cardState = (s: NodeState): CardState =>
-    s === "completed" ? "done" : s === "unlocked" ? "active" : "locked";
-
   // The lesson to pick up from, by the same rule that draws the map below. It
   // used to be the first lesson whatever the progress, so "Continuer" sent a
   // reader at mission 15 back to mission 1. A path with no lesson has nothing
@@ -344,178 +188,96 @@ export default async function PathDetailPage({
   const showBoss = certifiable && (lessonsComplete || pathCompleted || hasQuiz || hasCertConcept);
 
   return (
-    <div className="pd2">
-      {/* breadcrumb */}
+    <div className="page-container learning-catalogue learning-workspace path-workspace">
       <Crumb segments={[{ label: "parcours", href: "/paths" }, slug]} />
-
-      {/* hero */}
-      <section className="pd2-hero">
-        <div>
-          <div className="pd2-hero__tags">
-            <span className={`pd2-tag pd2-tag--${tagClass}`}>
-              <span className="dom-dot" />
-              {cat.short}
-            </span>
-            <span className="pd2-tag pd2-tag--track">{trackLabel}</span>
+      <header className="path-hero">
+        <div className="path-hero__copy">
+          <p className="workspace-kicker">Ton itinéraire / {cat.short}</p>
+          <div className="path-hero__meta">
+            <span>{trackLabel}</span>
+            <span>{diff.label}</span>
             {path.avgRating !== null && path.ratingsCount > 0 && (
-              <span
-                className="pd2-tag"
-                title={`Note moyenne des apprenants : ${formatAverage(path.avgRating)} sur 5`}
-              >
-                <span aria-hidden="true" style={{ color: "var(--color-warning)" }}>
-                  ★
-                </span>{" "}
+              <span title={`Note moyenne des apprenants : ${formatAverage(path.avgRating)} sur 5`}>
                 {averageLine(path.avgRating, path.ratingsCount)}
               </span>
             )}
-            <span className="pd2-tag pd2-tag--diff">
-              <DiffBars level={barsOf(diff.level)} /> {diff.label}
-            </span>
           </div>
-          <h1 className="pd2-title gradient-title">{path.title}</h1>
-          <p className="pd2-desc">{path.description}</p>
+          <h1>
+            {path.title}
+            <span>.</span>
+          </h1>
+          <p className="path-hero__description">{path.description}</p>
+          <a className="workspace-link" href="#path-curriculum">
+            Voir les missions <span aria-hidden="true">↓</span>
+          </a>
         </div>
-
-        <div className="brief">
-          <Brackets />
-          {/* The path's cover (lib/paths/cover.ts), above what it asks of you. */}
-          <div
-            className="brief__cover"
-            aria-hidden="true"
-            style={{ backgroundImage: `url("${cover}")` }}
-          />
-          <div className="brief__eyebrow">{"// MISSION.BRIEF"}</div>
-          <div className="brief__grid">
-            <div className="brief__cell">
-              <div className="lbl">Missions</div>
-              <div className="val">{totalLessons}</div>
-            </div>
-            <div className="brief__cell">
-              <div className="lbl">Durée estimée</div>
-              <div className="val">
-                ~{path.estimatedHours}
-                <span className="unit">h</span>
-              </div>
-            </div>
-            <div className="brief__cell brief__cell--xp">
-              <div className="lbl">XP total</div>
-              <div className="val">{xpTotal.toLocaleString("fr-FR")}</div>
-            </div>
-            <BriefCertificate certifiable={certifiable} certObtained={certObtained} />
+        <CatalogueArtwork category={path.category} reference={path.refCode} coverSrc={cover} />
+      </header>
+      <section className="path-departure" aria-label="Ta progression dans ce parcours">
+        <div className="path-departure__progress">
+          <p>{pathCompleted ? "Parcours validé" : "Ta progression"}</p>
+          <div className="path-departure__count">
+            <strong>{doneLessons}</strong>
+            <span>/ {totalLessons} missions terminées</span>
+            <b>{pct} %</b>
           </div>
-          {resumeSlug !== null && (
-            <Link href={`/lessons/${resumeSlug}`} className="brief__cta">
-              {heroCtaLabel} {ARROW}
+          <ProgressBar value={pct} size="md" color="#923200" label="Progression du parcours" />
+          <div className="path-departure__actions">
+            {resumeSlug !== null && (
+              <Link className="btn" href={`/lessons/${resumeSlug}`}>
+                {heroCtaLabel} <span aria-hidden="true">↗</span>
+              </Link>
+            )}
+            <Link
+              className="workspace-link"
+              href={`/paths/${slug}/mock-exam`}
+              title="Un entraînement chronométré : trois questions par module, le score par module, sans certificat ni XP"
+            >
+              Examen blanc
             </Link>
-          )}
-          {/* The mock exam's presentation, in a window over the path (?mock=1). */}
-          <MockExamDialog slug={path.slug} pathTitle={path.title} />
+          </div>
+        </div>
+        <div className="brief__grid">
+          <div className="brief__cell">
+            <div className="lbl">Durée estimée</div>
+            <div className="val">
+              ~{path.estimatedHours}
+              <span className="unit">h</span>
+            </div>
+          </div>
+          <div className="brief__cell">
+            <div className="lbl">XP des missions</div>
+            <div className="val">{xpTotal.toLocaleString("fr-FR")}</div>
+          </div>
+          <BriefCertificate certifiable={certifiable} certObtained={certObtained} />
         </div>
       </section>
-
-      {/* Progress bar */}
-      <div className="pd2-prog">
-        <div className="pd2-prog__label">
-          <b>{pct}%</b> complété
-        </div>
-        <ProgressBar
-          value={pct}
-          size="lg"
-          tip
-          className="pd2-prog__bar"
-          label="Progression du parcours"
-        />
-        <div className="pd2-prog__count">
-          <b>{doneLessons}</b> / {totalLessons} missions
-        </div>
-      </div>
-
-      {/* body */}
-      <div className="pd2-body">
-        <div className="cpath">
-          {modules.map((mod) => {
-            const gateDone = mod.indices.some((index) => {
-              const s = nodeStates[index];
-              return s === "completed" || s === "unlocked";
-            });
-            // Its review asks about the lessons finished: none, nothing to offer.
-            const reviewable = mod.indices.some((index) => {
-              const id = path.lessons[index]?.lesson.id;
-              return id !== undefined && completedLessonIds.has(id);
-            });
-            return (
-              <React.Fragment key={mod.key}>
-                <div className={`cp-gate${gateDone ? " cp-gate--done" : ""}`}>
-                  <div className="cp-gate__side cp-gate__side--l">
-                    <span className="cp-gate__rule" />
-                    <span className="cp-gate__label" title={mod.description ?? undefined}>
-                      <span className="mod">{moduleLabel(mod).toUpperCase()}</span>
-                      {mod.title !== null ? <span className="nm">{mod.title}</span> : null}
-                    </span>
-                  </div>
-                  <div className="cp-mid">
-                    <span className="cp-gate__marker" />
-                  </div>
-                  <div className="cp-gate__side">
-                    <a
-                      className="btn btn--ghost btn--sm"
-                      href={`/api/paths/${slug}/sheet?module=${String(mod.number)}`}
-                      download
-                      title="La fiche de révision du module, les points à retenir de ses leçons, en PDF"
-                    >
-                      <FileDown size={14} strokeWidth={1.75} aria-hidden="true" />
-                      Fiche PDF
-                    </a>
-                    {reviewable && (
-                      <RappelButton
-                        value={moduleRappelValue(path.slug, mod.number)}
-                        className="btn btn--ghost btn--sm"
-                        title={MODULE_REVIEW_HINT}
-                      >
-                        <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
-                        {MODULE_REVIEW_ACTION}
-                      </RappelButton>
-                    )}
-                    <span className="cp-gate__count">
-                      <b>{mod.indices.length}</b> missions
-                    </span>
-                    <span className="cp-gate__rule" />
-                  </div>
-                </div>
-                {mod.indices.map((globalIdx) => {
-                  const pl = path.lessons[globalIdx];
-                  if (!pl) return null;
-                  const st = cardState(nodeStates[globalIdx] ?? "locked");
-                  const side = globalIdx % 2 === 0 ? "is-left" : "is-right";
-                  const num = String(globalIdx + 1).padStart(2, "0");
-                  const lesson = pl.lesson;
-                  return (
-                    <div
-                      key={lesson.id}
-                      className={`cp-row cp-row--${st} ${side}${globalIdx === 0 ? " cp-row--first" : ""}`}
-                    >
-                      {side === "is-left" ? (
-                        <PathLessonCard lesson={lesson} state={st} num={num} />
-                      ) : (
-                        <div className="cp-cell cp-cell--empty" />
-                      )}
-                      <div className="cp-mid">
-                        <span className="cp-node">
-                          <NodeContent state={st} num={num} />
-                        </span>
-                      </div>
-                      {side === "is-right" ? (
-                        <PathLessonCard lesson={lesson} state={st} num={num} />
-                      ) : (
-                        <div className="cp-cell cp-cell--empty" />
-                      )}
-                    </div>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
-
+      <div className="path-body">
+        <div id="path-curriculum" className="path-curriculum">
+          <div className="workspace-section">
+            <h2>Ton itinéraire.</h2>
+            <span>
+              {modules.length} module{modules.length > 1 ? "s" : ""} · {totalLessons} leçon
+              {totalLessons > 1 ? "s" : ""}
+            </span>
+          </div>
+          {modules.length === 0 && (
+            <div className="path-empty">
+              <h3>Les missions arrivent.</h3>
+              <p>Ce parcours ne contient pas encore de leçon publiée.</p>
+              <Link className="workspace-link" href="/paths">
+                Choisir un autre parcours
+              </Link>
+            </div>
+          )}
+          <PathCurriculum
+            pathSlug={slug}
+            modules={modules}
+            lessons={path.lessons}
+            states={nodeStates}
+            resumeSlug={resumeSlug}
+          />
+          <MockExamDialog slug={path.slug} pathTitle={path.title} />
           {showBoss && (
             <BossNode
               pathSlug={path.slug}
@@ -530,24 +292,21 @@ export default async function PathDetailPage({
             />
           )}
         </div>
-
-        {/* aside */}
-        <StickyRail className="pd2-aside">
-          <div className="ablock">
-            <div className="ablock__eyebrow">
-              - <b>01</b> · OBJECTIFS
-            </div>
-            <h3 className="ablock__title">Ce que tu vas maîtriser</h3>
+        <StickyRail className="path-aside">
+          <section className="ablock">
+            <p className="ablock__eyebrow">À l’arrivée</p>
+            <h2 className="ablock__title">Ce que tu vas maîtriser.</h2>
             <ul className="skill-list">
               {path.lessons.slice(0, 6).map((pl) => (
                 <li key={pl.lesson.id}>{pl.lesson.description}</li>
               ))}
             </ul>
-          </div>
-          <div className="ablock">
-            <div className="ablock__eyebrow">
-              - <b>02</b> · TON AVIS
-            </div>
+            {path.lessons.length === 0 && (
+              <p>Les objectifs seront précisés avec les premières missions.</p>
+            )}
+          </section>
+          <section className="ablock">
+            <p className="ablock__eyebrow">Ton retour</p>
             <PathRating
               pathId={path.id}
               canRate={doneLessons > 0}
@@ -556,7 +315,7 @@ export default async function PathDetailPage({
               avgRating={path.avgRating}
               ratingsCount={path.ratingsCount}
             />
-          </div>
+          </section>
         </StickyRail>
       </div>
     </div>

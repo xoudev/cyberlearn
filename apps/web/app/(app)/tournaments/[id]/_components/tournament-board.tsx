@@ -20,7 +20,7 @@ import {
   tournamentWinners,
 } from "@cyberlearn/lib/challenges/tournament";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
-import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { BastionLogo } from "@/components/bastion-logo";
 import { FriendMark } from "@/components/friend-mark";
 import { StickyRail } from "@/components/sticky-rail";
 import type {
@@ -185,9 +185,10 @@ function Briefing({
     );
   return (
     <div className="trn-brief">
-      <CornerBrackets color="var(--trn-accent)" />
       <div className="trn-brief__head">
-        <span>Tournoi · briefing</span>
+        <span>
+          <BastionLogo size={24} /> Temps et classement
+        </span>
         <span className="trn-brief__aside">{counted(view.teams.length, "équipe")}</span>
       </div>
       <div className="trn-brief__clock">

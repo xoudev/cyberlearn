@@ -1,11 +1,10 @@
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { placementRepository, userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { skipOnboarding } from "../_actions/finalize-onboarding";
-import { OnboardingSignOut } from "../_components/onboarding-sign-out";
+import { PlacementShell } from "../_components/onboarding-shell";
 
 export default async function PlacementTestIntroPage(): Promise<React.ReactElement> {
   const supabase = await getSupabaseServerClient();
@@ -31,489 +30,54 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
   const estimatedMinutes = Math.ceil(questionCount * 0.75);
 
   return (
-    <div
-      style={{
-        background: "var(--color-bg-base)",
-        minHeight: "100vh",
-        position: "relative",
-        color: "var(--color-text-primary)",
-      }}
-    >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 0,
-          background: [
-            "radial-gradient(ellipse 1100px 600px at 20% 10%, rgba(0,36,255,0.22), transparent 60%)",
-            "radial-gradient(ellipse 900px 500px at 85% 80%, rgba(10,255,212,0.08), transparent 65%)",
-            "radial-gradient(ellipse 700px 500px at 50% 110%, rgba(0,36,255,0.14), transparent 60%)",
-          ].join(", "),
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 0,
-          backgroundImage: [
-            "linear-gradient(to right, rgba(42,37,96,0.16) 1px, transparent 1px)",
-            "linear-gradient(to bottom, rgba(42,37,96,0.16) 1px, transparent 1px)",
-          ].join(", "),
-          backgroundSize: "48px 48px",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%)",
-          maskImage: "radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%)",
-        }}
-      />
-
-      {/* Topbar */}
-      <header
-        className="mono-label"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 44,
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-          padding: "0 32px",
-          background: "rgba(3,2,25,0.65)",
-          backdropFilter: "blur(20px) saturate(140%)",
-          WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          borderBottom: "1px solid var(--color-border-default)",
-          color: "var(--color-text-muted)",
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: -1,
-            height: 1,
-            background:
-              "linear-gradient(90deg, transparent, rgba(10,255,212,0.35) 20%, rgba(0,36,255,0.35) 80%, transparent)",
-          }}
-        />
-        <Image
-          src="/icon_app.png"
-          alt="CyberLearn"
-          width={20}
-          height={20}
-          priority
-          style={{ flexShrink: 0 }}
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--color-text-primary)",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
-        </span>
-        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
-          /
-        </span>
-        <span className="onboarding-bar__label">ONBOARDING · POSITIONNEMENT</span>
-        <span
-          className="onboarding-bar__label"
-          style={{
-            marginLeft: "auto",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            color: "var(--color-brand-turquoise)",
-          }}
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "var(--color-brand-turquoise)",
-              boxShadow: "0 0 6px var(--color-brand-turquoise)",
-              display: "inline-block",
-              animation: "sidebar-pulse 2s ease-in-out infinite",
-            }}
-          />
-          SYNC EN DIRECT
-        </span>
-        <OnboardingSignOut />
-      </header>
-
-      <div
-        className="onboarding-content"
-        style={{
-          position: "relative",
-          zIndex: 1,
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        {/* Progress */}
-        <div style={{ width: "100%", maxWidth: 640, margin: "56px 0 32px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 14,
-            }}
-          >
-            <div
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 14,
-              }}
-            >
-              <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>
-                ÉTAPE <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>03</b> /
-                03
-              </span>
-              <span style={{ color: "var(--color-text-faint)" }}>·</span>
-              <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>
-                POSITIONNEMENT
-              </span>
-            </div>
-            <span
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-            >
-              OPTIONNEL
-            </span>
+    <PlacementShell>
+      <p className="ob-kicker">Test optionnel</p>
+      <h1 className="ob-shell__title">Partir de ce que tu sais.</h1>
+      <p className="ob-shell__lede">
+        Un court test pour repérer tes acquis et te proposer où commencer. Tu peux aussi explorer
+        librement.
+      </p>
+      {taken ? (
+        <p className="ob-note">
+          Ton test est déjà enregistré. Termine ton inscription pour accéder au tableau de bord.
+        </p>
+      ) : (
+        <dl className="ob-facts">
+          <div>
+            <dt>Questions</dt>
+            <dd>{questionCount}</dd>
           </div>
-
-          <div
-            style={{
-              position: "relative",
-              height: 4,
-              background: "rgba(5,4,26,0.9)",
-              borderTop: "1px solid var(--color-border-default)",
-              borderBottom: "1px solid var(--color-border-default)",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: "100%",
-                background:
-                  "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                boxShadow: "0 0 12px rgba(10,255,212,0.7)",
-              }}
-            />
+          <div>
+            <dt>Durée estimée</dt>
+            <dd>
+              <span>{estimatedMinutes}</span> <small>min</small>
+            </dd>
           </div>
-
-          <div
-            className="mono-label"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginTop: 10,
-            }}
-          >
-            {[
-              { label: "Identité", state: "done" },
-              { label: "Avatar", state: "done" },
-              { label: "Objectif", state: "current" },
-            ].map(({ label, state }) => (
-              <span
-                key={label}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  color:
-                    state === "done" ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
-                }}
-              >
-                <span
-                  style={{
-                    width: 7,
-                    height: 7,
-                    border: "1px solid currentColor",
-                    background: "currentColor",
-                    transform: "rotate(45deg)",
-                    display: "inline-block",
-                    boxShadow: "0 0 6px currentColor",
-                  }}
-                />
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Panel */}
-        <div
-          className="card onboarding-card"
-          style={{
-            position: "relative",
-            width: "100%",
-            maxWidth: 640,
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: -1,
-              zIndex: -1,
-              background:
-                "linear-gradient(135deg, rgba(10,255,212,0.35), rgba(0,36,255,0.25) 50%, transparent 100%)",
-              filter: "blur(16px)",
-              opacity: 0.55,
-            }}
-          />
-
-          {/* Corner brackets */}
-          {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-            <span
-              key={pos}
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                width: 14,
-                height: 14,
-                border: "1.5px solid var(--color-brand-turquoise)",
-                top: pos.startsWith("t") ? 8 : undefined,
-                bottom: pos.startsWith("b") ? 8 : undefined,
-                left: pos.endsWith("l") ? 8 : undefined,
-                right: pos.endsWith("r") ? 8 : undefined,
-                borderRight: pos.endsWith("l") ? "none" : undefined,
-                borderLeft: pos.endsWith("r") ? "none" : undefined,
-                borderBottom: pos.startsWith("t") ? "none" : undefined,
-                borderTop: pos.startsWith("b") ? "none" : undefined,
-              }}
-            />
-          ))}
-
-          {/* Panel header */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingBottom: 18,
-              marginBottom: 26,
-              borderBottom: "1px solid var(--color-border-subtle)",
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
-            <h2
-              className="mono-label mono-label--md"
-              style={{
-                fontWeight: 600,
-                color: "var(--color-text-primary)",
-                margin: 0,
-              }}
-            >
-              <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>›</b> TEST DE
-              POSITIONNEMENT
-              <span
-                style={{
-                  fontWeight: 400,
-                  color: "var(--color-text-muted)",
-                  fontSize: 11,
-                  marginLeft: 8,
-                }}
-              >
-                (OPTIONNEL)
-              </span>
-            </h2>
-            <span
-              className="mono-label"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-            >
-              03/03
-            </span>
-          </div>
-
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <h1
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 700,
-                fontSize: "clamp(26px,4vw,34px)",
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "var(--color-text-primary)",
-                margin: "0 0 14px",
-              }}
-            >
-              Mieux te guider,{" "}
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                dès le début.
-              </em>
-            </h1>
-
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 14.5,
-                color: "var(--color-text-secondary)",
-                lineHeight: 1.6,
-                margin: "0 0 26px",
-                maxWidth: 480,
-              }}
-            >
-              Un court test pour calibrer ton niveau et suggérer les bons parcours. Aucune pression
-              , tu peux le passer à tout moment si tu préfères explorer librement.
-            </p>
-
-            {/* Stats grid */}
-            <div className="card onboarding-stats" style={{ marginBottom: 22 }}>
-              {[
-                { label: "Questions", value: String(questionCount), unit: "", accent: false },
-                { label: "Durée", value: String(estimatedMinutes), unit: "min", accent: false },
-                { label: "XP planifié", value: "0", unit: "XP", accent: false },
-                { label: "Score public", value: "NON", unit: "", accent: true },
-              ].map(({ label, value, unit, accent }) => (
-                <div key={label}>
-                  <span
-                    className="mono-label mono-label--xs"
-                    style={{
-                      display: "block",
-                      color: "var(--color-text-muted)",
-                      marginBottom: 8,
-                    }}
-                  >
-                    {label}
-                  </span>
-                  <div
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontWeight: 700,
-                      fontSize: 22,
-                      letterSpacing: "-0.02em",
-                      color: accent ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
-                      lineHeight: 1,
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: 4,
-                    }}
-                  >
-                    {value}
-                    {unit && (
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          color: "var(--color-text-muted)",
-                          fontWeight: 500,
-                          letterSpacing: "0.04em",
-                        }}
-                      >
-                        {unit}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Info note */}
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.04em",
-                lineHeight: 1.6,
-                padding: "12px 14px",
-                background: "rgba(10,255,212,0.04)",
-                borderLeft: "2px solid var(--color-brand-turquoise)",
-                marginBottom: 26,
-              }}
-            >
-              <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>Info :</b> Ces
-              réponses servent uniquement à personnaliser les parcours. Aucune note n&apos;est
-              attribuée aux profils.
-            </div>
-
-            {/* CTAs */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {taken && (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  Ton test est déjà enregistré : il ne reste qu&apos;à terminer l&apos;inscription.
-                </p>
-              )}
-
-              {/* Nothing to start with no active question or a test already
-                  taken: the questions page would send the reader straight back
-                  here. */}
-              {questionCount > 0 && !taken && (
-                <Link
-                  className="btn btn--lg btn--block"
-                  href="/onboarding/placement-test/questions"
-                >
-                  Commencer le test <span style={{ fontSize: 16 }}>→</span>
-                </Link>
-              )}
-
-              <form action={skipOnboarding}>
-                <button className="btn btn--ghost btn--lg btn--block" type="submit">
-                  Passer → Accéder au dashboard
-                </button>
-              </form>
-
-              <Link
-                className="mono-label link-cta"
-                href="/onboarding/goals"
-                style={{
-                  color: "var(--color-text-muted)",
-                  textDecoration: "none",
-                  textAlign: "center",
-                  display: "block",
-                  transition: "color 180ms ease",
-                }}
-              >
-                ← Retour
-              </Link>
-            </div>
-          </div>
-        </div>
+        </dl>
+      )}
+      <p className="ob-note">
+        Aucun XP n’est attribué. Ces réponses servent à personnaliser les parcours ; aucune note
+        n’est affichée sur ton profil.
+      </p>
+      <div className="ob-shell__actions">
+        {!taken && questionCount > 0 ? (
+          <Link className="btn btn--lg btn--block" href="/onboarding/placement-test/questions">
+            Commencer le test
+          </Link>
+        ) : !taken ? (
+          <p className="ob-note" role="status">
+            Le test n’est pas encore disponible.
+          </p>
+        ) : null}
+        <form action={skipOnboarding}>
+          <button className="btn btn--ghost btn--lg btn--block" type="submit">
+            Passer et ouvrir le tableau de bord
+          </button>
+        </form>
+        <Link className="ob-shell__link" href="/onboarding/goals">
+          Retour aux suggestions
+        </Link>
       </div>
-    </div>
+    </PlacementShell>
   );
 }

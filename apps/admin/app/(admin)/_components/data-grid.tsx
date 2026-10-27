@@ -558,7 +558,7 @@ function PagerLink({
 
 // ─── Shared ─────────────────────────────────────────────────────────────────
 
-const FACET_TRIGGER: React.CSSProperties = { height: 36, fontSize: 11, padding: "0 10px" };
+const FACET_TRIGGER: React.CSSProperties = { height: 44, fontSize: 12, padding: "0 10px" };
 
 /**
  * The page numbers a pager shows: the first, the last, and the current one
@@ -620,7 +620,12 @@ function GridTable({
   }
 
   return (
-    <div className="a-table-wrap">
+    <div
+      className="a-table-wrap"
+      role="region"
+      aria-label="Tableau de données, défilement horizontal"
+      tabIndex={0}
+    >
       <table className="a-table">
         <thead>
           <tr>
@@ -712,14 +717,16 @@ function Checkbox({
     if (ref.current !== null) ref.current.indeterminate = mixed;
   }, [mixed]);
   return (
-    <input
-      ref={ref}
-      type="checkbox"
-      className="a-check"
-      checked={checked}
-      aria-label={label}
-      onChange={onChange}
-    />
+    <label className="a-check-target">
+      <input
+        ref={ref}
+        type="checkbox"
+        className="a-check"
+        checked={checked}
+        aria-label={label}
+        onChange={onChange}
+      />
+    </label>
   );
 }
 

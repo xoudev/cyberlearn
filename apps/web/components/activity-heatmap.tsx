@@ -1,74 +1,111 @@
 import React from "react";
-import {
-  STREAK_COPY,
-  streakCalendar,
-  WEEKDAY_LABELS,
-} from "@cyberlearn/lib/gamification/streak-calendar";
+import { activityMonths } from "./activity-months";
+import "./activity-history.css";
 
-/**
- * A year of activity, day by day: the calendar the profile's streak card
- * ends on, and the one somebody's public profile shows. Same grid, same
- * levels, same words as the app's (streakCalendar), so the two read alike.
- * Server component; the styles are the dashboard's (.dash-heat-*, globals).
- */
+const dayFormat = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** Server-rendered history, shared by the private and public profile. */
 export function ActivityHeatmap({
   activity,
   today,
   label = "Activité des douze derniers mois",
+  personal = true,
 }: {
-  /** Activity count by day, "YYYY-MM-DD". */
   activity: Record<string, number>;
-  /** Today's "YYYY-MM-DD", where the calendar ends. */
   today: string;
-  /** What the scrolling box announces instead of its month labels. */
   label?: string;
+  personal?: boolean;
 }): React.ReactElement {
-  const { cells, monthLabels } = streakCalendar(activity, today);
+  const months = activityMonths(activity, today);
+  const first = months[0];
+  const last = months[months.length - 1];
+  const activeDays = Object.entries(activity)
+    .filter(([day, count]) => day <= today && count > 0)
+    .sort(([left], [right]) => right.localeCompare(left));
+  const hasActivity = months.some((month) => month.days > 0);
+  const peak = Math.max(1, ...months.map((month) => month.days));
+
   return (
-    <>
-      <div className="dash-heat-head">
-        <span>{STREAK_COPY.lastYear}</span>
-        <span className="dash-heat-legend" aria-hidden="true">
-          {STREAK_COPY.less}
-          {[0, 1, 2, 3].map((level) => (
-            <i key={level} className="dash-heat-cell" data-level={level} />
-          ))}
-          {STREAK_COPY.more}
-        </span>
-      </div>
-      {/* A scrolling box takes keyboard focus; named, it announces what it
-          holds instead of reading the month labels one by one. */}
-      <div className="dash-heat" role="region" aria-label={label}>
-        <div className="dash-heat-months">
-          <span className="dash-heat-gutter" aria-hidden="true" />
-          <div aria-hidden="true">
-            {monthLabels.map((month, w) => (
-              <span key={`m${String(w)}`}>{month}</span>
-            ))}
-          </div>
-        </div>
-        <div className="dash-heat-body">
-          <div className="dash-heat-days" aria-hidden="true">
-            {WEEKDAY_LABELS.map((day, r) => (
-              <span key={`d${String(r)}`}>{day}</span>
-            ))}
-          </div>
-          <div className="dash-heat-grid">
-            {cells.map((cell) =>
-              cell.future ? (
-                <i key={cell.key} className="dash-heat-cell dash-heat-cell--future" />
-              ) : (
-                <i
-                  key={cell.key}
-                  className="dash-heat-cell"
-                  data-level={cell.level}
-                  title={`${cell.key} · ${String(cell.count)}`}
+    <section className="activity-history" aria-label={label}>
+      <header className="activity-history__head">
+        <h4>{personal ? "Ton rythme, mois après mois." : "Son rythme, mois après mois."}</h4>
+        <p>
+          {first?.fullLabel} à {last?.fullLabel}
+          <span>Jours actifs · mois en cours inclus</span>
+        </p>
+      </header>
+      {hasActivity ? (
+        <ol className="activity-history__months" aria-label="Jours actifs par mois">
+          {months.map((month) => (
+            <li
+              key={month.key}
+              data-current={month.key === today.slice(0, 7)}
+              aria-current={month.key === today.slice(0, 7) ? "date" : undefined}
+            >
+              <span className="sr-only">
+                {`${month.fullLabel} : ${String(month.days)} ${month.days === 1 ? "jour actif" : "jours actifs"}`}
+              </span>
+              <div className="activity-history__column" aria-hidden="true">
+                <strong>{month.days}</strong>
+                <span
+                  className="activity-history__bar"
+                  style={{ height: `${String((month.days / peak) * 100)}%` }}
                 />
-              ),
-            )}
-          </div>
+              </div>
+              <time dateTime={month.key} aria-hidden="true">
+                {month.label}
+              </time>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div className="activity-history__empty">
+          <strong>
+            {personal ? "Une leçon. Le début d’un rythme." : "Aucun jour actif pour l’instant."}
+          </strong>
+          <p>
+            {personal
+              ? "Les jours où tu apprends apparaîtront ici, mois après mois."
+              : "Les journées d’apprentissage apparaîtront ici, mois après mois."}
+          </p>
         </div>
-      </div>
-    </>
+      )}
+      {activeDays.length > 0 && (
+        <details className="activity-history__details">
+          <summary>Détail des jours actifs</summary>
+          <div
+            className="activity-history__daily"
+            role="region"
+            aria-label="Détail quotidien"
+            tabIndex={0}
+          >
+            <table>
+              <caption className="sr-only">Historique quotidien disponible</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Jour</th>
+                  <th scope="col">Activités</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeDays.map(([day, count]) => (
+                  <tr key={day}>
+                    <th scope="row">
+                      <time dateTime={day}>{dayFormat.format(new Date(`${day}T00:00:00Z`))}</time>
+                    </th>
+                    <td>{count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
+    </section>
   );
 }

@@ -177,6 +177,19 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         }
       />
 
+      <section className="a-dashboard-summary" aria-label="Synthèse d’administration">
+        <div>
+          <h2>Le travail en attente.</h2>
+          <p>
+            {awaitingTickets} réponse{awaitingTickets !== 1 ? "s" : ""} en attente ·{" "}
+            {criticalTickets} ticket{criticalTickets !== 1 ? "s" : ""} critique
+            {criticalTickets !== 1 ? "s" : ""} actif{criticalTickets !== 1 ? "s" : ""} ·{" "}
+            {statusCount("DRAFT")} brouillon{statusCount("DRAFT") !== 1 ? "s" : ""}.
+          </p>
+        </div>
+        <Link href="/tickets">Consulter les tickets ↗</Link>
+      </section>
+
       <div className="a-kpi-grid">
         <KpiCard
           label={DASHBOARD_KPI_LABELS[0]}

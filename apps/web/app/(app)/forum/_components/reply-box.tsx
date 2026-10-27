@@ -1,5 +1,7 @@
 "use client";
 
+// The reply draft and submission feedback update without leaving the topic.
+
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { replyAction } from "../_actions/forum-actions";

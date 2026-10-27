@@ -57,12 +57,13 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
         ref={bannerRef}
         role="region"
         aria-labelledby="cookie-notice-title"
+        className="cookie-notice"
         style={{
           position: "fixed",
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 9999,
+          zIndex: 45,
           background: "var(--color-bg-elevated)",
           borderTop: "1px solid var(--color-border-default)",
           padding: "14px 24px",
@@ -79,9 +80,9 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
         <p
           style={{
             margin: 0,
-            fontSize: "12px",
+            fontSize: "14px",
             color: "var(--color-text-secondary)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-interface)",
             maxWidth: "720px",
             lineHeight: "1.5",
           }}
@@ -89,10 +90,7 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           Ce site utilise uniquement des cookies strictement nécessaires à son fonctionnement
           (authentification, préférences de session). Ces cookies sont exemptés de consentement au
           titre de l&apos;article 82 de la loi Informatique et Libertés.{" "}
-          <Link
-            href="/privacy#cookies"
-            style={{ color: "var(--color-info)", textDecoration: "none" }}
-          >
+          <Link href="/privacy#cookies" style={{ color: "#FF864F", textDecoration: "underline" }}>
             En savoir plus
           </Link>
         </p>
@@ -104,14 +102,8 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
             style={{
               borderRadius: "0px",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#1A3AFF";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--color-brand-blue)";
-            }}
           >
-            J&apos;AI COMPRIS
+            J&apos;ai compris
           </button>
         </div>
       </div>

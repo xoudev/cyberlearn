@@ -32,10 +32,11 @@ const INITIAL: ChallengeFormState = {};
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "9px 12px",
-  background: "var(--a-surface-2)",
+  background: "var(--a-surface)",
   border: "1px solid var(--a-border-2)",
   color: "var(--a-fg)",
-  fontFamily: "var(--font-mono)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontSize: 12,
   outline: "none",
   boxSizing: "border-box",
@@ -43,11 +44,9 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   fontWeight: 700,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
   color: "var(--a-muted)",
   marginBottom: 6,
 };
@@ -72,8 +71,8 @@ function Field({
       {error !== undefined && (
         <p
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
             color: "var(--a-danger)",
             marginTop: 4,
           }}
@@ -101,7 +100,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             padding: "12px 16px",
             background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--a-danger) 30%, transparent)",
+            border: "1px solid var(--a-danger)",
             fontFamily: "var(--font-mono)",
             fontSize: 12,
             color: "var(--a-danger)",
@@ -127,7 +126,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         >
           {"// IDENTIFICATION"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid">
           <Field label="Code de référence *" name="refCode" error={fe.refCode}>
             <input id="refCode" name="refCode" required style={inputStyle} placeholder="CTF-001" />
           </Field>
@@ -202,7 +201,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         >
           {"// CLASSIFICATION"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid a-fields-grid--3">
           <Field label="Catégorie *" name="category" error={fe.category}>
             <Select
               name="category"
@@ -264,7 +263,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         >
           {"// PARAMÈTRES"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid a-fields-grid--4">
           <Field label="XP Récompense *" name="xpReward" error={fe.xpReward}>
             <input
               id="xpReward"
@@ -346,7 +345,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
                 placeholder={MACHINE_PLACEHOLDER}
               />
             </Field>
-            <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--a-muted)" }}>
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--a-muted)" }}>
               Les fichiers placés dans /mnt de la machine du navigateur. Écris {"{{FLAG}}"} là où va
               le flag : chaque élève y reçoit le sien, et le champ Flag ne sert plus.
             </p>
@@ -376,7 +375,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         )}
 
         {/* Resource & attachment URLs */}
-        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid" style={{ marginTop: 16 }}>
           <Field label="URL de connexion / cible" name="resourceUrl" error={fe.resourceUrl}>
             <input
               id="resourceUrl"
@@ -442,8 +441,9 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
             display: "inline-flex",
             alignItems: "center",
             padding: "9px 24px",
-            background: pending ? "var(--a-border-2)" : "var(--a-danger)",
-            color: "var(--a-fg)",
+            minHeight: 44,
+            background: "var(--a-accent)",
+            color: "var(--a-ink)",
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             fontSize: 11,

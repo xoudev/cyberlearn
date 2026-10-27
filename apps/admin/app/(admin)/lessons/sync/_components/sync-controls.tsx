@@ -254,6 +254,7 @@ export function RunAllButton({
       ) : null}
       {step === "confirm" ? (
         <div className="a-sync-confirm">
+          <strong>Administration · Synchroniser le catalogue</strong>
           <p>{copy.confirm(targets.length)}</p>
           <div className="a-head-actions">
             <button type="button" className="a-btn a-btn--primary" onClick={() => void start()}>

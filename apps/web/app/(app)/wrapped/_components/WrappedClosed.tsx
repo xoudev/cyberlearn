@@ -1,5 +1,7 @@
 import React from "react";
 import Link from "next/link";
+import { BastionLogo } from "@/components/bastion-logo";
+import "./wrapped.css";
 
 /**
  * The page for the eleven months Wrapped is shut.
@@ -35,33 +37,42 @@ export function WrappedClosed({
         );
 
   return (
-    <div className="page-container wr-closed">
-      <p className="wr-closed__eyebrow">CyberLearn Wrapped</p>
-      <h1 className="wr-closed__year">{periodKey}</h1>
-      <p className="wr-closed__lede">
-        Ton récap de l&apos;année n&apos;est pas encore ouvert. Il arrive en décembre, une fois par
-        an, le temps que l&apos;année ait quelque chose à raconter.
-      </p>
-
-      {opensLabel !== null && (
-        <p className="wr-closed__when">
-          Ouverture le <b>{opensLabel}</b>
-          {days !== null && days > 0 && (
-            <>
-              {" · "}
-              <b>{days}</b> jour{days > 1 ? "s" : ""}
-            </>
-          )}
+    <div className="page-container learning-catalogue learning-workspace wrapped-workspace wr-closed">
+      <div className="wr-closed__poster">
+        <p className="wrapped-brand">
+          <BastionLogo size={36} /> CyberLearn / Wrapped
         </p>
-      )}
+        <h1 className="wr-closed__year">{periodKey}</h1>
+        <p className="wr-closed__caption">Ton année de pratique</p>
+      </div>
+      <div className="wr-closed__content">
+        <p className="wr-closed__eyebrow">Édition annuelle</p>
+        <h2>Ton récap ouvre en décembre.</h2>
+        <p className="wr-closed__lede">
+          Ton récap de l&apos;année n&apos;est pas encore ouvert. Il arrive en décembre, une fois
+          par an, le temps que l&apos;année ait quelque chose à raconter.
+        </p>
 
-      <p className="wr-closed__hint">
-        D&apos;ici là, tout ce que tu termines compte pour le prochain.
-      </p>
+        {opensLabel !== null && (
+          <p className="wr-closed__when">
+            Ouverture le <b>{opensLabel}</b>
+            {days !== null && days > 0 && (
+              <>
+                {" · "}
+                <b>{days}</b> jour{days > 1 ? "s" : ""}
+              </>
+            )}
+          </p>
+        )}
 
-      <Link href="/dashboard" className="btn btn--sm">
-        Retour au tableau de bord
-      </Link>
+        <p className="wr-closed__hint">
+          D&apos;ici là, tout ce que tu termines compte pour le prochain.
+        </p>
+
+        <Link href="/dashboard" className="btn btn--sm">
+          Retour au tableau de bord
+        </Link>
+      </div>
     </div>
   );
 }

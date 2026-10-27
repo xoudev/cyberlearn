@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
+import { useAdminConfirmation } from "../../../../_components/admin-confirmation";
 import { notifyResult } from "@/lib/notify";
 import {
   createQuestionAction,
@@ -36,24 +37,25 @@ interface Props {
   questions: Question[];
 }
 
-// ── Shared admin styles (aligned with the Lessons / Badges CRUD pages) ──────────
+// ── Shared admin tokens (aligned with the Lessons / Badges CRUD pages) ──────────
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
+const BLUE = "var(--a-accent)";
 
 const LABEL_STYLE: React.CSSProperties = {
   display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: 9.5,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   color: "var(--a-muted)",
   marginBottom: 6,
 };
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
-  background: "color-mix(in srgb, var(--a-surface-2) 80%, transparent)",
-  border: "1px solid var(--a-border-2)",
+  background: "var(--a-surface)",
+  border: `1px solid ${BORDER}`,
   color: "var(--a-fg)",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 13,
   padding: "11px 14px",
   outline: "none",
@@ -61,29 +63,27 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 const CARD_STYLE: React.CSSProperties = {
-  background: "color-mix(in srgb, var(--a-surface) 60%, transparent)",
+  background: "var(--a-surface)",
   border: "1px solid var(--a-border)",
-  borderLeft: "3px solid var(--a-border-2)",
-  borderRadius: 8,
+  borderLeft: `3px solid ${BORDER}`,
   padding: "20px 22px",
   marginBottom: 20,
 };
 
 const SECTION_EYEBROW: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "var(--a-muted)",
+  fontFamily: "var(--font-display), sans-serif",
+  fontSize: 24,
+  color: "var(--a-fg)",
   margin: "0 0 16px",
 };
 
 const primaryBtnStyle = (pending: boolean): React.CSSProperties => ({
   padding: "12px 26px",
-  background: "var(--a-blue)",
-  border: "1px solid var(--a-blue)",
-  color: "var(--a-fg)",
-  fontFamily: "var(--font-mono)",
+  background: BLUE,
+  border: `1px solid ${BLUE}`,
+  color: "var(--a-ink)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   fontSize: 11,
   letterSpacing: "0.14em",
@@ -95,9 +95,10 @@ const primaryBtnStyle = (pending: boolean): React.CSSProperties => ({
 const ghostBtnStyle: React.CSSProperties = {
   padding: "12px 22px",
   background: "transparent",
-  border: "1px solid var(--a-border-2)",
+  border: `1px solid ${BORDER}`,
   color: "var(--a-muted)",
-  fontFamily: "var(--font-mono)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   fontSize: 11,
   letterSpacing: "0.14em",
@@ -108,8 +109,8 @@ const ghostBtnStyle: React.CSSProperties = {
 const dangerBtnStyle = (pending: boolean): React.CSSProperties => ({
   padding: "9px 16px",
   background: "transparent",
-  border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
-  color: "var(--a-danger)",
+  border: "1px solid var(--a-danger)",
+  color: DANGER,
   fontFamily: "var(--font-mono)",
   fontWeight: 700,
   fontSize: 10,
@@ -122,9 +123,10 @@ const dangerBtnStyle = (pending: boolean): React.CSSProperties => ({
 const smallGhostBtnStyle: React.CSSProperties = {
   padding: "9px 16px",
   background: "transparent",
-  border: "1px solid var(--a-border-2)",
+  border: `1px solid ${BORDER}`,
   color: "var(--a-fg-2)",
-  fontFamily: "var(--font-mono)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   fontSize: 10,
   letterSpacing: "0.12em",
@@ -147,7 +149,7 @@ const warnStyle: React.CSSProperties = {
   margin: "10px 0 0",
   padding: "10px 14px",
   background: "color-mix(in srgb, var(--a-warning) 7%, transparent)",
-  border: "1px solid color-mix(in srgb, var(--a-warning) 30%, transparent)",
+  border: "1px solid var(--a-warning)",
   borderLeft: "3px solid var(--a-warning)",
 };
 
@@ -188,7 +190,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
       {quiz ? (
         <QuestionsSection path={path} quiz={quiz} questions={questions} />
       ) : (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-muted)" }}>
+        <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
           {"Enregistre d'abord les réglages pour créer le quiz, puis ajoute des questions."}
         </p>
       )}
@@ -279,7 +281,7 @@ function SettingsForm({
           }}
           style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
         />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-fg-2)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
           Quiz actif (requis pour obtenir le certificat)
         </span>
       </label>
@@ -337,7 +339,7 @@ function QuestionsSection({
           }}
         >
           Questions{" "}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-muted)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
             ({questions.length} · {quiz.activeQuestionCount} active(s))
           </span>
         </h2>
@@ -384,8 +386,14 @@ function QuestionRow({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function remove(): void {
-    if (!confirm("Supprimer cette question ?")) return;
+  const confirm = useAdminConfirmation();
+  async function remove(): Promise<void> {
+    if (
+      !(await confirm(
+        `Parcours « ${path.title} » : supprimer la question « ${question.question} » ?`,
+      ))
+    )
+      return;
     setError(null);
     start(async () => {
       const res = await deleteQuestionAction({ questionId: question.id, pathId: path.id });
@@ -439,7 +447,14 @@ function QuestionRow({
           >
             Éditer
           </button>
-          <button type="button" style={dangerBtnStyle(pending)} onClick={remove} disabled={pending}>
+          <button
+            type="button"
+            style={dangerBtnStyle(pending)}
+            onClick={() => {
+              void remove();
+            }}
+            disabled={pending}
+          >
             Suppr.
           </button>
         </div>
@@ -619,7 +634,7 @@ function QuestionForm({
             }}
             style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
           />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-fg-2)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
             Active
           </span>
         </label>

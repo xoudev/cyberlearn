@@ -25,7 +25,6 @@ import {
   type DuelOutcome,
   type DuelResultOutcome,
 } from "@cyberlearn/lib/social/duel";
-import { CornerBrackets } from "@/app/_components/corner-brackets";
 import type { DuelAnswerResult, DuelView } from "@/lib/social/duels";
 import { answerDuelAction, duelViewAction } from "../../_actions/duel-actions";
 import { DuelAvatar, DuelName } from "../../_components/duel-face";
@@ -141,7 +140,6 @@ function Scoreboard({
       data-outcome={finished ? outcome : undefined}
       data-idle={idle === null ? undefined : "true"}
     >
-      <CornerBrackets color="var(--dl-accent)" size={12} thickness={2} />
       <div className="dl-side" data-side="reader">
         <div className="dl-side__who">
           <DuelAvatar player={view.reader} size="lg" me />

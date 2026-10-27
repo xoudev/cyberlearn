@@ -71,13 +71,16 @@ describe("CatalogFilterSelect", () => {
 
   it("is marked while it narrows the list, and plain while it does not", () => {
     // It used to be the other way round: lit on TOUS, plain once filtering.
-    const marked = "border: 1px solid var(--cosmetic-accent)";
     const { rerender } = render(
       <CatalogFilterSelect label="Niveau" value="ALL" options={LEVELS} />,
     );
-    expect(screen.getByRole("combobox").getAttribute("style")).not.toContain(marked);
+    expect(
+      screen.getByRole("combobox").closest("[data-filtered]")?.getAttribute("data-filtered"),
+    ).toBe("false");
     rerender(<CatalogFilterSelect label="Niveau" value="ADVANCED" options={LEVELS} />);
-    expect(screen.getByRole("combobox").getAttribute("style")).toContain(marked);
+    expect(
+      screen.getByRole("combobox").closest("[data-filtered]")?.getAttribute("data-filtered"),
+    ).toBe("true");
   });
 });
 

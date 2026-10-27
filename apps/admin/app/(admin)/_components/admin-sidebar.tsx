@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BastionLogo } from "@cyberlearn/ui";
 import { CHROME_BOTTOM } from "@/lib/chrome";
 import {
   activeSectionHref,
@@ -200,7 +201,7 @@ export function AdminSidebar({
   counts,
 }: AdminSidebarProps): React.ReactElement {
   const pathname = usePathname();
-  const { open, close } = useAdminMobileSidebar();
+  const { open, mobile, close } = useAdminMobileSidebar();
 
   // The entry the page sits under, the most specific when two match:
   // /moderation/reports is under Signalements, not under Modération too.
@@ -239,6 +240,10 @@ export function AdminSidebar({
 
   return (
     <aside
+      id="admin-navigation"
+      aria-label="Navigation d’administration"
+      role={open && mobile ? "dialog" : undefined}
+      aria-modal={open && mobile ? true : undefined}
       className={`admin-sidebar-fixed${open ? " sidebar-mobile-open" : ""}`}
       style={{
         position: "fixed",
@@ -251,23 +256,40 @@ export function AdminSidebar({
         borderRight: "1px solid var(--a-border)",
         display: "flex",
         flexDirection: "column",
-        overflowY: "auto",
+        overflow: "hidden",
       }}
     >
-      <div style={{ padding: "20px 0 0" }}>
-        <SectionLabel text="Gestion" />
-        <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_MAIN_SECTIONS.map(renderItem)}</nav>
+      <div className="a-sidebar-brand">
+        <Link href="/dashboard" onClick={close} aria-label="Bastion, accueil de l’administration">
+          <BastionLogo size={36} />
+          <span>
+            <strong>BASTION</strong>
+            <small>Administration</small>
+          </span>
+        </Link>
+        <button
+          type="button"
+          className="admin-hamburger"
+          onClick={close}
+          aria-label="Fermer le menu d’administration"
+        >
+          ×
+        </button>
+      </div>
+      <div className="a-sidebar-scroll">
+        <div style={{ padding: "20px 0 0" }}>
+          <SectionLabel text="Gestion" />
+          <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_MAIN_SECTIONS.map(renderItem)}</nav>
+        </div>
+
+        <div style={{ padding: "22px 0 0" }}>
+          <SectionLabel text="Système" />
+          <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_SYSTEM_SECTIONS.map(renderItem)}</nav>
+        </div>
       </div>
 
-      <div style={{ padding: "22px 0 0" }}>
-        <SectionLabel text="Système" />
-        <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_SYSTEM_SECTIONS.map(renderItem)}</nav>
-      </div>
-
-      <div style={{ flex: 1 }} />
-
-      {/* Identity, which opens « Mon compte », and sign out */}
-      <div style={{ padding: "16px 14px", borderTop: "1px solid var(--a-border)" }}>
+      {/* Identity + sign out */}
+      <div className="a-sidebar-account">
         <Link
           href="/account"
           onClick={close}

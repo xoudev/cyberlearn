@@ -80,8 +80,10 @@ function FlagForm({
   userAttempts: number;
 }): React.ReactElement {
   const [state, action, pending] = useActionState(
-    (_prev: { correct: boolean; error?: string; xpEarned?: number }, formData: FormData) =>
-      submitFlagAction(challengeId, (formData.get("flag") as string | null) ?? ""),
+    (_prev: { correct: boolean; error?: string; xpEarned?: number }, formData: FormData) => {
+      const flag = formData.get("flag");
+      return submitFlagAction(challengeId, typeof flag === "string" ? flag : "");
+    },
     { correct: false },
   );
 
@@ -109,7 +111,6 @@ function FlagForm({
             display: "grid",
             placeItems: "center",
             color: "var(--cosmetic-accent)",
-            boxShadow: "0 0 24px color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
           }}
         >
           <IconCheck size={24} />
@@ -155,25 +156,27 @@ function FlagForm({
           textAlign: "center",
         }}
       >
-        Plus de tentatives disponibles pour ce challenge.
+        Plus de tentatives disponibles pour ce défi.
       </div>
     );
   }
 
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div
+      <label
+        htmlFor="challenge-flag"
         className="mono-label"
         style={{
           color: "var(--color-text-muted)",
           marginBottom: 4,
         }}
       >
-        {"// SUBMIT FLAG"}
-      </div>
+        Flag trouvé
+      </label>
 
       {state.error !== undefined && (
         <div
+          role="alert"
           style={{
             padding: "10px 14px",
             background: "rgba(255,77,109,0.08)",
@@ -187,11 +190,13 @@ function FlagForm({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+      <div className="challenge-flag-row">
         <input
+          id="challenge-flag"
           name="flag"
           type="text"
           placeholder="CTF{...}"
+          aria-label="Flag du défi"
           autoComplete="off"
           spellCheck={false}
           required
@@ -306,7 +311,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
           margin: 0,
         }}
       >
-        Sur l&apos;honneur · valide uniquement si tu as réellement résolu le challenge.
+        Sur l&apos;honneur · valide uniquement si tu as réellement résolu le défi.
       </p>
     </form>
   );
@@ -346,7 +351,7 @@ export function ChallengeAction({
         >
           <IconLock size={16} />
           <span>
-            Challenge verrouillé.
+            Défi verrouillé.
             {prerequisiteTitle !== null ? ` Complète d'abord : ${prerequisiteTitle}` : ""}
           </span>
         </div>
@@ -376,7 +381,7 @@ export function ChallengeAction({
           }}
         >
           <IconCheck size={16} />
-          Challenge résolu · bien joué.
+          Défi résolu · bien joué.
         </div>
       </div>
     );

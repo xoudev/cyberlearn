@@ -213,8 +213,6 @@ export function TournamentsList({
         </div>
       )}
 
-      <Steps />
-
       {sorted.length === 0 ? (
         <EmptyState title={empty.title} message={empty.message} />
       ) : (
@@ -250,6 +248,10 @@ export function TournamentsList({
           )}
         </>
       )}
+      <details className="trn-guide">
+        <summary>Comprendre les scores</summary>
+        <Steps />
+      </details>
     </div>
   );
 }

@@ -186,7 +186,8 @@ export function PaneButton({
       disabled={disabled}
       aria-pressed={pressed}
       style={{
-        height: 20,
+        minHeight: 44,
+        minWidth: 44,
         padding: "0 8px",
         border: `1px solid ${pressed === true ? ACCENT : BORDER}`,
         background: "transparent",
@@ -196,12 +197,10 @@ export function PaneButton({
             : disabled
               ? "var(--color-text-faint)"
               : "var(--color-text-muted)",
-        fontFamily: MONO,
-        fontSize: 9,
+        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        fontSize: 12,
         fontWeight: 700,
-        letterSpacing: "0.08em",
         cursor: disabled ? "default" : "pointer",
-        borderRadius: 2,
         flexShrink: 0,
       }}
     >
@@ -260,12 +259,13 @@ export function MdxPreviewFrame({
 
   return (
     <div
+      className="mdx-preview-frame"
       style={{
         height: "100%",
         minHeight: 0,
         display: "flex",
         flexDirection: "column",
-        background: "#060422",
+        background: "var(--color-bg-sunken)",
       }}
     >
       <div
@@ -278,7 +278,7 @@ export function MdxPreviewFrame({
           display: "flex",
           alignItems: "center",
           gap: 6,
-          borderBottom: "1px solid rgba(31,27,71,0.6)",
+          borderBottom: "1px solid var(--color-border-subtle)",
           flexShrink: 0,
         }}
       >
@@ -286,10 +286,8 @@ export function MdxPreviewFrame({
           style={{
             width: 4,
             height: 4,
-            borderRadius: "50%",
             background: ACCENT,
             display: "inline-block",
-            boxShadow: `0 0 6px ${ACCENT}`,
           }}
         />
         APERÇU DU SITE
@@ -344,7 +342,7 @@ export function MdxPreviewFrame({
             margin: 0,
             padding: "8px 16px",
             borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
-            background: "rgba(255,77,109,0.07)",
+            background: "color-mix(in srgb, var(--color-danger) 7%, transparent)",
             color: "var(--color-text-primary)",
             fontSize: 12,
             lineHeight: 1.5,

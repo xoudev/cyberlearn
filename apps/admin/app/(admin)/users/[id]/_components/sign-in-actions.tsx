@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState, useEffect } from "react";
+import { AdminConfirmForm } from "../../../_components/admin-confirmation";
 import { useRouter } from "next/navigation";
 import {
   confirmEmailAction,
@@ -86,19 +87,9 @@ export function SignInActions({
               </button>
             </form>
 
-            <form
+            <AdminConfirmForm
               action={confirmAction}
-              onSubmit={(event) => {
-                // Cancelling the native submit also cancels the action: React
-                // only runs a form's action for a submit nobody prevented.
-                if (
-                  !window.confirm(
-                    `Confirmer ${email} sans e-mail ? Personne n'aura prouvé avoir accès à cette boîte : à réserver au cas où le mail n'arrive pas.`,
-                  )
-                ) {
-                  event.preventDefault();
-                }
-              }}
+              question={`Confirmer ${email} sans e-mail ? Personne n'aura prouvé avoir accès à cette boîte : à réserver au cas où le mail n'arrive pas.`}
             >
               <input type="hidden" name="userId" value={userId} />
               <button
@@ -108,29 +99,20 @@ export function SignInActions({
               >
                 {confirmPending ? "Confirmation…" : "Confirmer l'adresse"}
               </button>
-            </form>
+            </AdminConfirmForm>
           </>
         )}
 
         {canRevoke && (
-          <form
+          <AdminConfirmForm
             action={revokeAction}
-            onSubmit={(event) => {
-              // Cancelling the native submit also cancels the action.
-              if (
-                !window.confirm(
-                  `Déconnecter ${email} partout ? Le site, l'app et la console lui redemanderont de se connecter.`,
-                )
-              ) {
-                event.preventDefault();
-              }
-            }}
+            question={`Déconnecter ${email} partout ? Le site, l'app et la console lui redemanderont de se connecter.`}
           >
             <input type="hidden" name="userId" value={userId} />
             <button type="submit" disabled={revokePending} className="a-btn a-btn--ghost a-btn--sm">
               {revokePending ? "Déconnexion…" : "Déconnecter toutes les sessions"}
             </button>
-          </form>
+          </AdminConfirmForm>
         )}
       </div>
 

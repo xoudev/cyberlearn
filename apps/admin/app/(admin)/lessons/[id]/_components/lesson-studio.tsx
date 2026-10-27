@@ -38,6 +38,7 @@ import {
   type StudioFields,
 } from "./studio-state";
 import { notifyResult } from "@/lib/notify";
+import { useAdminConfirmation } from "../../../_components/admin-confirmation";
 import {
   LESSON_DRAFT_LIMITS,
   LESSON_LIMITS,
@@ -311,11 +312,12 @@ export function LessonStudio({
     });
   };
 
-  const discard = (): void => {
+  const confirm = useAdminConfirmation();
+  const discard = async (): Promise<void> => {
     if (
-      !window.confirm(
+      !(await confirm(
         "Abandonner le brouillon ? La leçon reste telle qu'elle est publiée, et ce qui a été écrit depuis est perdu.",
-      )
+      ))
     ) {
       return;
     }
@@ -337,12 +339,12 @@ export function LessonStudio({
     });
   };
 
-  const restore = (version: StudioVersion): void => {
+  const restore = async (version: StudioVersion): Promise<void> => {
     if (
       !sameContent(fields, state.published) &&
-      !window.confirm(
+      !(await confirm(
         `Remplacer le brouillon par la version ${String(version.version)} ? Ce qu'il contient maintenant sera perdu.`,
-      )
+      ))
     ) {
       return;
     }
@@ -415,7 +417,9 @@ export function LessonStudio({
             type="button"
             className="a-btn a-btn--ghost a-btn--sm"
             disabled={busy || (!hasDraft && !autosave.dirty)}
-            onClick={discard}
+            onClick={() => {
+              void discard();
+            }}
           >
             Abandonner le brouillon
           </button>
@@ -731,7 +735,7 @@ export function LessonStudio({
                       className="a-btn a-btn--ghost a-btn--sm"
                       disabled={busy}
                       onClick={() => {
-                        restore(version);
+                        void restore(version);
                       }}
                     >
                       Restaurer dans le brouillon

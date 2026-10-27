@@ -52,9 +52,9 @@ export function ClassHeaderSkeleton({
 }
 
 /** Heights of the editors' controls: .cls-input on one line, on two, and the Select. */
-const INPUT = 36;
+const INPUT = 44;
 const TEXTAREA_2 = 54;
-const SELECT = 39;
+const SELECT = 44;
 
 /** A .cls-field: its label, the control at its real height, the hint when it has one. */
 function FieldSkeleton({
@@ -114,8 +114,9 @@ const RULE = "1px solid var(--color-border-default)";
  */
 function EditorPanelSkeleton(): React.ReactElement {
   return (
-    <div style={{ border: RULE, overflow: "hidden" }}>
+    <div className="mdx-editor-panel" style={{ border: RULE, overflow: "hidden" }}>
       <div
+        className="mdx-editor-toolbar"
         style={{
           display: "flex",
           alignItems: "center",
@@ -133,10 +134,15 @@ function EditorPanelSkeleton(): React.ReactElement {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "55% 45%", height: 620 }}>
+      <div
+        className="mdx-editor-panes"
+        data-split="true"
+        style={{ display: "grid", gridTemplateColumns: "55% 45%", height: 620 }}
+      >
         <div
           style={{
             borderRight: RULE,
+            height: 620,
             overflow: "hidden",
             padding: "10px 16px 48px",
             display: "flex",
@@ -150,7 +156,10 @@ function EditorPanelSkeleton(): React.ReactElement {
           <Skeleton w="30%" h={18} style={{ marginTop: 12 }} />
           <Skeleton h={150} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div
+          className="mdx-preview-frame"
+          style={{ display: "flex", flexDirection: "column", minWidth: 0, height: 620 }}
+        >
           <div
             style={{
               display: "flex",
@@ -175,6 +184,7 @@ function EditorPanelSkeleton(): React.ReactElement {
       </div>
 
       <div
+        className="mdx-editor-status"
         style={{
           display: "flex",
           alignItems: "center",

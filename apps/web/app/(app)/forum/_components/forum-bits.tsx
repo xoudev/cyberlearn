@@ -34,18 +34,13 @@ export function ForumHeader({
   actions?: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <header style={accentStyle(accent)}>
+    <header className="fo-header" style={accentStyle(accent)}>
       <div className="fo-eyebrow">{eyebrow}</div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <h1 className="fo-title">{title}</h1>
+      <div className="fo-title-row">
+        <h1 className="fo-title">
+          {title}
+          <span aria-hidden="true">.</span>
+        </h1>
         {/* Pushed to the right edge so that a long title, which wraps the
             actions onto their own line, does not leave them looking like the
             first thing in the thread. */}
@@ -133,21 +128,24 @@ export function TopicRow({
   topic,
   showCategory = true,
   isFriend = false,
+  featured = false,
 }: {
   topic: ForumTopicSummary;
   /** Off inside a section, where naming it on every row says nothing. */
   showCategory?: boolean;
   /** The topic's author is one of the reader's friends (authorIsFriend). */
   isFriend?: boolean;
+  featured?: boolean;
 }): React.JSX.Element {
   return (
     <li>
       <Link
         href={`/forum/${topic.categorySlug}/${topic.slug}`}
-        className="fo-topic"
+        className={featured ? "fo-topic fo-topic--featured" : "fo-topic"}
         style={accentStyle(topic.categoryAccent)}
       >
         <span style={{ minWidth: 0 }}>
+          {featured && <span className="forum-home-latest">Dernière activité</span>}
           <span className="fo-topic-title">
             {topic.pinned && <span className="fo-tag fo-tag--pinned">Épinglé</span>}
             {topic.locked && <span className="fo-tag fo-tag--locked">Fermé</span>}
@@ -159,6 +157,11 @@ export function TopicRow({
             ouvert par {authorName(topic.author)}
             {isFriend && <FriendMark size={12} />} · dernier message {formatDate(topic.lastPostAt)}
           </div>
+          {featured && (
+            <span className="forum-home-read">
+              Lire la discussion <span aria-hidden="true">↗</span>
+            </span>
+          )}
         </span>
         <span className="fo-topic-count">
           <strong>{topic.replyCount}</strong>

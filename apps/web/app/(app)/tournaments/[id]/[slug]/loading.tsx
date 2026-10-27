@@ -27,7 +27,11 @@ function SectionHeadSkeleton({
 
 export default function TournamentChallengeLoading(): React.ReactElement {
   return (
-    <div className="page-container trn" aria-busy="true" aria-label="Chargement du défi">
+    <div
+      className="page-container learning-catalogue learning-workspace trn"
+      aria-busy="true"
+      aria-label="Chargement du défi"
+    >
       <Skeleton w={340} h={14} style={{ marginBottom: 26, maxWidth: "100%" }} />
 
       <div className="trn-hero" aria-hidden="true">

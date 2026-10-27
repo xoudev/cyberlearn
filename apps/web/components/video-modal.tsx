@@ -21,8 +21,7 @@ interface VideoModalProps {
  *
  * The dialog behaviour that used to live here - Escape, backdrop, scroll lock,
  * focus - moved to ModalShell when a second pop-up wanted the same thing. What
- * is left is the part that is actually about video: the videos ship without an
- * audio track, so muted autoplay is never blocked by the browser.
+ * is left is the video player, with muted autoplay and native playback controls.
  */
 export function VideoModal({
   open,

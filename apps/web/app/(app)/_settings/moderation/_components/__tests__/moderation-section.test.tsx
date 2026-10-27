@@ -8,7 +8,7 @@ import { ModerationSection } from "../ModerationSection";
 describe("the moderation section", () => {
   it("says there is nothing when there is nothing", () => {
     const html = renderToStaticMarkup(<ModerationSection data={{ events: [] }} />);
-    expect(html).toContain("MODÉRATION");
+    expect(html).toContain("<h2>Modération");
     // The markup escapes the apostrophe.
     expect(html).toContain(MODERATION_RECORD_EMPTY.replaceAll("'", "&#x27;"));
   });
