@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avatarDisplaySrc, originOf } from "../avatar-src";
+import { avatarDisplaySrc, badgeIconSrc, originOf } from "../avatar-src";
 
 const context = {
   siteOrigin: "https://cyberlearn.fr",
@@ -54,5 +54,25 @@ describe("originOf", () => {
     expect(originOf(undefined)).toBeNull();
     expect(originOf("")).toBeNull();
     expect(originOf("not a url")).toBeNull();
+  });
+});
+
+describe("the src the console draws a badge icon from", () => {
+  it("reads an icon of the learner site from its origin", () => {
+    expect(badgeIconSrc("/badges/legend.svg", "https://cyberlearn.fr")).toBe(
+      "https://cyberlearn.fr/badges/legend.svg",
+    );
+  });
+
+  it("keeps an https icon as it is", () => {
+    expect(badgeIconSrc("https://cdn.example.org/b.svg", "https://cyberlearn.fr")).toBe(
+      "https://cdn.example.org/b.svg",
+    );
+  });
+
+  it("draws nothing for any other form", () => {
+    expect(badgeIconSrc("//evil.example/b.svg", "https://cyberlearn.fr")).toBeNull();
+    expect(badgeIconSrc("javascript:alert(1)", "https://cyberlearn.fr")).toBeNull();
+    expect(badgeIconSrc("http://plain.example/b.svg", "https://cyberlearn.fr")).toBeNull();
   });
 });

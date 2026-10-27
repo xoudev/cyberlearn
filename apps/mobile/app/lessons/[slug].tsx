@@ -16,6 +16,7 @@ import { CheckIcon, LockIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
 import { glossaryPlan } from "@/lib/glossary";
 import { LessonRatingCard } from "@/components/lesson-rating";
+import { BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
@@ -786,15 +787,19 @@ function ResultView({
                       backgroundColor: `${rarityColor}18`,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily: `${fonts.mono}_700Bold`,
-                        fontSize: 16,
-                        color: rarityColor,
-                      }}
-                    >
-                      {badge.name.slice(0, 1).toUpperCase()}
-                    </Text>
+                    {badge.iconUrl ? (
+                      <BadgeIcon iconUrl={badge.iconUrl} color={rarityColor} size={30} />
+                    ) : (
+                      <Text
+                        style={{
+                          fontFamily: `${fonts.mono}_700Bold`,
+                          fontSize: 16,
+                          color: rarityColor,
+                        }}
+                      >
+                        {badge.name.slice(0, 1).toUpperCase()}
+                      </Text>
+                    )}
                   </View>
                   <View style={{ flex: 1, gap: 3 }}>
                     <Text variant="h3">{badge.name}</Text>

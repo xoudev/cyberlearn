@@ -28,7 +28,8 @@ export interface CompleteLessonResult {
   xpGained: number;
   leveledUp: boolean;
   newLevel: number;
-  newBadges: { name: string; rarity: string; xpReward: number }[];
+  /** The badges this completion earned, each with its icon (null when it has none). */
+  newBadges: { name: string; rarity: string; xpReward: number; iconUrl: string | null }[];
   /** Right answers out of the lesson's quizzes; null when it has none. */
   quizScore: { correct: number; total: number } | null;
 }
@@ -285,6 +286,8 @@ export async function completeLessonForUser(
         name: b.name,
         rarity: b.rarity,
         xpReward: b.xpReward,
+        // The award returns what it was given minus the icon; the earned rows have it.
+        iconUrl: earnedBadges.find((earned) => earned.id === b.id)?.iconUrl ?? null,
       })),
       quizScore,
     },

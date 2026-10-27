@@ -69,6 +69,7 @@ const XP_BADGE = {
   id: "b1",
   name: "Hacktiviste",
   description: "Atteignez 100 XP.",
+  iconUrl: "/badges/xp-1000.svg",
   rarity: "EPIC",
   xpReward: 50,
   isActive: true,
@@ -127,7 +128,10 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
 
     // Lesson reward (20) + badge reward (50).
     expect(result.xpGained).toBe(70);
-    expect(result.newBadges).toEqual([{ name: "Hacktiviste", rarity: "EPIC", xpReward: 50 }]);
+    // With its icon, which the end-of-lesson summary draws.
+    expect(result.newBadges).toEqual([
+      { name: "Hacktiviste", rarity: "EPIC", xpReward: 50, iconUrl: "/badges/xp-1000.svg" },
+    ]);
 
     // creditXp increments lesson XP (+20) then badge XP (+50); the streak-only
     // update carries no xpTotal and is filtered out.

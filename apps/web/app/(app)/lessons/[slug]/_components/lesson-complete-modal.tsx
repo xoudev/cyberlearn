@@ -169,7 +169,12 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                   const rarity = toBadgeRarity(badge.rarity);
                   return (
                     <li className="lesson-success__badge" key={badge.name}>
-                      <BadgeMedallion rarity={rarity} size="xs" name={badge.name} />
+                      <BadgeMedallion
+                        rarity={rarity}
+                        size="xs"
+                        name={badge.name}
+                        iconUrl={badge.iconUrl}
+                      />
                       <div>
                         <strong>{badge.name}</strong>
                         <span style={{ color: BADGE_RARITY_VAR[rarity] }}>

@@ -7,6 +7,8 @@ import { DataGrid, type GridRow } from "../../_components/data-grid";
 import { BADGE_COLUMNS, BADGES_HEADER } from "../_components/badge-columns";
 
 import { requireAdminPage } from "@/lib/auth";
+import { badgeIconSrc, originOf } from "@/lib/avatar-src";
+import { env } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Badges" };
 
@@ -40,6 +42,7 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
       refCode: true,
       name: true,
       description: true,
+      iconUrl: true,
       rarity: true,
       criterionType: true,
       xpReward: true,
@@ -50,10 +53,12 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
   });
 
   const activeCount = badges.filter((b) => b.isActive).length;
+  const siteOrigin = originOf(env.NEXT_PUBLIC_SITE_URL) ?? "https://cyberlearn.fr";
 
   const rows: GridRow[] = badges.map((b) => {
     const rarity = RARITY_META[b.rarity] ?? { color: toneColor("neutral"), label: b.rarity };
     const criterion = CRITERION_LABEL[b.criterionType] ?? b.criterionType;
+    const icon = badgeIconSrc(b.iconUrl, siteOrigin);
 
     return {
       id: b.id,
@@ -73,21 +78,43 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
         <span key="r" className="mono" style={{ color: "var(--a-muted)" }}>
           {b.refCode}
         </span>,
-        <span key="n" style={{ display: "block", maxWidth: 260 }}>
-          <span style={{ display: "block", fontWeight: 600, color: "var(--a-fg)", fontSize: 13 }}>
-            {b.name}
-          </span>
+        <span key="n" style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 300 }}>
+          {/* The icon as learners see it, framed in its rarity. */}
           <span
+            aria-hidden="true"
             style={{
-              display: "block",
-              fontSize: 11,
-              color: "var(--a-muted)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              flex: "none",
+              width: 34,
+              height: 34,
+              display: "grid",
+              placeItems: "center",
+              background: "var(--a-surface)",
+              border: `1.5px solid ${rarity.color}`,
             }}
           >
-            {b.description}
+            {icon !== null && (
+              // A plain <img>, not next/image: the SVG lives on the learner
+              // site, and an icon this small gains nothing from the optimizer.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={icon} alt="" width={24} height={24} loading="lazy" />
+            )}
+          </span>
+          <span style={{ display: "block", minWidth: 0 }}>
+            <span style={{ display: "block", fontWeight: 600, color: "var(--a-fg)", fontSize: 13 }}>
+              {b.name}
+            </span>
+            <span
+              style={{
+                display: "block",
+                fontSize: 11,
+                color: "var(--a-muted)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {b.description}
+            </span>
           </span>
         </span>,
         <Tag key="ra" color={rarity.color}>
