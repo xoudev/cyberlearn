@@ -63,11 +63,10 @@ describe("the navbar's revisions button", () => {
 
   it("never writes a number: a count that grows while one is away keeps one away", () => {
     for (const waiting of [false, true]) {
-      const text = renderToStaticMarkup(<RevisionsButton waiting={waiting} />).replace(
-        /<[^>]*>/gu,
-        "",
-      );
-      expect(text).not.toMatch(/\d/u);
+      // The text a reader gets, read from the DOM rather than by stripping tags.
+      const { container, unmount } = render(<RevisionsButton waiting={waiting} />);
+      expect(container.textContent).not.toMatch(/\d/u);
+      unmount();
     }
   });
 });
