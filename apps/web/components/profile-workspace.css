@@ -385,8 +385,12 @@
     gap: 20px;
   }
   .profile-avatar-frame {
+    --avatar-scale: 0.8;
     width: 84px;
-    height: 96px;
+    height: 84px;
+  }
+  .profile-avatar-face {
+    font-size: 32px;
   }
   .profile-progress {
     grid-template-columns: 66px minmax(0, 1fr);
