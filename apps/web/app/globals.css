@@ -2248,7 +2248,20 @@ aside[data-state="collapsed"] .sidebar-account {
 }
 
 /* The avatars drawn by AvatarView: each surface its own box, the drawing shared */
-/* The navbar's picture: framed by the shared avatar rules above. */
+/* The navbar's picture: framed by the shared avatar rules above. The frame
+   has a size of its own, as the sidebar's does: the shared rule stretches the
+   picture to its frame, and a frame sized by its content let an uploaded
+   photo or a built-in avatar come out at its own, much larger size. */
+.navbar-avatar-frame {
+  width: 34px;
+  height: 34px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.chrome-actions .navbar-avatar-frame {
+  width: 37px;
+  height: 37px;
+}
 .navbar-avatar {
   width: 28px;
   height: 28px;
