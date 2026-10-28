@@ -5,7 +5,8 @@
  * Creates:
  * - 1 admin user
  * - 2 student users
- * - 10 badges (2 per rarity)
+ * - 22 badges (the 10 first ones, then 12 for challenges, duels, tournaments
+ *   and the daily recall, as migration 20261028120000_activity_badges adds them)
  * - 5 lessons (mix of categories and difficulties)
  * - 2 paths
  * - 15 placement test questions (5 per category)
@@ -168,6 +169,114 @@ async function main() {
       rarity: "LEGENDARY" as const,
       criterionType: "PATH_COMPLETED" as const,
       criterionData: { withCertificate: true },
+    },
+    {
+      refCode: "CL-BDG-011",
+      name: "Premier flag",
+      description: "Résous ton premier défi.",
+      iconUrl: "/badges/first-flag.svg",
+      rarity: "COMMON" as const,
+      criterionType: "CHALLENGES_SOLVED" as const,
+      criterionData: { count: 1 },
+    },
+    {
+      refCode: "CL-BDG-012",
+      name: "Chasseur de flags",
+      description: "Résous 10 défis.",
+      iconUrl: "/badges/flag-hunter.svg",
+      rarity: "RARE" as const,
+      criterionType: "CHALLENGES_SOLVED" as const,
+      criterionData: { count: 10 },
+    },
+    {
+      refCode: "CL-BDG-013",
+      name: "Sans filet",
+      description: "Résous un défi sans révéler un seul de ses indices.",
+      iconUrl: "/badges/no-hints.svg",
+      rarity: "RARE" as const,
+      criterionType: "CHALLENGES_SOLVED" as const,
+      criterionData: { count: 1, only: "WITHOUT_HINTS" },
+    },
+    {
+      refCode: "CL-BDG-014",
+      name: "Rendez-vous hebdo",
+      description: "Résous 3 défis de la semaine, chacun pendant sa semaine.",
+      iconUrl: "/badges/weekly-challenge.svg",
+      rarity: "EPIC" as const,
+      criterionType: "CHALLENGES_SOLVED" as const,
+      criterionData: { count: 3, only: "WEEKLY" },
+    },
+    {
+      refCode: "CL-BDG-015",
+      name: "Premier duel",
+      description: "Va au bout de ton premier duel, quel qu'en soit le résultat.",
+      iconUrl: "/badges/first-duel.svg",
+      rarity: "COMMON" as const,
+      criterionType: "DUELS_PLAYED" as const,
+      criterionData: { count: 1 },
+    },
+    {
+      refCode: "CL-BDG-016",
+      name: "Duelliste",
+      description: "Gagne 10 duels.",
+      iconUrl: "/badges/duelist.svg",
+      rarity: "RARE" as const,
+      criterionType: "DUELS_WON" as const,
+      criterionData: { count: 10 },
+    },
+    {
+      refCode: "CL-BDG-017",
+      name: "Imbattable",
+      description: "Gagne 25 duels.",
+      iconUrl: "/badges/unbeatable.svg",
+      rarity: "EPIC" as const,
+      criterionType: "DUELS_WON" as const,
+      criterionData: { count: 25 },
+    },
+    {
+      refCode: "CL-BDG-018",
+      name: "Sur la ligne de départ",
+      description: "Valide un flag pendant un tournoi.",
+      iconUrl: "/badges/starting-line.svg",
+      rarity: "RARE" as const,
+      criterionType: "TOURNAMENTS_PLAYED" as const,
+      criterionData: { count: 1 },
+    },
+    {
+      refCode: "CL-BDG-019",
+      name: "Podium",
+      description: "Termine un tournoi avec ton équipe parmi les trois premières.",
+      iconUrl: "/badges/podium.svg",
+      rarity: "EPIC" as const,
+      criterionType: "TOURNAMENT_RANK" as const,
+      criterionData: { top: 3, count: 1 },
+    },
+    {
+      refCode: "CL-BDG-020",
+      name: "Champion",
+      description: "Remporte un tournoi avec ton équipe.",
+      iconUrl: "/badges/champion.svg",
+      rarity: "LEGENDARY" as const,
+      criterionType: "TOURNAMENT_RANK" as const,
+      criterionData: { top: 1, count: 1 },
+    },
+    {
+      refCode: "CL-BDG-021",
+      name: "Mémoire vive",
+      description: "Fais 7 rappels du jour.",
+      iconUrl: "/badges/recall-7.svg",
+      rarity: "COMMON" as const,
+      criterionType: "DAILY_RECALLS" as const,
+      criterionData: { count: 7 },
+    },
+    {
+      refCode: "CL-BDG-022",
+      name: "Mémoire d'éléphant",
+      description: "Fais 30 rappels du jour.",
+      iconUrl: "/badges/recall-30.svg",
+      rarity: "RARE" as const,
+      criterionType: "DAILY_RECALLS" as const,
+      criterionData: { count: 30 },
     },
   ];
 

@@ -33,6 +33,21 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.9",
+    date: "2026-10-28",
+    title: "Douze badges pour les défis, les duels, les tournois et le rappel du jour",
+    changes: [
+      {
+        type: "new",
+        text: "Les badges ne récompensent plus seulement les leçons. Défis : Premier flag, Chasseur de flags (10 défis), Sans filet (un défi résolu sans révéler d'indice) et Rendez-vous hebdo (3 défis de la semaine, chacun pendant sa semaine). Duels : Premier duel, Duelliste (10 victoires) et Imbattable (25 victoires). Tournois : Sur la ligne de départ (un flag validé), Podium (ton équipe dans les trois premières) et Champion (ton équipe gagne). Rappel du jour : Mémoire vive (7 rappels) et Mémoire d'éléphant (30 rappels). Chacun a son icône, dans le style des autres.",
+      },
+      {
+        type: "improved",
+        text: "Ce que tu as déjà fait compte : si tu remplis déjà une condition, le badge t'attend dans ta collection. Un badge débloqué en fin de leçon montre maintenant sa vraie icône, sur le site comme dans l'app. Les places en tournoi sont attribuées la nuit qui suit la fin, ou dès que tu ouvres le classement du tournoi terminé.",
+      },
+    ],
+  },
+  {
     version: "3.8",
     date: "2026-10-27",
     title: "Des quêtes qui changent chaque semaine",
