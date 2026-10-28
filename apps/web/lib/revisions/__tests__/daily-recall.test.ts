@@ -12,6 +12,7 @@ const m = vi.hoisted(() => ({
   revisionsEnabled: vi.fn<(userId: string) => Promise<boolean>>(),
   recordQuestProgress: vi.fn(),
   creditXp: vi.fn(),
+  evaluateAndAwardBadges: vi.fn(),
   findForGamification: vi.fn(),
   findSheetOutline: vi.fn(),
   transaction: vi.fn(),
@@ -51,6 +52,7 @@ vi.mock("@cyberlearn/db", () => ({
 vi.mock("@/lib/lessons/revisions-enabled", () => ({ revisionsEnabled: m.revisionsEnabled }));
 vi.mock("@/lib/quests/progress", () => ({ recordQuestProgress: m.recordQuestProgress }));
 vi.mock("@/lib/xp/credit", () => ({ creditXp: m.creditXp }));
+vi.mock("@/lib/badges/award", () => ({ evaluateAndAwardBadges: m.evaluateAndAwardBadges }));
 
 const {
   answerDailyRecall,
@@ -353,6 +355,7 @@ describe("answerDailyRecall", () => {
       expect.objectContaining({ create: { userId: USER, day: new Date(DAY), count: 1 } }),
     );
     expect(m.recordQuestProgress).toHaveBeenCalledWith(USER, "STREAK_DAYS", NOW, { setTo: 4 });
+    expect(m.evaluateAndAwardBadges).toHaveBeenCalledWith(USER, ["DAILY_RECALLS"], { day: DAY });
   });
 
   it("credits nothing when another tab handed the session in first", async () => {
@@ -368,6 +371,7 @@ describe("answerDailyRecall", () => {
 
     expect(m.creditXp).not.toHaveBeenCalled();
     expect(m.recordQuestProgress).not.toHaveBeenCalled();
+    expect(m.evaluateAndAwardBadges).not.toHaveBeenCalled();
     // The XP was credited, once, by the other tab: the result says so.
     expect(res).toMatchObject({ ok: true, result: { correct: 3, total: 3, xp: 15 } });
   });

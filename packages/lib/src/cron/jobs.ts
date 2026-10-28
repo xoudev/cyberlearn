@@ -2,7 +2,7 @@
  * The site's scheduled jobs: where each one lives, when it is meant to run,
  * and what it is called in the console.
  *
- * Five are Vercel Crons, declared in apps/web/vercel.json; a test in apps/web
+ * Six are Vercel Crons, declared in apps/web/vercel.json; a test in apps/web
  * fails when this list and that file disagree, or when a route under
  * app/api/cron is missing from here. keep-alive is called from outside, by
  * cron-job.org every six hours (docs/infra/keep-alive.md), and is listed for
@@ -49,6 +49,15 @@ export const CRON_JOBS = [
     label: "Saisons de ligue",
     description:
       "Clôt la saison échue, promeut et relègue chaque groupe, puis ouvre la saison suivante.",
+    source: "vercel",
+  },
+  {
+    name: "tournament-badges",
+    path: "/api/cron/tournament-badges",
+    schedule: "0 2 * * *",
+    label: "Badges de tournoi",
+    description:
+      "Donne aux joueurs des tournois finis depuis une semaine les badges de la place prise par leur équipe.",
     source: "vercel",
   },
   {

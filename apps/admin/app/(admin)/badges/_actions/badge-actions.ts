@@ -10,6 +10,16 @@ import { withSavedNotice } from "@/lib/saved-notice";
 
 // ── Per-type criterion data builders ──────────────────────────────────────────
 
+/** How many times a played activity must happen: what its fields allow. */
+const activityCount = z.coerce.number().int().min(1).max(999);
+/** Which challenges CHALLENGES_SOLVED counts; ALL is saved without the key. */
+const challengeFilter = z.enum(["ALL", "WITHOUT_HINTS", "WEEKLY"]);
+/** The places TOURNAMENT_RANK rewards: a win, or a podium. */
+const tournamentPlace = z.coerce
+  .number()
+  .int()
+  .refine((place) => place === 1 || place === 3);
+
 function buildCriterionData(
   criterionType: string,
   formData: FormData,
@@ -65,6 +75,30 @@ function buildCriterionData(
       if (!event.success) return { data: null, error: "Événement requis" };
       return { data: { event: event.data } };
     }
+    case "CHALLENGES_SOLVED": {
+      const count = activityCount.safeParse(formData.get("criterion_count"));
+      const only = challengeFilter.safeParse(formData.get("criterion_only"));
+      if (!count.success) return { data: null, error: "Nombre de défis requis (entier ≥ 1)" };
+      if (!only.success) return { data: null, error: "Choix des défis invalide" };
+      return {
+        data: only.data === "ALL" ? { count: count.data } : { count: count.data, only: only.data },
+      };
+    }
+    case "DUELS_PLAYED":
+    case "DUELS_WON":
+    case "TOURNAMENTS_PLAYED":
+    case "DAILY_RECALLS": {
+      const count = activityCount.safeParse(formData.get("criterion_count"));
+      if (!count.success) return { data: null, error: "Nombre requis (entier entre 1 et 999)" };
+      return { data: { count: count.data } };
+    }
+    case "TOURNAMENT_RANK": {
+      const top = tournamentPlace.safeParse(formData.get("criterion_top"));
+      const count = activityCount.safeParse(formData.get("criterion_count"));
+      if (!top.success) return { data: null, error: "Place invalide (1re place ou podium)" };
+      if (!count.success) return { data: null, error: "Nombre de tournois requis (entier ≥ 1)" };
+      return { data: { top: top.data, count: count.data } };
+    }
     default:
       return { data: null, error: "Type de critère inconnu" };
   }
@@ -84,6 +118,12 @@ const VALID_CRITERION_TYPES = [
   "LESSON_SPECIFIC",
   "PERFECT_QUIZ",
   "CUSTOM",
+  "CHALLENGES_SOLVED",
+  "DUELS_PLAYED",
+  "DUELS_WON",
+  "TOURNAMENTS_PLAYED",
+  "TOURNAMENT_RANK",
+  "DAILY_RECALLS",
 ] as const;
 
 const badgeBaseSchema = z.object({

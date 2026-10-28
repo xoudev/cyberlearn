@@ -834,6 +834,8 @@ model UserChallengeProgress {
   completedAt DateTime?
   /// The XP the solve was worth, the week's bonus included; null before it.
   xpEarned    Int?
+  /// Solved the week it was the challenge of the week (badges count these).
+  weekly      Boolean        @default(false)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
@@ -893,6 +895,12 @@ enum BadgeCriterionType {
   LESSON_SPECIFIC
   LEVEL
   BADGE_EARNED
+  CHALLENGES_SOLVED
+  DUELS_PLAYED
+  DUELS_WON
+  TOURNAMENTS_PLAYED
+  TOURNAMENT_RANK
+  DAILY_RECALLS
 }
 
 model Badge {

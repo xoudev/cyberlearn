@@ -10,6 +10,7 @@ import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
 import { dayKey, registerActivity } from "@cyberlearn/lib";
 import { challengeXp, weeklyChallengeId } from "@cyberlearn/lib/challenges/weekly";
+import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { flagsMatch, personalFlag } from "@/lib/challenges/flag";
 import { env } from "@/lib/env";
 import { recordQuestProgress } from "@/lib/quests/progress";
@@ -220,7 +221,7 @@ async function awardChallengeXp(
     });
     const completed = await tx.userChallengeProgress.updateMany({
       where: { userId, challengeId, status: { not: "COMPLETED" } },
-      data: { status: "COMPLETED", completedAt: now, xpEarned: amount },
+      data: { status: "COMPLETED", completedAt: now, xpEarned: amount, weekly },
     });
     if (completed.count === 0) return false;
 
@@ -262,5 +263,8 @@ async function awardChallengeXp(
   // Weekly quests: a challenge solved, which keeps the streak quest moving too.
   await recordQuestProgress(userId, "CHALLENGE_SOLVED", now, { amount: 1 });
   await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
+
+  // Badges: the challenges solved, without a hint, as the week's.
+  await evaluateAndAwardBadges(userId, ["CHALLENGES_SOLVED"], { challengeId });
   return amount;
 }

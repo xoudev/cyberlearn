@@ -5,6 +5,10 @@ import Link from "next/link";
 import { createBadgeAction, type CreateBadgeState } from "../../_actions/badge-actions";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
+import {
+  ACTIVITY_CRITERION_LABELS,
+  ActivityCriterionFields,
+} from "../../_components/activity-criterion-fields";
 
 export interface LessonOption {
   id: string;
@@ -58,6 +62,7 @@ const CRITERION_LABELS: Record<string, string> = {
   LESSON_SPECIFIC: "Leçon spécifique complétée",
   PERFECT_QUIZ: "Quiz parfaits (N scores de 100 %)",
   CUSTOM: "Personnalisé (événement)",
+  ...ACTIVITY_CRITERION_LABELS,
 };
 
 const CATEGORY_OPTIONS = ["DEV", "CYBERSEC", "NETWORK", "CLOUD", "OSINT"] as const;
@@ -261,6 +266,8 @@ function CriterionFields({
           />
         </Field>
       )}
+
+      <ActivityCriterionFields type={type} />
     </div>
   );
 }

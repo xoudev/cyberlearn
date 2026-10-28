@@ -97,6 +97,11 @@ const SUMMARY_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>>
     failed: "écritures en échec",
   },
   "season-rollover": { seasonsFinalized: "saisons closes" },
+  "tournament-badges": {
+    players: "joueurs examinés",
+    awarded: "badges donnés",
+    failed: "joueurs non traités",
+  },
   retention: {
     auditLogs: "entrées d'audit purgées",
     resolvedTickets: "tickets résolus purgés",

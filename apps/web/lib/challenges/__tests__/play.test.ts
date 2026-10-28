@@ -25,6 +25,7 @@ const m = vi.hoisted(() => ({
   },
   repo: { getUserProgress: vi.fn(), findActiveIdsInOrder: vi.fn() },
   creditXp: vi.fn(),
+  evaluateAndAwardBadges: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({ prisma: m.prisma, challengeRepository: m.repo }));
@@ -32,6 +33,7 @@ vi.mock("@/lib/env", () => ({ env: {} }));
 vi.mock("@/lib/quests/progress", () => ({ recordQuestProgress: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({ checkHintReveal: vi.fn() }));
 vi.mock("@/lib/xp/credit", () => ({ creditXp: m.creditXp }));
+vi.mock("@/lib/badges/award", () => ({ evaluateAndAwardBadges: m.evaluateAndAwardBadges }));
 
 const { completeFor, submitFlagFor } = await import("../play");
 
@@ -62,9 +64,14 @@ describe("a solve", () => {
     await expect(completeFor(USER, WEEKLY)).resolves.toEqual({ xpEarned: 150 });
     expect(m.creditXp).toHaveBeenCalledWith(m.tx, USER, 150, "CHALLENGE", expect.anything());
     const flip = m.tx.userChallengeProgress.updateMany.mock.calls[0]?.[0] as {
-      data: { xpEarned: number };
+      data: { xpEarned: number; weekly: boolean };
     };
     expect(flip.data.xpEarned).toBe(150);
+    // Recorded as the week's: the badges count these.
+    expect(flip.data.weekly).toBe(true);
+    expect(m.evaluateAndAwardBadges).toHaveBeenCalledWith(USER, ["CHALLENGES_SOLVED"], {
+      challengeId: WEEKLY,
+    });
     const notification = m.tx.notification.create.mock.calls[0]?.[0] as {
       data: { body: string };
     };
@@ -75,6 +82,10 @@ describe("a solve", () => {
     m.prisma.challenge.findUnique.mockResolvedValue({ type: "LAB", xpReward: 75, title: "X" });
     await expect(completeFor(USER, PLAIN)).resolves.toEqual({ xpEarned: 75 });
     expect(m.creditXp).toHaveBeenCalledWith(m.tx, USER, 75, "CHALLENGE", expect.anything());
+    const flip = m.tx.userChallengeProgress.updateMany.mock.calls[0]?.[0] as {
+      data: { weekly: boolean };
+    };
+    expect(flip.data.weekly).toBe(false);
   });
 
   it("credits nothing when another submission solved it first", async () => {
@@ -82,6 +93,7 @@ describe("a solve", () => {
     m.tx.userChallengeProgress.updateMany.mockResolvedValue({ count: 0 });
     await expect(completeFor(USER, WEEKLY)).resolves.toEqual({});
     expect(m.creditXp).not.toHaveBeenCalled();
+    expect(m.evaluateAndAwardBadges).not.toHaveBeenCalled();
   });
 
   it("hands the XP back with a right flag", async () => {

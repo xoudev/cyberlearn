@@ -522,6 +522,25 @@ export const tournamentRepository = {
     return count === 1;
   },
 
+  /**
+   * Who played the tournaments that ended between these two moments: each
+   * account with a flag that still counts there, once. The nightly pass that
+   * awards the badges of a place on the board goes through them
+   * (apps/web/lib/tournaments/badges.ts).
+   */
+  async playersOfEndedBetween(from: Date, to: Date): Promise<string[]> {
+    const rows = await prisma.tournamentSolve.findMany({
+      where: {
+        ...COUNTED_SOLVE,
+        userId: { not: null },
+        tournament: { endsAt: { gte: from, lte: to } },
+      },
+      distinct: ["userId"],
+      select: { userId: true },
+    });
+    return rows.flatMap((row) => (row.userId === null ? [] : [row.userId]));
+  },
+
   /** The members of these classes, still live, each once: who a tournament is announced to. */
   async membersOf(classIds: string[]): Promise<string[]> {
     if (classIds.length === 0) return [];

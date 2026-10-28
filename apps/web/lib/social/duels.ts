@@ -24,6 +24,7 @@ import {
 } from "@cyberlearn/lib/social/duel";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
+import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { loadSources } from "@/lib/exam/mock-exam";
 import { sourcesFor } from "@/lib/exam/quiz-sources";
 import { checkNotifyingWrite } from "@/lib/rate-limit";
@@ -246,7 +247,13 @@ async function settle(duel: DuelRow, now: Date = new Date()): Promise<DuelRow> {
     finishedAt: now,
     winnerId,
   });
-  if (settled) await notifyResult(duel, winnerId, rows);
+  if (settled) {
+    await notifyResult(duel, winnerId, rows);
+    // Badges: the duels played and won, for both players.
+    for (const playerId of [duel.challengerId, duel.opponentId]) {
+      await evaluateAndAwardBadges(playerId, ["DUELS_PLAYED", "DUELS_WON"], { duelId: duel.id });
+    }
+  }
   return { ...duel, status: "FINISHED", finishedAt: now, winnerId };
 }
 

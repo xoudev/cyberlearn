@@ -19,6 +19,7 @@ import {
   type TournamentSolveRow,
   type TournamentTeamScope,
 } from "@cyberlearn/lib/challenges/tournament";
+import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { expectedFlag } from "@/lib/challenges/play";
 import { flagsMatch } from "@/lib/challenges/flag";
 import { checkFlagSubmission } from "@/lib/rate-limit";
@@ -306,6 +307,11 @@ export async function tournamentViewFor(
   if (access === null) return null;
 
   const phase = tournamentPhase(tournament, now);
+  // Over: its player gets the badges of their team's place, if the nightly
+  // job has not given them yet (lib/tournaments/badges.ts).
+  if (phase === "FINISHED" && access.role === "player") {
+    await evaluateAndAwardBadges(userId, ["TOURNAMENT_RANK"], { tournamentId: tournament.id });
+  }
   const { teams, teamOfClass } = teamsOf(tournament);
   const teamName = new Map(teams.map((t) => [t.id, t.name]));
   const myTeamId =
@@ -529,7 +535,8 @@ export async function submitTournamentFlag(
     points: entry.points,
     solvedAt: now,
   });
-  return recorded
-    ? { ok: true, correct: true, points: entry.points, already: false }
-    : { ok: true, correct: true, points: 0, already: true };
+  if (!recorded) return { ok: true, correct: true, points: 0, already: true };
+  // Badges: the tournaments played, from the first flag that counts.
+  await evaluateAndAwardBadges(userId, ["TOURNAMENTS_PLAYED"], { tournamentId: tournament.id });
+  return { ok: true, correct: true, points: entry.points, already: false };
 }
