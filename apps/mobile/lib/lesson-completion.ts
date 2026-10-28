@@ -15,7 +15,8 @@ export interface CompleteLessonResult {
   xpGained: number;
   leveledUp: boolean;
   newLevel: number;
-  newBadges: { name: string; rarity: string; xpReward: number }[];
+  /** iconUrl: the badge's icon, absent from a server older than it. */
+  newBadges: { name: string; rarity: string; xpReward: number; iconUrl?: string | null }[];
   /** Right answers out of the lesson's quizzes, fixed at completion. */
   quizScore?: { correct: number; total: number } | null;
 }

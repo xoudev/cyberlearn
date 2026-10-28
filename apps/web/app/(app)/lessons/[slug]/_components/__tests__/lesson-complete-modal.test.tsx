@@ -81,11 +81,23 @@ describe("LessonCompleteModal", () => {
   it("keeps the total award unchanged while listing a badge and its own reward", () => {
     render(
       <LessonCompleteModal
-        result={{ ...result, newBadges: [{ name: "Premier pas", rarity: "RARE", xpReward: 20 }] }}
+        result={{
+          ...result,
+          newBadges: [
+            {
+              name: "Premier pas",
+              rarity: "RARE",
+              xpReward: 20,
+              iconUrl: "/badges/first-step.svg",
+            },
+          ],
+        }}
         lessonTitle="Les protocoles"
         onClose={vi.fn()}
       />,
     );
+    // The badge's own icon, not a generic mark.
+    expect(document.querySelector('img[src="/badges/first-step.svg"]')).toBeTruthy();
     expect(screen.getByText("+100")).toBeTruthy();
     expect(screen.getByText("+20 XP")).toBeTruthy();
     expect(screen.getByText("Premier pas")).toBeTruthy();

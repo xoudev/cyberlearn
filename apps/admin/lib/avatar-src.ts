@@ -49,3 +49,23 @@ export function originOf(url: string | undefined): string | null {
     return null;
   }
 }
+
+/**
+ * A badge's icon as the console can load it: the seeded ones are paths on the
+ * learner site ("/badges/legend.svg"), which the console does not serve, so
+ * they are read from the site's origin; an https URL stays as it is. Anything
+ * else is null, and the list shows the badge without its icon.
+ */
+export function badgeIconSrc(iconUrl: string, siteOrigin: string): string | null {
+  if (iconUrl.startsWith("/") && !iconUrl.startsWith("//")) {
+    return new URL(iconUrl, siteOrigin).toString();
+  }
+  if (iconUrl.startsWith("https://")) {
+    try {
+      return new URL(iconUrl).toString();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
