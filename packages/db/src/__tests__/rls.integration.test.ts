@@ -444,6 +444,29 @@ describe("RLS policies (integration)", () => {
     });
   });
 
+  // ── weekly_quest_sets (the week's draw: read by any account, written by the server)
+
+  describe("weekly_quest_sets", () => {
+    it("anon cannot read the week's draw", async () => {
+      if (!configured) return;
+      const { data, error } = await anonClient.from("weekly_quest_sets").select("*");
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("an account can read it but cannot write it", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error: readError } = await clientA.from("weekly_quest_sets").select("weekKey");
+      expect(readError).toBeNull();
+      const { data: quest } = await clientA.from("quests").select("id").limit(1).single();
+      const { error: writeError } = await clientA
+        .from("weekly_quest_sets")
+        .insert({ weekKey: "2999-W01", questId: quest?.id, position: 0 });
+      expect(writeError).not.toBeNull();
+    });
+  });
+
   // ── quiz (metadata: authenticated read OK) ──────────────────────────────────
 
   describe("quiz", () => {

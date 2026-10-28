@@ -2,6 +2,7 @@ import { exerciseRepository, lessonRepository, prisma } from "@cyberlearn/db";
 import { lessonHasExercise } from "@cyberlearn/lib/mdx-exercises";
 import type { ExerciseKind } from "@cyberlearn/lib/exercises/keys";
 import { creditXp } from "@/lib/xp/credit";
+import { recordQuestProgress } from "@/lib/quests/progress";
 
 /**
  * An exercise finished inside a lesson, recorded for the teacher's class view
@@ -52,5 +53,7 @@ export async function recordExerciseForUser(
   await prisma.$transaction(async (tx) => {
     await creditXp(tx, userId, EXERCISE_XP, "EXERCISE");
   });
+  // Weekly quests: only the first time, like the XP.
+  await recordQuestProgress(userId, "EXERCISE_PASSED", new Date(), { amount: 1 });
   return { ok: true, created: true, xpGained: EXERCISE_XP };
 }

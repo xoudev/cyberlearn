@@ -12,6 +12,7 @@ export * from "./gamification/day.js";
 export * from "./gamification/streak-state.js";
 export * from "./gamification/week.js";
 export * from "./gamification/quest.js";
+export * from "./gamification/quest-rotation.js";
 export * from "./gamification/tier.js";
 export * from "./gamification/league.js";
 export * from "./gamification/wrapped.js";

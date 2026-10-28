@@ -1233,9 +1233,14 @@ enum QuestType {
   STREAK_DAYS
   FORUM_POST
   WEEKLY_BONUS
+  CHALLENGE_SOLVED
+  DAILY_RECALL
+  EXERCISE_PASSED
 }
 
-// Catalog of weekly quests (fixed set; admin-managed seed data).
+// The quest pool (seed data, written by migrations). Each week draws four of
+// the active ones (@cyberlearn/lib pickWeekQuests): a lesson quest, two short
+// ones (level 1) and a long one (level 2), plus the WEEKLY_BONUS.
 model Quest {
   id           String    @id @default(uuid()) @db.Uuid
   code         String    @unique
@@ -1245,13 +1250,31 @@ model Quest {
   target       Int
   xpReward     Int
   freezeReward Int       @default(0)
+  /// 1: a short quest, 2: a longer one. Drives the week's mix.
+  level        Int       @default(1) @db.SmallInt
   orderIndex   Int       @default(0)
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
 
   progress UserQuestProgress[]
+  weeks    WeeklyQuestSet[]
 
   @@map("quests")
+}
+
+// The quests a week asks for, the same for everyone: drawn and stored on the
+// week's first read (questRepository.ensureWeek), so a change to the pool does
+// not move the quests of a week already under way. Written server-side only.
+model WeeklyQuestSet {
+  weekKey   String   @db.VarChar(10)
+  questId   String   @db.Uuid
+  position  Int      @db.SmallInt
+  createdAt DateTime @default(now())
+
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@id([weekKey, questId])
+  @@map("weekly_quest_sets")
 }
 
 // Per-user weekly progress, scoped to an ISO week key ("YYYY-Www", Europe/Paris).

@@ -259,7 +259,8 @@ async function awardChallengeXp(
   });
   if (!credited) return null;
 
-  // Weekly quests: a challenge completion keeps the streak quest moving too.
+  // Weekly quests: a challenge solved, which keeps the streak quest moving too.
+  await recordQuestProgress(userId, "CHALLENGE_SOLVED", now, { amount: 1 });
   await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
   return amount;
 }

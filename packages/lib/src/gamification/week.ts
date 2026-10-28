@@ -32,6 +32,14 @@ export function isoWeekKey(date: Date, tz: string = STREAK_TIMEZONE): string {
   return `${String(isoYear)}-W${String(week).padStart(2, "0")}`;
 }
 
+/**
+ * The key of the week before the one `date` falls in: the same instant seven
+ * days earlier always lands in the previous ISO week, across year ends too.
+ */
+export function previousIsoWeekKey(date: Date, tz: string = STREAK_TIMEZONE): string {
+  return isoWeekKey(new Date(date.getTime() - 7 * 86_400_000), tz);
+}
+
 const WEEKDAY_TO_ISO: Record<string, number> = {
   Mon: 1,
   Tue: 2,
