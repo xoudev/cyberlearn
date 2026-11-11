@@ -64,7 +64,7 @@ content/      → MDX lessons and quizzes, versioned
 7. **RLS enforced** : every Supabase table has Row Level Security. No exceptions.
 8. **Repository pattern** : no direct Prisma calls from components. Services → Repositories → Prisma.
 9. **Conventional Commits** : `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `security:`. Type and scope in English, subject in French — it describes a change to a French-language product. Enforced by `commitlint` on `commit-msg`, header capped at 100 characters. See `docs/dev/commit-conventions.md`.
-10. **Ask before adding unlisted deps** : if a dependency is not in the brief or pnpm catalog, stop and ask.
+10. **Ask before adding unlisted deps** : if a dependency is not in the pnpm catalog, stop and ask.
 11. **Mobile parity** : anything shipped on the site must reach the mobile app, unless it is written down as web-only in `docs/MOBILE_PARITY.md` with its reason. A PR touching a shared surface either changes both apps or updates that register — web-only is a decision on record, never an omission.
 12. **Packages never emit JS next to their sources** : every package is consumed
     as TS source (`main` and `exports` point at `src/index.ts`), so every
@@ -94,12 +94,14 @@ content/      → MDX lessons and quizzes, versioned
 
 ## Compact Instructions
 
-When compacting, preserve: current phase number, list of completed phases, active file paths being edited, any unresolved bugs or blockers, and the architecture decisions made so far. The full brief is in `CyberLearn.md` (repo root). Re-read it after compaction if context about a specific phase is lost.
+When compacting, preserve: active file paths being edited, any unresolved bugs or blockers, and the architecture decisions made so far. What the product does today is in `docs/IMPLEMENTED.md`. Re-read it after compaction if context about a feature is lost.
 
 ## Reference Documents
 
-- `CyberLearn.md` : full project brief with all specs (repo root)
-- `CyberLearn_Patch_ImportLessons.md` : Import MDX feature spec (Phase 9, repo root)
+- `docs/IMPLEMENTED.md` : what the site, the console and the packages do today, route by route
+- `docs/DEPLOY.md` : deployment, environment variables, migrations, crons
+- `docs/authentication.md` : sign-in, MFA, recovery
+- `docs/hardening/` : incidents and known issues
 - `docs/adr/` : Architecture Decision Records
 - `docs/MOBILE_PARITY.md` : what the mobile app has, what it is still owed, and what is deliberately web-only
 
