@@ -16,6 +16,11 @@ updates:
       time: "06:00"
       timezone: "Europe/Paris"
     open-pull-requests-limit: 5
+    # A release is proposed a week after it is published, not the same day: a
+    # compromised version is usually pulled within days, and a security
+    # update, which does not wait, is not held back by this.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
@@ -33,6 +38,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Paris"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore"
       include: "scope"
