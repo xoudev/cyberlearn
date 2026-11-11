@@ -68,8 +68,27 @@ export function consoleOrigin(
   return `${site.protocol}//admin.${site.host}`;
 }
 
+/**
+ * The two forms that carry the anti-robot check (lib/turnstile.ts). Cloudflare
+ * draws it in an iframe of its own, so these pages, and only these, may frame
+ * challenges.cloudflare.com - and only once a site key switches the check on.
+ */
+export function isTurnstileRoute(pathname: string): boolean {
+  return pathname === "/register" || pathname === "/forgot-password";
+}
+
+const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
 function buildSecurityHeaders(nonce: string, pathname: string): Record<string, string> {
   const framable = isPreviewRoute(pathname);
+  const turnstile =
+    Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && isTurnstileRoute(pathname);
+  // Only what a page needs to frame beyond itself; none, and default-src
+  // applies: nothing but this origin may be framed.
+  const frameSources = [
+    ...(turnstile ? [TURNSTILE_ORIGIN] : []),
+    ...(isVercelPreview ? ["https://vercel.live"] : []),
+  ];
   const admin = consoleOrigin(process.env.NEXT_PUBLIC_ADMIN_URL, process.env.NEXT_PUBLIC_SITE_URL);
   const frameAncestors = framable
     ? `frame-ancestors 'self'${admin === null ? "" : ` ${admin}`}`
@@ -92,7 +111,7 @@ function buildSecurityHeaders(nonce: string, pathname: string): Record<string, s
       // 'wasm-unsafe-eval' required for Pyodide WebAssembly compilation
       // (cdn.jsdelivr.net Monaco loader + local /runtimes/pyodide/* WASM).
       isDev
-        ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net${vercelLive.script}`
+        ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net${turnstile ? ` ${TURNSTILE_ORIGIN}` : ""}${vercelLive.script}`
         : `script-src 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${vercelLive.script}`,
       // unsafe-inline required for Tailwind v4 JIT; cdn.jsdelivr.net for Monaco CSS
       `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net${vercelLive.style}`,
@@ -104,9 +123,10 @@ function buildSecurityHeaders(nonce: string, pathname: string): Record<string, s
       isDev
         ? `connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`
         : `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`,
-      // No frame-src in production: default-src 'self' applies, nothing may
-      // be framed. Previews need the vercel.live feedback iframe.
-      ...(isVercelPreview ? ["frame-src 'self' https://vercel.live"] : []),
+      // No frame-src by default: default-src 'self' applies, nothing else may
+      // be framed. Previews need the vercel.live feedback iframe, and the two
+      // forms with the anti-robot check need Cloudflare's.
+      ...(frameSources.length > 0 ? [`frame-src 'self' ${frameSources.join(" ")}`] : []),
       // blob: required for Monaco editor web workers and Pyodide blob worker
       "worker-src 'self' blob:",
       "object-src 'none'",

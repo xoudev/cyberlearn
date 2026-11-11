@@ -41,11 +41,11 @@
 | Base légale | Intérêt légitime (Art. 6.1.f RGPD) |
 | Catégories de données | Adresse IP pseudonymisée (HMAC-SHA256), horodatage des requêtes |
 | Catégories de personnes | Tous les visiteurs |
-| Destinataires | Upstash (sous-traitant Redis) |
-| Transferts hors UE | Non (instance Upstash Francfort) |
+| Destinataires | Upstash (sous-traitant Redis) ; Cloudflare (Turnstile), quand le contrôle est activé |
+| Transferts hors UE | Upstash : non (instance de Francfort) ; Cloudflare US (DPF + CCT), quand le contrôle est activé |
 | Durée de conservation | 30 jours max (Redis TTL) |
 | Mesures de sécurité | Pseudonymisation HMAC-SHA256 avec `IP_SALT`, jamais d'IP en clair en base ni en log |
-| Note | Cloudflare Turnstile est provisionné en variables d'environnement mais **pas branché** : aucun widget n'est rendu et aucune vérification serveur n'est appelée. Cloudflare ne reçoit donc rien à ce jour. L'anti-abus effectif est le rate limiting plus, sur le formulaire de contact, un honeypot et un seuil de temps de remplissage. |
+| Note | Cloudflare Turnstile protège les formulaires d'inscription et de mot de passe oublié du site, une fois ses deux clés posées (`apps/web/lib/turnstile.ts`) : le navigateur du visiteur charge alors le widget de Cloudflare, qui reçoit son adresse IP et des signaux de navigateur, et le serveur fait vérifier le jeton (transfert US, DPF + CCT). Sans les clés, aucun widget n'est rendu et Cloudflare ne reçoit rien. Le formulaire de contact garde un champ leurre et un temps minimal de remplissage, sans Cloudflare. |
 
 ## Traitement 4 - Support utilisateur
 
