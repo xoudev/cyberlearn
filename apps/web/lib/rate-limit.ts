@@ -410,6 +410,30 @@ export async function checkPasswordChange(userId: string): Promise<RateLimitResu
   return toResult(await limiter.limit(userId));
 }
 
+/**
+ * 30 lessons finished per user per hour.
+ *
+ * A lesson is ten minutes of reading at the least, and its XP feeds the
+ * rankings, the leagues and the weekly quests: a script holding a session
+ * finished a whole path in a second and led the week. Thirty an hour is past
+ * what anybody reads, a quick review of lessons already known included, and
+ * far below what a script is after.
+ */
+export async function checkLessonCompletion(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "lesson:complete",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(30, "1 h"),
+        prefix: "rl:lesson:complete",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
 /** 10 quiz starts per user per hour (anti re-roll of the question draw). */
 export async function checkQuizStart(userId: string): Promise<RateLimitResult> {
   if (IS_DEV) return PASS_THROUGH;
