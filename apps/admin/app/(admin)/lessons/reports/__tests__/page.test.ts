@@ -5,7 +5,7 @@ const openByQuiz = vi.fn();
 const lessonFindMany = vi.fn();
 vi.mock("@cyberlearn/db", () => ({
   quizReportRepository: { openByQuiz },
-  prisma: { lesson: { findMany: lessonFindMany } },
+  lessonRepository: { findContentByIds: lessonFindMany },
 }));
 vi.mock("../actions", () => ({ resolveQuizReportsAction: vi.fn() }));
 // The page checks its caller first (requireAdminPage); here the caller is an admin.

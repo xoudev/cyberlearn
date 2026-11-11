@@ -1,13 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CRITICAL_TICKET_WHERE,
-  OPEN_TICKET_STATUSES,
-  prisma,
-  ticketRepository,
-  WITHOUT_CRON_RUNS,
-} from "@cyberlearn/db";
+import { statsRepository, ticketRepository } from "@cyberlearn/db";
 import { auditActorName } from "@/lib/audit-export";
 import { consoleDateFormat } from "@/lib/console-time";
 import { roleLabel, roleTone } from "@/lib/roles";
@@ -90,7 +84,14 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   const oneWeekAgo = new Date(now - WEEK_MS);
   const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-  const [
+  const [board, awaitingTickets, sentry] = await Promise.all([
+    statsRepository.findConsoleDashboard({ horizon, oneWeekAgo, oneMonthAgo }),
+    ticketRepository.countAwaitingReply(),
+    // Never fatal: it returns a state rather than throwing, so a Sentry
+    // outage cannot take the console's dashboard with it.
+    fetchSentryIssues(),
+  ]);
+  const {
     userCount,
     usersThisWeek,
     lessonCount,
@@ -100,7 +101,6 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     activeTickets,
     openTickets,
     criticalTickets,
-    awaitingTickets,
     userDates,
     lessonDates,
     certDates,
@@ -109,67 +109,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     pathCount,
     recentLogs,
     recentUsers,
-    sentry,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { createdAt: { gte: oneWeekAgo } } }),
-    prisma.lesson.count({ where: { status: "PUBLISHED" } }),
-    prisma.lesson.count({ where: { status: "PUBLISHED", publishedAt: { gte: oneMonthAgo } } }),
-    prisma.certificate.count({ where: { revokedAt: null } }),
-    prisma.certificate.count({ where: { revokedAt: null, issuedAt: { gte: oneWeekAgo } } }),
-    // The card counts what its delta counts within: open or in progress. With
-    // OPEN alone, a security report taken in hand read "0" over "1 critique".
-    prisma.contactTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
-    prisma.contactTicket.count({ where: { status: "OPEN" } }),
-    // The tickets page's definitions, from the same place: a security report
-    // taken in hand is still critical, here as there.
-    prisma.contactTicket.count({ where: CRITICAL_TICKET_WHERE }),
-    ticketRepository.countAwaitingReply(),
-    prisma.user.findMany({
-      where: { createdAt: { gte: horizon } },
-      select: { createdAt: true },
-    }),
-    prisma.lesson.findMany({
-      where: { publishedAt: { gte: horizon } },
-      select: { publishedAt: true },
-    }),
-    prisma.certificate.findMany({
-      where: { issuedAt: { gte: horizon }, revokedAt: null },
-      select: { issuedAt: true },
-    }),
-    prisma.contactTicket.findMany({
-      where: { createdAt: { gte: horizon } },
-      select: { createdAt: true },
-    }),
-    prisma.lesson.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.path.count({ where: { status: "PUBLISHED" } }),
-    // What people did: the jobs' runs, ten a day, would push it out of the feed.
-    prisma.auditLog.findMany({
-      where: WITHOUT_CRON_RUNS,
-      take: 8,
-      orderBy: { createdAt: "desc" },
-      include: {
-        actor: { select: { username: true, displayName: true, email: true, avatarUrl: true } },
-      },
-    }),
-    prisma.user.findMany({
-      take: 6,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        email: true,
-        avatarUrl: true,
-        role: true,
-        level: true,
-        createdAt: true,
-      },
-    }),
-    // Never fatal: it returns a state rather than throwing, so a Sentry
-    // outage cannot take the console's dashboard with it.
-    fetchSentryIssues(),
-  ]);
+  } = board;
 
   const statusCount = (status: string): number =>
     lessonsByStatus.find((s) => s.status === status)?._count._all ?? 0;

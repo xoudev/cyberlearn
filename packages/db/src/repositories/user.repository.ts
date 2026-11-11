@@ -1107,4 +1107,58 @@ export const userRepository = {
       },
     });
   },
+
+  /** What the locker shows of its owner: the figures its conditions read, and the identity of its preview. */
+  async findLockerIdentity(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+      select: {
+        xpTotal: true,
+        streakDays: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+      },
+    });
+  },
+
+  /** The names a page signs somebody's card with: the @handle, else the display name. */
+  async findHandle(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+      select: { username: true, displayName: true },
+    });
+  },
+
+  /**
+   * The accounts that can follow a class. Assigning a student there would hand
+   * them their classmates' progress, so they are not offered.
+   */
+  async findTeacherPool() {
+    return prisma.user.findMany({
+      where: { role: { in: ["TEACHER", "ADMIN"] } },
+      orderBy: { displayName: "asc" },
+      select: { id: true, displayName: true, email: true, role: true },
+    });
+  },
+
+  /**
+   * Every account, for a picker that filters in the browser. A school is
+   * hundreds of people, not millions; the day that stops being true this
+   * becomes a server search.
+   */
+  async findDirectory() {
+    return prisma.user.findMany({
+      orderBy: { displayName: "asc" },
+      select: { id: true, displayName: true, username: true, email: true, role: true },
+    });
+  },
+
+  /** Who the console's shell shows as signed in. */
+  async findShellIdentity(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+      select: { username: true, displayName: true, avatarUrl: true },
+    });
+  },
 };

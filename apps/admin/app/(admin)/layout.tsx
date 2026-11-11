@@ -3,7 +3,12 @@ import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { resolveAvatarSrc } from "@/lib/avatar";
-import { contentReportRepository, prisma, ticketRepository } from "@cyberlearn/db";
+import {
+  contentReportRepository,
+  statsRepository,
+  ticketRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
@@ -18,12 +23,8 @@ import { SavedNoticeToast } from "./_components/saved-notice-toast";
 // from paying seven count queries while staying fresh enough for admin work.
 const getSidebarCounts = unstable_cache(
   async () => {
-    const [lessons, paths, badges, challenges, users, tickets, reports] = await Promise.all([
-      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
-      prisma.path.count({ where: { status: "PUBLISHED" } }),
-      prisma.badge.count(),
-      prisma.challenge.count({ where: { isActive: true } }),
-      prisma.user.count(),
+    const [content, tickets, reports] = await Promise.all([
+      statsRepository.findSidebarCounts(),
       // What the team owes: new tickets, and the ones whose requester wrote
       // back after an answer - a reply on a ticket in progress changes no
       // status, so counting OPEN alone never showed it.
@@ -31,7 +32,7 @@ const getSidebarCounts = unstable_cache(
       // Contents learners reported and nobody has read yet.
       contentReportRepository.countOpenContents(),
     ]);
-    return { lessons, paths, badges, challenges, users, tickets, reports };
+    return { ...content, tickets, reports };
   },
   ["admin-sidebar-counts"],
   { revalidate: 30 },
@@ -46,10 +47,7 @@ export default async function AdminLayout({
   // not a gate, since a client navigation can render a page without it.
   const admin = await requireAdminPage();
   const [dbUser, counts] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: admin.id },
-      select: { username: true, displayName: true, avatarUrl: true },
-    }),
+    userRepository.findShellIdentity(admin.id),
     getSidebarCounts(),
   ]);
 

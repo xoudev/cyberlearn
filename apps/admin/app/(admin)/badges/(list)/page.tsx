@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import { badgeRepository } from "@cyberlearn/db";
 import { PageHeader, PrimaryLink, Tag, toneColor } from "../../_components/admin-ui";
 import { DataGrid, type GridRow } from "../../_components/data-grid";
 import { BADGE_COLUMNS, BADGES_HEADER } from "../_components/badge-columns";
@@ -41,22 +41,7 @@ const CRITERION_LABEL: Record<string, string> = {
 
 export default async function AdminBadgesPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const badges = await prisma.badge.findMany({
-    orderBy: [{ rarity: "asc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      refCode: true,
-      name: true,
-      description: true,
-      iconUrl: true,
-      rarity: true,
-      criterionType: true,
-      xpReward: true,
-      isActive: true,
-      createdAt: true,
-      _count: { select: { userBadges: true } },
-    },
-  });
+  const badges = await badgeRepository.findAllForConsole();
 
   const activeCount = badges.filter((b) => b.isActive).length;
   const siteOrigin = originOf(env.NEXT_PUBLIC_SITE_URL) ?? "https://cyberlearn.fr";

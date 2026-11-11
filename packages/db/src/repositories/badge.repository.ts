@@ -428,4 +428,52 @@ export const badgeRepository = {
       },
     });
   },
+
+  /** The names of the badges a cosmetic's condition cites by reference code. */
+  async findNamesByRefCodes(refCodes: string[]) {
+    return prisma.badge.findMany({
+      where: { refCode: { in: refCodes } },
+      select: { refCode: true, name: true },
+    });
+  },
+
+  /** Every badge, as the console lists them: the rarest first, with how many hold each. */
+  async findAllForConsole() {
+    return prisma.badge.findMany({
+      orderBy: [{ rarity: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        refCode: true,
+        name: true,
+        description: true,
+        iconUrl: true,
+        rarity: true,
+        criterionType: true,
+        xpReward: true,
+        isActive: true,
+        createdAt: true,
+        _count: { select: { userBadges: true } },
+      },
+    });
+  },
+
+  /** One badge as its edit form reads it, criterion included. */
+  async findForEdit(id: string) {
+    return prisma.badge.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        refCode: true,
+        name: true,
+        description: true,
+        iconUrl: true,
+        rarity: true,
+        criterionType: true,
+        criterionData: true,
+        xpReward: true,
+        isActive: true,
+        _count: { select: { userBadges: true } },
+      },
+    });
+  },
 };

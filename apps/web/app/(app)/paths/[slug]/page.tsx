@@ -9,13 +9,7 @@ import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules } from "@cyberlearn/lib/paths/modules";
 import { isCertifiablePath } from "@cyberlearn/lib/paths/certificate";
-import {
-  PUBLISHED_PATH_LESSON,
-  lessonRepository,
-  pathsVisibleTo,
-  prisma,
-  ratingRepository,
-} from "@cyberlearn/db";
+import { lessonRepository, pathRepository, quizRepository, ratingRepository } from "@cyberlearn/db";
 import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { BossNode } from "./_components/boss-node";
 import { BriefCertificate } from "./_components/brief-certificate";
@@ -49,39 +43,8 @@ export default async function PathDetailPage({
   const supabase = await getSupabaseServerClient();
   const authUser = await requireUser(supabase);
 
-  const path = await prisma.path.findFirst({
-    // Not findUnique on the slug: a CLASS path is published, so the reader is
-    // part of the question. findUnique takes only unique fields, which is how
-    // the entitlement would have been left out.
-    where: { slug, ...pathsVisibleTo(authUser.id) },
-    include: {
-      modules: {
-        orderBy: { position: "asc" },
-        select: { id: true, position: true, title: true, description: true },
-      },
-      lessons: {
-        orderBy: { position: "asc" },
-        // Its published lessons only, as the lesson page reads the path: a
-        // draft or an archived lesson still linked here was a mission the map
-        // offered and the lesson page answered with a 404, and one the path
-        // could never be finished without.
-        where: PUBLISHED_PATH_LESSON,
-        include: {
-          lesson: {
-            select: {
-              id: true,
-              slug: true,
-              title: true,
-              description: true,
-              difficulty: true,
-              estimatedMinutes: true,
-              xpReward: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  // Only a path this reader may open, with its published lessons (findDetailFor).
+  const path = await pathRepository.findDetailFor(slug, authUser.id);
 
   if (!path) notFound();
   const [cover = builtInPathCover(path)] = await resolvePathCovers([path]);
@@ -93,24 +56,10 @@ export default async function PathDetailPage({
   // Fetch user's completed lessons for this path, among the missions drawn
   // below: one finished before it was archived is not one of them.
   const completedLessonIds = new Set(
-    (
-      await prisma.userLessonProgress.findMany({
-        where: {
-          userId: authUser.id,
-          status: "COMPLETED",
-          lesson: { status: "PUBLISHED", pathLessons: { some: { pathId: path.id } } },
-        },
-        select: { lessonId: true },
-      })
-    ).map((lp) => lp.lessonId),
+    await lessonRepository.findCompletedInPath(authUser.id, path.id),
   );
 
-  const userPathProgress = await prisma.userPathProgress.upsert({
-    where: { userId_pathId: { userId: authUser.id, pathId: path.id } },
-    create: { userId: authUser.id, pathId: path.id, status: "IN_PROGRESS" },
-    update: {},
-    select: { status: true, certificateId: true, certificate: { select: { revokedAt: true } } },
-  });
+  const userPathProgress = await pathRepository.openProgress(authUser.id, path.id);
 
   const myRating = await ratingRepository.findUserPathRating(authUser.id, path.id);
 
@@ -122,10 +71,7 @@ export default async function PathDetailPage({
 
   // Active quiz gates certificate issuance (pieces 2/4). Only its existence is
   // needed here; questions/answers never touch this server component.
-  const activeQuiz = await prisma.quiz.findFirst({
-    where: { pathId: path.id, isActive: true },
-    select: { id: true },
-  });
+  const activeQuiz = await quizRepository.findActiveQuizByPathId(path.id);
 
   // The same rule the catalogue and the lesson page apply, from the same
   // module. It used to live here alone, as a drawing of a rule nothing

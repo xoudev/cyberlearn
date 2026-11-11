@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma, wrappedRepository } from "@cyberlearn/db";
+import { userRepository, wrappedRepository } from "@cyberlearn/db";
 import { wrappedWindow } from "@cyberlearn/lib";
 import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
 import { WrappedRoute } from "./_components/WrappedRoute";
@@ -43,10 +43,7 @@ export default async function WrappedPage({
 
   const [payload, profile] = await Promise.all([
     wrappedRepository.buildPayload(user.id, window.periodKey),
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: { username: true, displayName: true },
-    }),
+    userRepository.findHandle(user.id),
   ]);
   const handle = profile?.username ?? profile?.displayName ?? "moi";
 

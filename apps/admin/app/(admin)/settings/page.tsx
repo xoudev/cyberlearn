@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma } from "@cyberlearn/db";
+import { statsRepository } from "@cyberlearn/db";
 import { Card, PageHeader, Tag } from "../_components/admin-ui";
 import { SETTINGS_CARDS, SETTINGS_HEADER } from "./_components/settings-head";
 
@@ -25,16 +25,7 @@ function DefRow({
 
 export default async function AdminSettingsPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const [userCount, lessonCount, pathCount, badgeCount, certCount, ticketCount, logCount] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.lesson.count(),
-      prisma.path.count(),
-      prisma.badge.count(),
-      prisma.certificate.count({ where: { revokedAt: null } }),
-      prisma.contactTicket.count(),
-      prisma.auditLog.count(),
-    ]);
+  const totals = await statsRepository.findConsoleTotals();
 
   const envVars = [
     { label: "NEXT_PUBLIC_SUPABASE_URL", defined: !!process.env.NEXT_PUBLIC_SUPABASE_URL },
@@ -51,13 +42,13 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
   const allEnvOk = envVars.every((v) => v.defined);
 
   const stats = [
-    { label: "Utilisateurs", val: userCount },
-    { label: "Leçons", val: lessonCount },
-    { label: "Parcours", val: pathCount },
-    { label: "Badges", val: badgeCount },
-    { label: "Certificats", val: certCount },
-    { label: "Tickets", val: ticketCount },
-    { label: "Entrées d'audit", val: logCount },
+    { label: "Utilisateurs", val: totals.users },
+    { label: "Leçons", val: totals.lessons },
+    { label: "Parcours", val: totals.paths },
+    { label: "Badges", val: totals.badges },
+    { label: "Certificats", val: totals.certificates },
+    { label: "Tickets", val: totals.tickets },
+    { label: "Entrées d'audit", val: totals.auditLogs },
   ];
 
   return (

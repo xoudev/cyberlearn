@@ -6,8 +6,7 @@ import {
   compareTicketsForQueue,
   isCriticalTicket,
   isTicketOpen,
-  LAST_TICKET_MESSAGE,
-  prisma,
+  ticketRepository,
 } from "@cyberlearn/db";
 import { KpiCard, PageHeader, Tag, UserAvatar, type Tone } from "../../_components/admin-ui";
 import { DataGrid, type GridRow } from "../../_components/data-grid";
@@ -41,22 +40,7 @@ function formatDate(d: Date): string {
 
 export default async function AdminTicketsPage(): Promise<React.ReactElement> {
   const viewer = await requireAdminPage();
-  const read = await prisma.contactTicket.findMany({
-    select: {
-      id: true,
-      subject: true,
-      theme: true,
-      status: true,
-      email: true,
-      jiraIssueKey: true,
-      jiraIssueUrl: true,
-      createdAt: true,
-      updatedAt: true,
-      user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-      assignee: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-      messages: LAST_TICKET_MESSAGE,
-    },
-  });
+  const read = await ticketRepository.findAllForQueue();
 
   // What the team owes first, the most recently touched on top; then the rest
   // by status. See compareTicketsForQueue.

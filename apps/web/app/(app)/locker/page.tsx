@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { badgeRepository, cosmeticRepository, prisma } from "@cyberlearn/db";
+import { badgeRepository, cosmeticRepository, userRepository } from "@cyberlearn/db";
 import { buildBadgeCriterionStats, computeBadgeProgress, computeLevel } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
@@ -28,16 +28,7 @@ export default async function LockerPage(): Promise<React.ReactElement> {
 
   const [catalog, user, facts] = await Promise.all([
     cosmeticRepository.findCatalogWithState(authUser.id),
-    prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: {
-        xpTotal: true,
-        streakDays: true,
-        username: true,
-        displayName: true,
-        avatarUrl: true,
-      },
-    }),
+    userRepository.findLockerIdentity(authUser.id),
     badgeRepository.findCriterionFacts(authUser.id),
   ]);
 
@@ -52,12 +43,7 @@ export default async function LockerPage(): Promise<React.ReactElement> {
       c.criterionType === "BADGE_EARNED" ? strField(c.criterionData, "badgeRefCode") : null,
     )
     .filter((r): r is string => r !== null);
-  const badgeRows = badgeRefs.length
-    ? await prisma.badge.findMany({
-        where: { refCode: { in: badgeRefs } },
-        select: { refCode: true, name: true },
-      })
-    : [];
+  const badgeRows = badgeRefs.length ? await badgeRepository.findNamesByRefCodes(badgeRefs) : [];
   const badgeNames = new Map(badgeRows.map((b) => [b.refCode, b.name]));
 
   function conditionLabel(type: string, data: unknown): string {
