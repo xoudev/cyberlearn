@@ -80,6 +80,7 @@
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
 | `/api/paths/[slug]/sheet?module=N` | Fiche de révision d'un module, en PDF (les points « à retenir » de ses leçons) |
+| `/api/classes/[id]/export` | Avancement d'une classe en CSV, pour l'enseignant qui la suit : une ligne par élève, puis chaque travail donné avec le jour où il a été terminé et le score du quiz |
 | `/api/auth/send-email` | Hook d'envoi des mails d'authentification Supabase |
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
@@ -213,6 +214,12 @@
 - Travail donné à une classe avec échéance et consignes, notifié par mail
 - Corrigés et ressources distribués à la classe
 - Tableau de bord d'avancement côté enseignant, page « Ma classe » côté élève
+- « Exporter (CSV) » sur la carte d'une classe : niveau, XP, série, dernière
+  activité et leçons terminées de chaque élève, puis, pour chaque travail
+  donné, le jour où il l'a terminé et son score au quiz ; point-virgule et
+  UTF-8 avec BOM pour un tableur français, cellules prises pour des formules
+  neutralisées, vingt exports par heure. Réservé à l'enseignant de la classe
+  et aux administrateurs (`classRepository.findGradebook`)
 
 #### Forum, notes et amis
 - Forum par catégories, sujets épinglés ou fermés, modération intégrée

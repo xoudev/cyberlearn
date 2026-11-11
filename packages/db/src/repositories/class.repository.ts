@@ -1263,4 +1263,89 @@ export const classRepository = {
       orderBy: { joinedAt: "asc" },
     });
   },
+
+  /**
+   * A class's progress, for the file its teacher downloads: the students, the
+   * work set, and who finished what with which quiz score.
+   *
+   * `viewerId` is the entitlement, as in findMembersVisibleTo: null unless
+   * the viewer teaches this class or is an administrator, and null for an
+   * archived class. A member of the class gets nothing: classmates see each
+   * other's level on the class page, not each other's scores.
+   */
+  async findGradebook(classId: string, viewerId: string) {
+    const [teaches, viewer] = await Promise.all([
+      prisma.classTeacher.count({ where: { classId, teacherId: viewerId } }),
+      prisma.user.findUnique({ where: { id: viewerId }, select: { role: true } }),
+    ]);
+    if (teaches === 0 && viewer?.role !== "ADMIN") return null;
+
+    const klass = await prisma.class.findFirst({
+      where: { id: classId, ...LIVE_CLASS_FILTER },
+      select: {
+        name: true,
+        members: {
+          orderBy: [{ user: { displayName: "asc" } }, { joinedAt: "asc" }],
+          select: {
+            user: {
+              select: {
+                id: true,
+                displayName: true,
+                username: true,
+                level: true,
+                xpTotal: true,
+                streakDays: true,
+                lastActiveAt: true,
+              },
+            },
+          },
+        },
+        assignments: {
+          // Soonest deadline first, as the class page lists the work.
+          orderBy: [{ dueAt: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
+          select: { lessonId: true, dueAt: true, lesson: { select: { title: true } } },
+        },
+      },
+    });
+    if (!klass) return null;
+
+    const userIds = klass.members.map((m) => m.user.id);
+    const lessonIds = klass.assignments.map((a) => a.lessonId);
+    const [completions, totals] = await Promise.all([
+      userIds.length === 0 || lessonIds.length === 0
+        ? []
+        : prisma.userLessonProgress.findMany({
+            where: { status: "COMPLETED", userId: { in: userIds }, lessonId: { in: lessonIds } },
+            select: {
+              userId: true,
+              lessonId: true,
+              completedAt: true,
+              quizCorrect: true,
+              quizTotal: true,
+            },
+          }),
+      userIds.length === 0
+        ? []
+        : prisma.userLessonProgress.groupBy({
+            by: ["userId"],
+            where: { status: "COMPLETED", userId: { in: userIds } },
+            _count: { lessonId: true },
+          }),
+    ]);
+    const completedByUser = new Map(totals.map((t) => [t.userId, t._count.lessonId]));
+
+    return {
+      name: klass.name,
+      students: klass.members.map((m) => ({
+        ...m.user,
+        completedLessons: completedByUser.get(m.user.id) ?? 0,
+      })),
+      work: klass.assignments.map((a) => ({
+        lessonId: a.lessonId,
+        title: a.lesson.title,
+        dueAt: a.dueAt,
+      })),
+      completions,
+    };
+  },
 };
