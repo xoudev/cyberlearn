@@ -787,3 +787,18 @@
     transition: none !important;
   }
 }
+
+/* The roster's caption and the class export, on one line; the button drops
+   under the caption when the card is too narrow for both. */
+.class-workspace .cls-roster-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 18px 0 10px;
+}
+
+.class-workspace .cls-roster-head .cls-subhead {
+  margin: 0;
+}

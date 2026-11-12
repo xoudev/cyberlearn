@@ -196,7 +196,18 @@ function ClassCard({
             <p className="cls-empty">Aucun élève dans cette classe.</p>
           ) : (
             <>
-              <p className="cls-subhead">Du moins avancé au plus avancé</p>
+              <div className="cls-roster-head">
+                <p className="cls-subhead">Du moins avancé au plus avancé</p>
+                {/* A plain link to a file, not next/link: the route answers
+                    with a download, there is no page to prefetch or to open. */}
+                <a
+                  className="btn btn--ghost btn--sm"
+                  href={`/api/classes/${klass.id}/export`}
+                  download
+                >
+                  Exporter (CSV)
+                </a>
+              </div>
               <ul className="cls-people">
                 {byNeed.map((s) => (
                   <li key={s.id} className="cls-person">

@@ -410,6 +410,22 @@ export async function checkPasswordChange(userId: string): Promise<RateLimitResu
   return toResult(await limiter.limit(userId));
 }
 
+/** 20 class exports per teacher per hour: a file of a whole class's progress, not a page to reload. */
+export async function checkClassExport(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "class:export",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(20, "1 h"),
+        prefix: "rl:class:export",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
 /**
  * 30 lessons finished per user per hour.
  *

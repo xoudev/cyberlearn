@@ -319,4 +319,88 @@ describe("class assignments (integration, real DB)", () => {
       expect(done.has(`${student}:${lessonA}`)).toBe(true);
     });
   });
+
+  describe("the class's progress, for the file its teacher downloads", () => {
+    async function setWorkAndFinishIt(): Promise<void> {
+      await classRepository.assignLesson({
+        classId,
+        lessonId: lessonA,
+        assignedById: teacher,
+        dueAt: null,
+        instructions: null,
+      });
+      await prisma.userLessonProgress.createMany({
+        data: [
+          {
+            userId: student,
+            lessonId: lessonA,
+            status: "COMPLETED",
+            completedAt: new Date("2026-11-08T10:00:00Z"),
+            quizCorrect: 4,
+            quizTotal: 5,
+          },
+          // Finished, but never set for the class: counted in the total only.
+          { userId: student, lessonId: lessonB, status: "COMPLETED", completedAt: new Date() },
+          { userId: classmate, lessonId: lessonA, status: "IN_PROGRESS" },
+        ],
+      });
+    }
+
+    it("gives the teacher every student, the work set and who finished it with which score", async () => {
+      if (!configured) return;
+      await setWorkAndFinishIt();
+
+      const gradebook = await classRepository.findGradebook(classId, teacher);
+
+      expect(gradebook?.name).toBe(`SIO1-${suffix}`);
+      expect(gradebook?.students.map((s) => s.id).sort()).toEqual([student, classmate].sort());
+      expect(gradebook?.students.find((s) => s.id === student)?.completedLessons).toBe(2);
+      expect(gradebook?.students.find((s) => s.id === classmate)?.completedLessons).toBe(0);
+      expect(gradebook?.work).toEqual([
+        { lessonId: lessonA, title: "Injections SQL", dueAt: null },
+      ]);
+      // Started is not finished, and a lesson never set is not work.
+      expect(gradebook?.completions).toEqual([
+        {
+          userId: student,
+          lessonId: lessonA,
+          completedAt: new Date("2026-11-08T10:00:00Z"),
+          quizCorrect: 4,
+          quizTotal: 5,
+        },
+      ]);
+    });
+
+    it("gives it to an administrator too", async () => {
+      if (!configured) return;
+      expect(await classRepository.findGradebook(classId, admin)).not.toBeNull();
+    });
+
+    it("gives nothing to a teacher of another class", async () => {
+      if (!configured) return;
+      expect(await classRepository.findGradebook(classId, otherTeacher)).toBeNull();
+    });
+
+    it("gives nothing to a student of the class: classmates do not read each other's scores", async () => {
+      if (!configured) return;
+      expect(await classRepository.findGradebook(classId, student)).toBeNull();
+    });
+
+    it("gives nothing for an archived class, to its own teacher either", async () => {
+      if (!configured) return;
+      await classRepository.setArchived(classId, true);
+      try {
+        expect(await classRepository.findGradebook(classId, teacher)).toBeNull();
+      } finally {
+        await classRepository.setArchived(classId, false);
+      }
+    });
+
+    it("answers an empty class with its name and no rows", async () => {
+      if (!configured) return;
+      await prisma.classMember.deleteMany({ where: { classId: otherClassId } });
+      const gradebook = await classRepository.findGradebook(otherClassId, otherTeacher);
+      expect(gradebook).toMatchObject({ students: [], work: [], completions: [] });
+    });
+  });
 });

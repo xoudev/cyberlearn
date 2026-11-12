@@ -1,21 +1,22 @@
 import type { AuditRow } from "@cyberlearn/db";
+import { CSV_BOM, csvCell, csvLine } from "@cyberlearn/lib/files/csv";
 
 /**
  * The audit log as a CSV file: what the export route streams, one line per
  * entry, under the filter the page shows.
  *
  * Semicolons, and a byte-order mark: that is what a French spreadsheet opens
- * as columns and as UTF-8 without asking. Every cell is quoted.
+ * as columns and as UTF-8 without asking. Every cell is quoted. The cells and
+ * their formula guard are the site's class export's too: one copy, in
+ * @cyberlearn/lib, handed on from here for the route and its tests.
  */
+export { CSV_BOM, csvCell, csvLine };
 
 /** The most entries one export writes. Past it the page asks for a narrower filter. */
 export const AUDIT_EXPORT_MAX = 50_000;
 
 /** Entries read per query while streaming. */
 export const AUDIT_EXPORT_BATCH = 500;
-
-export const CSV_BOM = "\uFEFF";
-const SEPARATOR = ";";
 
 export const AUDIT_CSV_HEADER = [
   "Horodatage (UTC)",
@@ -26,21 +27,6 @@ export const AUDIT_CSV_HEADER = [
   "Identifiant de la cible",
   "Métadonnées",
 ] as const;
-
-/**
- * One cell, quoted. A value a spreadsheet would read as a formula (=, +, -,
- * @, or a tab or carriage return first) gets a leading apostrophe: the log
- * holds text people typed, a lesson title or a ban reason, and opening an
- * export must not run it.
- */
-export function csvCell(value: string): string {
-  const safe = /^[=+\-@\t\r]/u.test(value) ? `'${value}` : value;
-  return `"${safe.replace(/"/gu, '""')}"`;
-}
-
-export function csvLine(cells: readonly string[]): string {
-  return `${cells.map(csvCell).join(SEPARATOR)}\r\n`;
-}
 
 /** Who did it, as the export names them: the handle without its @, else the address. */
 export function auditActorName(row: {

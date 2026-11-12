@@ -48,7 +48,8 @@
     "./terminal/*": "./src/terminal/*.ts",
     "./exam/*": "./src/exam/*.ts",
     "./cron/*": "./src/cron/*.ts",
-    "./navigation/*": "./src/navigation/*.ts"
+    "./navigation/*": "./src/navigation/*.ts",
+    "./class/*": "./src/class/*.ts"
   },
   "scripts": {
     "build": "tsc",
