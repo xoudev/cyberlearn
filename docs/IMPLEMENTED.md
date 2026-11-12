@@ -1,6 +1,6 @@
 # CyberLearn - Fonctionnalités implémentées
 
-> Dernière mise à jour : septembre 2026
+> Dernière mise à jour : novembre 2026
 >
 > Les tableaux de routes sont relevés sur l'arborescence réelle des
 > `page.tsx` et `route.ts`, pas de mémoire.
@@ -25,7 +25,8 @@
 | `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct. La liste est l'onglet Tournois de `/challenges` ; `/tournaments` y redirige |
 | `/u/[username]` | Profil public d'un utilisateur : chiffres comptés en base (badges, leçons terminées, défis résolus), l'année d'activité jour par jour, « Face à face » et « Défier » entre amis, les trois badges les plus rares, les parcours en cours et terminés avec leur progression, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, le bilan des duels et les contributions, la chronologie, activité ; une image d'aperçu pour un lien partagé (sans nom pour un profil privé) et `noindex` sur un profil privé ; dans l'interface de l'app pour un visiteur connecté, seul pour un visiteur anonyme, aux cosmétiques de son propriétaire ; « Ami ✓ » et son menu, « Accepter » et « Refuser » une demande, « Défier en duel » qui suit l'amitié ; sur sa propre page, « Modifier mon profil » et « Copier le lien » |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
-| `/download` | Page de téléchargement de l'app mobile |
+| `/glossaire` | Glossaire public des termes du catalogue |
+| `/account/keep` · `/account/keep/done` | Garder un compte inactif, depuis le lien du mail de préavis |
 | `/banned` | Page d'un compte suspendu, avec dépôt d'appel |
 | `/legal` · `/legal/terms` · `/privacy` | Mentions, CGU, politique de confidentialité |
 | `/account/delete/confirm` · `/success` · `/error` | Confirmation de suppression de compte (RGPD) |
@@ -37,7 +38,8 @@
 |---|---|
 | `/onboarding` | Étape 1 - Infos (username, displayName, bio) |
 | `/onboarding/avatar` | Étape 2 - Choix d'avatar (glyphe ou upload) |
-| `/onboarding/placement-test` | Étape 3 - Introduction au test de placement |
+| `/onboarding/goals` | Étape 3 - Ce qui t'amène, puis deux ou trois parcours pour commencer ; le test de positionnement y est proposé à qui dit avoir déjà une base |
+| `/onboarding/placement-test` | Introduction au test de placement, depuis l'étape 3 |
 | `/onboarding/placement-test/questions` | Test adaptatif (DEV / CYBERSEC / RÉSEAU) |
 | `/onboarding/placement-test/result` | Résultats + génération des waivers |
 
@@ -77,6 +79,8 @@
 | `/api/cron/streak-reset` | Cron - reset du streak à minuit |
 | `/api/cron/season-rollover` | Cron - clôture de saison, promotions et relégations |
 | `/api/cron/tournament-badges` | Cron - badges de la place prise par l'équipe, pour les tournois finis depuis une semaine |
+| `/api/cron/retention` | Cron - purge du journal d'audit (12 mois) et des tickets (3 mois après résolution, 12 mois sans activité) |
+| `/api/cron/inactive-accounts` | Cron - préavis par e-mail puis effacement des comptes inactifs depuis 24 mois |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
 | `/api/paths/[slug]/sheet?module=N` | Fiche de révision d'un module, en PDF (les points « à retenir » de ses leçons) |
@@ -85,6 +89,7 @@
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
 | `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). Version 1.2 : l'ancienne file de révisions (`reviewSchedules`) n'y figure plus, sa table est supprimée et ses lignes ont été converties en cartes (`reviewCards`). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
+| `/api/me/settings` | Les sept sections du volet des paramètres, en une requête |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
 | `/api/mobile/leaderboard` | Classement et échelle de pod ; `?period=week\|month` pour la semaine ou le mois, sans paramètre la réponse d'avant |
@@ -154,7 +159,7 @@
   - Formule : niveau N requiert `N × 100` XP depuis le palier précédent (`50 × N × (N-1)` cumulatif)
   - Level-up déclenche une notification
 - **Streak** : jours consécutifs d'activité, reset par cron la nuit
-- **Badges** (10 types de critères, 4 raretés)
+- **Badges** (16 types de critères, 4 raretés)
   - Critères : leçon complétée, parcours terminé, seuil XP, jours de série,
     maîtrise d'une catégorie, quiz parfait, leçon précise, niveau atteint,
     badge obtenu, custom
@@ -279,15 +284,18 @@
 | `/lessons/[id]` | Studio de la leçon : sa fiche dans un rail, l'éditeur et l'aperçu du site côte à côte sur toute la largeur, brouillon enregistré seul, « Publier les changements », versions à restaurer ; dessous, ses parcours et prérequis, et les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, avec un lien vers tous. `/lessons/[id]/edit` y redirige (`next.config.ts`) |
 | `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier), par glisser-déposer ; une leçon déjà en base se met à jour après diff et confirmation ; chaque erreur donne sa ligne |
 | `/lessons/[id]/ratings` | Tous les avis d'une leçon, 25 par page (`?q=&score=&page=`) : note, commentaire, apprenant, date ; la note moyenne et le nombre d'avis en tête |
+| `/lessons/reports` | Questions de quiz signalées par les apprenants |
+| `/lessons/sync` | Synchroniser les leçons avec le dossier `content/` du dépôt, après diff et confirmation |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |
 | `/paths` | Liste des parcours |
+| `/paths/archives` | Parcours archivés |
 | `/paths/new` | Créer un parcours |
 | `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) ; avis des apprenants |
 | `/paths/[id]/quiz` | Composer l'examen final d'un parcours |
 | `/badges` | Liste des badges |
-| `/badges/new` | Créer un badge (10 types de critères) |
+| `/badges/new` | Créer un badge (16 types de critères) |
 | `/badges/[id]/edit` | Éditer un badge |
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
@@ -300,6 +308,7 @@
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/tournaments/[id]/flags` | Flags trouvés d'un tournoi, 25 par page (`?q=&status=&page=`) : joueur, défi, classe, heure. Disqualifier avec un motif (5 à 300 caractères), rétablir ; chaque geste est inscrit au journal |
 | `/moderation` | File de relecture des contenus signalés |
+| `/moderation/notes` | Notes partagées signalées |
 | `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
 | `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord, 20 contenus par page groupés et paginés par la base (`?page=`) ; masquer, supprimer, classer sans suite, ou le renvoi à la file du filtre pour un contenu qu'elle tient encore |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
@@ -308,6 +317,7 @@
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
 | `/system/crons` | Tâches planifiées : planning, dernier passage (durée, bilan), dernière erreur, prochain passage attendu, retard signalé |
 | `/reference/cosmetics` · `/reference/quests` · `/reference/seasons` · `/reference/forum-categories` · `/reference/placement` | Référentiels en consultation seule, 25 par page avec recherche et filtres : cosmétiques, quêtes, saisons de ligue, sections du forum, questions du test de positionnement. Un bandeau cite le fichier qui écrit les lignes (seed, migration ou tâche planifiée) |
+| `/lab` | Banc d'essai : ce qui ne se voit d'ordinaire qu'en attendant (Wrapped hors saison, aperçu des e-mails, comportement du filtre de modération) |
 | `/account` | Mon compte : identité, double authentification, méthodes et dernière connexion, mes actions (le journal filtré sur soi), fermer ses autres sessions ou toutes ; le mot de passe se change sur le site |
 | `/settings` | Configuration de l'application |
 
@@ -354,7 +364,7 @@
 - Gestion des templates de certificat PDF
 
 #### Gestion des badges
-- 10 types de critères avec formulaire dynamique
+- 16 types de critères avec formulaire dynamique
 - 4 raretés (COMMON, RARE, EPIC, LEGENDARY)
 - Activation/désactivation sans suppression si déjà attribué
 - RefCode format : `CL-BDG-NNN`
@@ -520,7 +530,7 @@
   au-delà, la page demande un filtre plus étroit ; l'export est lui-même tracé
 
 #### Tâches planifiées
-- Les six routes `apps/web/app/api/cron/*` consignent chaque passage dans le
+- Les sept routes `apps/web/app/api/cron/*` consignent chaque passage dans le
   journal d'audit (`actorId` nul, action `cron.<nom>`, cible `Cron`) : réussite,
   durée, bilan, cause d'un échec. L'écriture n'échoue jamais la tâche
 - La liste `CRON_JOBS` (`packages/lib/src/cron/jobs.ts`) donne chemin, planning
@@ -552,11 +562,13 @@
 ## Packages partagés
 
 ### `packages/db` - Couche données
-- **Prisma 6** : 60 modèles, 23 enums
-- 28 repositories : audit-log, badge, ban, certificate, challenge, class, cosmetic, forum,
-  friendship, leaderboard, league, lesson, moderation, note, note-folder,
-  note-share, notification, path, qa, quest, quiz, rating, search, stats,
-  streak, ticket, user, wrapped
+- **Prisma 7** (adaptateur `pg`) : 80 modèles, 34 enums
+- Une cinquantaine de repositories, un par domaine (`packages/db/src/repositories`) :
+  comptes et profils, leçons (brouillons, versions, aperçus, progression, quiz),
+  parcours, défis et solutions, duels, tournois, badges, quêtes, ligues,
+  classements, cartes de révision, notes et partages, forum, questions-réponses,
+  amis, classes, tickets, modération et signalements, notifications,
+  certificats, journal d'audit, tâches planifiées, recherche, statistiques
 - Migrations versionnées, RLS incluse : toute migration qui crée une table
   active la RLS et pose ses policies dans le même fichier
 - Row Level Security sur toutes les tables du schéma `public`, vérifiée par un
@@ -571,7 +583,7 @@
 
 ### `packages/lib` - Logique métier
 - `xp.ts` - Calcul XP/niveau · `revisions/cards.ts` - cartes de Leitner · `pseudonymize.ts` - HMAC
-- `gamification/` - `badge-evaluator.ts` (les 10 critères, fonction pure),
+- `gamification/` - `badge-evaluator.ts` (les 16 critères, fonction pure),
   `streak-state.ts`, `day.ts`, `week.ts`, `league.ts`, `quest.ts`, `tier.ts`,
   `wrapped.ts`, `wrapped-window.ts` (la fenêtre du 1er décembre au 7 janvier)
 - `moderation/` - `moderate.ts`, `lexicon.ts`, `normalise.ts`, `ban.ts`,
@@ -591,9 +603,10 @@
   PathProgress, NotificationBell, MdxEditorPanel, Select
 
 ### `packages/email` - Templates e-mail
-- Neuf templates React Email : magic-link, ticket-reply, work-assigned,
-  class-enrolled, class-invitation, ban-notice, moderation-notice,
-  account-deleted, account-deletion-confirm
+- Onze templates React Email : magic-link, mfa-reset, ticket-reply,
+  work-assigned, class-enrolled, class-invitation, ban-notice,
+  moderation-notice, inactivity-notice, account-deleted,
+  account-deletion-confirm
 - `theme.ts` porte les tokens et le vocabulaire de styles partagé, `shell.tsx`
   le `<head>` commun : un template n'ajoute que ce qui lui est propre, et il
   n'y a de `border-radius` nulle part — le site est carré
@@ -634,4 +647,4 @@
 | `TicketTheme` | BUG, QUESTION, FEATURE_REQUEST, SECURITY, CONTENT_ERROR, ESTABLISHMENT_REQUEST, BAN_APPEAL, OTHER |
 | `TicketStatus` | OPEN, IN_PROGRESS, RESOLVED, CLOSED |
 
-Les 23 enums du schéma, relevés sur `packages/db/prisma/schema.prisma`.
+Les enums que le produit montre ; le schéma (`packages/db/prisma/schema.prisma`) en compte 34.

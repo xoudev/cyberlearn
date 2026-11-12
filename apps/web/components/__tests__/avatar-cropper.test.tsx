@@ -37,9 +37,16 @@ function propsFor(file = new File(["image bytes"], "avatar.png", { type: "image/
   return { file, onCancel: vi.fn(), onConfirm: vi.fn<(blob: Blob) => void>() };
 }
 
+/**
+ * The decoded image is in, and drawn. The button is enabled by the commit; the
+ * drawing is a passive effect of that commit, which React runs a moment later.
+ * Waiting for the button alone let a test look at the canvas in between: on a
+ * loaded CI runner the first one found nothing drawn yet and failed.
+ */
 async function ready(): Promise<void> {
   await waitFor(() => {
     expect(screen.getByRole("button", { name: "Valider" }).hasAttribute("disabled")).toBe(false);
+    expect(drawImage).toHaveBeenCalled();
   });
 }
 
