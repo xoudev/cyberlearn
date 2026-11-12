@@ -21,6 +21,8 @@ import { creditXp } from "@/lib/xp/credit";
 import { checkAndIssueCertificates } from "@/lib/certificates/check-and-issue";
 import { recordQuestProgress } from "@/lib/quests/progress";
 import { quizScoreOf, readLessonQuizRecord } from "@/lib/lessons/quiz-answer";
+import { checkLessonCompletion } from "@/lib/rate-limit";
+import { waitLabel } from "@/lib/rate-limit-copy";
 
 export interface CompleteLessonResult {
   alreadyCompleted: boolean;
@@ -45,9 +47,33 @@ export const EMPTY_COMPLETE_RESULT: CompleteLessonResult = {
 
 /**
  * Why a completion was turned away: a lesson the reader may not open, one
- * still locked in its path, or an account with no row to credit.
+ * still locked in its path, an account with no row to credit, questions of
+ * the lesson left without an answer, or lessons finished faster than anybody
+ * reads them.
  */
-export type CompletionRefusal = "unreadable" | "locked" | "no-account";
+export type CompletionRefusal = "unreadable" | "locked" | "no-account" | "unanswered" | "too-fast";
+
+export interface CompleteLessonOptions {
+  /**
+   * Refuse a first completion while a quiz of the lesson has no answer on
+   * record.
+   *
+   * The site passes it: its page lets nobody past a section whose quiz is
+   * unanswered, so only a forged call reaches the end without the answers,
+   * and used to be paid the lesson's XP, its badges and its place in the
+   * rankings for it. The app does not: its lesson screen does not hold the
+   * reader at a quiz, and the builds from before answers were recorded send
+   * none at all (docs/MOBILE_PARITY.md). Both channels have the rate limit.
+   */
+  requireQuizAnswers?: boolean;
+}
+
+/** How many of the lesson's quizzes still wait for an answer. */
+export function unansweredMessage(count: number): string {
+  return count === 1
+    ? "Il te reste une question sans réponse dans cette leçon. Réponds-y pour la terminer."
+    : `Il te reste ${String(count)} questions sans réponse dans cette leçon. Réponds-y pour la terminer.`;
+}
 
 /**
  * A completion recorded, or refused with the words to tell the learner.
@@ -77,6 +103,7 @@ export type CompleteLessonOutcome =
 export async function completeLessonForUser(
   userId: string,
   lessonId: string,
+  options: CompleteLessonOptions = {},
 ): Promise<CompleteLessonOutcome> {
   // Parallel fetch - lesson, its path lock, user gamification state, existing
   // progress, all active badges, and whether this account still wants a
@@ -105,6 +132,25 @@ export async function completeLessonForUser(
   // the quizzes the lesson has at this moment. The catalogue shows it.
   const quizRecord = await readLessonQuizRecord(userId, lessonId, lesson.contentMdx);
   const quizScore = quizScoreOf(quizRecord);
+
+  // A lesson finished already is finished: these two gates stand in front of
+  // the reward, which a second completion never gets.
+  if (existing?.status !== "COMPLETED") {
+    const answered = new Set(quizRecord.answers.map((answer) => answer.quizId));
+    const unanswered = quizRecord.quizzes.filter((quiz) => !answered.has(quiz.id)).length;
+    if (options.requireQuizAnswers === true && unanswered > 0) {
+      return { ok: false, refused: "unanswered", error: unansweredMessage(unanswered) };
+    }
+    // Last, so that a refusal above costs nothing of the hour's budget.
+    const limit = await checkLessonCompletion(userId);
+    if (!limit.success) {
+      return {
+        ok: false,
+        refused: "too-fast",
+        error: `Tu termines les leçons très vite. Reprends dans ${waitLabel(limit.retryAfterSeconds)}.`,
+      };
+    }
+  }
   const scoreColumns = {
     quizCorrect: quizScore?.correct ?? null,
     quizTotal: quizScore?.total ?? null,

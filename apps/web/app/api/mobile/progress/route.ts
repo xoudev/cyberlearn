@@ -10,11 +10,18 @@ const schema = z.object({
   lessonId: z.guid(),
 });
 
-/** The status of each refusal: a lesson locked in its path is forbidden, the rest not found. */
+/**
+ * The status of each refusal: a lesson locked in its path is forbidden, too
+ * many completions in the hour is too many requests, the rest not found.
+ * "unanswered" is not asked of the app (complete.ts says why); it has a
+ * status so that asking it one day is one line.
+ */
 const REFUSAL_STATUS: Record<CompletionRefusal, number> = {
   locked: 403,
   unreadable: 404,
   "no-account": 404,
+  unanswered: 409,
+  "too-fast": 429,
 };
 
 /**

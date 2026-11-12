@@ -31,7 +31,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonAc
     return { ...EMPTY_COMPLETE_RESULT, refusal: "Leçon introuvable." };
   }
   const authUser = await requireRequestUser();
-  const outcome = await completeLessonForUser(authUser.id, lessonId);
+  const outcome = await completeLessonForUser(authUser.id, lessonId, { requireQuizAnswers: true });
   return outcome.ok
     ? { ...outcome.result, refusal: null }
     : { ...EMPTY_COMPLETE_RESULT, refusal: outcome.error };
