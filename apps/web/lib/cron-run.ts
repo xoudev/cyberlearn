@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { cronRunRepository, type CronRunSummary } from "@cyberlearn/db";
 import type { CronJobName } from "@cyberlearn/lib/cron/jobs";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
@@ -75,9 +76,27 @@ export function failureCounts(
 }
 
 /**
+ * Raises a failed run in Sentry, which sends the alert.
+ *
+ * The console's crons page tells the truth, but only to whoever opens it: a
+ * purge that failed for a week went unseen until then. And Sentry saw none of
+ * it, because every route catches what its job throws and answers 500 itself.
+ * One issue per job (the fingerprint), so a job failing every night is one
+ * issue that recurs, not a new one each time.
+ */
+function alert(job: CronJobName, cause: string): void {
+  Sentry.captureMessage(`Tâche planifiée en échec : ${job}`, {
+    level: "error",
+    tags: { area: "cron", job },
+    fingerprint: ["cron-failure", job],
+    extra: { cause: cause.slice(0, CRON_ERROR_MAX) },
+  });
+}
+
+/**
  * Runs a job and records the run. What the job returns is handed back as it
  * is; what it throws is recorded as a failure and thrown again, so each route
- * keeps its own answer to an error (and Sentry still sees the unhandled ones).
+ * keeps its own answer to an error. Either kind of failure is raised in Sentry.
  */
 export async function trackCronRun<T>(
   job: CronJobName,
@@ -95,9 +114,11 @@ export async function trackCronRun<T>(
       summary: {},
       error: errorMessage(err),
     });
+    alert(job, errorMessage(err));
     throw err;
   }
   const failure = options.failure?.(result) ?? null;
+  if (failure !== null) alert(job, failure);
   await record(job, {
     ok: failure === null,
     durationMs: Date.now() - started,

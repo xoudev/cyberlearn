@@ -1348,4 +1348,31 @@ export const classRepository = {
       completions,
     };
   },
+
+  /**
+   * The name of a class that is not archived, for a caption. The roster read
+   * would answer this too, but it fetches every member to do it, and an
+   * archived class has to fall away here as it does everywhere else.
+   */
+  async findLiveName(classId: string) {
+    return prisma.class.findFirst({
+      where: { id: classId, ...LIVE_CLASS_FILTER },
+      select: { name: true },
+    });
+  },
+
+  /** How many lessons each member of these classes has completed: one grouped count rather than a query per class. */
+  async countCompletedLessonsByMember(
+    classIds: string[],
+  ): Promise<{ userId: string; completed: number }[]> {
+    const rows = await prisma.userLessonProgress.groupBy({
+      by: ["userId"],
+      where: {
+        status: "COMPLETED",
+        user: { classMemberships: { some: { classId: { in: classIds } } } },
+      },
+      _count: { lessonId: true },
+    });
+    return rows.map((row) => ({ userId: row.userId, completed: row._count.lessonId }));
+  },
 };

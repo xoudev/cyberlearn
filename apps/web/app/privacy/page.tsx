@@ -243,8 +243,8 @@ export default function PrivacyPage(): React.JSX.Element {
               "États-Unis (DPF + clauses contractuelles types)",
             ],
             [
-              "Atlassian (Jira)",
-              "Suivi interne des tickets de support",
+              "Cloudflare (Turnstile)",
+              "Contrôle anti-robot des formulaires d’inscription et de mot de passe oublié, lorsqu’il est activé (adresse IP et signaux du navigateur)",
               "États-Unis (DPF + clauses contractuelles types)",
             ],
           ]}
@@ -258,8 +258,8 @@ export default function PrivacyPage(): React.JSX.Element {
 
       <Section title="6. Transferts hors UE">
         <p>
-          Certains sous-traitants (Vercel, Resend, Atlassian, Sentry) sont basés aux États-Unis. Les
-          transferts sont encadrés par :
+          Certains sous-traitants (Vercel, Resend, Sentry, Cloudflare) sont basés aux États-Unis.
+          Les transferts sont encadrés par :
         </p>
         <ul style={{ ...ulStyle, marginTop: "12px" }}>
           <li>Le Data Privacy Framework (DPF) auquel ces sociétés adhèrent, ou</li>

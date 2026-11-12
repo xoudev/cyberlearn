@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CATALOGUE_LESSON, prisma, ratingRepository } from "@cyberlearn/db";
+import { lessonRepository, pathRepository, ratingRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
 import { RatingsCard } from "../../../_components/ratings-card";
@@ -24,57 +24,8 @@ export default async function EditPathPage({
   const id = routeIdOrNotFound((await params).id);
 
   const [path, availableLessons, ratings] = await Promise.all([
-    prisma.path.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        refCode: true,
-        slug: true,
-        title: true,
-        description: true,
-        category: true,
-        track: true,
-        difficulty: true,
-        estimatedHours: true,
-        coverImageUrl: true,
-        status: true,
-        avgRating: true,
-        ratingsCount: true,
-        lessons: {
-          orderBy: { position: "asc" },
-          select: {
-            position: true,
-            lesson: {
-              select: {
-                id: true,
-                refCode: true,
-                title: true,
-                category: true,
-                difficulty: true,
-                estimatedMinutes: true,
-                xpReward: true,
-              },
-            },
-          },
-        },
-      },
-    }),
-    prisma.lesson.findMany({
-      // CATALOGUE_LESSON, not just published: a lesson a teacher wrote for one
-      // class is published, and putting it behind a badge or inside a path
-      // would promise it to people who cannot open it.
-      where: CATALOGUE_LESSON,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        refCode: true,
-        title: true,
-        category: true,
-        difficulty: true,
-        estimatedMinutes: true,
-        xpReward: true,
-      },
-    }),
+    pathRepository.findForEdit(id),
+    lessonRepository.findPublishedForPath(),
     ratingRepository.findPathRatings(id),
   ]);
 

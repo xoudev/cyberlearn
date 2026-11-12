@@ -12,8 +12,10 @@ import { CRON_JOBS } from "@cyberlearn/lib/cron/jobs";
 const m = vi.hoisted(() => ({
   record: vi.fn<(job: string, run: Record<string, unknown>) => Promise<void>>(),
   logError: vi.fn(),
+  captureMessage: vi.fn(),
 }));
 
+vi.mock("@sentry/nextjs", () => ({ captureMessage: m.captureMessage }));
 vi.mock("@cyberlearn/db", () => ({ cronRunRepository: { record: m.record } }));
 vi.mock("@cyberlearn/lib/logger", () => ({
   errorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
@@ -102,6 +104,35 @@ describe("trackCronRun", () => {
     ).rejects.toThrow();
     const error = m.record.mock.calls[0]?.[1]?.error;
     expect(typeof error === "string" ? error.length : 0).toBe(CRON_ERROR_MAX);
+  });
+
+  it("raises nothing in Sentry for a run that did its job", async () => {
+    await trackCronRun("retention", () => Promise.resolve({ n: 1 }));
+    expect(m.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("raises a run that threw in Sentry, one issue per job", async () => {
+    await expect(
+      trackCronRun("streak-reset", () => Promise.reject(new Error("connection refused"))),
+    ).rejects.toThrow();
+    expect(m.captureMessage).toHaveBeenCalledWith(
+      "Tâche planifiée en échec : streak-reset",
+      expect.objectContaining({
+        level: "error",
+        fingerprint: ["cron-failure", "streak-reset"],
+        extra: { cause: "connection refused" },
+      }),
+    );
+  });
+
+  it("raises a run that returned and says it did not do its job", async () => {
+    await trackCronRun("keep-alive", () => Promise.resolve({ postgres: "error" }), {
+      failure: (r) => (r.postgres === "error" ? "Postgres ne répond pas" : null),
+    });
+    expect(m.captureMessage).toHaveBeenCalledWith(
+      "Tâche planifiée en échec : keep-alive",
+      expect.objectContaining({ extra: { cause: "Postgres ne répond pas" } }),
+    );
   });
 
   it("never fails the job when the run cannot be written", async () => {

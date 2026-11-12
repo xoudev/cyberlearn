@@ -416,4 +416,168 @@ export const pathRepository = {
       },
     });
   },
+
+  /**
+   * The paths page of one reader: the catalogue, plus the paths built for
+   * their own classes. A CLASS path is published, so status alone would hand
+   * every class's work to everyone.
+   */
+  async findCollectionFor(userId: string) {
+    return prisma.path.findMany({
+      where: pathsVisibleTo(userId),
+      include: {
+        lessons: {
+          orderBy: { position: "asc" },
+          // The missions the path page draws: a draft or an archived lesson
+          // still linked to a path is neither counted nor offered as the next.
+          where: PUBLISHED_PATH_LESSON,
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                estimatedMinutes: true,
+                xpReward: true,
+              },
+            },
+          },
+        },
+        // Whether a final exam waits once every mission is done: the hero's
+        // button leads there rather than to the path a second time.
+        quiz: { select: { isActive: true } },
+      },
+      orderBy: { publishedAt: "desc" },
+    });
+  },
+
+  /**
+   * Where a reader stands on each path they started, with the certificate's
+   * public id, so a certified path's card opens the certificate itself rather
+   * than the path again.
+   */
+  async findProgressWithCertificates(userId: string) {
+    return prisma.userPathProgress.findMany({
+      where: { userId },
+      select: { pathId: true, status: true, certificate: { select: { publicId: true } } },
+    });
+  },
+
+  /** A path this reader may open, by its slug, as the exam page names it. */
+  async findVisibleBySlug(slug: string, userId: string) {
+    return prisma.path.findFirst({
+      where: { slug, ...pathsVisibleTo(userId) },
+      select: { id: true, slug: true, title: true, refCode: true },
+    });
+  },
+
+  /** The published paths a badge's criterion may name. */
+  async findPublishedOptions() {
+    return prisma.path.findMany({
+      where: { status: "PUBLISHED" },
+      select: { id: true, title: true, slug: true },
+      orderBy: { title: "asc" },
+    });
+  },
+
+  /** Every path's reference code, to number the next one. */
+  async findAllRefCodes() {
+    return prisma.path.findMany({ select: { refCode: true } });
+  },
+
+  /** One path as its edit form reads it, with its lessons in order. */
+  async findForEdit(id: string) {
+    return prisma.path.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
+        track: true,
+        difficulty: true,
+        estimatedHours: true,
+        coverImageUrl: true,
+        status: true,
+        avgRating: true,
+        ratingsCount: true,
+        lessons: {
+          orderBy: { position: "asc" },
+          select: {
+            position: true,
+            lesson: {
+              select: {
+                id: true,
+                refCode: true,
+                title: true,
+                category: true,
+                difficulty: true,
+                estimatedMinutes: true,
+                xpReward: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  /** A path's name and address, for the page that composes its exam. */
+  async findTitleById(id: string) {
+    return prisma.path.findUnique({
+      where: { id },
+      select: { id: true, title: true, slug: true },
+    });
+  },
+
+  /**
+   * A path's own page, for a reader who may open it. Not findUnique on the
+   * slug: a CLASS path is published, so the reader is part of the question.
+   * findUnique takes only unique fields, which is how the entitlement would
+   * have been left out.
+   */
+  async findDetailFor(slug: string, userId: string) {
+    return prisma.path.findFirst({
+      where: { slug, ...pathsVisibleTo(userId) },
+      include: {
+        modules: {
+          orderBy: { position: "asc" },
+          select: { id: true, position: true, title: true, description: true },
+        },
+        lessons: {
+          orderBy: { position: "asc" },
+          // Its published lessons only, as the lesson page reads the path: a
+          // draft or an archived lesson still linked here was a mission the map
+          // offered and the lesson page answered with a 404, and one the path
+          // could never be finished without.
+          where: PUBLISHED_PATH_LESSON,
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                description: true,
+                difficulty: true,
+                estimatedMinutes: true,
+                xpReward: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  /** A reader's progress on a path, opened as in progress the first time they visit it. */
+  async openProgress(userId: string, pathId: string) {
+    return prisma.userPathProgress.upsert({
+      where: { userId_pathId: { userId, pathId } },
+      create: { userId, pathId, status: "IN_PROGRESS" },
+      update: {},
+      select: { status: true, certificateId: true, certificate: { select: { revokedAt: true } } },
+    });
+  },
 };

@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma } from "@cyberlearn/db";
+import { challengeRepository } from "@cyberlearn/db";
 import { Card, PageHeader } from "../../_components/admin-ui";
 import { NEW_CHALLENGE_HEADER } from "../_components/challenge-columns";
 import { NewChallengeForm } from "./_components/new-challenge-form";
@@ -12,11 +12,7 @@ export const metadata: Metadata = { title: "Nouveau challenge" };
 
 export default async function NewChallengePage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const challenges = await prisma.challenge.findMany({
-    where: { isActive: true },
-    orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
-    select: { id: true, refCode: true, title: true },
-  });
+  const challenges = await challengeRepository.findActiveOptions();
 
   const prerequisites: ChallengeOption[] = challenges.map((c) => ({
     id: c.id,

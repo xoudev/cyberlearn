@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LIVE_CLASS_FILTER, classRepository, prisma } from "@cyberlearn/db";
+import { classRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { LessonEditor } from "../../_components/lesson-editor";
@@ -30,13 +30,8 @@ export default async function NewClassLessonPage({
 
   if (!(await classRepository.canSetWorkFor(user.id, classId))) notFound();
 
-  // The name only, for the caption. The roster read would answer this too, but
-  // it fetches every member to do it, and an archived class has to fall away
-  // here as it does everywhere else.
-  const klass = await prisma.class.findFirst({
-    where: { id: classId, ...LIVE_CLASS_FILTER },
-    select: { name: true },
-  });
+  // The name only, for the caption (findLiveName says why not the roster).
+  const klass = await classRepository.findLiveName(classId);
   if (!klass) notFound();
 
   return (

@@ -1,0 +1,49 @@
+# Version updates. Security updates are switched on in the repository's
+# settings and arrive on their own, whatever this file says.
+#
+# Without this file nothing proposed a bump: Next sat on 16.3.8 for a month
+# after two critical advisories were fixed in 16.4.1, found by an audit rather
+# than by a pull request. Minor and patch versions come grouped in one weekly
+# pull request per ecosystem, so the review is one diff and one CI run; a major
+# version comes alone, to be taken on its own.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    # A release is proposed a week after it is published, not the same day: a
+    # compromised version is usually pulled within days, and a security
+    # update, which does not wait, is not held back by this.
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      actions:
+        patterns:
+          - "*"

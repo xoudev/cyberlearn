@@ -1,6 +1,8 @@
 import { prisma } from "../prisma.js";
 import { CATALOGUE_LESSON } from "./lesson.repository.js";
 import { CATALOGUE_PATH, PUBLISHED_PATH_LESSON } from "./path.repository.js";
+import { WITHOUT_CRON_RUNS } from "./cron-run.repository.js";
+import { CRITICAL_TICKET_WHERE, OPEN_TICKET_STATUSES } from "./ticket.repository.js";
 
 export interface LandingStats {
   /** Categories with at least one published lesson. */
@@ -148,5 +150,134 @@ export const statsRepository = {
           : null,
       coverImageUrl: path.coverImageUrl,
     }));
+  },
+
+  /** The counts beside the console's sidebar entries. */
+  async findSidebarCounts() {
+    const [lessons, paths, badges, challenges, users] = await Promise.all([
+      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
+      prisma.path.count({ where: { status: "PUBLISHED" } }),
+      prisma.badge.count(),
+      prisma.challenge.count({ where: { isActive: true } }),
+      prisma.user.count(),
+    ]);
+    return { lessons, paths, badges, challenges, users };
+  },
+
+  /** How much of everything the database holds, for the console's settings page. */
+  async findConsoleTotals() {
+    const [users, lessons, paths, badges, certificates, tickets, auditLogs] = await Promise.all([
+      prisma.user.count(),
+      prisma.lesson.count(),
+      prisma.path.count(),
+      prisma.badge.count(),
+      prisma.certificate.count({ where: { revokedAt: null } }),
+      prisma.contactTicket.count(),
+      prisma.auditLog.count(),
+    ]);
+    return { users, lessons, paths, badges, certificates, tickets, auditLogs };
+  },
+
+  /**
+   * What the console's dashboard reads: its figures and what they gained
+   * lately, the dated rows its weekly curves are drawn from, and its two feeds.
+   *
+   * `horizon` is how far back the curves go.
+   */
+  async findConsoleDashboard(since: { horizon: Date; oneWeekAgo: Date; oneMonthAgo: Date }) {
+    const { horizon, oneWeekAgo, oneMonthAgo } = since;
+    const [
+      userCount,
+      usersThisWeek,
+      lessonCount,
+      lessonThisMonth,
+      certCount,
+      certThisWeek,
+      activeTickets,
+      openTickets,
+      criticalTickets,
+      userDates,
+      lessonDates,
+      certDates,
+      ticketDates,
+      lessonsByStatus,
+      pathCount,
+      recentLogs,
+      recentUsers,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { createdAt: { gte: oneWeekAgo } } }),
+      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
+      prisma.lesson.count({ where: { status: "PUBLISHED", publishedAt: { gte: oneMonthAgo } } }),
+      prisma.certificate.count({ where: { revokedAt: null } }),
+      prisma.certificate.count({ where: { revokedAt: null, issuedAt: { gte: oneWeekAgo } } }),
+      // The card counts what its delta counts within: open or in progress. With
+      // OPEN alone, a security report taken in hand read "0" over "1 critique".
+      prisma.contactTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
+      prisma.contactTicket.count({ where: { status: "OPEN" } }),
+      // The tickets page's definitions, from the same place: a security report
+      // taken in hand is still critical, here as there.
+      prisma.contactTicket.count({ where: CRITICAL_TICKET_WHERE }),
+      prisma.user.findMany({
+        where: { createdAt: { gte: horizon } },
+        select: { createdAt: true },
+      }),
+      prisma.lesson.findMany({
+        where: { publishedAt: { gte: horizon } },
+        select: { publishedAt: true },
+      }),
+      prisma.certificate.findMany({
+        where: { issuedAt: { gte: horizon }, revokedAt: null },
+        select: { issuedAt: true },
+      }),
+      prisma.contactTicket.findMany({
+        where: { createdAt: { gte: horizon } },
+        select: { createdAt: true },
+      }),
+      prisma.lesson.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.path.count({ where: { status: "PUBLISHED" } }),
+      // What people did: the jobs' runs, ten a day, would push it out of the feed.
+      prisma.auditLog.findMany({
+        where: WITHOUT_CRON_RUNS,
+        take: 8,
+        orderBy: { createdAt: "desc" },
+        include: {
+          actor: { select: { username: true, displayName: true, email: true, avatarUrl: true } },
+        },
+      }),
+      prisma.user.findMany({
+        take: 6,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          email: true,
+          avatarUrl: true,
+          role: true,
+          level: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+    return {
+      userCount,
+      usersThisWeek,
+      lessonCount,
+      lessonThisMonth,
+      certCount,
+      certThisWeek,
+      activeTickets,
+      openTickets,
+      criticalTickets,
+      userDates,
+      lessonDates,
+      certDates,
+      ticketDates,
+      lessonsByStatus,
+      pathCount,
+      recentLogs,
+      recentUsers,
+    };
   },
 };

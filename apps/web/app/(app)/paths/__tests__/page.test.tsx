@@ -12,14 +12,12 @@ import type { SerializedPath } from "../_components/paths-collection";
 const USER = "11111111-1111-4111-8111-111111111111";
 
 const db = vi.hoisted(() => ({
-  PUBLISHED_PATH_LESSON: {},
-  pathsVisibleTo: vi.fn(() => ({})),
-  prisma: {
-    path: { findMany: vi.fn() },
-    userPathProgress: { findMany: vi.fn() },
-    userLessonProgress: { groupBy: vi.fn() },
+  pathRepository: {
+    findCollectionFor: vi.fn(),
+    findProgressWithCertificates: vi.fn(),
   },
   lessonRepository: {
+    findCompletedPathLessonIds: vi.fn<(userId: string) => Promise<string[]>>(),
     findWaivedLessonIds: vi.fn<(userId: string, lessonIds?: string[]) => Promise<string[]>>(),
   },
 }));
@@ -80,28 +78,28 @@ async function servedPath(): Promise<SerializedPath | undefined> {
   return collection.PathsCollection.mock.calls[0]?.[0].paths[0];
 }
 
-function completed(...ns: number[]): { lessonId: string }[] {
-  return ns.map((n) => ({ lessonId: `l${String(n)}` }));
+function completed(...ns: number[]): string[] {
+  return ns.map((n) => `l${String(n)}`);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  db.prisma.path.findMany.mockResolvedValue([PATH]);
-  db.prisma.userPathProgress.findMany.mockResolvedValue([
+  db.pathRepository.findCollectionFor.mockResolvedValue([PATH]);
+  db.pathRepository.findProgressWithCertificates.mockResolvedValue([
     { pathId: "p1", status: "IN_PROGRESS", certificate: null },
   ]);
-  db.prisma.userLessonProgress.groupBy.mockResolvedValue([]);
+  db.lessonRepository.findCompletedPathLessonIds.mockResolvedValue([]);
   db.lessonRepository.findWaivedLessonIds.mockResolvedValue([]);
 });
 
 describe("the paths catalogue page", () => {
   it("picks a path up at its first lesson not completed", async () => {
-    db.prisma.userLessonProgress.groupBy.mockResolvedValue(completed(1, 2));
+    db.lessonRepository.findCompletedPathLessonIds.mockResolvedValue(completed(1, 2));
     expect((await servedPath())?.nextLesson).toMatchObject({ n: "03", slug: "lecon-3" });
   });
 
   it("passes over the lessons the placement test waived, as the path page does", async () => {
-    db.prisma.userLessonProgress.groupBy.mockResolvedValue(completed(1));
+    db.lessonRepository.findCompletedPathLessonIds.mockResolvedValue(completed(1));
     db.lessonRepository.findWaivedLessonIds.mockResolvedValue(["l2", "l3", "l4", "l5"]);
     expect((await servedPath())?.nextLesson).toMatchObject({
       n: "06",
@@ -117,19 +115,21 @@ describe("the paths catalogue page", () => {
   });
 
   it("offers the first waived lesson when every lesson left was waived", async () => {
-    db.prisma.userLessonProgress.groupBy.mockResolvedValue(completed(1, 2, 3, 4, 5));
+    db.lessonRepository.findCompletedPathLessonIds.mockResolvedValue(completed(1, 2, 3, 4, 5));
     db.lessonRepository.findWaivedLessonIds.mockResolvedValue(["l6", "l7", "l8"]);
     expect((await servedPath())?.nextLesson).toMatchObject({ n: "06", slug: "lecon-6" });
   });
 
   it("has no next mission once every lesson is completed, which leads to the exam", async () => {
-    db.prisma.userLessonProgress.groupBy.mockResolvedValue(completed(1, 2, 3, 4, 5, 6, 7, 8));
+    db.lessonRepository.findCompletedPathLessonIds.mockResolvedValue(
+      completed(1, 2, 3, 4, 5, 6, 7, 8),
+    );
     db.lessonRepository.findWaivedLessonIds.mockResolvedValue(["l8"]);
     expect((await servedPath())?.nextLesson).toBeNull();
   });
 
   it("reads no waiver for a path that is not in progress", async () => {
-    db.prisma.userPathProgress.findMany.mockResolvedValue([]);
+    db.pathRepository.findProgressWithCertificates.mockResolvedValue([]);
     expect((await servedPath())?.nextLesson).toBeNull();
     expect(db.lessonRepository.findWaivedLessonIds).toHaveBeenCalledWith(USER, []);
   });

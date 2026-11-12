@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LIVE_CLASS_FILTER, classRepository, prisma } from "@cyberlearn/db";
+import { classRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { PathBuilder } from "../../_components/path-builder";
@@ -29,10 +29,7 @@ export default async function NewClassPathPage({
 
   if (!(await classRepository.canSetWorkFor(user.id, classId))) notFound();
 
-  const klass = await prisma.class.findFirst({
-    where: { id: classId, ...LIVE_CLASS_FILTER },
-    select: { name: true },
-  });
+  const klass = await classRepository.findLiveName(classId);
   if (!klass) notFound();
 
   const lessons = await pickableLessonsFor(user.id);

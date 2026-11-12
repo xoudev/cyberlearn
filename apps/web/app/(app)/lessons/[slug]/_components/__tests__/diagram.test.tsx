@@ -53,6 +53,12 @@ async function freshDiagram(): Promise<typeof DiagramModule> {
   return import("../diagram");
 }
 
+// The first test of the file pays for the cold import of the component and
+// everything under it. Alone it takes a second; with the whole suite running
+// on every core it went past the default five, and the run failed on a test
+// that had asserted nothing yet.
+vi.setConfig({ testTimeout: 20_000 });
+
 beforeEach(() => {
   fake.initialize.mockReset();
   fake.render.mockReset();

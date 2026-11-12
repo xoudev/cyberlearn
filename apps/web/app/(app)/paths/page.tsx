@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { PUBLISHED_PATH_LESSON, lessonRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { lessonRepository, pathRepository } from "@cyberlearn/db";
 import { nextLesson as pickNextLesson } from "@cyberlearn/lib/dashboard/module-route";
 import { PathsCollection } from "./_components/paths-collection";
 import type { SerializedPath } from "./_components/paths-collection";
@@ -14,41 +14,10 @@ export default async function PathsPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
   const [paths, userProgress, savedAnswers] = await Promise.all([
-    prisma.path.findMany({
-      // The catalogue, plus the paths built for this reader's own classes: a
-      // CLASS path is published, so status alone would hand every class's
-      // work to everyone.
-      where: pathsVisibleTo(authUser.id),
-      include: {
-        lessons: {
-          orderBy: { position: "asc" },
-          // The missions the path page draws: a draft or an archived lesson
-          // still linked to a path is neither counted nor offered as the next.
-          where: PUBLISHED_PATH_LESSON,
-          include: {
-            lesson: {
-              select: {
-                id: true,
-                slug: true,
-                title: true,
-                estimatedMinutes: true,
-                xpReward: true,
-              },
-            },
-          },
-        },
-        // Whether a final exam waits once every mission is done: the hero's
-        // button leads there rather than to the path a second time.
-        quiz: { select: { isActive: true } },
-      },
-      orderBy: { publishedAt: "desc" },
-    }),
-    prisma.userPathProgress.findMany({
-      where: { userId: authUser.id },
-      // The certificate's public id, so a certified path's card opens the
-      // certificate itself rather than the path again.
-      select: { pathId: true, status: true, certificate: { select: { publicId: true } } },
-    }),
+    // The catalogue plus this reader's class paths, then where they stand on
+    // each, with the certificate a finished one opens.
+    pathRepository.findCollectionFor(authUser.id),
+    pathRepository.findProgressWithCertificates(authUser.id),
     savedLearningAnswers(authUser.id),
   ]);
 
@@ -71,17 +40,9 @@ export default async function PathsPage(): Promise<React.ReactElement> {
     .filter((path) => progressMap.get(path.id) === "IN_PROGRESS")
     .flatMap((path) => path.lessons.map((pl) => pl.lessonId));
 
-  const [completedLessonsByPath, waivedLessonIds] = await Promise.all([
-    // Count completed lessons per path for progress
-    prisma.userLessonProgress.groupBy({
-      by: ["lessonId"],
-      where: {
-        userId: authUser.id,
-        status: "COMPLETED",
-        lesson: { pathLessons: { some: {} } },
-      },
-      _count: { lessonId: true },
-    }),
+  const [completedPathLessonIds, waivedLessonIds] = await Promise.all([
+    // The completed lessons of any path, for each path's progress
+    lessonRepository.findCompletedPathLessonIds(authUser.id),
     // Those of the paths in progress the placement test waived: open, never
     // completed, so the next mission passes over them as "Continuer" does on
     // the path page.
@@ -91,7 +52,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
   ]);
 
   // Build lessonId → completed set
-  const completedLessonIds = new Set(completedLessonsByPath.map((r) => r.lessonId));
+  const completedLessonIds = new Set(completedPathLessonIds);
 
   // Build serialized paths
   const covers = await resolvePathCovers(paths);

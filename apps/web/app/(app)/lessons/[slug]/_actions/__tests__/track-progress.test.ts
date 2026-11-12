@@ -18,6 +18,9 @@ const m = vi.hoisted(() => ({
   findCriterionFacts: vi.fn(),
   findQuizAnswers: vi.fn(),
   enqueueCards: vi.fn<(...args: unknown[]) => Promise<number>>(() => Promise.resolve(0)),
+  completionLimit: vi.fn<() => Promise<{ success: boolean; retryAfterSeconds: number }>>(() =>
+    Promise.resolve({ success: true, retryAfterSeconds: 0 }),
+  ),
   transaction: vi.fn(),
   tx: {
     userLessonProgress: { updateMany: vi.fn(), createMany: vi.fn() },
@@ -38,6 +41,7 @@ vi.mock("@/lib/certificates/check-and-issue", () => ({
   checkAndIssueCertificates: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/lessons/access", () => ({ pathLockOf: m.pathLockOf }));
+vi.mock("@/lib/rate-limit", () => ({ checkLessonCompletion: m.completionLimit }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     // Read by revisionsEnabled, which decides whether completing a lesson also
@@ -408,7 +412,9 @@ describe("completeLesson - the quiz score", () => {
   });
 });
 
-describe("completeLesson - the review cards", () => {
+// Through completeLessonForUser, as the app reaches it: the site refuses a
+// completion with a question left unanswered, which is the case q-4 is here for.
+describe("completeLessonForUser - the review cards", () => {
   const QUIZZES = [
     '<Quiz id="q-1" question="?" options={["a", "b"]} correct={0} />',
     '<Quiz id="q-2" question="?" options={["a", "b"]} correct={1} />',
@@ -453,7 +459,7 @@ describe("completeLesson - the review cards", () => {
   });
 
   it("enqueues the questions missed and the last one right, in the completion's transaction", async () => {
-    await completeLesson(LESSON_ID);
+    await completeLessonForUser("u1", LESSON_ID);
     expect(m.enqueueCards).toHaveBeenCalledTimes(1);
     expect(m.enqueueCards).toHaveBeenCalledWith(
       "u1",
@@ -468,7 +474,7 @@ describe("completeLesson - the review cards", () => {
 
   it("enqueues nothing when the learner has switched revisions off", async () => {
     m.preferencesFindUnique.mockResolvedValueOnce({ spacedRepetition: false });
-    await completeLesson(LESSON_ID);
+    await completeLessonForUser("u1", LESSON_ID);
     expect(enqueued()).toEqual([]);
   });
 
@@ -476,7 +482,7 @@ describe("completeLesson - the review cards", () => {
     m.findProgress.mockResolvedValue({ status: "COMPLETED" });
     m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
     m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 0 });
-    await completeLesson(LESSON_ID);
+    await completeLessonForUser("u1", LESSON_ID);
     expect(m.enqueueCards).not.toHaveBeenCalled();
   });
 
@@ -486,7 +492,125 @@ describe("completeLesson - the review cards", () => {
     ["a class lesson", { audience: "CLASS" }],
   ])("enqueues nothing for %s", async (_label, overrides) => {
     m.findReadableById.mockResolvedValue(lesson(overrides));
-    await completeLesson(LESSON_ID);
+    await completeLessonForUser("u1", LESSON_ID);
     expect(enqueued()).toEqual([]);
+  });
+});
+
+describe("a lesson's quizzes have to be answered before the site pays for it", () => {
+  const QUIZZES = [
+    '<Quiz id="q-1" question="?" options={["a", "b"]} correct={0} />',
+    '<Quiz id="q-2" question="?" options={["a", "b"]} correct={1} />',
+    '<Quiz id="q-3" question="?" options={["a", "b"]} correct={1} />',
+  ].join("\n\n");
+
+  beforeEach(() => {
+    m.findReadableById.mockResolvedValue({
+      xpReward: 20,
+      slug: "listes",
+      category: "DEV",
+      contentMdx: `## Section\n\n${QUIZZES}`,
+    });
+  });
+
+  it("refuses the site's completion while questions have no answer, and counts them", async () => {
+    m.findQuizAnswers.mockResolvedValue([{ quizId: "q-1", selected: 0, correct: true }]);
+
+    const result = await completeLesson(LESSON_ID);
+
+    expect(result.refusal).toBe(
+      "Il te reste 2 questions sans réponse dans cette leçon. Réponds-y pour la terminer.",
+    );
+    expect(result.xpGained).toBe(0);
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("says it in the singular for one question", async () => {
+    m.findQuizAnswers.mockResolvedValue([
+      { quizId: "q-1", selected: 0, correct: true },
+      { quizId: "q-2", selected: 0, correct: false },
+    ]);
+
+    expect((await completeLesson(LESSON_ID)).refusal).toBe(
+      "Il te reste une question sans réponse dans cette leçon. Réponds-y pour la terminer.",
+    );
+  });
+
+  it("does not count an answer to a question the lesson no longer has", async () => {
+    m.findQuizAnswers.mockResolvedValue([
+      { quizId: "q-1", selected: 0, correct: true },
+      { quizId: "q-2", selected: 0, correct: false },
+      { quizId: "q-old", selected: 0, correct: true },
+    ]);
+
+    expect(
+      await completeLessonForUser("u1", LESSON_ID, { requireQuizAnswers: true }),
+    ).toMatchObject({ ok: false, refused: "unanswered" });
+  });
+
+  it("completes once every question has an answer, right or wrong", async () => {
+    m.findQuizAnswers.mockResolvedValue([
+      { quizId: "q-1", selected: 0, correct: true },
+      { quizId: "q-2", selected: 0, correct: false },
+      { quizId: "q-3", selected: 0, correct: false },
+    ]);
+
+    const result = await completeLesson(LESSON_ID);
+
+    expect(result.refusal).toBeNull();
+    expect(result.quizScore).toEqual({ correct: 1, total: 3 });
+  });
+
+  it("leaves a lesson finished already alone, whatever was added to it since", async () => {
+    m.findProgress.mockResolvedValue({ status: "COMPLETED" });
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.findQuizAnswers.mockResolvedValue([]);
+
+    const result = await completeLesson(LESSON_ID);
+
+    expect(result.refusal).toBeNull();
+    expect(result.alreadyCompleted).toBe(true);
+  });
+
+  it("does not ask it of the app, whose screen does not hold the reader at a quiz", async () => {
+    m.findQuizAnswers.mockResolvedValue([]);
+
+    expect(await completeLessonForUser("u1", LESSON_ID)).toMatchObject({ ok: true });
+  });
+});
+
+describe("lessons finished faster than anybody reads them", () => {
+  it("refuses the completion once the hour's budget is spent, with how long to wait", async () => {
+    m.completionLimit.mockResolvedValueOnce({ success: false, retryAfterSeconds: 600 });
+
+    expect(await completeLessonForUser("u1", LESSON_ID)).toEqual({
+      ok: false,
+      refused: "too-fast",
+      error: "Tu termines les leçons très vite. Reprends dans 10 minutes.",
+    });
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("spends nothing of the budget on a lesson finished already", async () => {
+    m.findProgress.mockResolvedValue({ status: "COMPLETED" });
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+
+    await completeLessonForUser("u1", LESSON_ID);
+
+    expect(m.completionLimit).not.toHaveBeenCalled();
+  });
+
+  it("spends nothing of the budget on a completion refused for its unanswered questions", async () => {
+    m.findReadableById.mockResolvedValue({
+      xpReward: 20,
+      slug: "listes",
+      category: "DEV",
+      contentMdx: '## Section\n\n<Quiz id="q-1" question="?" options={["a", "b"]} correct={0} />',
+    });
+    m.findQuizAnswers.mockResolvedValue([]);
+
+    await completeLessonForUser("u1", LESSON_ID, { requireQuizAnswers: true });
+
+    expect(m.completionLimit).not.toHaveBeenCalled();
   });
 });

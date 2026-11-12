@@ -1053,4 +1053,107 @@ export const lessonRepository = {
       return null;
     });
   },
+
+  /** The lessons of any path this reader has completed, for each path's progress. */
+  async findCompletedPathLessonIds(userId: string): Promise<string[]> {
+    const rows = await prisma.userLessonProgress.groupBy({
+      by: ["lessonId"],
+      where: {
+        userId,
+        status: "COMPLETED",
+        lesson: { pathLessons: { some: {} } },
+      },
+      _count: { lessonId: true },
+    });
+    return rows.map((row) => row.lessonId);
+  },
+
+  /**
+   * The lessons a badge's criterion may name. CATALOGUE_LESSON, not just
+   * published: a lesson a teacher wrote for one class is published, and
+   * putting it behind a badge or inside a path would promise it to people who
+   * cannot open it.
+   */
+  async findCatalogueOptions() {
+    return prisma.lesson.findMany({
+      where: CATALOGUE_LESSON,
+      select: { id: true, title: true, slug: true, category: true },
+      orderBy: [{ category: "asc" }, { title: "asc" }],
+    });
+  },
+
+  /**
+   * The lessons a new path may be staged with. Drafts are offered on purpose -
+   * a path is staged before either is published - but a class's own lesson
+   * never belongs in one.
+   */
+  async findStageableForPath() {
+    return prisma.lesson.findMany({
+      where: { audience: "CATALOGUE" },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        refCode: true,
+        title: true,
+        category: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        xpReward: true,
+      },
+    });
+  },
+
+  /** The published catalogue lessons an existing path may take (findCatalogueOptions says why these). */
+  async findPublishedForPath() {
+    return prisma.lesson.findMany({
+      where: CATALOGUE_LESSON,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        refCode: true,
+        title: true,
+        category: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        xpReward: true,
+      },
+    });
+  },
+
+  /** The MDX of some lessons, to read their quizzes off it. */
+  async findContentByIds(ids: string[]) {
+    return prisma.lesson.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, contentMdx: true },
+    });
+  },
+
+  /**
+   * The published lessons of a path this reader has completed: the missions the
+   * path draws. One finished before it was archived is not one of them.
+   */
+  async findCompletedInPath(userId: string, pathId: string): Promise<string[]> {
+    const rows = await prisma.userLessonProgress.findMany({
+      where: {
+        userId,
+        status: "COMPLETED",
+        lesson: { status: "PUBLISHED", pathLessons: { some: { pathId } } },
+      },
+      select: { lessonId: true },
+    });
+    return rows.map((row) => row.lessonId);
+  },
+
+  /**
+   * What a teacher may assign: the catalogue, plus the lessons written for the
+   * classes they follow. Titles and categories only - the form needs to name a
+   * lesson, not to render one.
+   */
+  async findAssignableFor(userId: string) {
+    return prisma.lesson.findMany({
+      where: lessonsVisibleTo(userId),
+      orderBy: { title: "asc" },
+      select: { id: true, title: true, category: true },
+    });
+  },
 };
