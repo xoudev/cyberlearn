@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
+import { badgeRepository, lessonRepository, pathRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../../_components/admin-ui";
 import { toggleBadgeActiveAction } from "../../_actions/badge-actions";
 import { BADGE_CRUMBS } from "../../_components/badge-columns";
@@ -23,35 +23,9 @@ export default async function EditBadgePage({
   const id = routeIdOrNotFound((await params).id);
 
   const [badge, lessons, paths] = await Promise.all([
-    prisma.badge.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        refCode: true,
-        name: true,
-        description: true,
-        iconUrl: true,
-        rarity: true,
-        criterionType: true,
-        criterionData: true,
-        xpReward: true,
-        isActive: true,
-        _count: { select: { userBadges: true } },
-      },
-    }),
-    prisma.lesson.findMany({
-      // CATALOGUE_LESSON, not just published: a lesson a teacher wrote for one
-      // class is published, and putting it behind a badge or inside a path
-      // would promise it to people who cannot open it.
-      where: CATALOGUE_LESSON,
-      select: { id: true, title: true, slug: true, category: true },
-      orderBy: [{ category: "asc" }, { title: "asc" }],
-    }) satisfies Promise<LessonOption[]>,
-    prisma.path.findMany({
-      where: { status: "PUBLISHED" },
-      select: { id: true, title: true, slug: true },
-      orderBy: { title: "asc" },
-    }) satisfies Promise<PathOption[]>,
+    badgeRepository.findForEdit(id),
+    lessonRepository.findCatalogueOptions() satisfies Promise<LessonOption[]>,
+    pathRepository.findPublishedOptions() satisfies Promise<PathOption[]>,
   ]);
 
   if (!badge) notFound();

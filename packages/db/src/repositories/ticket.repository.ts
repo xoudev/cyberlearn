@@ -641,4 +641,24 @@ export const ticketRepository = {
       },
     });
   },
+
+  /** Every ticket as the console's list reads it, with who asked, who holds it and its last message. */
+  async findAllForQueue() {
+    return prisma.contactTicket.findMany({
+      select: {
+        id: true,
+        subject: true,
+        theme: true,
+        status: true,
+        email: true,
+        jiraIssueKey: true,
+        jiraIssueUrl: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+        assignee: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+        messages: LAST_TICKET_MESSAGE,
+      },
+    });
+  },
 };

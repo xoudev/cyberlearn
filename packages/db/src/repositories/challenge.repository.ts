@@ -302,4 +302,67 @@ export const challengeRepository = {
       select: { hintId: true, revealedAt: true },
     });
   },
+
+  /** Every challenge, as the console lists them, with how many solved each. */
+  async findAllForConsole() {
+    return prisma.challenge.findMany({
+      orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        category: true,
+        difficulty: true,
+        type: true,
+        xpReward: true,
+        maxAttempts: true,
+        isActive: true,
+        _count: { select: { progress: { where: { status: "COMPLETED" } } } },
+      },
+    });
+  },
+
+  /** The active challenges another may name as its prerequisite. */
+  async findActiveOptions() {
+    return prisma.challenge.findMany({
+      where: { isActive: true },
+      orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+      select: { id: true, refCode: true, title: true },
+    });
+  },
+
+  /** One challenge as its edit form reads it, flag and hints included: the console only. */
+  async findForEdit(id: string) {
+    return prisma.challenge.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        description: true,
+        instructions: true,
+        category: true,
+        difficulty: true,
+        type: true,
+        xpReward: true,
+        timeLimitMin: true,
+        maxAttempts: true,
+        flag: true,
+        machine: true,
+        isActive: true,
+        orderIndex: true,
+        prerequisiteId: true,
+        attachmentUrl: true,
+        resourceUrl: true,
+        starterCode: true,
+        hints: {
+          orderBy: { orderIndex: "asc" },
+          select: { id: true, orderIndex: true, content: true, xpCost: true },
+        },
+        _count: { select: { progress: { where: { status: "COMPLETED" } } } },
+      },
+    });
+  },
 };

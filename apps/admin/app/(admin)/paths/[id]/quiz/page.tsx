@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma, quizRepository } from "@cyberlearn/db";
+import { pathRepository, quizRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../../_components/admin-ui";
 import { PATH_CRUMBS, PATH_QUIZ_HEADER } from "../../_components/path-columns";
 import { QuizManager } from "./_components/quiz-manager";
@@ -23,10 +23,7 @@ export default async function PathQuizPage({
   await requireAdminPage();
   const id = routeIdOrNotFound((await params).id);
 
-  const path = await prisma.path.findUnique({
-    where: { id },
-    select: { id: true, title: true, slug: true },
-  });
+  const path = await pathRepository.findTitleById(id);
   if (!path) notFound();
 
   // Admin reads: these intentionally include correctOptionId (the admin owns the

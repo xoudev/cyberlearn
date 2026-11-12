@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma, quizReportRepository, type ReportedQuiz } from "@cyberlearn/db";
+import { lessonRepository, quizReportRepository, type ReportedQuiz } from "@cyberlearn/db";
 import { extractLessonQuizzes, type LessonQuiz } from "@cyberlearn/lib/mdx-quizzes";
 import {
   QUIZ_REPORT_REASON_KEYS,
@@ -105,10 +105,9 @@ function ReportedQuizCard({
 export default async function QuizReportsPage(): Promise<React.ReactElement> {
   await requireAdminPage();
   const groups = await quizReportRepository.openByQuiz();
-  const lessons = await prisma.lesson.findMany({
-    where: { id: { in: [...new Set(groups.map((g) => g.lessonId))] } },
-    select: { id: true, contentMdx: true },
-  });
+  const lessons = await lessonRepository.findContentByIds([
+    ...new Set(groups.map((g) => g.lessonId)),
+  ]);
   const quizzesByLesson = new Map(lessons.map((l) => [l.id, extractLessonQuizzes(l.contentMdx)]));
   const total = groups.reduce((n, g) => n + g.reports.length, 0);
 

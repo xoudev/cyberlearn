@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { pathRepository } from "@cyberlearn/db";
 import { requireUser } from "@cyberlearn/lib";
 import { examStatus } from "@/lib/exam/exam-service";
 import { visiblePathTitle } from "@/lib/paths/visible-title";
@@ -26,10 +26,7 @@ export default async function ExamPage({
   const supabase = await getSupabaseServerClient();
   const authUser = await requireUser(supabase);
 
-  const path = await prisma.path.findFirst({
-    where: { slug, ...pathsVisibleTo(authUser.id) },
-    select: { id: true, slug: true, title: true, refCode: true },
-  });
+  const path = await pathRepository.findVisibleBySlug(slug, authUser.id);
   if (!path) notFound();
 
   const status = await examStatus(authUser.id, path.id);

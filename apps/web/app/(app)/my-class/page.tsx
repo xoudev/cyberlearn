@@ -5,8 +5,7 @@ import {
   classRepository,
   exerciseRepository,
   friendshipRepository,
-  lessonsVisibleTo,
-  prisma,
+  lessonRepository,
   userRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
@@ -61,15 +60,8 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
   const readableClassIds = [...new Set([...taughtClassIds, ...memberships.map((m) => m.id)])];
 
   // One grouped count for every class at once rather than a query per class.
-  const progress = await prisma.userLessonProgress.groupBy({
-    by: ["userId"],
-    where: {
-      status: "COMPLETED",
-      user: { classMemberships: { some: { classId: { in: readableClassIds } } } },
-    },
-    _count: { lessonId: true },
-  });
-  const completedByUser = new Map(progress.map((p) => [p.userId, p._count.lessonId]));
+  const progress = await classRepository.countCompletedLessonsByMember(readableClassIds);
+  const completedByUser = new Map(progress.map((p) => [p.userId, p.completed]));
 
   // One roster read per class the viewer can see, taught or joined - the two
   // views want the same rows, and reading them twice would be paying for the
@@ -149,13 +141,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
   const lessons =
     taughtClassIds.length === 0
       ? []
-      : (
-          await prisma.lesson.findMany({
-            where: lessonsVisibleTo(authUser.id),
-            orderBy: { title: "asc" },
-            select: { id: true, title: true, category: true },
-          })
-        ).map((l) => ({
+      : (await lessonRepository.findAssignableFor(authUser.id)).map((l) => ({
           id: l.id,
           title: l.title,
           category: l.category,

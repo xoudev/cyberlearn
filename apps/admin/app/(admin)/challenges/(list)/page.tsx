@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import { challengeRepository } from "@cyberlearn/db";
 import { PageHeader, PrimaryLink, Tag, type Tone } from "../../_components/admin-ui";
 import { DataGrid, type GridRow } from "../../_components/data-grid";
 import { ActiveToggle } from "../_components/active-toggle";
@@ -32,22 +32,7 @@ const CAT_LABEL: Record<string, string> = {
 
 export default async function AdminChallengesPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const challenges = await prisma.challenge.findMany({
-    orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
-    select: {
-      id: true,
-      refCode: true,
-      slug: true,
-      title: true,
-      category: true,
-      difficulty: true,
-      type: true,
-      xpReward: true,
-      maxAttempts: true,
-      isActive: true,
-      _count: { select: { progress: { where: { status: "COMPLETED" } } } },
-    },
-  });
+  const challenges = await challengeRepository.findAllForConsole();
 
   const activeCount = challenges.filter((c) => c.isActive).length;
 

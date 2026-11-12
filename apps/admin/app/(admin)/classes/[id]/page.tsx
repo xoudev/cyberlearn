@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { classRepository, prisma } from "@cyberlearn/db";
+import { classRepository, userRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
 import { CLASS_CRUMBS } from "../_components/class-columns";
 import { ClassDetailsForm } from "../_components/class-details-form";
@@ -38,21 +38,10 @@ export default async function AdminClassPage({
 
   const [klass, teacherPool, directory, invitations] = await Promise.all([
     classRepository.findById(id),
-    // Only accounts that can actually follow a class. Assigning a student here
-    // would hand them their classmates' progress, so they are not offered.
-    prisma.user.findMany({
-      where: { role: { in: ["TEACHER", "ADMIN"] } },
-      orderBy: { displayName: "asc" },
-      select: { id: true, displayName: true, email: true, role: true },
-    }),
-    // The picker filters in the browser, so the directory arrives with the
-    // page. A school is hundreds of people, not millions; the day that stops
-    // being true this becomes a server search, and the component's own comment
-    // says so.
-    prisma.user.findMany({
-      orderBy: { displayName: "asc" },
-      select: { id: true, displayName: true, username: true, email: true, role: true },
-    }),
+    // Only the accounts that can follow a class, then everybody: the picker
+    // filters in the browser, so the directory arrives with the page.
+    userRepository.findTeacherPool(),
+    userRepository.findDirectory(),
     classRepository.listPendingInvitations(id),
   ]);
 
