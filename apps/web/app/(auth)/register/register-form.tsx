@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 import { initialAuthActionState } from "../_actions/auth-action-state";
 import { signUpWithPassword } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
@@ -89,6 +90,7 @@ export function RegisterForm(): React.JSX.Element {
         </p>
       ) : null}
 
+      <TurnstileWidget resetKey={state} />
       <button className={styles.submit} type="submit" disabled={pending}>
         {pending ? "Création…" : "Créer mon compte"}
       </button>

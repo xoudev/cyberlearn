@@ -27,6 +27,7 @@ import {
 import { verifyCurrentPassword } from "@/lib/auth/verify-password";
 import { allowAuthAttempt, recordSignInFailure, type AuthAction } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { TURNSTILE_REFUSED, clientIp, passesTurnstile } from "@/lib/turnstile";
 import type { AuthActionState } from "./auth-action-state";
 
 const SIGN_UP_ERROR_MESSAGES: Record<SignUpFailure, string> = {
@@ -41,6 +42,15 @@ const recoveryIntentSchema = z.literal("recovery");
 
 async function isRateLimited(action: AuthAction, email: string): Promise<boolean> {
   return !(await allowAuthAttempt(action, { headers: await headers() }, email));
+}
+
+/**
+ * Whether the form failed the anti-robot check. Asked after the rate limit,
+ * which costs nothing to refuse with, and only of the forms that send a mail
+ * to an address a visitor typed: sign-up and password reset.
+ */
+async function isRobot(formData: FormData): Promise<boolean> {
+  return !(await passesTurnstile(formData, clientIp(await headers())));
 }
 
 /**
@@ -167,6 +177,9 @@ export async function signUpWithPassword(
       email,
     };
   }
+  if (await isRobot(formData)) {
+    return { status: "error", message: TURNSTILE_REFUSED, redirectTo: null, email };
+  }
 
   try {
     const supabase = await getSupabaseServerClient();
@@ -228,6 +241,9 @@ export async function requestPasswordReset(
       message: "Trop de demandes. Réessaie dans 15 minutes.",
       redirectTo: null,
     };
+  }
+  if (await isRobot(formData)) {
+    return { status: "error", message: TURNSTILE_REFUSED, redirectTo: null };
   }
 
   // A refusal Supabase returns (no such account, an address it will not mail)

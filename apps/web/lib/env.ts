@@ -26,7 +26,8 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_URL: z.url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
-    // Cloudflare Turnstile captcha: optional until Phase implemented
+    // Cloudflare Turnstile secret: with the site key, switches on the anti-robot
+    // check of sign-up and password reset (lib/turnstile.ts). Optional: off without both.
     TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
 
     // IP address pseudonymization salt (GDPR: SHA-256 hashing)
@@ -66,7 +67,7 @@ export const env = createEnv({
     NEXT_PUBLIC_ANDROID_APK_URL: z.url().optional(),
     NEXT_PUBLIC_IOS_APP_STORE_URL: z.url().optional(),
 
-    // Cloudflare Turnstile site key: optional until Phase implemented
+    // Cloudflare Turnstile site key (see TURNSTILE_SECRET_KEY)
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
 
     // Sentry public DSN (safe to expose; used in browser + server configs)

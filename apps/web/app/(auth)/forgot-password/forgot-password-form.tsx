@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 import { initialAuthActionState } from "../_actions/auth-action-state";
 import { requestPasswordReset } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
@@ -27,6 +28,7 @@ export function ForgotPasswordForm(): React.JSX.Element {
         </p>
       ) : null}
 
+      <TurnstileWidget resetKey={state} />
       <button
         className={styles.submit}
         type="submit"

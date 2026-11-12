@@ -76,7 +76,7 @@ Obligatoire = l'app ne démarre pas sans.
 | `NEXT_PUBLIC_ANDROID_PLAY_URL` | ✅ | — | — | Lien Play Store, pour la page `/download` |
 | `NEXT_PUBLIC_ANDROID_APK_URL` | ✅ | — | — | Lien APK direct |
 | `NEXT_PUBLIC_IOS_APP_STORE_URL` | ✅ | — | — | Lien App Store |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | ✅ | — | — | dash.cloudflare.com → Turnstile (vérification serveur pas encore branchée) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | ✅ | — | — | dash.cloudflare.com → Turnstile. Avec la clé secrète, active le contrôle anti-robot de l’inscription et du mot de passe oublié ; sans les deux, il reste éteint |
 | `TURNSTILE_SECRET_KEY` | ✅ | — | — | idem (⚠️ secret) |
 | `NEXT_PUBLIC_SENTRY_DSN` | ✅ | ✅ | — | sentry.io → Settings → Client Keys ; absente = Sentry désactivé |
 | `SENTRY_DSN` | ✅ | ✅ | — | Même DSN, côté serveur |
@@ -222,6 +222,12 @@ Un septième, `/api/cron/keep-alive`, est appelé depuis l'extérieur toutes les
 [docs/infra/keep-alive.md](infra/keep-alive.md).
 
 Tous lisent `Authorization: Bearer $CRON_SECRET`.
+
+Un passage en échec, qu'il ait levé une erreur ou qu'il dise lui-même ne pas
+avoir fait son travail, est remonté dans Sentry (`trackCronRun`, une issue
+par tâche, `cron-failure`) : c'est Sentry qui prévient, la page
+`/system/crons` de la console ne le disant qu'à qui l'ouvre. Poser dans
+Sentry une alerte sur le tag `area:cron`.
 
 ---
 

@@ -683,3 +683,39 @@ describe("the lesson editor's preview route", () => {
     expect(unfinished.headers.get("location")).toBeNull();
   });
 });
+
+describe("the anti-robot check's frame", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+    auth.session = null;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function csp(path: string): Promise<string> {
+    const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+    return response.headers.get("content-security-policy") ?? "";
+  }
+
+  it("lets the two forms frame Cloudflare once a site key is set", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "site-key");
+    expect(await csp("/register")).toContain("frame-src 'self' https://challenges.cloudflare.com");
+    expect(await csp("/forgot-password")).toContain(
+      "frame-src 'self' https://challenges.cloudflare.com",
+    );
+  });
+
+  it("frames nothing more anywhere else", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "site-key");
+    expect(await csp("/login")).not.toContain("frame-src");
+    expect(await csp("/contact")).not.toContain("challenges.cloudflare.com");
+  });
+
+  it("frames nothing while the check is off", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+    expect(await csp("/register")).not.toContain("frame-src");
+  });
+});
