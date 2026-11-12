@@ -387,6 +387,31 @@ correctifs (et un septième, une fuite de cache entre valeurs de paramètres
 racine). Le catalogue le garde sur la ligne 16.3 (`~16.3.8`) : la 16.4 change
 assez de comportements pour être prise à part.
 
+## Next 16.4, Zod et DOMPurify, novembre 2026
+
+La ligne 16.3 n'a pas reçu les correctifs d'octobre : `pnpm audit` signalait
+sur Next 16.3.8 deux exécutions de code à distance sans authentification, l'une
+par l'optimisation d'images (le site s'en sert, `images.remotePatterns`),
+l'autre par `use cache` (GHSA-2464-fhr4-w9xw et GHSA-673q-mjm6-r5xr, critiques),
+et un déni de service par les Server Actions (GHSA-p3m5-59mp-jv5r, élevée),
+corrigés en 16.4.1. La 16.4.5 corrige en plus quatre fuites du cache de
+`use cache`, un contournement du refus des SVG dans l'optimisation d'images et
+l'exposition d'un cookie HttpOnly sur les routes Edge (GHSA-f3mh-rxg3-f5g2), ce
+qui vise `middleware.ts`. Le catalogue passe donc sur la ligne 16.4
+(`~16.4.6`), avec `@next/eslint-plugin-next`.
+
+Changements de la 16.4 relevés pour ce dépôt : correspondance stricte des
+routes, une Server Action inconnue répond par une erreur client, les réponses
+des Route Handlers sont compressées d'office en 16.4.6. Le reste des notes vise
+Turbopack ou le Pages Router, que le dépôt n'utilise pas.
+
+Dans le même lot : Zod monte en 4.6.7 (épuisement de mémoire sur une collection
+bornée trop grande, élevée, corrigé en 4.6.6), et le plancher `dompurify` des
+`overrides` passe à 3.4.17 (contournement de `SAFE_FOR_TEMPLATES`, critique,
+copie tirée par Monaco dans la console). Restent la copie 3.25 de Zod sous la
+CLI d'Expo, côté app, et une 4.6.5 sous `eslint-plugin-react-hooks`, qui ne
+tourne qu'au lint.
+
 ## Un administrateur peut retirer son second facteur par l'API de Supabase
 
 Le site et l'app ne proposent plus à un `ADMIN` de désactiver sa double
