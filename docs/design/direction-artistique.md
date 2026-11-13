@@ -1,6 +1,6 @@
 # CyberLearn : direction artistique Bastion
 
-Référence du rework visuel, mise à jour le 27 octobre 2026.
+Référence du rework visuel, mise à jour le 13 novembre 2026.
 
 Cette direction associe le logo Bastion à trois matières : **carbone, craie et cuivre**. Elle donne à CyberLearn le caractère d'un espace où l'on apprend en pratiquant : des titres francs, une progression lisible, des surfaces mates et une action principale facile à repérer.
 
@@ -93,9 +93,20 @@ La géométrie interne du logo et des icônes conserve son sens : un cercle dess
 
 ### Home
 
-Le message d'entrée associe apprentissage et pratique. L'exercice HTTP est réellement utilisable : POST et GET affichent chacun une explication. Il est explicitement présenté comme un aperçu sans enregistrement de progression ni d'XP.
+Refonte du 13 novembre 2026. Le titre occupe toute la largeur sur deux lignes, la seconde en cuivre. Le logo Bastion, en contour, se dessine une fois derrière lui.
 
-Les domaines sont organisés en lignes. La méthode utilise une bande craie. Les parcours et leurs compteurs viennent des repositories ; si leur lecture échoue, la page ne fabrique pas de statistiques de remplacement.
+Le banc d'essai est le point d'entrée : trois exercices réellement utilisables, un par domaine (la méthode HTTP, la ligne vulnérable d'une injection SQL reprise de la leçon du catalogue, la fonction Python manquante avec la sortie du script). Chaque réponse, juste ou fausse, a son explication. Trois segments comptent les exercices résolus ; au troisième, le pied passe sur craie et propose l'inscription. Il est explicitement présenté comme un aperçu sans compte, sans enregistrement de progression ni d'XP.
+
+La page suit ensuite ce qu'un visiteur veut savoir, avec une composition par section :
+
+- les trois domaines en lignes, nom en très grand ; au survol, la ligne passe sur cuivre ;
+- les ateliers des leçons, en index numéroté : chaque entrée est un composant de leçon existant ;
+- le trajet d'une leçon sur craie (lire, pratiquer, vérifier, retenir), autour d'un rail central à jalons carrés, comme l'itinéraire d'un parcours ; le dernier jalon montre les intervalles réels du rappel (1, 3, 7, 21 jours) ;
+- la progression : niveaux, série, duels, ligues, et douze badges du catalogue avec leur propre icône et leur condition ;
+- les parcours en affiches Bastion et les deux compteurs du catalogue ;
+- le certificat sur craie et les classes, puis l'inscription sur une bande cuivre où le logo s'assemble.
+
+Les parcours, leurs compteurs et le nombre de parcours par domaine viennent des repositories ; si leur lecture échoue, la page ne fabrique pas de statistiques de remplacement.
 
 ![Home publique avec le logo Bastion et la typographie condensée](assets/home.png)
 
@@ -123,22 +134,26 @@ Le mouvement sert l'ordre de lecture et le retour d'action. Il ne doit ni retard
 
 | Surface | Comportement actuel |
 | --- | --- |
-| Entrée de la home | Introduction regroupée sur 520 ms ; exercice décalé de 70 ms ; translation courte et variation d'opacité modérée |
-| Sections sous le premier écran | Révélation unique de 420 ms à l'entrée dans la vue |
-| Réponse HTTP | Feedback de 180 ms, avec espace réservé pour conserver la hauteur du panneau |
+| Entrée de la home | Titre ligne par ligne (720 ms, 90 ms d'écart), puis le texte et le banc d'essai ; le contour du logo se dessine une fois en 1,5 s |
+| Sections sous le premier écran | Révélation unique de 680 ms à l'entrée dans la vue ; les listes (ateliers, faits, badges) arrivent élément par élément, 45 ms d'écart, huit rangs au plus |
+| Banc d'essai | Changement d'exercice et verdict en 240 ms, avec espace réservé pour conserver la hauteur du panneau ; les lignes de sortie du script arrivent l'une après l'autre |
+| Position de lecture de la home | Barre cuivre de 3 px en haut de page, liée au défilement ; absente sans JavaScript ou en réduction des mouvements |
+| Trajet d'une leçon | Le rail se remplit avec le défilement ; un jalon et son numéro se remplissent quand la ligne de lecture les atteint, et se vident si le lecteur remonte, sans jamais masquer le texte |
+| Domaines | Au survol, un aplat cuivre traverse la ligne en 460 ms et le nom avance de 8 px |
+| Inscription | Les quatre pièces du logo se rejoignent une fois, en 760 ms, à l'arrivée de la bande |
 | Dashboard | Arrivée séquencée du titre, de la mission et des étapes du module |
 | Navigation | Survol bref et ouverture du plateau de compte ; pas d'animation d'entrée de toute la sidebar à chaque changement de page |
 
 Le reste du site partage [motion.css](../../apps/web/components/motion.css) : la page entre par une montée de 10 px en 360 ms, les principales listes arrivent dans l’ordre (40 ms d’écart, huit éléments au plus), les cartes se soulèvent de 2 px au survol, un bouton s’enfonce de 1 px à l’appui et sa flèche avance, l’icône d’un lien de la sidebar se décale au survol et une barre de progression se remplit depuis son début à l’affichage. Toutes les entrées utilisent un remplissage `backwards` : une fois jouées, rien ne reste transformé.
 
-La home utilise [HomeMotion](../../apps/web/app/_components/home-motion.tsx), un petit composant client qui observe les sections. Après leur première entrée, `unobserve` empêche une nouvelle animation au scroll inverse. Les contenus déjà visibles au chargement ne sont pas dissimulés pour les rejouer.
+La home utilise [HomeMotion](../../apps/web/app/_components/home-motion.tsx), un petit composant client qui observe les sections et suit le défilement (une lecture par image, écouteur passif). Seuls les blocs situés sous le premier écran au chargement attendent leur entrée ; après celle-ci, `unobserve` empêche une nouvelle animation au scroll inverse. Les contenus déjà visibles au chargement ne sont pas dissimulés pour les rejouer.
 
 Règles à conserver :
 
 1. Le HTML rendu côté serveur reste visible si JavaScript n'est pas disponible ou si IntersectionObserver n'est pas pris en charge.
 2. Pas de `animation-timeline: view()` qui efface le contenu quand le lecteur remonte.
 3. Pas de masque `clip-path` sur les lignes du grand titre de la home.
-4. Ne pas animer séparément chaque mot, chaque lien et chaque chiffre d'un même groupe.
+4. Ne pas animer séparément chaque mot, chaque lien et chaque chiffre d'un même groupe. Une ligne de titre ou un élément de liste est la plus petite unité animée.
 5. Une animation ne doit pas déplacer la cible lorsqu'elle reçoit le focus clavier.
 6. Respecter `prefers-reduced-motion` : animations et transitions coupées, défilement doux désactivé.
 7. Ne pas ajouter de boucle de flottement, de pulsation ou de faux indicateur d'activité.
@@ -183,8 +198,8 @@ L'arrivée du titre dure 400 ms, sur 8 px au maximum ; les axes des affiches se 
 | `apps/web/components/bastion-logo.tsx` | Logo de marque |
 | `apps/web/components/brand-typeface.ts` | Chargement des polices de la nouvelle signature |
 | `apps/web/app/_components/landing-client.tsx` | Composition serveur de la home, malgré le nom historique du fichier |
-| `apps/web/app/_components/landing-interactions.tsx` | Démo et exercice HTTP local |
-| `apps/web/app/_components/home-motion.tsx` | Révélations uniques de la home |
+| `apps/web/app/_components/landing-interactions.tsx` | Démo et banc d'essai : les trois exercices locaux |
+| `apps/web/app/_components/home-motion.tsx` | Révélations uniques, position de lecture et trajet de la home |
 | `apps/web/app/_components/landing.css` | Styles de la home et de la navigation publique |
 | `apps/web/app/(app)/dashboard/dashboard.css` | Styles propres au dashboard |
 | `apps/web/components/learning-catalogue.css` | Titres, bilans, filtres et affiches communs aux catalogues |
