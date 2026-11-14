@@ -123,7 +123,7 @@ export function PublicCatalogue({
               <PathCatalogCard
                 key={path.slug}
                 id={path.slug}
-                href={member ? `/paths/${path.slug}` : "/register"}
+                href={member ? `/paths/${path.slug}` : `/catalogue/${path.slug}`}
                 path={{
                   ...path,
                   lessonCount: path.lessons,

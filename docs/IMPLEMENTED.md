@@ -15,6 +15,7 @@
 |---|---|
 | `/` | Accueil public : banc d'essai de trois exercices d'aperçu (HTTP, injection SQL, Python), domaines, ateliers des leçons, trajet d'une leçon, badges, parcours et chiffres du catalogue |
 | `/catalogue` | Catalogue public des parcours et des leçons |
+| `/catalogue/[slug]` | Page publique d'un parcours du catalogue : ce qu'il enseigne, son niveau, sa durée, ce qui le conclut (examen, certificat), et son programme module par module, chaque leçon nommée et décrite sans que son contenu soit montré. Une carte du catalogue y mène un visiteur, qui y trouve l'inscription ; un membre connecté est envoyé à `/paths/[slug]`. Données structurées `Course` pour les moteurs de recherche, et une adresse par parcours dans `sitemap.xml` |
 | `/login` | Connexion (e-mail + mot de passe, OAuth GitHub) |
 | `/register` | Création de compte |
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
