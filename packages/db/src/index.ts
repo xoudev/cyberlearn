@@ -31,6 +31,7 @@ export type {
   LandingStats,
   FeaturedPath,
   PublicCatalogPath,
+  PublicPathDetail,
 } from "./repositories/stats.repository.js";
 export type {
   CatalogueFilters,
