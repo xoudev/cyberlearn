@@ -412,6 +412,75 @@ copie tirée par Monaco dans la console). Restent la copie 3.25 de Zod sous la
 CLI d'Expo, côté app, et une 4.6.5 sous `eslint-plugin-react-hooks`, qui ne
 tourne qu'au lint.
 
+## Alertes GitHub du 14 novembre 2026
+
+Quarante-cinq alertes Dependabot et douze alertes CodeQL ouvertes ; aucun
+secret exposé.
+
+### Dependabot : 37 fermées, 8 restantes
+
+Fermées par un plancher dans les `pnpm.overrides`, dans la plage que le
+dépendant déclare déjà, comme les précédentes :
+
+- `node-forge` 1.4.3 (vingt-deux alertes ; la CLI d'Expo). Une version
+  corrigée existe désormais, ce qui n'était pas le cas le 9 octobre.
+- `undici` 8.12.4 (huit alertes ; `jsdom`, donc les tests seulement).
+- `fast-uri` 3.1.9 (quatre alertes ; le serveur de dev de Prisma).
+- `postcss-selector-parser` 6.1.6 pour la copie que
+  `@tailwindcss/typography` épingle : un correctif existe maintenant sur la
+  ligne 6. Le build du site et de la console passe avec.
+- `zod` 4.6.7 pour les copies 4.3.6 et 4.6.5 tirées par des outils de lint.
+
+Fermées par une montée : Vitest 5.1.0 (`@vitest/mocker`), et Vite 7.3.8, qui
+est un pair de Vitest installé d'office : pnpm gardait la 7.3.6 du lockfile
+tant que son entrée n'en était pas retirée.
+
+Restent huit alertes, sans correctif dans la version majeure que leur
+dépendant accepte. Aucune n'exécute de code vulnérable sur une entrée
+d'utilisateur :
+
+- `glob@13.0.6` et `minimatch@10.2.5` : corrigés en 14.0.2 et 11.0.1
+  seulement. Tirés par `@expo/metro-config`, ESLint 10.11 et
+  `typescript-eslint` (dont la dernière version exige encore `^10.2.2`), et
+  par le plugin de build de Sentry jusqu'à sa 11.10. Ils ne développent que
+  des motifs écrits dans la configuration du dépôt. Sentry 11.11 passe à glob
+  14 : à prendre avec la prochaine montée de Sentry.
+- `zod@3.25.76` sous la CLI d'Expo : la faille n'est corrigée qu'en 4.6.6,
+  une majeure que la CLI n'accepte pas. Elle ne valide que sa propre
+  configuration, sur le poste ou en CI.
+- `decode-uri-component@0.2.2`, `uuid@7.0.3`, `katex@0.16.47` et
+  `deepmerge@4.3.1` : inchangés, pour les raisons de la section du 9 octobre
+  (`deepmerge` n'a toujours aucune version corrigée).
+
+### CodeQL : 6 corrigées, 6 dans un fichier tiers
+
+Corrigées dans le code : cinq expressions régulières quadratiques (les slugs
+du forum, des leçons et parcours de classe, et le sommaire des leçons), et un
+échappement incomplet dans `apps/admin/content-check.mjs`. Le détail est dans
+`packages/lib/src/slug.ts`.
+
+Restent six alertes dans `apps/web/public/runtimes/jscpp/bundle.js` (une
+pollution de prototype, cinq remplacements sans drapeau global). C'est
+l'interpréteur C/C++ JSCPP, un bundle tiers versé tel quel : il tourne dans le
+navigateur de l'apprenant, sur le code que l'apprenant vient d'écrire, sans
+rien recevoir du serveur ni d'un autre utilisateur. Le corriger ici ferait
+diverger le fichier de sa source. À écarter sur GitHub (« code tiers, entrée
+contrôlée par son seul utilisateur »), ou à sortir de l'analyse le jour où
+CodeQL passe d'une configuration par défaut à un workflow qui accepte
+`paths-ignore`.
+
+### Les PR de Dependabot
+
+La première PR groupée (#563, 44 mises à jour) échouait sur cinq jobs : elle
+montait React Native sans son SDK Expo, prenait `@supabase/ssr` de 0.6 à
+0.12, une « mineure » qui est une version cassante, et un Biome dont le
+formateur réécrit des fichiers. Quatre autres (#564 à #567) proposaient des
+morceaux du SDK 58 d'Expo un par un. `.github/dependabot.yml` écarte
+désormais ce qui suit le SDK Expo, ne prend que les correctifs des paquets en
+0.x, et répartit le reste en groupes lisibles (outillage, données, interface,
+exécution, Biome seul). Dependabot ferme de lui-même les PR devenues hors
+périmètre à son prochain passage.
+
 ## Un administrateur peut retirer son second facteur par l'API de Supabase
 
 Le site et l'app ne proposent plus à un `ADMIN` de désactiver sa double

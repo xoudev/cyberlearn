@@ -2,6 +2,8 @@
 // download from a user gesture (Blob + object URL) - the end user downloads their
 // own note; nothing leaves the app.
 
+import { trimHyphens } from "@cyberlearn/lib/slug";
+
 export interface ExportableNote {
   lessonTitle: string;
   lessonSlug: string;
@@ -38,13 +40,12 @@ export function notesToMarkdown(notes: ExportableNote[], heading: string): strin
 
 /** Turn a string into a filesystem-safe basename (no extension). */
 function safeBaseName(input: string): string {
-  const base = input
+  const folded = input
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "") // strip diacritics
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return base || "notes";
+    .replace(/[^a-z0-9]+/g, "-");
+  return trimHyphens(folded) || "notes";
 }
 
 /** Trigger a client-side download of `content` as a .md file. */
