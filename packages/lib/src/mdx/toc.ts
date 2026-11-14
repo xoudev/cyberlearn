@@ -26,9 +26,13 @@ function slugify(text: string): string {
  * text stops at the line's end. With `\s+` the gap could run over line
  * breaks, which made a heading out of "#" and the paragraph under it, and let
  * a long run of blank lines be scanned again from each of them.
+ *
+ * The text starts at its first character that is not a space: the gap and
+ * the text can then never both claim the same tab, so a line of hashes and
+ * nothing but tabs is read once, and is not a heading.
  */
 export function extractToc(mdx: string): TocEntry[] {
-  const headingRegex = /^(#{1,3})[ \t]+([^\n]+)$/gm;
+  const headingRegex = /^(#{1,3})[ \t]+(\S[^\n]*)$/gm;
   const entries: TocEntry[] = [];
 
   let match: RegExpExecArray | null;

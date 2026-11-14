@@ -56,3 +56,21 @@ describe("extractToc", () => {
     expect(performance.now() - started).toBeLessThan(500);
   });
 });
+
+describe("extractToc, a line of hashes and blanks", () => {
+  it("is not a heading when nothing follows the gap", () => {
+    expect(extractToc("## \t \t\nTexte")).toEqual([]);
+  });
+
+  it("stays quick on a long run of tabs after the hashes", () => {
+    const started = performance.now();
+    expect(extractToc(`#${"\t".repeat(100_000)}\n`)).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it("keeps the spaces inside a heading's text", () => {
+    expect(extractToc("##   Le   modèle")).toEqual([
+      { level: 2, text: "Le   modèle", id: "le-modele" },
+    ]);
+  });
+});
