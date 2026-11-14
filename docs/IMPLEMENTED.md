@@ -13,7 +13,7 @@
 
 | Route | Description |
 |---|---|
-| `/` | Landing page publique avec terminal interactif |
+| `/` | Accueil public : banc d'essai de trois exercices d'aperçu (HTTP, injection SQL, Python), domaines, ateliers des leçons, trajet d'une leçon, badges, parcours et chiffres du catalogue |
 | `/catalogue` | Catalogue public des parcours et des leçons |
 | `/login` | Connexion (e-mail + mot de passe, OAuth GitHub) |
 | `/register` | Création de compte |
