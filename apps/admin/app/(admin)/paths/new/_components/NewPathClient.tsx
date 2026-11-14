@@ -4,6 +4,7 @@ import React, { useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import { createPathAction, type CreatePathState } from "../../_actions/path-actions";
 import { ModalShell, Select } from "@cyberlearn/ui";
+import { trimHyphens } from "@cyberlearn/lib/slug";
 import { CoverUploadField } from "@/app/(admin)/lessons/_components/cover-upload-field";
 import { keepFormInput } from "@/lib/form-input";
 import { Tag } from "@/app/(admin)/_components/admin-ui";
@@ -64,13 +65,13 @@ const ACCENT_MAP: Record<string, string> = {
 
 /** Slugify a title into a URL slug matching the server rule /^[a-z0-9-]+$/. */
 function slugify(input: string): string {
-  return input
+  const folded = input
     .toLowerCase()
     .split("")
     .map((c) => ACCENT_MAP[c] ?? c)
     .join("")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, "-");
+  return trimHyphens(folded);
 }
 
 const BASE_INPUT: React.CSSProperties = {
