@@ -231,6 +231,14 @@ Sentry une alerte sur le tag `area:cron`.
 
 ---
 
+## Sauvegardes
+
+Aucune sauvegarde automatique : le plan gratuit de Supabase n'en garde pas.
+Avant une migration qui supprime ou transforme des données, et une fois par
+mois, en faire une à la main : [docs/infra/backups.md](infra/backups.md).
+
+---
+
 ## Scripts lancés à la main
 
 Certains scripts de `packages/db` ne partent ni sur un merge ni par un cron :
