@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseChallengeFile, type ChallengeFile } from "@cyberlearn/types";
-import { findChallengeDir, loadChallengeFiles } from "../catalogue/challenge-files";
+import {
+  findChallengeDir,
+  inPrerequisiteOrder,
+  loadChallengeFiles,
+} from "../catalogue/challenge-files";
 import {
   challengeChanges,
   challengeMatches,
@@ -197,5 +201,69 @@ describe("challengeMatches", () => {
     const blank: StoredChallenge = { ...stored, flag: "", attachmentUrl: "", resourceUrl: "" };
     expect(challengeMatches(blank, file)).toBe(true);
     expect(challengeChanges(blank, file)).toEqual([]);
+  });
+});
+
+describe("the order the console writes challenges in", () => {
+  function loaded(refCode: string, orderIndex: number, prerequisite?: string) {
+    const parsed = parseChallengeFile(
+      challenge({
+        refCode,
+        slug: refCode.toLowerCase(),
+        orderIndex,
+        ...(prerequisite === undefined ? {} : { prerequisite }),
+      }),
+    );
+    if (!parsed.ok) throw new Error(parsed.problem);
+    return { file: `${refCode.toLowerCase()}.json`, challenge: parsed.challenge };
+  }
+  const refCodes = (list: { challenge: ChallengeFile }[]): string[] =>
+    list.map((item) => item.challenge.refCode);
+
+  it("puts every challenge after its prerequisite, whatever the files are called", () => {
+    // Alphabetical file order put CL-CHG-002 (after 001) first, and the console refused it.
+    const ordered = inPrerequisiteOrder([
+      loaded("CL-CHG-903", 3, "CL-CHG-902"),
+      loaded("CL-CHG-902", 2, "CL-CHG-901"),
+      loaded("CL-CHG-901", 1),
+    ]);
+    expect(refCodes(ordered)).toEqual(["CL-CHG-901", "CL-CHG-902", "CL-CHG-903"]);
+  });
+
+  it("orders the challenges that are free to go by play order, then refCode", () => {
+    const ordered = inPrerequisiteOrder([
+      loaded("CL-CHG-905", 2),
+      loaded("CL-CHG-904", 2),
+      loaded("CL-CHG-906", 1),
+    ]);
+    expect(refCodes(ordered)).toEqual(["CL-CHG-906", "CL-CHG-904", "CL-CHG-905"]);
+  });
+
+  it("follows a prerequisite even against the play order", () => {
+    const ordered = inPrerequisiteOrder([
+      loaded("CL-CHG-910", 1, "CL-CHG-911"),
+      loaded("CL-CHG-911", 9),
+    ]);
+    expect(refCodes(ordered)).toEqual(["CL-CHG-911", "CL-CHG-910"]);
+  });
+
+  it("keeps a challenge whose prerequisite is elsewhere, and a cycle, rather than losing them", () => {
+    const ordered = inPrerequisiteOrder([
+      loaded("CL-CHG-920", 1, "CL-CHG-999"),
+      loaded("CL-CHG-921", 1, "CL-CHG-922"),
+      loaded("CL-CHG-922", 2, "CL-CHG-921"),
+    ]);
+    expect(refCodes(ordered)).toEqual(["CL-CHG-920", "CL-CHG-921", "CL-CHG-922"]);
+  });
+
+  it("is the order the repository's own challenges load in", () => {
+    const dirFound = findChallengeDir();
+    if (dirFound === null) throw new Error("content/challenges not found");
+    const { challenges } = loadChallengeFiles(dirFound);
+    const seen = new Set<string>();
+    for (const { challenge: c } of challenges) {
+      if (c.prerequisite !== undefined) expect(seen, c.refCode).toContain(c.prerequisite);
+      seen.add(c.refCode);
+    }
   });
 });
