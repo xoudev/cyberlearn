@@ -412,6 +412,27 @@ copie tirée par Monaco dans la console). Restent la copie 3.25 de Zod sous la
 CLI d'Expo, côté app, et une 4.6.5 sous `eslint-plugin-react-hooks`, qui ne
 tourne qu'au lint.
 
+## Les runtimes tiers hors de l'analyse CodeQL
+
+Six alertes CodeQL (une pollution de prototype, cinq remplacements sans
+drapeau global) visaient `apps/web/public/runtimes/jscpp/bundle.js`,
+l'interpréteur C/C++ JSCPP. Comme Pyodide, PHP et v86 à côté de lui, c'est
+un moteur tiers servi tel qu'il a été construit en amont : il tourne dans
+l'onglet de l'apprenant, sur le code que l'apprenant vient d'écrire, et ne
+reçoit rien du serveur ni d'un autre utilisateur. Le corriger ici le ferait
+diverger de sa source.
+
+Décision du 15 novembre 2026 : `apps/web/public/runtimes` sort de l'analyse
+(`.github/codeql/codeql-config.yml`, lu par `.github/workflows/codeql.yml`).
+La configuration par défaut de CodeQL ne sait pas ignorer un chemin : le dépôt
+passe à la configuration avancée, et la configuration par défaut est à couper
+dans les réglages (Code security, CodeQL analysis, « Switch to advanced »),
+sans quoi GitHub refuse les résultats du workflow. Les six alertes se
+ferment au premier passage du workflow sur `main`.
+
+Un runtime qu'on remplace se vérifie toujours par son empreinte (job
+« Runtime integrity » de la CI).
+
 ## Un administrateur peut retirer son second facteur par l'API de Supabase
 
 Le site et l'app ne proposent plus à un `ADMIN` de désactiver sa double
