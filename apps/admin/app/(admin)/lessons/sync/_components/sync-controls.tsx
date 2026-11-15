@@ -219,14 +219,20 @@ export function RunAllButton({
   const router = useRouter();
   const [step, setStep] = useState<"idle" | "confirm" | "running" | "done">("idle");
   const [done, setDone] = useState(0);
+  // The number of targets when the run started. The page is read again as
+  // the run ends, and the list it hands back holds only what is left: the
+  // counter used to read "8 / 7" over a run of eight.
+  const [total, setTotal] = useState(0);
   const [failures, setFailures] = useState<Failure[]>([]);
   const copy = COPY[kind];
 
   const start = async (): Promise<void> => {
+    const queue = [...targets];
     setStep("running");
     setDone(0);
+    setTotal(queue.length);
     setFailures([]);
-    for (const target of targets) {
+    for (const target of queue) {
       const result = await run(kind, target);
       if (!result.ok) {
         const failure = { ...target, message: result.message, details: result.details };
@@ -278,12 +284,12 @@ export function RunAllButton({
             <div
               className="a-meter-fill"
               style={{
-                width: `${String(Math.round((done / Math.max(1, targets.length)) * 100))}%`,
+                width: `${String(Math.round((done / Math.max(1, total)) * 100))}%`,
               }}
             />
           </div>
           <p>
-            {step === "running" ? copy.progress : "Terminé"} : {done} / {count}
+            {step === "running" ? copy.progress : "Terminé"} : {done} / {total}
             {failures.length > 0 ? `, ${String(failures.length)} refusé(s)` : ""}
           </p>
         </div>
