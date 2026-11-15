@@ -121,7 +121,11 @@ export default async function UsagePage(): Promise<React.ReactElement> {
                     <span style={MUTED}>({percent(cohort.firstLesson, cohort.signups)})</span>
                   </td>
                   <td style={RIGHT}>
-                    {cohort.eligible === 0 ? (
+                    {cohort.signups === 0 ? (
+                      // A week nobody signed up in has nobody to come back:
+                      // "trop tôt" read as if its answer were on its way.
+                      <span style={MUTED}>–</span>
+                    ) : cohort.eligible === 0 ? (
                       <span style={MUTED}>trop tôt</span>
                     ) : (
                       <>
