@@ -62,7 +62,7 @@
     "husky": "catalog:",
     "lint-staged": "catalog:",
     "next": "catalog:",
-    "turbo": "^2.11.4"
+    "turbo": "^2.11.10"
   },
   "pnpm": {
     "overrides": {
