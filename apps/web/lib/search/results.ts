@@ -86,19 +86,20 @@ export function buildGroups(rows: SearchRows, query: string, perKind = PER_KIND)
     category: l.category,
   }));
 
-  // A note has no title of its own, so it borrows its lesson's: that is how
-  // people refer to them anyway ("ma note sur l'injection SQL").
+  // A note is ranked by its title, its lesson's when it has none of its own:
+  // "ma note sur l'injection SQL". `ref` is the lesson the app opens a note by,
+  // empty for a note on no lesson (the app's search leaves those out).
   const notes = rankMatches(
-    rows.notes.map((n) => ({ ...n, title: n.lessonTitle, body: n.content })),
+    rows.notes.map((n) => ({ ...n, body: n.content })),
     query,
     perKind,
   ).map<SearchResult>((n) => ({
     kind: "note",
     id: n.id,
-    title: n.lessonTitle,
+    title: n.title,
     subtitle: excerptAround(n.content, query),
     href: `/notes?note=${encodeURIComponent(n.id)}`,
-    ref: n.lessonId,
+    ref: n.lessonId ?? "",
     meta: plural(n.wordCount, "mot", "mots"),
     category: n.lessonCategory,
   }));

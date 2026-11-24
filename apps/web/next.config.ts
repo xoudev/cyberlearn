@@ -11,6 +11,13 @@ loadRootEnv(path.join(__dirname, "../../"));
 const nextConfig: NextConfig = {
   // No X-Powered-By: naming the framework only saves an attacker a lookup.
   poweredByHeader: false,
+  // Hosts besides localhost that may reach `next dev`, comma-separated: a dev
+  // box behind a reverse proxy (dev.cyberlearn.fr behind the GitHub login).
+  // Read in development only; empty everywhere else.
+  allowedDevOrigins: (process.env.NEXT_DEV_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean),
   // Must point to the monorepo root so Next.js file tracing follows imports
   // up through pnpm's node_modules/.pnpm/ tree.
   outputFileTracingRoot: path.join(__dirname, "../../"),

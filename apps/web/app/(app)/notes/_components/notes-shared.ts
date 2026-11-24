@@ -1,19 +1,26 @@
 import type { Category } from "@cyberlearn/db";
 import { CATEGORY_META } from "@cyberlearn/lib/content/vocabulary";
 
-/** A note as serialized by the server for the library + reader. */
+/** A note as serialized by the server for the workspace. */
 export interface SerializedNote {
   id: string;
-  lessonId: string;
-  lessonSlug: string;
-  lessonTitle: string;
-  lessonCategory: Category;
+  /** Its title as shown (its lesson's when it has none of its own). */
+  title: string;
+  /** The lesson it is on; null for a free note. */
+  lessonId: string | null;
+  lessonSlug: string | null;
+  lessonTitle: string | null;
+  lessonCategory: Category | null;
   pathSlug: string | null;
   pathTitle: string | null;
   folderId: string | null;
   content: string;
   wordCount: number;
+  pinned: boolean;
+  createdAt: string; // ISO
   updatedAt: string; // ISO
+  /** Set while the note is in the trash. */
+  deletedAt: string | null;
 }
 
 /**
@@ -35,6 +42,8 @@ export interface SerializedFolder {
   name: string;
   color: string | null;
   icon: string | null;
+  /** The folder it sits in; null at the root. */
+  parentId: string | null;
   position: number;
 }
 

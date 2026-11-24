@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchGroup, SearchKind, SearchResult } from "@/lib/search/results";
 import { flatten } from "@/lib/search/results";
+import { detailString, SEARCH_EVENT } from "@/lib/site-events";
 
 /**
  * The search box in the navbar, and what it now does.
@@ -120,10 +121,21 @@ export function GlobalSearch(): React.ReactElement {
     function onPointer(event: MouseEvent): void {
       if (!boxRef.current?.contains(event.target as Node)) setOpen(false);
     }
+    // The site's right-click menu: "Rechercher « … »" and "Rechercher sur CyberLearn".
+    function onSearch(event: Event): void {
+      const asked = detailString(event, "term");
+      if (asked === null) return;
+      if (asked) setTerm(asked);
+      inputRef.current?.focus();
+      inputRef.current?.select();
+      setOpen(true);
+    }
     window.addEventListener("keydown", onKey);
+    window.addEventListener(SEARCH_EVENT, onSearch);
     document.addEventListener("mousedown", onPointer);
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener(SEARCH_EVENT, onSearch);
       document.removeEventListener("mousedown", onPointer);
     };
   }, []);
@@ -168,7 +180,7 @@ export function GlobalSearch(): React.ReactElement {
   let index = -1;
 
   return (
-    <div ref={boxRef} className="chrome-search hidden md:block">
+    <div ref={boxRef} className="chrome-search hidden md:block" data-global-search="">
       <svg
         width="14"
         height="14"

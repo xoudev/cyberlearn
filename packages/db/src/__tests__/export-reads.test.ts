@@ -33,6 +33,7 @@ import {
   MODERATION_EXPORT_LIMIT,
   moderationRepository,
 } from "../repositories/moderation.repository.js";
+import { noteCardRepository } from "../repositories/note-card.repository.js";
 import { noteFolderRepository } from "../repositories/note-folder.repository.js";
 import { noteReportRepository } from "../repositories/note-report.repository.js";
 import { noteRepository } from "../repositories/note.repository.js";
@@ -85,6 +86,7 @@ const { mockPrisma } = vi.hoisted(() => {
       userSkipWaiver: read(),
       note: read(),
       noteFolder: read(),
+      noteCard: read(),
       quizAttempt: read(),
       userActivityDay: read(),
       userQuestProgress: read(),
@@ -454,10 +456,13 @@ const CASES: ReadCase[] = [
     query: {
       where: { userId: USER },
       select: {
+        title: true,
         content: true,
         wordCount: true,
+        pinned: true,
         createdAt: true,
         updatedAt: true,
+        deletedAt: true,
         lesson: { select: { title: true } },
         folder: { select: { name: true } },
       },
@@ -467,7 +472,27 @@ const CASES: ReadCase[] = [
     name: "noteFolderRepository.exportFor",
     read: (id) => noteFolderRepository.exportFor(id),
     prisma: mockPrisma.noteFolder.findMany,
-    query: { where: { userId: USER }, select: { name: true, color: true, createdAt: true } },
+    query: {
+      where: { userId: USER },
+      select: { name: true, color: true, createdAt: true, parent: { select: { name: true } } },
+    },
+  },
+  {
+    name: "noteCardRepository.exportFor",
+    read: (id) => noteCardRepository.exportFor(id),
+    prisma: mockPrisma.noteCard.findMany,
+    query: {
+      where: { userId: USER },
+      select: {
+        front: true,
+        back: true,
+        box: true,
+        dueAt: true,
+        retiredAt: true,
+        createdAt: true,
+        note: { select: { title: true } },
+      },
+    },
   },
   {
     name: "quizRepository.exportAttemptsFor",
@@ -609,7 +634,7 @@ const CASES: ReadCase[] = [
         comment: true,
         status: true,
         createdAt: true,
-        note: { select: { lesson: { select: { title: true } } } },
+        note: { select: { title: true, lesson: { select: { title: true } } } },
       },
       orderBy: { createdAt: "asc" },
     },
@@ -795,9 +820,9 @@ describe("the repositories' reads for the GDPR export", () => {
   });
 
   it("covers every read the export makes through these repositories", () => {
-    // The 43 reads of build-export.ts: these 41, and the two of
-    // reviewCardRepository.exportFor below.
-    expect(new Set(CASES.map((c) => c.prisma)).size).toBe(41);
+    // The 44 reads of build-export.ts: these 42 (the notes' cards since
+    // version 1.3), and the two of reviewCardRepository.exportFor below.
+    expect(new Set(CASES.map((c) => c.prisma)).size).toBe(42);
   });
 
   it("lists as many notifications as the export says it does", () => {

@@ -42,7 +42,7 @@ function ReportedNoteCard({
             <span className="a-person a-meta-label">
               <UserAvatar src={authorAvatar} name={note.authorDisplayName ?? author} size={26} />
               <span>
-                {author} · {note.lessonTitle}
+                {author} · {note.title}
               </span>
             </span>
             <Tag tone="warning">

@@ -42,6 +42,7 @@ const { mockPrisma } = vi.hoisted(() => {
       userSkipWaiver: read(),
       note: read(),
       noteFolder: read(),
+      noteCard: read(),
       quizAttempt: read(),
       userActivityDay: read(),
       userQuestProgress: read(),
@@ -276,24 +277,41 @@ function seed(): void {
   ]);
   mockPrisma.note.findMany.mockResolvedValue([
     {
+      title: "",
       content: "OSI : 7 couches.",
       wordCount: 3,
+      pinned: true,
+      deletedAt: null,
       createdAt: d("2026-02-01T10:05:00.000Z"),
       updatedAt: d("2026-02-01T10:06:00.000Z"),
       lesson: { title: "Le modèle OSI" },
       folder: { name: "Réseau" },
     },
     {
+      title: "Mes questions",
       content: "À revoir.",
       wordCount: 2,
+      pinned: false,
+      deletedAt: d("2026-02-06T10:00:00.000Z"),
       createdAt: d("2026-02-04T10:05:00.000Z"),
       updatedAt: d("2026-02-04T10:05:00.000Z"),
-      lesson: { title: "Le modèle OSI" },
+      lesson: null,
       folder: null,
     },
   ]);
   mockPrisma.noteFolder.findMany.mockResolvedValue([
-    { name: "Réseau", color: null, createdAt: d("2026-02-01T10:04:00.000Z") },
+    { name: "Réseau", color: null, createdAt: d("2026-02-01T10:04:00.000Z"), parent: null },
+  ]);
+  mockPrisma.noteCard.findMany.mockResolvedValue([
+    {
+      front: "Combien de couches OSI ?",
+      back: "7",
+      box: 2,
+      dueAt: d("2026-02-08T00:00:00.000Z"),
+      retiredAt: null,
+      createdAt: d("2026-02-01T10:07:00.000Z"),
+      note: { title: "Le modèle OSI" },
+    },
   ]);
   mockPrisma.quizAttempt.findMany.mockResolvedValue([
     {
@@ -368,7 +386,7 @@ function seed(): void {
       comment: null,
       status: "DISMISSED",
       createdAt: d("2026-02-05T10:00:00.000Z"),
-      note: { lesson: { title: "Le modèle OSI" } },
+      note: { title: "", lesson: { title: "Le modèle OSI" } },
     },
   ]);
   mockPrisma.contentReport.findMany.mockResolvedValue([
@@ -528,7 +546,7 @@ function seed(): void {
 const EXPECTED = {
   exportMetadata: {
     exportedAt: "2026-10-18T12:00:00.000Z",
-    version: "1.2",
+    version: "1.3",
     format: "json",
     rgpdContext: "Article 20 RGPD - Droit à la portabilité",
     rights: "https://cyberlearn.fr/privacy#section-7",
@@ -608,7 +626,7 @@ const EXPECTED = {
   ],
   noteReports: [
     {
-      lessonTitle: "Le modèle OSI",
+      noteTitle: "Le modèle OSI",
       reason: "SPAM",
       comment: null,
       status: "DISMISSED",
@@ -812,23 +830,42 @@ const EXPECTED = {
   ],
   notes: [
     {
+      title: "Le modèle OSI",
       lessonTitle: "Le modèle OSI",
       folderName: "Réseau",
       content: "OSI : 7 couches.",
       wordCount: 3,
+      pinned: true,
       createdAt: "2026-02-01T10:05:00.000Z",
       updatedAt: "2026-02-01T10:06:00.000Z",
+      deletedAt: null,
     },
     {
-      lessonTitle: "Le modèle OSI",
+      title: "Mes questions",
+      lessonTitle: null,
       folderName: null,
       content: "À revoir.",
       wordCount: 2,
+      pinned: false,
       createdAt: "2026-02-04T10:05:00.000Z",
       updatedAt: "2026-02-04T10:05:00.000Z",
+      deletedAt: "2026-02-06T10:00:00.000Z",
     },
   ],
-  noteFolders: [{ name: "Réseau", color: null, createdAt: "2026-02-01T10:04:00.000Z" }],
+  noteFolders: [
+    { name: "Réseau", color: null, parentName: null, createdAt: "2026-02-01T10:04:00.000Z" },
+  ],
+  noteCards: [
+    {
+      noteTitle: "Le modèle OSI",
+      front: "Combien de couches OSI ?",
+      back: "7",
+      box: 2,
+      dueAt: "2026-02-08T00:00:00.000Z",
+      retiredAt: null,
+      createdAt: "2026-02-01T10:07:00.000Z",
+    },
+  ],
   quizAttempts: [
     {
       pathTitle: "Réseau",
@@ -1013,6 +1050,7 @@ describe("buildExportPayload", () => {
       "skipWaivers",
       "notes",
       "noteFolders",
+      "noteCards",
       "quizAttempts",
       "activityDays",
       "questProgress",

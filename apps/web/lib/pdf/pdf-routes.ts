@@ -7,6 +7,7 @@
  * `*`, since `[slug]` would read as a character class.
  *
  * - the revision sheet of a module (`/api/paths/[slug]/sheet`);
+ * - notes exported from the notes workspace (`/api/notes/pdf`);
  * - a certificate, issued when the last lesson of a path is done (a lesson's
  *   page, the dashboard's catch-up, the app's progress route), when the exam
  *   is passed (the exam page and the path page's actions, the app's exam
@@ -14,6 +15,7 @@
  */
 export const PDF_ROUTES = [
   "/api/paths/*/sheet",
+  "/api/notes/pdf",
   "/paths/*",
   "/paths/*/exam",
   "/lessons/*",

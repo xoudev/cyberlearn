@@ -33,6 +33,37 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "4.0",
+    date: "2026-11-24",
+    title: "Un nouveau bloc-notes, et le clic droit sur tout le site",
+    changes: [
+      {
+        type: "new",
+        text: "Le bloc-notes devient un vrai espace de travail : les dossiers à gauche, la liste au milieu, la note ouverte à droite. Tu peux écrire une note sans être dans une leçon, la rattacher à une leçon plus tard ou l'en détacher. Les dossiers se rangent les uns dans les autres (quatre niveaux) : glisse une note ou un dossier sur un autre pour le ranger, ou passe par « Déplacer vers… ». Épingle les notes importantes, sélectionne-en plusieurs d'un coup (Ctrl, Maj ou les cases), trie et filtre la liste, et passe en « Mode large » pour écrire sur toute la largeur de l'écran.",
+      },
+      {
+        type: "new",
+        text: "Un éditeur complet, avec l'aperçu à côté du texte : titres, gras, italique, barré, texte en couleur et surligné, cases à cocher que tu coches depuis l'aperçu, tableaux, encadrés (astuce, attention, danger…), blocs de code colorés selon le langage avec un bouton « Copier », et des modèles de note (fiche de révision, write-up de CTF, aide-mémoire, compte rendu de lab). Relie tes notes entre elles avec [[Titre de la note]] : l'éditeur te propose les titres, et chaque note montre celles qui mènent à elle.",
+      },
+      {
+        type: "new",
+        text: "Emporte tes notes : un dossier ou tout ton bloc-notes en .zip, avec les mêmes dossiers, chaque note en .md lisible dans Obsidian ou VS Code ; une note, un dossier ou tout en PDF, avec un sommaire, le code coloré et numéroté. Et l'inverse : importe un .md ou un .zip de notes, ses dossiers deviennent les tiens.",
+      },
+      {
+        type: "new",
+        text: "Écris « question :: réponse » dans une note et elle devient une carte de révision : « Réviser mes cartes » te les repose après 1, 3, 7 puis 21 jours, pour tout ton bloc-notes ou un seul dossier. Les notes supprimées passent par une corbeille où elles restent 30 jours avant d'être effacées.",
+      },
+      {
+        type: "new",
+        text: "Dans une leçon, sélectionne un passage : « Ajouter à mes notes » le copie, cité avec le nom de sa section, à la fin de ta note sur la leçon. Le clic droit a son propre menu sur tout le site : ouvrir ou copier un lien, copier une sélection, la chercher sur CyberLearn, revenir en arrière… Maj + clic droit garde le menu du navigateur.",
+      },
+      {
+        type: "improved",
+        text: "Les notes d'une leçon s'écrivent avec le même éditeur que le bloc-notes. Pour l'instant, tout cela est sur le site : l'app garde son bloc-notes par leçon, et tes notes y restent lisibles.",
+      },
+    ],
+  },
+  {
     version: "3.9",
     date: "2026-10-28",
     title: "Douze badges pour les défis, les duels, les tournois et le rappel du jour",

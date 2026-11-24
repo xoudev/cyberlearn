@@ -427,6 +427,44 @@ export async function checkClassExport(userId: string): Promise<RateLimitResult>
 }
 
 /**
+ * 10 note imports per user per hour, counted on an import's first batch: an
+ * import writes up to 500 notes, a library's worth, not a gesture repeated.
+ */
+export async function checkNoteImport(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "notes:import",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(10, "1 h"),
+        prefix: "rl:notes:import",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/**
+ * 30 note PDFs per user per hour: each is rendered on the server, a whole
+ * library at the most, which is real work for a request.
+ */
+export async function checkNotePdf(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "notes:pdf",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(30, "1 h"),
+        prefix: "rl:notes:pdf",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/**
  * 30 lessons finished per user per hour.
  *
  * A lesson is ten minutes of reading at the least, and its XP feeds the

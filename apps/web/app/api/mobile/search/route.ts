@@ -13,6 +13,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
   }
 
-  const groups = await searchFor(user.id, request.nextUrl.searchParams.get("q"));
+  // The app opens a note by its lesson and has no screen yet for a note on
+  // none (docs/MOBILE_PARITY.md): those stay on the site.
+  const groups = (await searchFor(user.id, request.nextUrl.searchParams.get("q")))
+    .map((group) => ({ ...group, results: group.results.filter((r) => r.ref !== "") }))
+    .filter((group) => group.results.length > 0);
   return NextResponse.json({ ok: true, groups });
 }
