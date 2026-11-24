@@ -55,6 +55,19 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  experimental: {
+    // Vercel builds on 8 GB. The webpack() hook below turns Next's build
+    // worker off (it is on by default only without a custom webpack config),
+    // so webpack compiled inside the main `next build` process and kept its
+    // 4 GB and more while "Running TypeScript" started next to it: the build
+    // was killed for lack of memory, at random after #562, then on every
+    // deployment from #579 on. In a worker, the compilation exits and gives
+    // its memory back before the type check.
+    webpackBuildWorker: true,
+    // Lowers webpack's peak during the compilation itself, for a few seconds
+    // more (node_modules/next/dist/docs/01-app/02-guides/memory-usage.md).
+    webpackMemoryOptimizations: true,
+  },
   images: {
     // Next 16 raised the default to four hours. A badge icon replaced under the
     // same public URL would then stay stale that long; one minute is what the
