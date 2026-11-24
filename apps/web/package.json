@@ -51,7 +51,7 @@
     "leaflet": "catalog:",
     "lowlight": "catalog:",
     "lucide-react": "catalog:",
-    "mermaid": "^12.0.0",
+    "mermaid": "^12.3.0",
     "next": "catalog:",
     "pino": "catalog:",
     "next-mdx-remote": "catalog:",
