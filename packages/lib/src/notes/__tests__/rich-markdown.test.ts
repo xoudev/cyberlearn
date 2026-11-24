@@ -220,3 +220,50 @@ describe("helpers", () => {
     ]);
   });
 });
+
+describe("linear trims (no regex retried from each character)", () => {
+  const headingText = (line: string): string => {
+    const block = parseRichMarkdown(line)[0];
+    return block?.kind === "heading" ? richInlineText(block.children) : "";
+  };
+
+  it("slugs a heading exactly as the old pattern did", () => {
+    const old = (text: string): string =>
+      text
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80);
+    for (const text of [
+      "  Les ports : TCP/UDP !! ",
+      "---",
+      "",
+      "Été 2026 : bilan",
+      "a-b",
+      "!!a!!",
+    ]) {
+      expect(headingSlug(text)).toBe(old(text));
+    }
+  });
+
+  it("drops closing hashes only after a blank, as the old pattern did", () => {
+    expect(headingText("## Titre ##")).toBe("Titre");
+    expect(headingText("## Titre ##   ")).toBe("Titre");
+    expect(headingText("## C#")).toBe("C#");
+    expect(headingText("## ##")).toBe("##");
+    expect(headingText("# Un # deux")).toBe("Un # deux");
+  });
+
+  it("stays fast on a long line of blanks and dashes", () => {
+    const line = `# a${" ".repeat(20_000)}b`;
+    const dashes = `a${"-".repeat(20_000)}b`;
+    const started = performance.now();
+    parseRichMarkdown(line);
+    headingSlug(dashes);
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+});

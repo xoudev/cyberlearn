@@ -1,4 +1,5 @@
 import { removalKindOf, type RemovalKind } from "@cyberlearn/lib/moderation/removal";
+import { trimHyphens } from "@cyberlearn/lib/slug";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { MODERATION_SURFACE } from "./moderation.repository.js";
@@ -102,13 +103,12 @@ export type ForumWriteResult =
  * "Réseau" must not become "rseau".
  */
 export function slugify(title: string): string {
-  const base = title
+  const folded = title
     .normalize("NFD")
     .replace(/[̀-ͯ]/gu, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .slice(0, 60);
+    .replace(/[^a-z0-9]+/gu, "-");
+  const base = trimHyphens(folded).slice(0, 60);
   // A title of nothing but punctuation still needs an address.
   return base === "" ? "sujet" : base;
 }

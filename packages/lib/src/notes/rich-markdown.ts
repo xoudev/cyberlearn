@@ -22,6 +22,8 @@
  * unmatched `*` or `[` stays linear rather than quadratic.
  */
 
+import { trimHyphens } from "../slug";
+
 /** The colours text and highlights may take: the toolbar's palette. */
 export const NOTE_COLORS = ["rouge", "orange", "jaune", "vert", "bleu", "violet", "gris"] as const;
 export type NoteColor = (typeof NOTE_COLORS)[number];
@@ -341,10 +343,22 @@ export function normalizeNoteTitle(title: string): string {
 
 /** An anchor for a heading: its words, folded, joined by dashes. */
 export function headingSlug(text: string): string {
-  return normalizeNoteTitle(text)
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+  return trimHyphens(normalizeNoteTitle(text).replace(/[^a-z0-9]+/g, "-")).slice(0, 80);
+}
+
+/**
+ * A heading without its closing hashes (`## Titre ##`), which need a blank
+ * before them. A loop from the end, not `/\s+#+\s*$/`: that pattern retries
+ * a run of blanks from each of them, and a note's line can be 20 000
+ * characters long, read on the server for the PDF.
+ */
+function stripClosingHashes(text: string): string {
+  const trimmed = text.trimEnd();
+  let end = trimmed.length;
+  while (end > 0 && trimmed[end - 1] === "#") end--;
+  if (end === trimmed.length || end === 0) return text;
+  const before = trimmed[end - 1] ?? "";
+  return /\s/.test(before) ? trimmed.slice(0, end).trimEnd() : text;
 }
 
 /** Split a table row into its cells, `\|` staying in its cell. */
@@ -511,7 +525,7 @@ export function parseRichMarkdown(markdown: string): RichBlock[] {
 
     const heading = HEADING.exec(line);
     if (heading) {
-      const text = (heading[2] ?? "").replace(/\s+#+\s*$/, "");
+      const text = stripClosingHashes(heading[2] ?? "");
       blocks.push({
         kind: "heading",
         level: headingLevel(heading[1] ?? "#"),

@@ -1,3 +1,5 @@
+import { trimHyphens } from "../slug.js";
+
 export interface TocEntry {
   level: 1 | 2 | 3;
   text: string;
@@ -5,23 +7,32 @@ export interface TocEntry {
 }
 
 function slugify(text: string): string {
-  return text
+  const collapsed = text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "") // strip combining diacritics (é → e, à → a)
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/-+/g, "-");
+  return trimHyphens(collapsed);
 }
 
 /**
  * Extracts h1/h2/h3 headings from raw MDX/Markdown source.
  * Used to render a table of contents in the lesson sidebar.
  * Simple regex approach - suitable for author-controlled lesson content.
+ *
+ * A heading is one line: the gap after the hashes is spaces or tabs, and the
+ * text stops at the line's end. With `\s+` the gap could run over line
+ * breaks, which made a heading out of "#" and the paragraph under it, and let
+ * a long run of blank lines be scanned again from each of them.
+ *
+ * The text starts at its first character that is not a space: the gap and
+ * the text can then never both claim the same tab, so a line of hashes and
+ * nothing but tabs is read once, and is not a heading.
  */
 export function extractToc(mdx: string): TocEntry[] {
-  const headingRegex = /^(#{1,3})\s+(.+)$/gm;
+  const headingRegex = /^(#{1,3})[ \t]+(\S[^\n]*)$/gm;
   const entries: TocEntry[] = [];
 
   let match: RegExpExecArray | null;

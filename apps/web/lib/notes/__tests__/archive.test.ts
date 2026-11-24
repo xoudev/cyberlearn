@@ -44,6 +44,16 @@ const notes = [
 ];
 
 describe("safeFileName", () => {
+  it("trims trailing dots and spaces as the old pattern did, in linear time", () => {
+    expect(safeFileName("Notes...")).toBe("Notes");
+    expect(safeFileName("Notes . . .")).toBe("Notes");
+    expect(safeFileName("...")).toBe("Sans titre");
+    expect(safeFileName(`${"a".repeat(79)}.b`)).toBe("a".repeat(79));
+    const started = performance.now();
+    safeFileName(`a${".".repeat(50_000)}b`);
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
   it("keeps accents and drops what file systems refuse", () => {
     expect(safeFileName('a/b\\c:d*e?"f<g>h|i')).toBe("a-b-c-d-e--f-g-h-i");
     expect(safeFileName("Modèle OSI")).toBe("Modèle OSI");

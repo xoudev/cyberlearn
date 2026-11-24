@@ -7,6 +7,8 @@
  * module, in the path's order, and gets the sections back.
  */
 
+import { trimHyphens } from "../slug.js";
+
 export interface SheetSource {
   title: string;
   contentMdx: string;
@@ -99,12 +101,12 @@ export function buildSheet(input: {
 
 /** "cyberlearn-linux-module-03.pdf": ASCII only, for a Content-Disposition header. */
 export function sheetFileName(pathSlug: string, moduleNumber: number): string {
-  const slug = pathSlug
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/[^a-zA-Z0-9-]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .toLowerCase();
+  const slug = trimHyphens(
+    pathSlug
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[^a-zA-Z0-9-]+/gu, "-"),
+  ).toLowerCase();
   return `cyberlearn-${slug || "parcours"}-module-${String(moduleNumber).padStart(2, "0")}.pdf`;
 }
 

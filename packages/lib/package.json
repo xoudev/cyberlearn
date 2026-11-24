@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./xp": "./src/xp.ts",
+    "./slug": "./src/slug.ts",
     "./social/*": "./src/social/*.ts",
     "./dashboard/*": "./src/dashboard/*.ts",
     "./pseudonymize": "./src/pseudonymize.ts",

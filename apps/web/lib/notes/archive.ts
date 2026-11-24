@@ -34,6 +34,17 @@ export interface ArchiveFolder {
 const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
 
 /**
+ * The dots and spaces ending a name, which Windows drops (and then cannot
+ * open the file). A loop rather than `/[. ]+$/`, which retries a run of dots
+ * from each of them.
+ */
+function trimDotsAndSpaces(name: string): string {
+  let end = name.length;
+  while (end > 0 && (name[end - 1] === "." || name[end - 1] === " ")) end--;
+  return name.slice(0, end);
+}
+
+/**
  * A name every file system takes: no separators or characters Windows refuses,
  * no control characters, no trailing dot or space, not a reserved device name,
  * at most 80 characters. Never empty.
@@ -45,10 +56,8 @@ export function safeFileName(input: string, fallback = "Sans titre"): string {
     .replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "-")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/^\.+/, "")
-    .replace(/[. ]+$/, "")
-    .slice(0, 80)
-    .replace(/[. ]+$/, "");
+    .replace(/^\.+/, "");
+  name = trimDotsAndSpaces(trimDotsAndSpaces(name).slice(0, 80));
   if (!name) name = fallback;
   if (WINDOWS_RESERVED.test(name)) name = `_${name}`;
   return name;

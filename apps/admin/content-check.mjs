@@ -92,7 +92,7 @@ function quoteFrontmatter(txt) {
     if (m) {
       const v = m[2].trim();
       const q = (v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"));
-      if (!q) lines[i] = `${m[1]}: "${v.replace(/"/g, '\\"')}"`;
+      if (!q) lines[i] = `${m[1]}: "${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
     }
   }
   return lines.join("\n");
