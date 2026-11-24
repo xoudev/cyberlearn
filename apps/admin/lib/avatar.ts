@@ -53,7 +53,12 @@ async function signMissing(keys: readonly string[], now: number): Promise<void> 
       return;
     }
     for (const entry of data) {
-      if (entry.path !== null && entry.signedUrl !== "" && entry.error === null) {
+      if (
+        entry.path !== null &&
+        entry.signedUrl !== null &&
+        entry.signedUrl !== "" &&
+        entry.error === null
+      ) {
         remember(entry.path, entry.signedUrl, now);
       }
     }
