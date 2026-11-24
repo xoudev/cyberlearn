@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PROTECTED_ROUTE_PREFIXES } from "@/lib/routes";
 import robots from "./robots";
 import { SITE_URL } from "./site-url";
-import sitemap from "./sitemap";
+import { fixedSitemapEntries as sitemap } from "./sitemap-pages";
 
 describe("public SEO routes", () => {
   it("uses the apex production domain everywhere", () => {

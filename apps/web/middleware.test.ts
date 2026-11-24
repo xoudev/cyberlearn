@@ -156,6 +156,7 @@ describe("protected route classification", () => {
   // over the dashboard or a tab of the profile. The glossary is public.
   it.each([
     "/catalogue",
+    "/catalogue/pentest",
     "/contact",
     "/page-inconnue",
     "/u/introuvable",
@@ -717,5 +718,24 @@ describe("the anti-robot check's frame", () => {
   it("frames nothing while the check is off", async () => {
     vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
     expect(await csp("/register")).not.toContain("frame-src");
+  });
+});
+
+describe("a path's public page", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("is served to a visitor, not answered with the login", async () => {
+    auth.session = null;
+
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/catalogue/pentest"));
+
+    expect(response.headers.get("location")).toBeNull();
   });
 });

@@ -96,10 +96,13 @@ describe("the catalogue's cards", () => {
     expect(html).not.toContain("avant de créer ton compte");
   });
 
-  it("lead a visitor to the sign-up form", () => {
+  it("lead a visitor to the path's public page, where the sign-up is offered", () => {
     const html = renderCatalogue(false);
 
-    expect(html).toContain('href="/register"');
+    // Not the sign-up form any more: a card that led there said nothing of
+    // the path somebody had just chosen.
+    expect(html).toContain('href="/catalogue/linux-premiers-pas"');
+    expect(html).not.toContain('href="/register"');
     expect(html).toContain("avant de créer ton compte");
   });
 });
