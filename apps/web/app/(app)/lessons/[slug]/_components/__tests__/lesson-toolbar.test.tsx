@@ -259,9 +259,8 @@ describe("the notes", () => {
     expect(screen.queryByRole("dialog", { name: "Mes notes" })).toBeNull();
     fireEvent.click(button("Notes"));
     const notes = screen.getByRole("dialog", { name: "Mes notes" });
-    expect(within(notes).getByLabelText<HTMLTextAreaElement>("Note de la leçon").value).toBe(
-      "Ma note",
-    );
+    // The editor (CodeMirror) is a contenteditable, not a field with a value.
+    expect(within(notes).getByLabelText("Note de la leçon").textContent).toBe("Ma note");
     expect(button("Notes").getAttribute("aria-expanded")).toBe("true");
   });
 });

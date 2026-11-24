@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SideDrawer } from "@cyberlearn/ui";
 import { saveNoteAction } from "@/app/(app)/notes/_actions/note-actions";
+import { NoteEditor, type NoteEditorHandle } from "@/components/notes/editor/note-editor";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { NOTE_CONTENT_MAX } from "@/lib/notes/limits";
 
@@ -28,6 +29,17 @@ interface NoteDrawerProps {
   initialWordCount: number;
   open: boolean;
   onClose: () => void;
+  /**
+   * A passage of the lesson to add at the end of the note ("Ajouter à mes
+   * notes"), as markdown. A new `id` is a new request.
+   */
+  quote?: { id: number; markdown: string } | null;
+}
+
+/** `markdown` added after `content`, a blank line between them. */
+export function appendToNote(content: string, markdown: string): string {
+  const head = content.replace(/\s+$/, "");
+  return head ? `${head}\n\n${markdown}\n` : `${markdown}\n`;
 }
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -49,32 +61,6 @@ export function charactersLeft(length: number): string {
   return `${left.toLocaleString("fr-FR")} caractère${left > 1 ? "s" : ""} restant${left > 1 ? "s" : ""}`;
 }
 
-/** Small formatting-toolbar button. */
-function ToolBtn({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      onMouseDown={(e) => {
-        e.preventDefault();
-      }}
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="lesson-notes__tool"
-    >
-      {children}
-    </button>
-  );
-}
-
 /**
  * The reader's note on this lesson, in a drawer opened from the lesson's
  * toolbar. It keeps the note while closed (the toolbar keeps it mounted), and
@@ -91,6 +77,7 @@ export function NoteDrawer({
   initialWordCount,
   open,
   onClose,
+  quote = null,
 }: NoteDrawerProps): React.JSX.Element {
   const docked = useMediaQuery(NOTES_DOCKED_QUERY);
   const [expanded, setExpanded] = useState(false);
@@ -99,7 +86,6 @@ export function NoteDrawer({
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef(initialContent);
   // Only the latest save speaks: an earlier one answering late must not
@@ -176,31 +162,18 @@ export function NoteDrawer({
     };
   }, [content, save]);
 
-  // Wrap the current selection with markdown markers (bold, italic, code).
-  const surround = useCallback((before: string, after = before) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const { selectionStart: s, selectionEnd: e, value } = ta;
-    const sel = value.slice(s, e) || "texte";
-    setContent(value.slice(0, s) + before + sel + after + value.slice(e));
-    requestAnimationFrame(() => {
-      ta.focus();
-      ta.setSelectionRange(s + before.length, s + before.length + sel.length);
-    });
-  }, []);
-
-  // Prefix the current line (heading, list item).
-  const prefixLine = useCallback((prefix: string) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const { selectionStart: s, value } = ta;
-    const lineStart = value.lastIndexOf("\n", s - 1) + 1;
-    setContent(value.slice(0, lineStart) + prefix + value.slice(lineStart));
-    requestAnimationFrame(() => {
-      ta.focus();
-      ta.setSelectionRange(s + prefix.length, s + prefix.length);
-    });
-  }, []);
+  // "Ajouter à mes notes": the passage goes at the end of the note. The text
+  // is the drawer's to compute, from the note as it stands; the editor, when
+  // it is on screen, is told the result. Computed from contentRef, which only
+  // moves on a render, so running twice for one request (React's strict mode)
+  // gives the same text rather than the passage twice.
+  const editorRef = useRef<NoteEditorHandle>(null);
+  useEffect(() => {
+    if (!quote) return;
+    const next = appendToNote(contentRef.current, quote.markdown);
+    setContent(next);
+    editorRef.current?.setContent(next);
+  }, [quote]);
 
   const width = !expanded
     ? NOTE_DRAWER_WIDTH.narrow
@@ -295,76 +268,20 @@ export function NoteDrawer({
         <span>Liée à cette leçon</span> <b>{lessonTitle}</b>
       </p>
 
-      {/* Formatting toolbar */}
-      <div className="lesson-notes__format">
-        <ToolBtn
-          label="Gras"
-          onClick={() => {
-            surround("**");
-          }}
-        >
-          <b>B</b>
-        </ToolBtn>
-        <ToolBtn
-          label="Italique"
-          onClick={() => {
-            surround("*");
-          }}
-        >
-          <i>I</i>
-        </ToolBtn>
-        <ToolBtn
-          label="Titre"
-          onClick={() => {
-            prefixLine("## ");
-          }}
-        >
-          <b>H</b>
-        </ToolBtn>
-        <span className="lesson-notes__format-sep" aria-hidden="true" />
-        <ToolBtn
-          label="Code"
-          onClick={() => {
-            surround("`");
-          }}
-        >
-          {"</>"}
-        </ToolBtn>
-        <ToolBtn
-          label="Liste"
-          onClick={() => {
-            prefixLine("- ");
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.4}
-            aria-hidden="true"
-          >
-            <path d="M6 4h8M6 8h8M6 12h8M2 4h1.5M2 8h1.5M2 12h1.5" strokeLinecap="square" />
-          </svg>
-        </ToolBtn>
+      <div className="lesson-notes__editor-wrap">
+        <NoteEditor
+          ref={editorRef}
+          compact
+          initialValue={content}
+          onChange={setContent}
+          maxLength={NOTE_CONTENT_MAX}
+          resolveLink={(target) => `/notes?titre=${encodeURIComponent(target)}`}
+          ariaLabel="Note de la leçon"
+          placeholder={
+            "# Titre\n\nÉcris en markdown : **gras**, `code`, [[une autre note]], question :: réponse"
+          }
+        />
       </div>
-
-      {/* Editor */}
-      <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={(e) => {
-          setContent(e.target.value);
-        }}
-        aria-label="Note de la leçon"
-        maxLength={NOTE_CONTENT_MAX}
-        placeholder={
-          "# Titre de la note\n\nÉcris tes notes en markdown…\n\n- **gras**, *italique*, `code`"
-        }
-        spellCheck={false}
-        className="lesson-notes__editor"
-      />
     </SideDrawer>
   );
 }

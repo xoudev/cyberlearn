@@ -18,6 +18,46 @@ const saveNoteAction = vi.hoisted(() =>
 );
 vi.mock("@/app/(app)/notes/_actions/note-actions", () => ({ saveNoteAction }));
 
+// CodeMirror needs a layout jsdom does not have. The drawer's own work - the
+// saves, the limit, the passages added - goes through the editor's props and
+// handle, which this textarea honours the same way.
+vi.mock("@/components/notes/editor/note-editor", () => ({
+  NoteEditor: function NoteEditorStub(props: {
+    initialValue: string;
+    onChange: (value: string) => void;
+    ariaLabel: string;
+    maxLength: number;
+    ref?: React.Ref<{
+      appendText: (t: string) => void;
+      setContent: (t: string) => void;
+      focus: () => void;
+    }>;
+  }): React.ReactElement {
+    const [value, setValue] = React.useState(props.initialValue);
+    const change = (next: string): void => {
+      setValue(next);
+      props.onChange(next);
+    };
+    React.useImperativeHandle(props.ref, () => ({
+      appendText: (text: string) => {
+        change(value.trim() ? `${value.trimEnd()}\n\n${text}\n` : `${text}\n`);
+      },
+      setContent: change,
+      focus: () => undefined,
+    }));
+    return (
+      <textarea
+        aria-label={props.ariaLabel}
+        maxLength={props.maxLength}
+        value={value}
+        onChange={(e) => {
+          change(e.target.value);
+        }}
+      />
+    );
+  },
+}));
+
 const { NoteDrawer, NOTES_DOCKED_QUERY, NOTE_DRAWER_WIDTH, charactersLeft } = await import(
   "../note-drawer"
 );
@@ -25,7 +65,13 @@ const { NOTE_CONTENT_MAX } = await import("@/lib/notes/limits");
 
 let media: MatchMediaStub;
 
-function Notes({ initialOpen = true }: { initialOpen?: boolean }): React.ReactElement {
+function Notes({
+  initialOpen = true,
+  quote = null,
+}: {
+  initialOpen?: boolean;
+  quote?: { id: number; markdown: string } | null;
+}): React.ReactElement {
   const [open, setOpen] = React.useState(initialOpen);
   return (
     <>
@@ -46,6 +92,7 @@ function Notes({ initialOpen = true }: { initialOpen?: boolean }): React.ReactEl
         onClose={() => {
           setOpen(false);
         }}
+        quote={quote}
       />
     </>
   );
@@ -207,12 +254,26 @@ describe("the note drawer", () => {
     expect(editor().value).toBe("Encore là");
   });
 
-  it("wraps the selection in bold", () => {
-    render(<Notes />);
-    const ta = editor();
-    ta.setSelectionRange(0, 5);
-    fireEvent.click(within(drawer()).getByRole("button", { name: "Gras" }));
-    expect(editor().value).toBe("**Début**");
+  it("adds a passage of the lesson at the end of the note, and saves it", async () => {
+    vi.useFakeTimers();
+    saveNoteAction.mockResolvedValue({ ok: true, wordCount: 4 });
+    const { rerender } = render(<Notes />);
+    rerender(<Notes quote={{ id: 1, markdown: "> Un port\n>\n> Source : *Les ports*" }} />);
+    expect(editor().value).toBe("Début\n\n> Un port\n>\n> Source : *Les ports*\n");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(saveNoteAction).toHaveBeenCalledWith({
+      lessonId: "lesson-1",
+      content: "Début\n\n> Un port\n>\n> Source : *Les ports*\n",
+    });
+  });
+
+  it("keeps a passage added while closed, for when it opens", () => {
+    const { rerender } = render(<Notes initialOpen={false} />);
+    rerender(<Notes initialOpen={false} quote={{ id: 2, markdown: "> Ajouté" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Ouvrir" }));
+    expect(editor().value).toBe("Début\n\n> Ajouté\n");
   });
 
   it("widens and narrows", () => {
@@ -277,20 +338,15 @@ describe("over the page or beside it", () => {
 
   it("sizes its small buttons from the stylesheet, which gives a touch screen 44px", () => {
     render(<Notes />);
-    const classOf = (name: string): string =>
-      within(drawer()).getByRole("button", { name }).className;
-    expect(classOf("Gras")).toBe("lesson-notes__tool");
-    expect(classOf("Liste")).toBe("lesson-notes__tool");
-    expect(classOf("Agrandir")).toBe("lesson-notes__expand");
+    const expand = within(drawer()).getByRole("button", { name: "Agrandir" });
+    expect(expand.className).toBe("lesson-notes__expand");
     // No size written inline: an inline size would beat the touch rule.
-    expect(within(drawer()).getByRole("button", { name: "Gras" }).getAttribute("style")).toBeNull();
-    expect(
-      within(drawer()).getByRole("button", { name: "Agrandir" }).getAttribute("style"),
-    ).toBeNull();
+    expect(expand.getAttribute("style")).toBeNull();
 
+    // The editor's tools (components/notes/editor) take the same rule.
     const css = readFileSync(path.resolve(__dirname, "../../../../../globals.css"), "utf8");
     expect(css).toMatch(
-      /@media \(pointer: coarse\) \{\s*\.lesson-notes__tool,\s*\.lesson-notes__expand,\s*\.lesson-notes \.side-drawer__close \{\s*width: 44px;\s*height: 44px;/,
+      /@media \(pointer: coarse\) \{\s*\.lesson-notes__expand,\s*\.lesson-notes \.side-drawer__close,\s*\.note-editor__tool \{\s*width: 44px;\s*height: 44px;/,
     );
   });
 });

@@ -54,7 +54,7 @@
 | `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
 | `/revisions` · `/review` | Pas de page : redirection vers le rappel du jour, `/dashboard?rappel=1` (`next.config.ts`) ; l'ancienne file SM-2 est retirée |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
-| `/notes` | Bloc-notes, dossiers et partages reçus |
+| `/notes` | Bloc-notes : arborescence de dossiers, liste, éditeur avec aperçu, corbeille, cartes de révision des notes, import et export, partages reçus. `?note=<id>` ouvre une note, `?titre=<titre>` la note de ce titre (un lien `[[ ]]` suivi depuis une leçon) |
 | `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu » |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
@@ -79,17 +79,18 @@
 | `/api/cron/streak-reset` | Cron - reset du streak à minuit |
 | `/api/cron/season-rollover` | Cron - clôture de saison, promotions et relégations |
 | `/api/cron/tournament-badges` | Cron - badges de la place prise par l'équipe, pour les tournois finis depuis une semaine |
-| `/api/cron/retention` | Cron - purge du journal d'audit (12 mois) et des tickets (3 mois après résolution, 12 mois sans activité) |
+| `/api/cron/retention` | Cron - purge du journal d'audit (12 mois), des tickets (3 mois après résolution, 12 mois sans activité) et des notes restées 30 jours dans la corbeille, avec leurs cartes |
 | `/api/cron/inactive-accounts` | Cron - préavis par e-mail puis effacement des comptes inactifs depuis 24 mois |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
 | `/api/paths/[slug]/sheet?module=N` | Fiche de révision d'un module, en PDF (les points « à retenir » de ses leçons) |
+| `/api/notes/pdf` | Notes en PDF, rendues à la demande et gardées nulle part : `?note=<id>` une note, `?folder=<id>` un dossier et ses sous-dossiers, `?scope=all` toutes (couverture et sommaire au-delà d'une note). Ses propres notes seulement, 300 notes ou 600 000 caractères au plus, trente exports par heure (`checkNotePdf`) |
 | `/api/classes/[id]/export` | Avancement d'une classe en CSV, pour l'enseignant qui la suit : une ligne par élève, puis chaque travail donné avec le jour où il a été terminé et le score du quiz |
 | `/api/auth/send-email` | Hook d'envoi des mails d'authentification Supabase |
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
-| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). Version 1.2 : l'ancienne file de révisions (`reviewSchedules`) n'y figure plus, sa table est supprimée et ses lignes ont été converties en cartes (`reviewCards`). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
+| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). Version 1.2 : l'ancienne file de révisions (`reviewSchedules`) n'y figure plus, sa table est supprimée et ses lignes ont été converties en cartes (`reviewCards`). Version 1.3 : le titre, l'épingle et la date de mise à la corbeille de chaque note, le dossier parent de chaque dossier, et les cartes tirées des notes (`noteCards`). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
 | `/api/me/settings` | Les sept sections du volet des paramètres, en une requête |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
@@ -228,7 +229,51 @@
 
 #### Forum, notes et amis
 - Forum par catégories, sujets épinglés ou fermés, modération intégrée
-- Bloc-notes par leçon, dossiers, et partage entre comptes passé par la modération
+- Bloc-notes (`/notes`, `apps/web/app/(app)/notes/_components/notes-workspace.tsx`) :
+  - une note est libre ou rattachée à une leçon que l'apprenant peut ouvrir
+    (`lessonsVisibleTo`), une seule note vivante par leçon ; rattacher une note
+    à une leçon qui en a déjà une propose de les fusionner (la seconde ajoutée
+    à la suite, puis mise à la corbeille). Supprimer une leçon libère ses notes
+  - dossiers imbriqués sur quatre niveaux (`NOTE_FOLDER_MAX_DEPTH`), sans
+    cycle (`checkFolderMove`, vérifié sous verrou par compte), 300 dossiers et
+    2 000 notes par compte ; glisser une note ou un dossier sur un dossier,
+    « Déplacer vers… » au clavier, renommage en place (F2), sélection multiple
+    (Ctrl, Maj, cases) ; supprimer un dossier remonte son contenu d'un niveau
+    ou envoie ses notes à la corbeille
+  - éditeur CodeMirror 6 (`apps/web/components/notes/editor`), colorié à la
+    frappe par la grammaire des notes (`@cyberlearn/lib/notes/rich-markdown`) :
+    titres, gras, italique, barré, surligné, couleurs de texte et de fond
+    (`[texte]{rouge}`, `[texte]{fond-vert}`), cases à cocher (cochables depuis
+    l'aperçu), tableaux, encadrés (`> [!astuce]`), blocs de code colorés par
+    langage (`lowlight`), liens `[[Titre]]` avec complétion et « Mentionnée
+    dans », cartes `question :: réponse`, modèles de note ; trois affichages
+    (écrire, côte à côte, aperçu), enregistrement automatique
+  - corbeille de 30 jours (`NOTE_TRASH_DAYS`) : une note jetée quitte ses
+    partages et rend sa place sur sa leçon, qu'elle retrouve à la restauration
+    si elle est libre ; purge par le cron de rétention
+  - export en `.zip` dans le navigateur (`fflate`, `lib/notes/archive.ts`) :
+    les dossiers deviennent des répertoires, chaque note un `.md` à en-tête
+    YAML ; export `.md` d'une note ; export PDF (`/api/notes/pdf`)
+  - import d'un `.md`, `.txt` ou `.zip` (`lib/notes/import-file.ts`, lu dans le
+    navigateur : 5 Mo, 20 Mo décompressés, 1 000 entrées, 500 notes, UTF-8
+    seulement, en-tête YAML lu sans parseur), revérifié par le serveur
+    (`importNotesAction`, dix imports par heure) ; les dossiers du `.zip` sont
+    recréés ou réutilisés
+  - cartes de révision des notes (`note_cards`, `noteCardRepository`) : mêmes
+    boîtes que les cartes des leçons (1, 3, 7, 21 jours), réponse jugée par
+    l'apprenant, donc sans XP ni série ; « Réviser mes cartes » pour toutes
+    les notes ou un dossier
+  - « Ajouter à mes notes » sur la page d'une leçon : un passage sélectionné
+    part, cité avec le nom de sa section, au bout de la note de la leçon
+    (`lessons/[slug]/_components/add-to-notes.tsx`)
+- Partage d'une note entre comptes passé par la modération
+- Clic droit sur tout le site (`components/context-menu/site-context-menu.tsx`,
+  monté dans le layout racine) : sur un lien (ouvrir, nouvel onglet, copier
+  l'adresse), une image, une sélection (copier, « Ajouter à mes notes » dans
+  une leçon, rechercher sur CyberLearn) et la page (retour, suivant,
+  recharger, copier l'adresse). Le menu du navigateur reste dans les champs et
+  l'éditeur, avec Maj + clic droit et à l'appui long d'un écran tactile ; une
+  surface qui a ses propres menus (le bloc-notes) les garde
 - Amis : demandes, acceptation, droits accordés (notes partagées, profil privé
   ouvert aux amis), classement entre amis sur activation explicite, activable
   depuis son onglet ; la marque « Ami » à côté du nom d'un ami (classement,

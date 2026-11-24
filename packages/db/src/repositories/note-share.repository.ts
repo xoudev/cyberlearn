@@ -1,5 +1,6 @@
 import { concernsAPerson, labelRules, type FindingRule } from "@cyberlearn/lib";
 import type { Category } from "@prisma/client";
+import { noteDisplayTitle } from "@cyberlearn/lib/notes/workspace";
 import { prisma } from "../prisma.js";
 import { friendshipRepository } from "./friendship.repository.js";
 import { UNACTIONED_SURFACE, moderationRepository } from "./moderation.repository.js";
@@ -66,9 +67,12 @@ export interface IncomingNote {
   wordCount: number;
   updatedAt: Date;
   sharedAt: Date;
-  lessonSlug: string;
-  lessonTitle: string;
-  lessonCategory: Category;
+  /** The note's title as its author sees it (its lesson's when it has none). */
+  title: string;
+  /** The note's lesson, when it is on one. */
+  lessonSlug: string | null;
+  lessonTitle: string | null;
+  lessonCategory: Category | null;
   authorId: string;
   authorName: string;
   authorAvatarUrl: string | null;
@@ -195,13 +199,14 @@ export const noteShareRepository = {
   /** The notes other people have handed to this user, most recent first. */
   async listSharedWithMe(userId: string): Promise<IncomingNote[]> {
     const rows = await prisma.noteShare.findMany({
-      where: { sharedWithId: userId },
+      where: { sharedWithId: userId, note: { deletedAt: null } },
       orderBy: { sharedAt: "desc" },
       select: {
         sharedAt: true,
         note: {
           select: {
             id: true,
+            title: true,
             content: true,
             wordCount: true,
             updatedAt: true,
@@ -217,9 +222,10 @@ export const noteShareRepository = {
       wordCount: r.note.wordCount,
       updatedAt: r.note.updatedAt,
       sharedAt: r.sharedAt,
-      lessonSlug: r.note.lesson.slug,
-      lessonTitle: r.note.lesson.title,
-      lessonCategory: r.note.lesson.category,
+      title: noteDisplayTitle(r.note.title, r.note.lesson?.title),
+      lessonSlug: r.note.lesson?.slug ?? null,
+      lessonTitle: r.note.lesson?.title ?? null,
+      lessonCategory: r.note.lesson?.category ?? null,
       authorId: r.note.user.id,
       authorName: personName(r.note.user),
       authorAvatarUrl: r.note.user.avatarUrl,
@@ -243,9 +249,10 @@ export const noteShareRepository = {
     recipientIds: string[];
   }): Promise<ShareResult> {
     const note = await prisma.note.findFirst({
-      where: { id: input.noteId, userId: input.authorId },
+      where: { id: input.noteId, userId: input.authorId, deletedAt: null },
       select: {
         id: true,
+        title: true,
         content: true,
         lesson: { select: { title: true } },
         user: { select: { displayName: true, username: true } },
@@ -289,7 +296,7 @@ export const noteShareRepository = {
         ? await alertTeachersOf({
             studentId: input.authorId,
             studentName: personName(note.user),
-            lessonTitle: note.lesson.title,
+            noteTitle: noteDisplayTitle(note.title, note.lesson?.title),
             noteId: note.id,
             rules,
           })
@@ -329,7 +336,7 @@ export const noteShareRepository = {
     await notifyRecipients({
       recipientIds: fresh,
       authorName: personName(note.user),
-      lessonTitle: note.lesson.title,
+      noteTitle: noteDisplayTitle(note.title, note.lesson?.title),
       noteId: note.id,
     });
 
@@ -376,7 +383,7 @@ export const noteShareRepository = {
 async function alertTeachersOf(input: {
   studentId: string;
   studentName: string;
-  lessonTitle: string;
+  noteTitle: string;
   noteId: string;
   rules: FindingRule[];
 }): Promise<number> {
@@ -403,7 +410,7 @@ async function alertTeachersOf(input: {
         type: "MODERATION_ALERT" as const,
         title: `Partage bloqué · ${klass.name}`,
         body:
-          `${input.studentName} a tenté de partager une note sur « ${input.lessonTitle} » ` +
+          `${input.studentName} a tenté de partager la note « ${input.noteTitle} » ` +
           `dont le contenu a été jugé inapproprié. Le partage a été bloqué.${detail}`,
         metadata: {
           studentId: input.studentId,
@@ -424,7 +431,7 @@ async function alertTeachersOf(input: {
 async function notifyRecipients(input: {
   recipientIds: string[];
   authorName: string;
-  lessonTitle: string;
+  noteTitle: string;
   noteId: string;
 }): Promise<void> {
   if (input.recipientIds.length === 0) return;
@@ -434,7 +441,7 @@ async function notifyRecipients(input: {
         userId,
         type: "NOTE_SHARED" as const,
         title: "Une note partagée avec vous",
-        body: `${input.authorName} vous a partagé sa note sur « ${input.lessonTitle} ».`,
+        body: `${input.authorName} vous a partagé sa note « ${input.noteTitle} ».`,
         actionUrl: "/notes",
         metadata: { noteId: input.noteId },
       })),

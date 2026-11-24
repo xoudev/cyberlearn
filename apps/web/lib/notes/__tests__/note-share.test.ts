@@ -31,6 +31,7 @@ const { shareAudienceFor, shareNoteFor, sharedWithMeFor, unshareNoteFor } = awai
 
 const ME = "0b9a8c7d-6e5f-4a3b-9c2d-1e0f9a8b7c6d";
 const NOTE = "1c0b9a8d-7e6f-4b5a-8c3d-2e1f0a9b8c7d";
+const OTHER_NOTE = "2d1c0b9a-8e7f-4c6b-9d4e-3f2a1b0c9d8e";
 const PEER = "2d1c0b9a-8e7f-4c6b-9d4e-3f2a1b0c9d8e";
 
 beforeEach(() => {
@@ -172,12 +173,28 @@ describe("sharedWithMeFor", () => {
         wordCount: 2,
         updatedAt: new Date("2026-09-20T10:00:00Z"),
         sharedAt: new Date("2026-09-21T11:00:00Z"),
+        title: "Mes notes TCP",
         lessonSlug: "tcp",
         lessonTitle: "TCP",
         lessonCategory: "NETWORK",
         authorId: PEER,
         authorName: "Sam",
         authorAvatarUrl: "__upload:sam.png",
+      },
+      {
+        // A note on no lesson: the app titles it by the note, with no category.
+        id: OTHER_NOTE,
+        content: "libre",
+        wordCount: 1,
+        updatedAt: new Date("2026-09-22T10:00:00Z"),
+        sharedAt: new Date("2026-09-22T11:00:00Z"),
+        title: "Mémo nmap",
+        lessonSlug: null,
+        lessonTitle: null,
+        lessonCategory: null,
+        authorId: PEER,
+        authorName: "Sam",
+        authorAvatarUrl: null,
       },
     ]);
     const notes = await sharedWithMeFor(ME);
@@ -190,8 +207,19 @@ describe("sharedWithMeFor", () => {
         updatedAt: "2026-09-20T10:00:00.000Z",
         sharedAt: "2026-09-21T11:00:00.000Z",
         lessonSlug: "tcp",
-        lessonTitle: "TCP",
+        lessonTitle: "Mes notes TCP",
         lessonCategory: "NETWORK",
+        authorName: "Sam",
+      },
+      {
+        id: OTHER_NOTE,
+        content: "libre",
+        wordCount: 1,
+        updatedAt: "2026-09-22T10:00:00.000Z",
+        sharedAt: "2026-09-22T11:00:00.000Z",
+        lessonSlug: "",
+        lessonTitle: "Mémo nmap",
+        lessonCategory: "",
         authorName: "Sam",
       },
     ]);

@@ -205,6 +205,12 @@ export default function PrivacyPage(): React.JSX.Element {
             : 12 mois.
           </li>
           <li>
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Notes placées dans la corbeille
+            </strong>{" "}
+            : 30 jours, puis supprimées définitivement avec leurs cartes de révision.
+          </li>
+          <li>
             <strong style={{ color: "var(--color-text-secondary)" }}>Certificats émis</strong> :
             conservés de manière permanente pour permettre leur vérification publique. En cas de
             suppression de compte, votre nom est remplacé par « Utilisateur supprimé » tout en

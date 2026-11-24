@@ -446,6 +446,28 @@ export const lessonRepository = {
     return { DRAFT: count("DRAFT"), PUBLISHED: count("PUBLISHED"), ARCHIVED: count("ARCHIVED") };
   },
 
+  /**
+   * The lessons a learner may open whose title holds `q` (accents and case
+   * folded), for the notes workspace's "rattacher à une leçon". The newest
+   * first; every lesson they may open when `q` is empty.
+   */
+  async searchReadableTitles(
+    viewerId: string,
+    q: string,
+    take: number,
+  ): Promise<{ id: string; slug: string; title: string; category: Category }[]> {
+    const term = q.trim();
+    return prisma.lesson.findMany({
+      where: {
+        ...lessonsVisibleTo(viewerId),
+        ...(term ? { title: { contains: term, mode: "insensitive" } } : {}),
+      },
+      orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
+      take,
+      select: { id: true, slug: true, title: true, category: true },
+    });
+  },
+
   /** The id of a published lesson this reader may open, by slug; null otherwise. */
   async findIdBySlug(slug: string, viewerId: string): Promise<string | null> {
     const lesson = await prisma.lesson.findFirst({

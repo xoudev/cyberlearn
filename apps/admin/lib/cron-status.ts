@@ -107,6 +107,7 @@ const SUMMARY_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>>
     resolvedTickets: "tickets résolus purgés",
     openTickets: "tickets ouverts purgés",
     lessonPreviews: "aperçus de leçon purgés",
+    trashedNotes: "notes de la corbeille purgées",
   },
   "inactive-accounts": {
     erased: "comptes effacés",

@@ -10,6 +10,7 @@ import {
   monthsBefore,
   purgeExpiredRecords,
   RETENTION_MONTHS,
+  trashExpiry,
 } from "../rgpd/retention.js";
 
 const { mockPrisma } = vi.hoisted(() => ({
@@ -18,6 +19,7 @@ const { mockPrisma } = vi.hoisted(() => ({
     auditLog: { deleteMany: vi.fn(), create: vi.fn() },
     contactTicket: { deleteMany: vi.fn() },
     lessonPreview: { deleteMany: vi.fn() },
+    note: { deleteMany: vi.fn() },
   },
 }));
 
@@ -77,6 +79,7 @@ describe("purgeExpiredRecords", () => {
     mockPrisma.auditLog.deleteMany.mockReturnValue("auditLogs");
     mockPrisma.contactTicket.deleteMany.mockReturnValue("tickets");
     mockPrisma.lessonPreview.deleteMany.mockReturnValue("previews");
+    mockPrisma.note.deleteMany.mockReturnValue("notes");
   });
 
   it("deletes in one transaction and records what it did", async () => {
@@ -85,6 +88,7 @@ describe("purgeExpiredRecords", () => {
       { count: 2 },
       { count: 1 },
       { count: 3 },
+      { count: 5 },
     ]);
 
     await expect(purgeExpiredRecords(NOW)).resolves.toEqual({
@@ -92,6 +96,7 @@ describe("purgeExpiredRecords", () => {
       resolvedTickets: 2,
       openTickets: 1,
       lessonPreviews: 3,
+      trashedNotes: 5,
     });
 
     expect(mockPrisma.$transaction).toHaveBeenCalledWith([
@@ -99,6 +104,7 @@ describe("purgeExpiredRecords", () => {
       "tickets",
       "tickets",
       "previews",
+      "notes",
     ]);
     expect(mockPrisma.auditLog.deleteMany).toHaveBeenCalledWith({
       where: { createdAt: { lt: monthsBefore(NOW, RETENTION_MONTHS.auditLog) } },
@@ -113,18 +119,29 @@ describe("purgeExpiredRecords", () => {
     expect(mockPrisma.lessonPreview.deleteMany).toHaveBeenCalledWith({
       where: { expiresAt: { lt: NOW } },
     });
+    // A note thrown away more than NOTE_TRASH_DAYS ago leaves the trash.
+    expect(mockPrisma.note.deleteMany).toHaveBeenCalledWith({
+      where: { deletedAt: { lt: trashExpiry(NOW) } },
+    });
     expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
       data: {
         actorId: null,
         action: "retention.purge",
         targetType: "Retention",
-        metadata: { auditLogs: 4, resolvedTickets: 2, openTickets: 1, lessonPreviews: 3 },
+        metadata: {
+          auditLogs: 4,
+          resolvedTickets: 2,
+          openTickets: 1,
+          lessonPreviews: 3,
+          trashedNotes: 5,
+        },
       },
     });
   });
 
   it("leaves no trace on a day with nothing to purge", async () => {
     mockPrisma.$transaction.mockResolvedValue([
+      { count: 0 },
       { count: 0 },
       { count: 0 },
       { count: 0 },

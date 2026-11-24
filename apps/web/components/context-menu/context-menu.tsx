@@ -5,14 +5,14 @@ import { createPortal } from "react-dom";
 import styles from "./context-menu.module.css";
 
 /**
- * The library's right-click menu.
+ * The site's right-click menu, and the notes library's.
  *
- * Everything it offers is already somewhere on the page - the reader's toolbar,
- * the "Gérer" panel, a drag onto a folder - but each of those is a trip: open
- * the note to move it, open the panel to rename a folder. The menu puts the
- * actions where the pointer already is. It adds no action of its own, so a
- * reader who never right-clicks loses nothing, and the phone, which has no
- * pointer, keeps its buttons.
+ * The site-wide one (site-context-menu.tsx) offers what the pointer is on - a
+ * link, an image, a selection - and the page's own moves; a surface with
+ * menus of its own (the notes library) opens this same component with its
+ * entries and keeps the page's from opening. Nothing in it is the only way to
+ * do a thing, so a reader who never right-clicks loses nothing, and the phone
+ * keeps its own long press.
  *
  * It is a plain menu in the ARIA sense: one list, focus moved with the arrow
  * keys, Enter to pick, Escape or a click elsewhere to close, focus handed back
@@ -96,7 +96,10 @@ export function keepsNativeMenu(event: { target: EventTarget | null; shiftKey: b
  * Shift+F10) comes with no pointer position, or a meaningless one: it then
  * opens under the element that has the focus.
  */
-export function menuPoint(event: React.MouseEvent, anchor: Element): { x: number; y: number } {
+export function menuPoint(
+  event: { clientX: number; clientY: number },
+  anchor: Element,
+): { x: number; y: number } {
   if (event.clientX !== 0 || event.clientY !== 0) return { x: event.clientX, y: event.clientY };
   const rect = anchor.getBoundingClientRect();
   return { x: rect.left + 12, y: rect.bottom - 4 };
@@ -115,6 +118,10 @@ export function useContextMenu(): {
       const back = current?.returnFocus;
       if (back) {
         requestAnimationFrame(() => {
+          // An item may have sent the focus somewhere (a dialog, the search
+          // field): leave it there. Only a focus left on nothing comes back.
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && active !== document.body && active !== back) return;
           if (back.isConnected) back.focus({ preventScroll: true });
         });
       }

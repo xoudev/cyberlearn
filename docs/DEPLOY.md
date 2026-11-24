@@ -251,7 +251,8 @@ faite en production avant cette version. La table qui la gardait,
 `review_schedules_legacy`, est supprimée (migration
 `20261023120000_drop_review_schedules_legacy`), et avec elle le script
 `db:backfill-review-cards` et la section `reviewSchedules` de l'export RGPD
-(version 1.2 du fichier : les cartes y restent dans `reviewCards`). Les règles de
+(version 1.2 du fichier : les cartes y restent dans `reviewCards`). La version 1.3 y ajoute le titre, l'épingle et la corbeille des
+notes, le parent des dossiers et les cartes tirées des notes (`noteCards`). Les règles de
 la conversion ne vivent plus que dans l'historique git
 (`packages/db/src/backfill-review-cards.ts`, avant sa suppression).
 

@@ -22,6 +22,8 @@ import {
   moderationRepository,
 } from "../repositories/moderation.repository.js";
 import { noteFolderRepository } from "../repositories/note-folder.repository.js";
+import { noteCardRepository } from "../repositories/note-card.repository.js";
+import { noteDisplayTitle } from "@cyberlearn/lib/notes/workspace";
 import { noteReportRepository } from "../repositories/note-report.repository.js";
 import { noteRepository } from "../repositories/note.repository.js";
 import {
@@ -150,7 +152,8 @@ export interface ExportPayload {
    * and comment. Not the note itself, which is its author's.
    */
   noteReports: {
-    lessonTitle: string;
+    /** The reported note's title. */
+    noteTitle: string;
     reason: string;
     comment: string | null;
     status: string;
@@ -323,14 +326,33 @@ export interface ExportPayload {
   // Art. 15 covers every personal datum, not just the ones the product
   // surfaces. Notes in particular are free text written by the account holder.
   notes: {
+    title: string;
     lessonTitle: string | null;
     folderName: string | null;
     content: string;
     wordCount: number;
+    pinned: boolean;
     createdAt: Date;
     updatedAt: Date;
+    /** Set while the note is in the trash. */
+    deletedAt: Date | null;
   }[];
-  noteFolders: { name: string; color: string | null; createdAt: Date }[];
+  noteFolders: {
+    name: string;
+    color: string | null;
+    parentName: string | null;
+    createdAt: Date;
+  }[];
+  /** The flashcards taken from the account's notes, and where each stands. */
+  noteCards: {
+    noteTitle: string;
+    front: string;
+    back: string;
+    box: number;
+    dueAt: Date;
+    retiredAt: Date | null;
+    createdAt: Date;
+  }[];
   quizAttempts: {
     pathTitle: string | null;
     score: number;
@@ -534,6 +556,7 @@ export async function buildExportPayload(
     moderationRepository.exportFor(userId),
   ]);
   const { cards: reviewCards, sessions: reviewSessions } = review;
+  const noteCards = await noteCardRepository.exportFor(userId);
 
   return {
     exportMetadata: {
@@ -541,7 +564,9 @@ export async function buildExportPayload(
       // 1.1 added the forum, friendships, classes, exercises, sanctions and
       // filter decisions. 1.2 drops reviewSchedules: the retired SM-2 queue's
       // table is gone, its rows converted into the reviewCards that stay.
-      version: "1.2",
+      // 1.3 gives notes a title, a pin and their trash date, folders their
+      // parent, and adds the flashcards taken from notes (noteCards).
+      version: "1.3",
       format: "json",
       rgpdContext: "Article 20 RGPD - Droit à la portabilité",
       rights: `${siteUrl}/privacy#section-7`,
@@ -586,7 +611,7 @@ export async function buildExportPayload(
       createdAt: r.createdAt,
     })),
     noteReports: noteReports.map((r) => ({
-      lessonTitle: r.note.lesson.title,
+      noteTitle: noteDisplayTitle(r.note.title, r.note.lesson?.title),
       reason: r.reason,
       comment: r.comment,
       status: r.status,
@@ -724,14 +749,31 @@ export async function buildExportPayload(
       grantReason: w.grantReason,
     })),
     notes: notes.map((n) => ({
-      lessonTitle: n.lesson.title,
+      title: noteDisplayTitle(n.title, n.lesson?.title),
+      lessonTitle: n.lesson?.title ?? null,
       folderName: n.folder?.name ?? null,
       content: n.content,
       wordCount: n.wordCount,
+      pinned: n.pinned,
       createdAt: n.createdAt,
       updatedAt: n.updatedAt,
+      deletedAt: n.deletedAt,
     })),
-    noteFolders,
+    noteFolders: noteFolders.map((f) => ({
+      name: f.name,
+      color: f.color,
+      parentName: f.parent?.name ?? null,
+      createdAt: f.createdAt,
+    })),
+    noteCards: noteCards.map((c) => ({
+      noteTitle: c.note.title,
+      front: c.front,
+      back: c.back,
+      box: c.box,
+      dueAt: c.dueAt,
+      retiredAt: c.retiredAt,
+      createdAt: c.createdAt,
+    })),
     quizAttempts: quizAttempts.map((a) => ({
       pathTitle: a.quiz.path.title,
       score: a.score,
