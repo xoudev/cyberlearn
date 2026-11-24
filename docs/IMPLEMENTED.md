@@ -187,6 +187,11 @@
 - Page de profil publique ou privée (toggle)
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
+- « Fermer mes autres sessions », dans la section Compte des paramètres : ferme
+  toutes les sessions du compte sauf celle qui le demande (les autres
+  navigateurs, l'app sur un téléphone), après une confirmation ; cinq fois par
+  quart d'heure au plus. Pour un ordinateur partagé ou un téléphone perdu, là
+  où changer de mot de passe ne ferme rien de ce qui est déjà ouvert
 - Préférences : répétition espacée (le rappel du jour) ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans la coquille de l'app (`components/app-shell.tsx`, dessinée par `(app)/layout.tsx`), les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse (entrée `settings` des fenêtres ouvertes par l'adresse, `components/query-dialogs.ts`, dessinées par `QueryDialogHost` monté dans la même coquille ; cadre `SideDrawer` de `@cyberlearn/ui`, voir `docs/dev/dialogs.md`)
 
