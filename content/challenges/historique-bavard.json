@@ -1,0 +1,35 @@
+{
+  "refCode": "CL-CHG-005",
+  "slug": "historique-bavard",
+  "title": "L'historique qui en dit trop",
+  "description": "Le jeton de déploiement n'est écrit nulle part, promis. Sauf que le terminal de Léa se souvient de tout ce qu'elle a tapé.",
+  "instructions": "## Le contexte\n\nLéa est en congé et l'équipe doit déployer sans elle. Le script `deploy.sh` de son projet attend un jeton que personne ne retrouve : il n'est ni dans le dépôt, ni dans le fichier d'exemple. Le dossier personnel de Léa a été copié dans la machine, sous `home/lea/`.\n\n## Ta mission\n\n1. Lis `home/lea/projet/deploy.sh` pour savoir sous quel nom et sous quelle forme le script attend le jeton.\n2. Un shell garde la liste des commandes tapées dans un fichier caché du dossier personnel. Trouve-le.\n3. Léa y a donné le jeton une fois, à la main. Il est écrit en hexadécimal : décode-le. Ce que tu obtiens est le flag.\n\n`ls -a`, `grep` et `xxd -r -p` suffisent.\n\n## Le flag\n\nLe flag a la forme `CL{` suivi de vingt caractères hexadécimaux et de `}`. Il est le tien : la machine de chaque élève a le sien, et celui d'un camarade ne marchera pas sur ton compte.",
+  "category": "DEV",
+  "difficulty": "BEGINNER",
+  "xpReward": 75,
+  "maxAttempts": 10,
+  "orderIndex": 5,
+  "prerequisite": "CL-CHG-004",
+  "machine": {
+    "title": "Le dossier personnel de Léa",
+    "files": {
+      "home/lea/notes.txt": "À faire avant les congés :\n- prévenir Hugo pour le déploiement de jeudi\n- le jeton n'est PAS dans le dépôt, je le donne à la main au moment de déployer\n",
+      "home/lea/.bash_history": "cd projet\ngit status\ngit pull\nnpm install\nnpm test\nvim src/facture.js\nnpm test\ngit add src/facture.js\ngit commit -m \"corrige le calcul de la TVA\"\ngit push\nls\ncat README.md\n./deploy.sh\ncat deploy.sh\necho $DEPLOY_TOKEN_HEX\ncat .env.example\ncd ..\nls -la\ncd projet\nexport DEPLOY_TOKEN_HEX={{FLAG_HEX}}\n./deploy.sh\ngit log --oneline | head\nnpm run build\ndu -sh dist\nunset DEPLOY_TOKEN_HEX\nvim notes.txt\ngit checkout -b refonte-pdf\nnpm install pdfkit\nnpm test\ngit stash\ngit checkout main\ngit stash pop\nhistory | tail\nclear\nexit\n",
+      "home/lea/.profile": "export EDITOR=vim\nexport PATH=\"$HOME/bin:$PATH\"\n",
+      "home/lea/projet/README.md": "# Facturation\n\nGénère les factures en PDF.\n\n## Déployer\n\n    ./deploy.sh\n\nLe script lit le jeton dans la variable DEPLOY_TOKEN_HEX. Elle ne doit jamais être écrite dans un fichier du dépôt.\n",
+      "home/lea/projet/deploy.sh": "#!/bin/sh\n# Déploie la version courante sur le serveur de production.\nset -e\n\nif [ -z \"$DEPLOY_TOKEN_HEX\" ]; then\n  echo \"DEPLOY_TOKEN_HEX est vide : exporte le jeton avant de déployer.\" >&2\n  exit 1\nfi\n\n# Le jeton est gardé en hexadécimal pour ne pas apparaître tel quel à l'écran.\nTOKEN=$(echo \"$DEPLOY_TOKEN_HEX\" | xxd -r -p)\n\necho \"Déploiement avec le jeton ${TOKEN%????????????????}...\"\n",
+      "home/lea/projet/.env.example": "# Copie ce fichier en .env pour le développement local.\nPORT=3000\nDEPLOY_TOKEN_HEX=\n",
+      "home/lea/projet/src/facture.js": "export function totalTTC(lignes, taux = 0.2) {\n  const ht = lignes.reduce((somme, ligne) => somme + ligne.prix * ligne.quantite, 0);\n  return Math.round(ht * (1 + taux) * 100) / 100;\n}\n"
+    }
+  },
+  "hints": [
+    {
+      "content": "ls -a home/lea montre les fichiers cachés. Celui du shell s'appelle .bash_history : une commande par ligne, dans l'ordre où elles ont été tapées.",
+      "xpCost": 10
+    },
+    {
+      "content": "grep DEPLOY home/lea/.bash_history montre la ligne où le jeton est exporté. Copie la valeur après le signe égal, puis : echo VALEUR | xxd -r -p.",
+      "xpCost": 20
+    }
+  ]
+}
