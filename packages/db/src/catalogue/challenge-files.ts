@@ -33,9 +33,48 @@ export function findChallengeDir(from: string = process.cwd()): string | null {
 const EM_DASH = String.fromCodePoint(0x2014);
 
 /**
+ * The challenges in an order where each one comes after its prerequisite: the
+ * order the console writes them in, since a challenge is refused while its
+ * prerequisite is not in the database.
+ *
+ * The page used to write them in file order, which is alphabetical. With the
+ * first three files, dossier-cache (after journal-bavard) came first and was
+ * refused; with eight, seven of them were. Among challenges that are free to
+ * go, the play order (orderIndex) then the refCode decide. A challenge whose
+ * prerequisite is not in the list, or that sits in a cycle, keeps its place
+ * at the end, so the console can still say why it is refused.
+ */
+export function inPrerequisiteOrder(loaded: readonly LoadedChallengeFile[]): LoadedChallengeFile[] {
+  const byPlay = [...loaded].sort(
+    (a, b) =>
+      a.challenge.orderIndex - b.challenge.orderIndex ||
+      a.challenge.refCode.localeCompare(b.challenge.refCode),
+  );
+  const known = new Set(byPlay.map((item) => item.challenge.refCode));
+  const placed = new Set<string>();
+  const ordered: LoadedChallengeFile[] = [];
+  let progressed = true;
+  while (progressed) {
+    progressed = false;
+    for (const item of byPlay) {
+      const { refCode, prerequisite } = item.challenge;
+      if (placed.has(refCode)) continue;
+      const ready =
+        prerequisite === undefined || placed.has(prerequisite) || !known.has(prerequisite);
+      if (!ready) continue;
+      ordered.push(item);
+      placed.add(refCode);
+      progressed = true;
+    }
+  }
+  return [...ordered, ...byPlay.filter((item) => !placed.has(item.challenge.refCode))];
+}
+
+/**
  * Every challenge file of the directory, each checked: the format, the file
  * named after its slug, no em-dash (the project's rule for authored text),
  * and across files, refCodes and slugs used once and prerequisites that exist.
+ * Returned in prerequisite order (inPrerequisiteOrder).
  */
 export function loadChallengeFiles(dir: string): {
   challenges: LoadedChallengeFile[];
@@ -87,5 +126,5 @@ export function loadChallengeFiles(dir: string): {
     }
   }
 
-  return { challenges, errors };
+  return { challenges: inPrerequisiteOrder(challenges), errors };
 }
