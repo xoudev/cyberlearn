@@ -4806,21 +4806,46 @@ main:has(.lesson-notes--wide.side-drawer--docked) {
   color: #f4f2ed;
   overflow-wrap: anywhere;
 }
-.lesson-notes__format {
+/* The note's editor (components/notes/editor): it fills the drawer under the
+   lesson's line, its toolbar on top and its footer kept by the drawer. */
+.lesson-notes__editor-wrap {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  flex-shrink: 0;
+  flex-direction: column;
+}
+.lesson-notes__editor-wrap .note-editor {
+  border: 0;
+  flex: 1;
+}
+/* "Ajouter à mes notes" (add-to-notes.tsx): over the passage selected. */
+.add-to-notes {
+  position: fixed;
+  z-index: 60;
+  translate: -50% -100%;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+  min-height: 36px;
   padding: 6px 12px;
-  border-bottom: 1px solid #303137;
+  color: var(--cosmetic-accent-ink, #0b0c0e);
+  background: var(--cosmetic-accent);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 10px 24px #0009;
+  font:
+    600 13px var(--font-interface),
+    sans-serif;
+  cursor: pointer;
 }
-.lesson-notes__format-sep {
-  width: 1px;
-  height: 18px;
-  margin: 0 6px;
-  background: #303137;
+.add-to-notes:hover {
+  background: var(--cosmetic-accent-hover);
 }
-/* The formatting buttons and "Agrandir" (note-drawer.tsx). The sizes are here,
+.add-to-notes:focus-visible {
+  outline: 2px solid #f4f2ed;
+  outline-offset: 2px;
+}
+/* "Agrandir" (note-drawer.tsx) and the editor's tools. The sizes are here,
    not inline, so that a touch screen can give them the 44px a thumb needs;
    the close button of the same drawer follows. */
 .lesson-notes__tool {
@@ -4858,23 +4883,6 @@ main:has(.lesson-notes--wide.side-drawer--docked) {
   background: #eae7df;
   border-color: #eae7df;
   color: #141518;
-}
-.lesson-notes__editor {
-  flex: 1;
-  width: 100%;
-  min-height: 160px;
-  padding: 18px 20px;
-  resize: none;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #f4f2ed;
-  font-family: var(--font-interface), sans-serif;
-  font-size: 15px;
-  line-height: 1.75;
-}
-.lesson-notes__editor::placeholder {
-  color: #74767d;
 }
 /* The footer: how the save went, marked by a square in its colour, then the
    words, the count and the way to every note. */
@@ -4927,9 +4935,9 @@ main:has(.lesson-notes--wide.side-drawer--docked) {
   }
 }
 @media (pointer: coarse) {
-  .lesson-notes__tool,
   .lesson-notes__expand,
-  .lesson-notes .side-drawer__close {
+  .lesson-notes .side-drawer__close,
+  .note-editor__tool {
     width: 44px;
     height: 44px;
   }

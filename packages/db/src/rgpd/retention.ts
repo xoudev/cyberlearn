@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { NOTE_TRASH_DAYS } from "@cyberlearn/lib/notes/workspace";
 import { prisma } from "../prisma.js";
 
 /**
@@ -34,6 +35,13 @@ export interface RetentionSummary {
   openTickets: number;
   /** Editor previews past their half hour (lesson-preview.repository.ts). */
   lessonPreviews: number;
+  /** Notes left in the trash past NOTE_TRASH_DAYS (note.repository.ts). */
+  trashedNotes: number;
+}
+
+/** A note thrown away before this instant has spent its NOTE_TRASH_DAYS in the trash. */
+export function trashExpiry(now: Date): Date {
+  return new Date(now.getTime() - NOTE_TRASH_DAYS * 86_400_000);
 }
 
 /**
@@ -93,27 +101,31 @@ export function expiredTicketFilters(now: Date): {
 }
 
 /**
- * Deletes what has outlived its retention: audit entries, and support tickets
- * with their messages (by cascade). Idempotent: a second run the same day
+ * Deletes what has outlived its retention: audit entries, support tickets
+ * with their messages (by cascade), and notes left in the trash with their
+ * cards. Idempotent: a second run the same day
  * finds nothing. Records what it did in the audit log, which this same job
  * empties in turn twelve months later.
  */
 export async function purgeExpiredRecords(now: Date): Promise<RetentionSummary> {
   const tickets = expiredTicketFilters(now);
-  const [auditLogs, resolvedTickets, openTickets, lessonPreviews] = await prisma.$transaction([
-    prisma.auditLog.deleteMany({
-      where: { createdAt: { lt: monthsBefore(now, RETENTION_MONTHS.auditLog) } },
-    }),
-    prisma.contactTicket.deleteMany({ where: tickets.resolved }),
-    prisma.contactTicket.deleteMany({ where: tickets.open }),
-    prisma.lessonPreview.deleteMany({ where: { expiresAt: { lt: now } } }),
-  ]);
+  const [auditLogs, resolvedTickets, openTickets, lessonPreviews, trashedNotes] =
+    await prisma.$transaction([
+      prisma.auditLog.deleteMany({
+        where: { createdAt: { lt: monthsBefore(now, RETENTION_MONTHS.auditLog) } },
+      }),
+      prisma.contactTicket.deleteMany({ where: tickets.resolved }),
+      prisma.contactTicket.deleteMany({ where: tickets.open }),
+      prisma.lessonPreview.deleteMany({ where: { expiresAt: { lt: now } } }),
+      prisma.note.deleteMany({ where: { deletedAt: { lt: trashExpiry(now) } } }),
+    ]);
 
   const summary: RetentionSummary = {
     auditLogs: auditLogs.count,
     resolvedTickets: resolvedTickets.count,
     openTickets: openTickets.count,
     lessonPreviews: lessonPreviews.count,
+    trashedNotes: trashedNotes.count,
   };
   if (Object.values(summary).some((count) => count > 0)) {
     await prisma.auditLog.create({

@@ -18,6 +18,11 @@ describe("pdfkit's standard fonts", () => {
     expect(names).toContain("SpaceGrotesk.ttf");
     expect(names).toContain("SpaceGrotesk-Regular.ttf");
     expect(names).toContain("NotoSans-Regular.ttf");
+    // The notes PDF: bold text, and code in JetBrains Mono.
+    expect(names).toContain("SpaceGrotesk-Bold.ttf");
+    expect(names).toContain("JetBrainsMono-Regular.ttf");
+    expect(names).toContain("JetBrainsMono-Bold.ttf");
+    expect(names).toContain("JetBrainsMono-Italic.ttf");
   });
   it("are found where next.config.ts looks for them", () => {
     const found = globSync(PDFKIT_STANDARD_FONTS.replace("{cjs,mjs}", "cjs"), { cwd: APP_ROOT });
@@ -29,6 +34,7 @@ describe("pdfkit's standard fonts", () => {
 
   it("go to the sheet's route, and to the routes that issue a certificate", () => {
     expect(PDF_ROUTES).toContain("/api/paths/*/sheet");
+    expect(PDF_ROUTES).toContain("/api/notes/pdf");
     expect(PDF_ROUTES).toContain("/lessons/*");
     expect(PDF_ROUTES).toContain("/api/mobile/**");
   });

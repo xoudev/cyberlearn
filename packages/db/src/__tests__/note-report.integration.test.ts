@@ -100,7 +100,7 @@ describe("noteReportRepository (integration, real DB)", () => {
     const group = (await noteReportRepository.openByNote()).find((g) => g.noteId === noteId);
     expect(group).toMatchObject({
       content: "Texte signalé",
-      lessonTitle: "Chiffrement",
+      title: "Chiffrement",
       authorDisplayName: "Auteur",
       shareCount: 1,
     });

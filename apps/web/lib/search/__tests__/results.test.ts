@@ -32,6 +32,7 @@ const note = (n: number, lessonTitle: string, content: string): SearchRows["note
   content,
   wordCount: content.split(/\s+/u).length,
   updatedAt: new Date("2026-03-04T10:00:00Z"),
+  title: lessonTitle,
   lessonId: `lesson-${String(n)}`,
   lessonSlug: `lecon-${String(n)}`,
   lessonTitle,

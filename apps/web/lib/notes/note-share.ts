@@ -195,9 +195,11 @@ export async function sharedWithMeFor(userId: string): Promise<MobileIncomingNot
     wordCount: n.wordCount,
     updatedAt: n.updatedAt.toISOString(),
     sharedAt: n.sharedAt.toISOString(),
-    lessonSlug: n.lessonSlug,
-    lessonTitle: n.lessonTitle,
-    lessonCategory: n.lessonCategory,
+    // The app titles a received note by these fields: a note on no lesson
+    // gives its own title and no category (the app tints it neutral).
+    lessonSlug: n.lessonSlug ?? "",
+    lessonTitle: n.title,
+    lessonCategory: n.lessonCategory ?? "",
     authorName: n.authorName,
   }));
 }

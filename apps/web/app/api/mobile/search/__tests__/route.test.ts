@@ -26,11 +26,26 @@ describe("GET /api/mobile/search", () => {
   });
 
   it("searches as the caller with the term given", async () => {
-    const groups = [{ kind: "path", label: "Parcours", results: [] }];
+    const lesson = { kind: "lesson", id: "l1", title: "Injection SQL", ref: "injection-sql" };
+    const groups = [{ kind: "lesson", label: "Leçons", results: [lesson] }];
     m.searchFor.mockResolvedValue(groups);
     const res = await GET(new NextRequest("https://cyberlearn.fr/api/mobile/search?q=sql"));
     expect(await res.json()).toEqual({ ok: true, groups });
     expect(m.searchFor).toHaveBeenCalledWith("user-1", "sql");
+  });
+
+  it("leaves out the notes on no lesson, which the app cannot open yet", async () => {
+    const onLesson = { kind: "note", id: "n1", title: "Ma note", ref: "lesson-1" };
+    const free = { kind: "note", id: "n2", title: "Mémo libre", ref: "" };
+    m.searchFor.mockResolvedValue([
+      { kind: "note", label: "Mes notes", results: [onLesson, free] },
+      { kind: "note", label: "Seules", results: [free] },
+    ]);
+    const res = await GET(new NextRequest("https://cyberlearn.fr/api/mobile/search?q=note"));
+    expect(await res.json()).toEqual({
+      ok: true,
+      groups: [{ kind: "note", label: "Mes notes", results: [onLesson] }],
+    });
   });
 
   it("passes no term on as none", async () => {
