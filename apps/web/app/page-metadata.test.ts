@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { describe, expect, it, vi } from "vitest";
 import { OPEN_GRAPH_SITE, pageAddress } from "./page-metadata";
 import { SITE_URL } from "./site-url";
-import sitemap from "./sitemap";
+import { fixedSitemapEntries } from "./sitemap-pages";
 
 /**
  * Each public page's canonical link and link preview are its own.
@@ -88,7 +88,8 @@ describe("the root layout", () => {
 });
 
 describe("the pages of the sitemap", () => {
-  const paths = sitemap().map(({ url }) => url.slice(SITE_URL.length) || "/");
+  // The fixed pages: a path of the catalogue has its metadata tested with its page.
+  const paths = fixedSitemapEntries().map(({ url }) => url.slice(SITE_URL.length) || "/");
 
   it("all have a source listed here", () => {
     expect(Object.keys(SOURCES).sort()).toEqual([...paths].sort());

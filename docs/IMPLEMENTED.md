@@ -15,6 +15,7 @@
 |---|---|
 | `/` | Accueil public : banc d'essai de trois exercices d'aperçu (HTTP, injection SQL, Python), domaines, ateliers des leçons, trajet d'une leçon, badges, parcours et chiffres du catalogue |
 | `/catalogue` | Catalogue public des parcours et des leçons |
+| `/catalogue/[slug]` | Page publique d'un parcours du catalogue : ce qu'il enseigne, son niveau, sa durée, ce qui le conclut (examen, certificat), et son programme module par module, chaque leçon nommée et décrite sans que son contenu soit montré. Une carte du catalogue y mène un visiteur, qui y trouve l'inscription ; un membre connecté est envoyé à `/paths/[slug]`. Données structurées `Course` pour les moteurs de recherche, et une adresse par parcours dans `sitemap.xml` |
 | `/login` | Connexion (e-mail + mot de passe, OAuth GitHub) |
 | `/register` | Création de compte |
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
@@ -187,6 +188,11 @@
 - Page de profil publique ou privée (toggle)
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
+- « Fermer mes autres sessions », dans la section Compte des paramètres : ferme
+  toutes les sessions du compte sauf celle qui le demande (les autres
+  navigateurs, l'app sur un téléphone), après une confirmation ; cinq fois par
+  quart d'heure au plus. Pour un ordinateur partagé ou un téléphone perdu, là
+  où changer de mot de passe ne ferme rien de ce qui est déjà ouvert
 - Préférences : répétition espacée (le rappel du jour) ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans la coquille de l'app (`components/app-shell.tsx`, dessinée par `(app)/layout.tsx`), les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse (entrée `settings` des fenêtres ouvertes par l'adresse, `components/query-dialogs.ts`, dessinées par `QueryDialogHost` monté dans la même coquille ; cadre `SideDrawer` de `@cyberlearn/ui`, voir `docs/dev/dialogs.md`)
 
@@ -331,6 +337,7 @@
 | `/` | Redirige vers `/dashboard` |
 | `/login` | Connexion admin |
 | `/dashboard` | Stats globales, recherche, et issues Sentry non résolues |
+| `/usage` | Mesures d'usage : comptes actifs aujourd'hui, sur 7 et sur 30 jours (un jour actif est un jour où une leçon est terminée, un défi résolu ou le rappel du jour fait), courbe des 30 derniers jours ; inscriptions des 8 dernières semaines avec, pour chaque semaine, le profil terminé, une première leçon terminée et le retour en deuxième semaine (entre le 7e et le 13e jour, parmi les comptes assez anciens pour le dire) ; les leçons du catalogue qui perdent le plus de lecteurs (ouvertes par 5 personnes au moins, laissées en cours sans y revenir depuis 14 jours). Lu par `usageRepository`, compté dans `apps/admin/lib/usage.ts` |
 | `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview), qui s'ouvre ensuite dans son studio |
 | `/lessons/[id]` | Studio de la leçon : sa fiche dans un rail, l'éditeur et l'aperçu du site côte à côte sur toute la largeur, brouillon enregistré seul, « Publier les changements », versions à restaurer ; dessous, ses parcours et prérequis, et les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, avec un lien vers tous. `/lessons/[id]/edit` y redirige (`next.config.ts`) |

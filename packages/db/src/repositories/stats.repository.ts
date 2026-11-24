@@ -34,6 +34,21 @@ export interface PublicCatalogPath extends FeaturedPath {
   coverImageUrl: string | null;
 }
 
+/** One path of the public catalogue, with its programme: what a visitor reads before signing up. */
+export interface PublicPathDetail extends PublicCatalogPath {
+  /** Whether a final exam closes the path. */
+  hasExam: boolean;
+  modules: { id: string; position: number; title: string; description: string | null }[];
+  /** Its published lessons, in the path's order: their names, never their content. */
+  programme: {
+    title: string;
+    description: string;
+    estimatedMinutes: number;
+    moduleId: string | null;
+  }[];
+  updatedAt: Date;
+}
+
 export const statsRepository = {
   /**
    * Public counters for the landing page. Read-only aggregates over published
@@ -279,5 +294,87 @@ export const statsRepository = {
       recentLogs,
       recentUsers,
     };
+  },
+
+  /**
+   * One path of the public catalogue by its slug, with its programme. Null
+   * for a draft, an archived path, a class's own path or a slug nobody has:
+   * the same answer for all four, so the page says nothing of which.
+   *
+   * The lessons are named and described, never handed over: their content
+   * stays behind the account.
+   */
+  async findPublicPath(slug: string): Promise<PublicPathDetail | null> {
+    const path = await prisma.path.findFirst({
+      where: { slug, ...CATALOGUE_PATH },
+      select: {
+        slug: true,
+        refCode: true,
+        title: true,
+        description: true,
+        category: true,
+        track: true,
+        difficulty: true,
+        estimatedHours: true,
+        certificateTemplate: true,
+        avgRating: true,
+        ratingsCount: true,
+        coverImageUrl: true,
+        updatedAt: true,
+        quiz: { select: { isActive: true } },
+        modules: {
+          orderBy: { position: "asc" },
+          select: { id: true, position: true, title: true, description: true },
+        },
+        lessons: {
+          where: PUBLISHED_PATH_LESSON,
+          orderBy: { position: "asc" },
+          select: {
+            moduleId: true,
+            lesson: {
+              select: { title: true, description: true, estimatedMinutes: true, xpReward: true },
+            },
+          },
+        },
+      },
+    });
+    if (!path) return null;
+
+    return {
+      slug: path.slug,
+      refCode: path.refCode,
+      title: path.title,
+      description: path.description,
+      category: path.category,
+      track: path.track,
+      difficulty: path.difficulty,
+      estimatedHours: path.estimatedHours,
+      lessons: path.lessons.length,
+      xp: path.lessons.reduce((sum, item) => sum + item.lesson.xpReward, 0),
+      hasCertificate: path.certificateTemplate !== null,
+      hasExam: path.quiz?.isActive === true,
+      rating:
+        path.avgRating !== null && path.ratingsCount > 0
+          ? { avg: path.avgRating, count: path.ratingsCount }
+          : null,
+      coverImageUrl: path.coverImageUrl,
+      modules: path.modules,
+      programme: path.lessons.map((item) => ({
+        title: item.lesson.title,
+        description: item.lesson.description,
+        estimatedMinutes: item.lesson.estimatedMinutes,
+        moduleId: item.moduleId,
+      })),
+      updatedAt: path.updatedAt,
+    };
+  },
+
+  /** The address of every path of the public catalogue, for the sitemap. */
+  async findPublicPathSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
+    return prisma.path.findMany({
+      where: CATALOGUE_PATH,
+      orderBy: { slug: "asc" },
+      select: { slug: true, updatedAt: true },
+    });
   },
 };

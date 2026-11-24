@@ -180,6 +180,8 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/u/") ||
     pathname.startsWith("/contact") ||
     pathname === "/catalogue" ||
+    // One path of the catalogue, with its programme: public like the list.
+    pathname.startsWith("/catalogue/") ||
     pathname === "/glossaire" ||
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||

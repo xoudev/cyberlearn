@@ -34,6 +34,7 @@ MFA from the native security screen; once enabled, the challenge is enforced
 before application data is mounted.
 
 Everything server-side goes through `apps/web/app/api/mobile/*` (Bearer JWT):
+
 - `POST /progress` - lesson completion via the same `completeLessonForUser`
   flow as the web (XP ledger, streak, badges, quests, certificates).
 - `GET /leaderboard` - leaderboard + pod ladder (RLS keeps pods server-side).
@@ -44,11 +45,13 @@ Everything server-side goes through `apps/web/app/api/mobile/*` (Bearer JWT):
 ## Run it
 
 1. `apps/mobile/.env.local` needs the public Supabase config (same project as web):
+
    ```
    EXPO_PUBLIC_SUPABASE_URL=...
    EXPO_PUBLIC_SUPABASE_ANON_KEY=...
    EXPO_PUBLIC_SITE_URL=https://cyberlearn.fr
    ```
+
    (See `.env.example`. Values are public / RLS-protected.)
 2. From the repo root: `pnpm install`.
 3. `pnpm --filter @cyberlearn/mobile dev` (or `cd apps/mobile && npx expo start`).

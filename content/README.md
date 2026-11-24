@@ -100,24 +100,24 @@ plage suffit à savoir à quel parcours appartient une leçon.
 Le tableau est dérivé de `packages/db/prisma/seed-paths.ts`, qui reste la source
 de vérité pour l'ordre d'étude à l'intérieur d'un parcours.
 
-| refCode | Dossier | Parcours | Domaine | Difficulté | Durée | Leçons | Plage | Quiz final |
-|---|---|---|---|---|---|:-:|---|:-:|
-| CL-PATH-001-V01 | `python/` | Python : des bases à la pratique | DEV | BEGINNER | ~6 h | 12 | CL-LSN-001–012 | ✅ |
-| CL-PATH-002-V01 | `javascript/` | JavaScript moderne : du navigateur à l'app | DEV | BEGINNER | ~6 h | 12 | CL-LSN-013–024 | ✅ |
-| CL-PATH-003-V01 | `c/` | C : programmation système et bas niveau | DEV | BEGINNER | ~7 h | 12 | CL-LSN-025–036 | ✅ |
-| CL-PATH-004-V01 | `asm/` | Assembleur x86-64 : au cœur du processeur | DEV | INTERMEDIATE | ~7 h | 12 | CL-LSN-037–048 | ✅ |
-| CL-PATH-005-V01 | `linux/` | Linux et la ligne de commande | DEV | BEGINNER | ~7 h | 12 | CL-LSN-049–060 | ✅ |
-| CL-PATH-006-V01 | `git-docker-cicd/` | Git, Docker et CI/CD | DEV | INTERMEDIATE | ~8 h | 12 | CL-LSN-061–072 | ✅ |
-| CL-PATH-007-V01 | `cyber-fondamentaux/` | Cybersécurité : les fondamentaux | CYBERSEC | BEGINNER | ~7 h | 12 | CL-LSN-073–084 | ✅ |
-| CL-PATH-008-V01 | `cyber-web/` | Sécurité web : le Top 10 OWASP en pratique | CYBERSEC | INTERMEDIATE | ~8 h | 12 | CL-LSN-085–096 | ✅ |
-| CL-PATH-009-V01 | `cyber-crypto/` | Cryptographie : de la théorie à la pratique | CYBERSEC | INTERMEDIATE | ~8 h | 12 | CL-LSN-097–108 | ✅ |
-| CL-PATH-010-V01 | `cyber-pentest/` | Test d'intrusion : la démarche offensive | CYBERSEC | ADVANCED | ~9 h | 12 | CL-LSN-109–120 | ✅ |
-| CL-PATH-011-V01 | `cyber-grc/` | Gouvernance, risque et conformité | CYBERSEC | INTERMEDIATE | ~7 h | 12 | CL-LSN-121–132 | ✅ |
-| CL-PATH-012-V01 | `cyber-blueteam/` | Blue team et SOC : défendre et détecter | CYBERSEC | INTERMEDIATE | ~8 h | 12 | CL-LSN-133–144 | ✅ |
-| CL-PATH-013-V01 | `cyber-osint/` | OSINT : renseignement en sources ouvertes | CYBERSEC | INTERMEDIATE | ~7 h | 12 | CL-LSN-145–156 | ✅ |
-| CL-PATH-014-V01 | `reseau/` | Réseaux : de la trame au web | NETWORK | INTERMEDIATE | ~8 h | 12 | CL-LSN-157–168 | ✅ |
-| CL-PATH-015-V01 | `cloud/` | Le cloud : concevoir et sécuriser | NETWORK | INTERMEDIATE | ~8 h | 12 | CL-LSN-169–180 | ✅ |
-| CL-PATH-016-V01 | `systeme/` | Administration système Linux | DEV | INTERMEDIATE | ~9 h | 12 | CL-LSN-181–192 | ✅ |
+| refCode         | Dossier               | Parcours                                    | Domaine  | Difficulté   | Durée | Leçons | Plage          | Quiz final |
+| --------------- | --------------------- | ------------------------------------------- | -------- | ------------ | ----- | :----: | -------------- | :--------: |
+| CL-PATH-001-V01 | `python/`             | Python : des bases à la pratique            | DEV      | BEGINNER     | ~6 h  |   12   | CL-LSN-001–012 |     ✅     |
+| CL-PATH-002-V01 | `javascript/`         | JavaScript moderne : du navigateur à l'app  | DEV      | BEGINNER     | ~6 h  |   12   | CL-LSN-013–024 |     ✅     |
+| CL-PATH-003-V01 | `c/`                  | C : programmation système et bas niveau     | DEV      | BEGINNER     | ~7 h  |   12   | CL-LSN-025–036 |     ✅     |
+| CL-PATH-004-V01 | `asm/`                | Assembleur x86-64 : au cœur du processeur   | DEV      | INTERMEDIATE | ~7 h  |   12   | CL-LSN-037–048 |     ✅     |
+| CL-PATH-005-V01 | `linux/`              | Linux et la ligne de commande               | DEV      | BEGINNER     | ~7 h  |   12   | CL-LSN-049–060 |     ✅     |
+| CL-PATH-006-V01 | `git-docker-cicd/`    | Git, Docker et CI/CD                        | DEV      | INTERMEDIATE | ~8 h  |   12   | CL-LSN-061–072 |     ✅     |
+| CL-PATH-007-V01 | `cyber-fondamentaux/` | Cybersécurité : les fondamentaux            | CYBERSEC | BEGINNER     | ~7 h  |   12   | CL-LSN-073–084 |     ✅     |
+| CL-PATH-008-V01 | `cyber-web/`          | Sécurité web : le Top 10 OWASP en pratique  | CYBERSEC | INTERMEDIATE | ~8 h  |   12   | CL-LSN-085–096 |     ✅     |
+| CL-PATH-009-V01 | `cyber-crypto/`       | Cryptographie : de la théorie à la pratique | CYBERSEC | INTERMEDIATE | ~8 h  |   12   | CL-LSN-097–108 |     ✅     |
+| CL-PATH-010-V01 | `cyber-pentest/`      | Test d'intrusion : la démarche offensive    | CYBERSEC | ADVANCED     | ~9 h  |   12   | CL-LSN-109–120 |     ✅     |
+| CL-PATH-011-V01 | `cyber-grc/`          | Gouvernance, risque et conformité           | CYBERSEC | INTERMEDIATE | ~7 h  |   12   | CL-LSN-121–132 |     ✅     |
+| CL-PATH-012-V01 | `cyber-blueteam/`     | Blue team et SOC : défendre et détecter     | CYBERSEC | INTERMEDIATE | ~8 h  |   12   | CL-LSN-133–144 |     ✅     |
+| CL-PATH-013-V01 | `cyber-osint/`        | OSINT : renseignement en sources ouvertes   | CYBERSEC | INTERMEDIATE | ~7 h  |   12   | CL-LSN-145–156 |     ✅     |
+| CL-PATH-014-V01 | `reseau/`             | Réseaux : de la trame au web                | NETWORK  | INTERMEDIATE | ~8 h  |   12   | CL-LSN-157–168 |     ✅     |
+| CL-PATH-015-V01 | `cloud/`              | Le cloud : concevoir et sécuriser           | NETWORK  | INTERMEDIATE | ~8 h  |   12   | CL-LSN-169–180 |     ✅     |
+| CL-PATH-016-V01 | `systeme/`            | Administration système Linux                | DEV      | INTERMEDIATE | ~9 h  |   12   | CL-LSN-181–192 |     ✅     |
 
 Le nom du dossier n'est pas le slug du parcours : `cyber-web/` porte
 `cyber-web-owasp`, `systeme/` porte `admin-systeme-linux`. C'est le slug, pas le
@@ -131,20 +131,20 @@ types, conditions, boucles, fonctions, listes/tuples, dictionnaires/ensembles,
 chaînes, compréhensions, gestion d'erreurs, modules, POO, et un projet final
 (gestionnaire de tâches CLI).
 
-| # | refCode | Leçon | Difficulté |
-|---|---------|-------|------------|
-| 1 | CL-LSN-001-V01 | Premiers pas en Python : variables et types | BEGINNER |
-| 2 | CL-LSN-002-V01 | Conditions et logique booléenne en Python | BEGINNER |
-| 3 | CL-LSN-003-V01 | Les boucles en Python : for et while | BEGINNER |
-| 4 | CL-LSN-004-V01 | Écrire et utiliser des fonctions en Python | BEGINNER |
-| 5 | CL-LSN-005-V01 | Listes et tuples en Python | BEGINNER |
-| 6 | CL-LSN-006-V01 | Dictionnaires et ensembles en Python | INTERMEDIATE |
-| 7 | CL-LSN-007-V01 | Manipuler les chaînes de caractères en Python | INTERMEDIATE |
-| 8 | CL-LSN-008-V01 | Compréhensions de listes et de dictionnaires | INTERMEDIATE |
-| 9 | CL-LSN-009-V01 | Gérer les erreurs avec try et except | INTERMEDIATE |
-| 10 | CL-LSN-010-V01 | Modules et bibliothèque standard Python | INTERMEDIATE |
-| 11 | CL-LSN-011-V01 | Introduction à la programmation orientée objet | INTERMEDIATE |
-| 12 | CL-LSN-012-V01 | Projet : un gestionnaire de tâches en ligne de commande | INTERMEDIATE |
+| #   | refCode        | Leçon                                                   | Difficulté   |
+| --- | -------------- | ------------------------------------------------------- | ------------ |
+| 1   | CL-LSN-001-V01 | Premiers pas en Python : variables et types             | BEGINNER     |
+| 2   | CL-LSN-002-V01 | Conditions et logique booléenne en Python               | BEGINNER     |
+| 3   | CL-LSN-003-V01 | Les boucles en Python : for et while                    | BEGINNER     |
+| 4   | CL-LSN-004-V01 | Écrire et utiliser des fonctions en Python              | BEGINNER     |
+| 5   | CL-LSN-005-V01 | Listes et tuples en Python                              | BEGINNER     |
+| 6   | CL-LSN-006-V01 | Dictionnaires et ensembles en Python                    | INTERMEDIATE |
+| 7   | CL-LSN-007-V01 | Manipuler les chaînes de caractères en Python           | INTERMEDIATE |
+| 8   | CL-LSN-008-V01 | Compréhensions de listes et de dictionnaires            | INTERMEDIATE |
+| 9   | CL-LSN-009-V01 | Gérer les erreurs avec try et except                    | INTERMEDIATE |
+| 10  | CL-LSN-010-V01 | Modules et bibliothèque standard Python                 | INTERMEDIATE |
+| 11  | CL-LSN-011-V01 | Introduction à la programmation orientée objet          | INTERMEDIATE |
+| 12  | CL-LSN-012-V01 | Projet : un gestionnaire de tâches en ligne de commande | INTERMEDIATE |
 
 Les quinze autres suivent la même forme : douze leçons en progression, chacune
 exécutable dans le navigateur quand le domaine le permet (CodePlayground,
@@ -168,9 +168,7 @@ par un manifeste, `content/paths/<slug>.json` : ses métadonnées et ses
   "difficulty": "BEGINNER",
   "estimatedHours": 60,
   "description": "…",
-  "modules": [
-    { "title": "Découvrir Linux et le shell", "lessons": ["CL-LSN-02001-V01", "…"] }
-  ]
+  "modules": [{ "title": "Découvrir Linux et le shell", "lessons": ["CL-LSN-02001-V01", "…"] }]
 }
 ```
 

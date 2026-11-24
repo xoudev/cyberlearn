@@ -31,6 +31,7 @@ export type {
   LandingStats,
   FeaturedPath,
   PublicCatalogPath,
+  PublicPathDetail,
 } from "./repositories/stats.repository.js";
 export type {
   CatalogueFilters,
@@ -216,6 +217,13 @@ export {
   type SeasonReferenceQuery,
   type SeasonReferenceRow,
 } from "./repositories/reference.repository.js";
+export {
+  usageRepository,
+  STALLED_AFTER_DAYS,
+  type UsageActivityDay,
+  type UsageLessonRow,
+  type UsageSignup,
+} from "./repositories/usage.repository.js";
 export {
   cronRunRepository,
   cronRunAction,

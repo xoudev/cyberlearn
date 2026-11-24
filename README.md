@@ -14,7 +14,7 @@ parcours certifiants - pensé pour la communauté francophone.
 ![Tailwind v4](https://img.shields.io/badge/Tailwind-v4-38BDF8)
 ![pnpm 9](https://img.shields.io/badge/pnpm-9-F69220)
 
-*Projet étudiant solo. Construit pour apprendre, pas pour lever des fonds.*
+_Projet étudiant solo. Construit pour apprendre, pas pour lever des fonds._
 
 </div>
 
@@ -56,19 +56,19 @@ parcours certifiants - pensé pour la communauté francophone.
 
 ## Stack
 
-| Domaine | Choix |
-|---|---|
-| Framework | Next.js 15 (App Router, RSC, Server Actions) |
-| Langage | TypeScript 5 strict - zéro `any` |
-| Monorepo | Turborepo + pnpm 9 workspaces (`catalog:`) |
-| Base de données | Supabase Postgres + Prisma 6 (RLS versionnée dans les migrations) |
-| Auth | Supabase Auth - e-mail + mot de passe, GitHub OAuth, TOTP optionnel (obligatoire côté admin) ; rôle injecté dans le JWT par Edge Function |
-| UI | Tailwind CSS v4 (CSS-first) + shadcn/ui + design system maison |
-| Validation | Zod sur toutes les entrées (Server Actions, Route Handlers, formulaires) |
-| State / data | TanStack Query v5 |
-| Email | Resend + React Email |
-| Tests | Vitest (unit + intégration) · tests RLS/IDOR sur stack Supabase éphémère · rendu des mails vérifié sur le HTML produit |
-| Observabilité | Sentry (PII scrubbing), rate limiting Upstash Redis |
+| Domaine         | Choix                                                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework       | Next.js 15 (App Router, RSC, Server Actions)                                                                                              |
+| Langage         | TypeScript 5 strict - zéro `any`                                                                                                          |
+| Monorepo        | Turborepo + pnpm 9 workspaces (`catalog:`)                                                                                                |
+| Base de données | Supabase Postgres + Prisma 6 (RLS versionnée dans les migrations)                                                                         |
+| Auth            | Supabase Auth - e-mail + mot de passe, GitHub OAuth, TOTP optionnel (obligatoire côté admin) ; rôle injecté dans le JWT par Edge Function |
+| UI              | Tailwind CSS v4 (CSS-first) + shadcn/ui + design system maison                                                                            |
+| Validation      | Zod sur toutes les entrées (Server Actions, Route Handlers, formulaires)                                                                  |
+| State / data    | TanStack Query v5                                                                                                                         |
+| Email           | Resend + React Email                                                                                                                      |
+| Tests           | Vitest (unit + intégration) · tests RLS/IDOR sur stack Supabase éphémère · rendu des mails vérifié sur le HTML produit                    |
+| Observabilité   | Sentry (PII scrubbing), rate limiting Upstash Redis                                                                                       |
 
 ## Architecture
 
@@ -118,11 +118,11 @@ et [docs/rgpd/](docs/rgpd/).
 
 ### Prérequis
 
-| Outil | Version |
-|---|---|
-| Node.js | 22.x LTS |
-| pnpm | 9.x (`npm i -g pnpm@9`) |
-| Git | récent (hooks Husky) |
+| Outil   | Version                 |
+| ------- | ----------------------- |
+| Node.js | 22.x LTS                |
+| pnpm    | 9.x (`npm i -g pnpm@9`) |
+| Git     | récent (hooks Husky)    |
 
 ### Installation
 
@@ -148,16 +148,16 @@ pnpm --filter @cyberlearn/admin dev        # admin seule
 
 ## Commandes
 
-| Commande | Description |
-|---|---|
-| `pnpm build` | Build production (toutes les apps et packages) |
-| `pnpm lint` / `pnpm lint:fix` | ESLint strict sur tous les packages |
-| `pnpm format` / `pnpm format:check` | Formatage Biome |
-| `pnpm typecheck` | `tsc --noEmit` partout |
-| `pnpm test` / `pnpm test:coverage` | Tests Vitest |
-| `pnpm --filter @cyberlearn/db db:studio` | Prisma Studio |
+| Commande                                       | Description                                                     |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| `pnpm build`                                   | Build production (toutes les apps et packages)                  |
+| `pnpm lint` / `pnpm lint:fix`                  | ESLint strict sur tous les packages                             |
+| `pnpm format` / `pnpm format:check`            | Formatage Biome                                                 |
+| `pnpm typecheck`                               | `tsc --noEmit` partout                                          |
+| `pnpm test` / `pnpm test:coverage`             | Tests Vitest                                                    |
+| `pnpm --filter @cyberlearn/db db:studio`       | Prisma Studio                                                   |
 | `pnpm --filter @cyberlearn/db db:migrate:prod` | `prisma migrate deploy` (voir [docs/DEPLOY.md](docs/DEPLOY.md)) |
-| `pnpm clean` | Purge des artefacts de build |
+| `pnpm clean`                                   | Purge des artefacts de build                                    |
 
 ## Qualité & CI
 
@@ -187,30 +187,30 @@ Conventions : [Conventional Commits](https://www.conventionalcommits.org)
 Vercel Hobby, Supabase Free, Upstash, Resend, Sentry free tiers. Détail, pièges
 des free tiers et plan d'évolution : [docs/infra/cost-roadmap.md](docs/infra/cost-roadmap.md).
 
-| Phase | Statut | Contenu |
-|---|---|---|
-| **v1** | En cours | Free tier complet - leçons interactives, gamification, certificats, sandboxes |
+| Phase    | Statut   | Contenu                                                                                                                                                     |
+| -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **v1**   | En cours | Free tier complet - leçons interactives, gamification, certificats, sandboxes                                                                               |
 | **v1.5** | En cours | Exercices interactifs dans le navigateur : vrai Linux livré (v86), puis défis CTF, labs web, réseau et Git - [détail](docs/backlog/interactive-learning.md) |
-| **v2** | Backlog | Migration VPS self-hosted (Docker, Caddy, Postgres, monitoring Grafana/Loki) - vitrine DevOps |
+| **v2**   | Backlog  | Migration VPS self-hosted (Docker, Caddy, Postgres, monitoring Grafana/Loki) - vitrine DevOps                                                               |
 
 ## Documentation
 
-| Document | Contenu |
-|---|---|
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Déploiement Vercel + runbook migrations & RLS |
-| [docs/LESSON_AUTHORING_GUIDE.md](docs/LESSON_AUTHORING_GUIDE.md) | Écrire une leçon MDX (composants, import admin) |
-| [docs/adr/](docs/adr/) | Architecture Decision Records |
-| [docs/hardening/](docs/hardening/) | Incidents et durcissements connus |
-| [docs/rgpd/](docs/rgpd/) | Audit RGPD, registre des traitements |
-| [docs/backlog/](docs/backlog/) | Post-v1 et features différées |
-| [docs/authentication.md](docs/authentication.md) | Flux de connexion, MFA, migration des comptes |
-| [docs/IMPLEMENTED.md](docs/IMPLEMENTED.md) | Inventaire des routes et des fonctionnalités |
-| [docs/MOBILE_PARITY.md](docs/MOBILE_PARITY.md) | Ce que l'app mobile a, ce qui lui est dû, ce qui est web-only |
-| [Direction artistique](docs/design/direction-artistique.md) | Identité Bastion, palette, typographie, motion et règles du rework |
-| [docs/security/](docs/security/) | Journalisation, configuration Sentry |
-| [docs/infra/](docs/infra/) | Coûts, maintien en vie des free tiers |
-| [content/README.md](content/README.md) | Le catalogue : les 16 parcours, l'import MDX |
-| [docs/dev/commit-conventions.md](docs/dev/commit-conventions.md) | Ce que `commitlint` accepte |
+| Document                                                         | Contenu                                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [docs/DEPLOY.md](docs/DEPLOY.md)                                 | Déploiement Vercel + runbook migrations & RLS                      |
+| [docs/LESSON_AUTHORING_GUIDE.md](docs/LESSON_AUTHORING_GUIDE.md) | Écrire une leçon MDX (composants, import admin)                    |
+| [docs/adr/](docs/adr/)                                           | Architecture Decision Records                                      |
+| [docs/hardening/](docs/hardening/)                               | Incidents et durcissements connus                                  |
+| [docs/rgpd/](docs/rgpd/)                                         | Audit RGPD, registre des traitements                               |
+| [docs/backlog/](docs/backlog/)                                   | Post-v1 et features différées                                      |
+| [docs/authentication.md](docs/authentication.md)                 | Flux de connexion, MFA, migration des comptes                      |
+| [docs/IMPLEMENTED.md](docs/IMPLEMENTED.md)                       | Inventaire des routes et des fonctionnalités                       |
+| [docs/MOBILE_PARITY.md](docs/MOBILE_PARITY.md)                   | Ce que l'app mobile a, ce qui lui est dû, ce qui est web-only      |
+| [Direction artistique](docs/design/direction-artistique.md)      | Identité Bastion, palette, typographie, motion et règles du rework |
+| [docs/security/](docs/security/)                                 | Journalisation, configuration Sentry                               |
+| [docs/infra/](docs/infra/)                                       | Coûts, maintien en vie des free tiers                              |
+| [content/README.md](content/README.md)                           | Le catalogue : les 16 parcours, l'import MDX                       |
+| [docs/dev/commit-conventions.md](docs/dev/commit-conventions.md) | Ce que `commitlint` accepte                                        |
 
 ## Contributions & licence
 

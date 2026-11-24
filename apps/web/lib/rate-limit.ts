@@ -394,6 +394,22 @@ export async function checkAccountDeletionRequest(userId: string): Promise<RateL
   return toResult(await limiter.limit(userId));
 }
 
+/** 5 "close my other sessions" per user per 15 minutes: each one is a call to the auth server. */
+export async function checkSessionsSignOut(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "sessions:sign-out",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(5, "15 m"),
+        prefix: "rl:sessions:sign-out",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
 /** 5 password-change attempts per user per 15 minutes. */
 export async function checkPasswordChange(userId: string): Promise<RateLimitResult> {
   if (IS_DEV) return PASS_THROUGH;
