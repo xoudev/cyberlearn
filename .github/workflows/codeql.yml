@@ -1,9 +1,9 @@
 name: CodeQL
 
 # The repository used CodeQL's default setup, which cannot skip a path. This
-# advanced setup scans the same JavaScript and TypeScript, and the Actions
-# workflows, with .github/codeql/codeql-config.yml, which leaves out the
-# third-party runtimes served to the browser.
+# advanced setup scans the same languages (JavaScript and TypeScript, Python,
+# the Actions workflows) with .github/codeql/codeql-config.yml, which leaves
+# out the third-party runtimes served to the browser.
 #
 # Switch the default setup off when this lands (Settings > Code security >
 # CodeQL analysis > "Switch to advanced"): GitHub refuses a workflow's results
@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript-typescript, actions]
+        language: [javascript-typescript, actions, python]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
