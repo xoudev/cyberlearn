@@ -13,6 +13,7 @@
 /** The icons admin-sidebar.tsx draws. */
 export type ConsoleNavIcon =
   | "dash"
+  | "chart"
   | "book"
   | "route"
   | "badge"
@@ -60,6 +61,12 @@ export const CONSOLE_MAIN_SECTIONS: readonly ConsoleSection[] = [
     href: "/dashboard",
     icon: "dash",
     keywords: ["tableau de bord", "dashboard", "accueil"],
+  },
+  {
+    label: "Mesures d'usage",
+    href: "/usage",
+    icon: "chart",
+    keywords: ["actifs", "rétention", "cohortes", "abandon", "statistiques", "analytics"],
   },
   {
     label: "Leçons",
@@ -307,6 +314,7 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["forum-categories", "Sections du forum"],
   ["placement", "Positionnement"],
   ["system", "Système"],
+  ["usage", "Mesures d'usage"],
   ["crons", "Tâches planifiées"],
   ["account", "Mon compte"],
   ["ratings", "Avis"],
