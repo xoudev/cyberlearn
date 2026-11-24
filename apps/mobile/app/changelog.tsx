@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import type React from "react";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";

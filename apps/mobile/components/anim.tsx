@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { Pressable, type PressableProps, View, type ViewStyle } from "react-native";
 import Animated, {
   Easing,

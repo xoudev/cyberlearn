@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { type PhishingEmail, phishingPartLabel } from "@cyberlearn/types";
 import { colors, fonts } from "@cyberlearn/tokens";

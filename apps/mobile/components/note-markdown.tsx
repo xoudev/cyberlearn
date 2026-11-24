@@ -1,5 +1,5 @@
 import * as WebBrowser from "expo-web-browser";
-import React from "react";
+import type React from "react";
 import { Linking, ScrollView, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import {

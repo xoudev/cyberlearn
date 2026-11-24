@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { type ColorValue } from "react-native";
 import Svg, { Circle, Path, Polyline } from "react-native-svg";
 

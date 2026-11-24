@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { colors } from "@cyberlearn/tokens";

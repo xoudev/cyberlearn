@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   firstEnabled,

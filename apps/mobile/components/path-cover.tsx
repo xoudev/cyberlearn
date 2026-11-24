@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Image, View, type ViewStyle } from "react-native";
 import { SvgUri } from "react-native-svg";
 import { colors } from "@cyberlearn/tokens";

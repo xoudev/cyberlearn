@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as WebBrowser from "expo-web-browser";
 import { useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import type React from "react";
+import { useMemo, useState } from "react";
 import { TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import {

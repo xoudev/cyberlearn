@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { colors } from "@cyberlearn/tokens";
 import { remainingLabel } from "@cyberlearn/lib/challenges/weekly";
 import { Text } from "@/components/ui";

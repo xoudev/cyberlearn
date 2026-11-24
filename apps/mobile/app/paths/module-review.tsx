@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { RECALL_MISSING } from "@cyberlearn/lib/revisions/recall-copy";
 import { BackButton } from "@/components/buttons";

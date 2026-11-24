@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { TICKET_STATUS_LABEL } from "@cyberlearn/lib/tickets/tickets";

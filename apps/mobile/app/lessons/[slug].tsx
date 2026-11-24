@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, useWindowDimensions, View } from "react-native";
 import { colors, fonts, radius } from "@cyberlearn/tokens";
 import {

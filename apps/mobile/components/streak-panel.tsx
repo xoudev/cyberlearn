@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";

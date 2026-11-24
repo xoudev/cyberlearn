@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useId } from "react";
+import type React from "react";
+import { useId } from "react";
 import type { ComponentBlock } from "@cyberlearn/lib/mdx-blocks";
 import {
   INNER,

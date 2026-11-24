@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import type React from "react";
+import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";

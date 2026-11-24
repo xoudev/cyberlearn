@@ -5,7 +5,8 @@ import {
 import { passwordSignInSchema } from "@cyberlearn/types";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { GradientButton } from "@/components/buttons";

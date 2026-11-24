@@ -56,7 +56,7 @@ const DAY = /^(\d{4})-(\d{2})-(\d{2})$/u;
 export const daySchema = z
   .string()
   .regex(DAY)
-  .refine((value) => parisLocalToDate(`${value}T00:00`) !== null, { message: "Date invalide" });
+  .refine((value) => parisLocalToDate(`${value}T00:00`) !== null, { error: "Date invalide" });
 
 /** The search box's text, trimmed; empty for none. */
 export function searchParam(params: RawParams, key = "q"): string {

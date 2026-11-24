@@ -98,7 +98,9 @@ export function withReturnPath(
  * sent back to /login keeps /users. The router's `_rsc` cache key is dropped;
  * it belongs to the request that was refused, not to the page.
  */
-export function returnPathOf(url: URL): string {
+// Only these three are read: the middleware hands over request.nextUrl,
+// a NextURL that has them without being a URL.
+export function returnPathOf(url: Pick<URL, "pathname" | "search" | "searchParams">): string {
   if (isMfaPath(url.pathname)) return safeAdminRedirect(url.searchParams.get("next"));
   if (isPublicPath(url.pathname)) return safeAdminRedirect(url.searchParams.get("redirectTo"));
   const search = new URLSearchParams(url.search);
