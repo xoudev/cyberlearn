@@ -85,14 +85,14 @@ beforeEach(() => {
       notice({}),
       notice({
         id: "22222222-2222-4222-8222-222222222222",
-        type: "ANNOUNCEMENT",
+        type: "LEVEL_UP",
         title: "Maintenance ce soir",
         body: "Le site sera indisponible une heure.",
         actionUrl: null,
       }),
       notice({
         id: "33333333-3333-4333-8333-333333333333",
-        type: "ANNOUNCEMENT",
+        type: "LEVEL_UP",
         title: "Déjà lue",
         body: "Rien à faire.",
         actionUrl: null,
@@ -211,6 +211,26 @@ describe("NotificationPanel rows", () => {
     expect(screen.getByText("il y a 1 sem.")).toBeTruthy();
     expect(screen.getByText("hier")).toBeTruthy();
     expect(screen.queryByText(/minutes/)).toBeNull();
+  });
+
+  it("leads an announcement with no page of its own to the history, where it reads in full", async () => {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      notifications: [
+        notice({}),
+        notice({
+          id: "55555555-5555-4555-8555-555555555555",
+          type: "ANNOUNCEMENT",
+          title: "Merci d'essayer Cyber Learn",
+          body: "Bonjour,\n\nLa plateforme est encore en développement.",
+          actionUrl: null,
+        }),
+      ],
+    });
+    await openPanel();
+    const link = screen.getByRole("link", { name: /Merci d'essayer Cyber Learn/ });
+    expect(link.getAttribute("href")).toBe("/notifications");
   });
 
   it("leaves a read notice with nowhere to go as plain text", async () => {

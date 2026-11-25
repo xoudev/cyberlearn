@@ -10,6 +10,7 @@ import {
 } from "@cyberlearn/db";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import {
+  accountLabel,
   ANNOUNCEMENT_ACTION,
   ANNOUNCEMENT_TARGET,
   announcementProblem,
@@ -23,9 +24,10 @@ import { checkAnnouncementRateLimit } from "@/lib/rate-limit";
 
 /**
  * Sending an announcement: an ANNOUNCEMENT notification to every account, the
- * accounts of some roles, or the members of some classes. It lands in the
- * bell on the site and in the app, and it cannot be taken back - so the form
- * asks for the count first, and the send carries the count it confirmed.
+ * accounts of some roles, the members of some classes, or one account (the
+ * message written from its page). It lands in the bell on the site and in the
+ * app, and it cannot be taken back - so the form asks for the count first, and
+ * the send carries the count it confirmed.
  *
  * Both actions go through requireAdminAction (the ADMIN role read from the
  * database, a completed TOTP challenge) and Zod, whatever the form sent.
@@ -45,6 +47,7 @@ export type SendAnnouncementResult =
 const PATH = "/announcements";
 
 const COUNT_FAILED = "Les destinataires n'ont pas pu être comptés. Réessaie.";
+const BANNED = "Ce compte est banni : il ne peut pas lire de message. Rien n'a été envoyé.";
 const READ_FAILED = "Les destinataires n'ont pas pu être lus. Rien n'a été envoyé.";
 
 /**
@@ -57,6 +60,20 @@ async function resolveLabel(
   audience: AnnouncementAudience,
   unreadable: string,
 ): Promise<{ ok: true; label: string } | { ok: false; error: string }> {
+  if (audience.kind === "USER") {
+    let account: { displayName: string; username: string | null } | null;
+    try {
+      account = await userRepository.findHandle(audience.userId);
+    } catch (error) {
+      logger.error({ scope: "announcements", err: errorMessage(error) }, "account read failed");
+      return { ok: false, error: unreadable };
+    }
+    if (account === null) return { ok: false, error: "Ce compte n'existe plus." };
+    return {
+      ok: true,
+      label: audienceLabel(audience, new Map([[audience.userId, accountLabel(account)]])),
+    };
+  }
   if (audience.kind !== "CLASSES") return { ok: true, label: audienceLabel(audience, new Map()) };
   let live: Map<string, string>;
   try {
@@ -87,6 +104,8 @@ export async function countAnnouncementRecipientsAction(input: unknown): Promise
   try {
     const recipients = await userRepository.countForAudience(parsed.data.audience, new Date());
     if (recipients === 0) {
+      // The account exists (resolveLabel read it): the filter left it out for its ban.
+      if (parsed.data.audience.kind === "USER") return { ok: false, error: BANNED };
       return { ok: false, error: "Personne ne correspond à cette audience pour l'instant." };
     }
     return { ok: true, recipients };
@@ -122,7 +141,10 @@ export async function sendAnnouncementAction(input: unknown): Promise<SendAnnoun
   if (userIds.length === 0) {
     return {
       ok: false,
-      error: "Personne ne correspond plus à cette audience. Rien n'a été envoyé.",
+      error:
+        announcement.audience.kind === "USER"
+          ? BANNED
+          : "Personne ne correspond plus à cette audience. Rien n'a été envoyé.",
       recipients: 0,
     };
   }

@@ -21,7 +21,8 @@ export interface AnnouncementClassOption {
   members: number;
 }
 
-type AudienceKind = AnnouncementInput["audience"]["kind"];
+// One account is written to from its own page, not from here.
+type AudienceKind = Exclude<AnnouncementInput["audience"]["kind"], "USER">;
 
 type Stage =
   | { step: "edit" }

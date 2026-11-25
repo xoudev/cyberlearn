@@ -35,6 +35,7 @@ import { BanForm } from "./_components/ban-form";
 import { CertificatesPanel } from "./_components/certificates-panel";
 import { DeleteUserForm } from "./_components/delete-user-form";
 import { GamificationPanel } from "./_components/gamification-panel";
+import { MessageForm } from "./_components/message-form";
 import { MfaResetForm } from "./_components/mfa-reset-form";
 import { ModerationPanel } from "./_components/moderation-panel";
 import { PreferencesPanel } from "./_components/preferences-panel";
@@ -334,6 +335,12 @@ export default async function AdminUserPage({
         </div>
 
         <div className="a-stack" style={{ alignContent: "start" }}>
+          <MessageForm
+            userId={user.id}
+            name={user.displayName || handle}
+            banned={activeBan !== null}
+          />
+
           <BanForm userId={user.id} active={activeBan} history={banHistory} />
 
           <TicketsPanel tickets={tickets} />

@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  accountLabel,
   announcementSchema,
   announcementTrace,
   audienceLabel,
@@ -80,6 +81,30 @@ describe("audienceLabel", () => {
     expect(audienceLabel({ kind: "CLASSES", classIds: CLASS_IDS }, NAMES)).toBe(
       "Classes : Classe 1, Classe 2, Classe 3, Classe 4 et 2 autres",
     );
+  });
+});
+
+describe("one account", () => {
+  it("takes an account's id, and nothing else, as the audience", () => {
+    const base = { title: "Merci", body: "Bonjour" };
+    expect(
+      announcementSchema.safeParse({ ...base, audience: { kind: "USER", userId: CLASS_IDS[0] } })
+        .success,
+    ).toBe(true);
+    expect(
+      announcementSchema.safeParse({ ...base, audience: { kind: "USER", userId: "ada" } }).success,
+    ).toBe(false);
+  });
+
+  it("names the account by its name and its handle", () => {
+    const id = CLASS_IDS[0] ?? "";
+    expect(audienceLabel({ kind: "USER", userId: id }, new Map([[id, "Ada (@ada)"]]))).toBe(
+      "Compte : Ada (@ada)",
+    );
+    expect(audienceLabel({ kind: "USER", userId: id }, new Map())).toBe("Compte : compte inconnu");
+    expect(accountLabel({ displayName: "Ada", username: "ada" })).toBe("Ada (@ada)");
+    expect(accountLabel({ displayName: " ", username: "ada" })).toBe("@ada");
+    expect(accountLabel({ displayName: "Ada", username: null })).toBe("Ada");
   });
 });
 

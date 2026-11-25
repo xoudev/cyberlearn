@@ -253,12 +253,14 @@ export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.
 
 /**
  * Who a console announcement goes to: every account, the accounts of some
- * roles, or the members of some classes.
+ * roles, the members of some classes, or one account, written to from its
+ * page in the console.
  */
 export type AnnouncementAudience =
   | { kind: "ALL" }
   | { kind: "ROLES"; roles: readonly UserRole[] }
-  | { kind: "CLASSES"; classIds: readonly string[] };
+  | { kind: "CLASSES"; classIds: readonly string[] }
+  | { kind: "USER"; userId: string };
 
 /**
  * The accounts an audience reaches, as a filter: the count shown before the
@@ -292,6 +294,8 @@ export function announcementAudienceWhere(
           },
         ],
       };
+    case "USER":
+      return { AND: [notBanned, { id: audience.userId }] };
   }
 }
 
