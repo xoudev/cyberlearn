@@ -5,6 +5,7 @@ import {
   NOTE_FOLDER_NAME_MAX,
   NOTE_IMPORT_LIMITS,
 } from "@cyberlearn/lib/notes/workspace";
+import { fromPortableMarkdown } from "@cyberlearn/lib/notes/portable-markdown";
 import { ALL_NOTES_ROOT } from "./archive";
 
 /**
@@ -21,6 +22,8 @@ import { ALL_NOTES_ROOT } from "./archive";
  * - content: UTF-8 only (fatal decoding), control characters dropped;
  * - names: directory names are cleaned into folder names (no "." or ".."
  *   segment survives), hidden files and macOS resource forks skipped;
+ * - marks: the HTML the .md export writes for colours and highlights is read
+ *   back into the workspace's own syntax (portable-markdown.ts), as text;
  * - the header: only a `title:` line is read from YAML front matter, by a
  *   regex. No YAML parser runs on it (gray-matter, for one, would execute a
  *   `---js` header).
@@ -101,7 +104,7 @@ export function noteFromText(fileName: string, text: string, folders: string[]):
   const heading = /^#\s+(.+)$/m.exec(body)?.[1];
   const base = fileName.replace(/^.*[\\/]/, "").replace(TEXT_EXT, "");
   const title = cleanNoteTitle(fmTitle ?? heading ?? base) || "Note importée";
-  return { folders, title, content: body };
+  return { folders, title, content: fromPortableMarkdown(body) };
 }
 
 /** Read a .md/.txt or a .zip picked by the learner. Throws ImportError on a refused file. */

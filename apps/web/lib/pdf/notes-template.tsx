@@ -3,6 +3,8 @@ import React from "react";
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import {
   CALLOUT_LABELS,
+  NOTE_HIGHLIGHT_HEX,
+  NOTE_INK_HEX,
   parseRichMarkdown,
   type CalloutKind,
   type NoteColor,
@@ -64,25 +66,6 @@ const LINE = brand.line;
 const ACCENT = brand.copper;
 const SOFT = "#F5F3EE";
 
-/** Colours of text and highlights on paper: the screen's hues, darker for print. */
-const PRINT_FG: Record<NoteColor, string> = {
-  rouge: "#C62E3A",
-  orange: "#C25A12",
-  jaune: "#8F6A00",
-  vert: "#1E7F4F",
-  bleu: "#1F5FA8",
-  violet: "#6E3BB0",
-  gris: "#6B6862",
-};
-const PRINT_BG: Record<NoteColor, string> = {
-  rouge: "#FAD7DA",
-  orange: "#FCE0CB",
-  jaune: "#FBEFB8",
-  vert: "#D2F1E0",
-  bleu: "#D5E6FA",
-  violet: "#E7DBFA",
-  gris: "#E6E4DF",
-};
 const CALLOUT_COLOR: Record<CalloutKind, NoteColor> = {
   note: "bleu",
   info: "bleu",
@@ -392,8 +375,8 @@ function inline(nodes: readonly RichInline[], ctx: Ctx, key: string): React.Reac
             key={k}
             style={
               node.background
-                ? { backgroundColor: PRINT_BG[node.color] }
-                : { color: PRINT_FG[node.color], fontWeight: 700 }
+                ? { backgroundColor: NOTE_HIGHLIGHT_HEX[node.color] }
+                : { color: NOTE_INK_HEX[node.color], fontWeight: 700 }
             }
           >
             {inline(node.children, ctx, k)}
@@ -544,11 +527,11 @@ function block(b: RichBlock, ctx: Ctx, key: string): React.ReactElement {
           key={key}
           style={[
             s.callout,
-            { borderLeftColor: PRINT_FG[color], backgroundColor: PRINT_BG[color] },
+            { borderLeftColor: NOTE_INK_HEX[color], backgroundColor: NOTE_HIGHLIGHT_HEX[color] },
           ]}
           wrap={false}
         >
-          <Text style={[s.calloutTitle, { color: PRINT_FG[color] }]}>
+          <Text style={[s.calloutTitle, { color: NOTE_INK_HEX[color] }]}>
             {b.title.length > 0 ? inline(b.title, ctx, `${key}-t`) : CALLOUT_LABELS[b.variant]}
           </Text>
           {b.lines.length > 0 ? (

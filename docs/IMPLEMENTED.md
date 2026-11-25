@@ -259,12 +259,16 @@
     si elle est libre ; purge par le cron de rétention
   - export en `.zip` dans le navigateur (`fflate`, `lib/notes/archive.ts`) :
     les dossiers deviennent des répertoires, chaque note un `.md` à en-tête
-    YAML ; export `.md` d'une note ; export PDF (`/api/notes/pdf`)
+    YAML ; export `.md` d'une note ; export PDF (`/api/notes/pdf`). Le `.md`
+    s'affiche ailleurs (`@cyberlearn/lib/notes/portable-markdown`) : couleurs
+    et surlignages en HTML (`<span style="color">`, `<mark>`), encadrés en
+    alertes GitHub (`> [!TIP]`, titre en gras dessous)
   - import d'un `.md`, `.txt` ou `.zip` (`lib/notes/import-file.ts`, lu dans le
     navigateur : 5 Mo, 20 Mo décompressés, 1 000 entrées, 500 notes, UTF-8
     seulement, en-tête YAML lu sans parseur), revérifié par le serveur
     (`importNotesAction`, dix imports par heure) ; les dossiers du `.zip` sont
-    recréés ou réutilisés
+    recréés ou réutilisés, et le HTML des couleurs de l'export redevient la
+    syntaxe du bloc-notes
   - cartes de révision des notes (`note_cards`, `noteCardRepository`) : mêmes
     boîtes que les cartes des leçons (1, 3, 7, 21 jours), réponse jugée par
     l'apprenant, donc sans XP ni série ; « Réviser mes cartes » pour toutes
