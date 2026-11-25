@@ -3,6 +3,7 @@ import type { AccountSectionData } from "../../_lib/settings-data";
 import { SectionHead, SettingsCard } from "../../_components/SettingsPrimitives";
 import { S, SANS } from "../../_components/tokens";
 import { SecurityPanel } from "./security-panel";
+import { SessionsPanel } from "./sessions-panel";
 
 /** The account section, in the settings drawer. */
 export function AccountSection({ data }: { data: AccountSectionData }): React.JSX.Element {
@@ -37,6 +38,7 @@ export function AccountSection({ data }: { data: AccountSectionData }): React.JS
         </div>
       </SettingsCard>
       <SecurityPanel canDisableMfa={data.canDisableMfa} />
+      <SessionsPanel />
     </div>
   );
 }

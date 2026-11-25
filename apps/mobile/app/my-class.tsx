@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React from "react";
+import type React from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";

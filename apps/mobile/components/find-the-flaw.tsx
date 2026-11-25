@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { type FindTheFlaw, flawLines } from "@cyberlearn/types";
 import { colors, fonts } from "@cyberlearn/tokens";

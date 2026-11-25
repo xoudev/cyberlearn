@@ -1,4 +1,5 @@
-import React, { useRef } from "react";
+import type React from "react";
+import { useRef } from "react";
 import { ScrollView, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";

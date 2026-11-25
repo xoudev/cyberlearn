@@ -1,7 +1,8 @@
 "use client";
 
 import { ACCENT, BORDER, DANGER } from "../lib/palette.js";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MOBILE_PREVIEW_WIDTH,
   type PreviewDevice,

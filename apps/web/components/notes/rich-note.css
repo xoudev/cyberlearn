@@ -1,0 +1,825 @@
+/*
+ * The notes workspace's markdown: the rendered note (.rnote) and the editor
+ * (.note-editor). Square, matte, carbon; the accent is the equipped one
+ * (--cosmetic-accent), never a literal copper.
+ */
+
+.rnote,
+.note-editor {
+  --note-ink: #f4f2ed;
+  --note-muted: #aaa79f;
+  --note-line: #2a2d33;
+  --note-panel: #121418;
+  --note-sunk: #0d0e12;
+  --note-raised: #191c22;
+
+  --c-rouge: #ff7a85;
+  --c-orange: #ffa25c;
+  --c-jaune: #f6c445;
+  --c-vert: #4fd99a;
+  --c-bleu: #6cb0ff;
+  --c-violet: #bb8cff;
+  --c-gris: #aaa79f;
+}
+
+/* ── Rendered note ─────────────────────────────────────────────────────── */
+
+.rnote {
+  color: var(--note-ink);
+  font:
+    16px / 1.7 var(--font-interface),
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+.rnote > * + * {
+  margin-top: 0.9em;
+}
+.rnote :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  margin-top: 1.4em;
+  scroll-margin-top: 96px;
+}
+.rnote > :first-child {
+  margin-top: 0;
+}
+.rnote h1 {
+  font-size: 2.1em;
+  text-transform: uppercase;
+}
+.rnote h2 {
+  font-size: 1.6em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid var(--note-line);
+}
+.rnote h3 {
+  font-size: 1.3em;
+}
+.rnote :is(h4, h5, h6) {
+  font-size: 1.1em;
+  color: var(--note-muted);
+}
+.rnote a {
+  color: var(--cosmetic-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rnote strong {
+  font-weight: 700;
+}
+.rnote s {
+  color: var(--note-muted);
+}
+.rnote :not(pre) > code {
+  font:
+    0.88em var(--font-mono),
+    monospace;
+  background: var(--note-raised);
+  border: 1px solid var(--note-line);
+  padding: 0.08em 0.35em;
+}
+.rnote hr {
+  border: 0;
+  border-top: 1px solid var(--note-line);
+  margin-block: 1.6em;
+}
+.rnote :is(ul, ol) {
+  padding-left: 1.4em;
+}
+.rnote ul {
+  list-style: square;
+}
+.rnote li + li {
+  margin-top: 0.25em;
+}
+.rnote li > :is(ul, ol) {
+  margin-top: 0.25em;
+}
+.rnote li::marker {
+  color: var(--cosmetic-accent);
+}
+.rnote blockquote {
+  border-left: 3px solid var(--note-line);
+  padding: 0.2em 0 0.2em 1em;
+  color: var(--note-muted);
+}
+
+/* Task lists */
+.rnote .rnote-tasks {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.rnote .rnote-tasks .rnote-tasks {
+  padding-left: 1.6em;
+}
+.rnote .rnote-task {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 0 0.6em;
+  align-items: start;
+}
+.rnote .rnote-task > :is(ul, ol) {
+  grid-column: 2;
+}
+
+/* A box drawn by a span, the input over it invisible (CheckBox). Same size,
+   same place ticked or not: only the colours and the mark change. */
+.rnote-check {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.rnote .rnote-task > .rnote-check {
+  /* Centred on the first line of the item. */
+  margin-top: calc((1.7em - 16px) / 2);
+}
+.rnote-check > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.rnote-check > input:disabled {
+  cursor: default;
+}
+.rnote-check__box {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 2px solid #aaa79f;
+  background: transparent;
+  pointer-events: none;
+}
+.rnote-check__box svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: var(--cosmetic-accent-ink, #0b0c0e);
+  stroke-width: 2.2;
+  stroke-linecap: square;
+  visibility: hidden;
+}
+.rnote-check > input:checked + .rnote-check__box {
+  background: var(--cosmetic-accent);
+  border-color: var(--cosmetic-accent);
+}
+.rnote-check > input:checked + .rnote-check__box svg {
+  visibility: visible;
+}
+.rnote-check > input:hover:not(:disabled) + .rnote-check__box {
+  border-color: #f4f2ed;
+}
+.rnote-check > input:checked:hover:not(:disabled) + .rnote-check__box {
+  border-color: var(--cosmetic-accent-hover);
+}
+.rnote-check > input:focus-visible + .rnote-check__box {
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: 2px;
+}
+.rnote .rnote-task.is-done > span {
+  color: var(--note-muted);
+  text-decoration: line-through;
+}
+
+/* Colours */
+.rnote-fg--rouge,
+.cm-md-fg--rouge {
+  color: var(--c-rouge);
+}
+.rnote-fg--orange,
+.cm-md-fg--orange {
+  color: var(--c-orange);
+}
+.rnote-fg--jaune,
+.cm-md-fg--jaune {
+  color: var(--c-jaune);
+}
+.rnote-fg--vert,
+.cm-md-fg--vert {
+  color: var(--c-vert);
+}
+.rnote-fg--bleu,
+.cm-md-fg--bleu {
+  color: var(--c-bleu);
+}
+.rnote-fg--violet,
+.cm-md-fg--violet {
+  color: var(--c-violet);
+}
+.rnote-fg--gris,
+.cm-md-fg--gris {
+  color: var(--c-gris);
+}
+.rnote-bg,
+.cm-md-bg {
+  color: inherit;
+  padding: 0 0.15em;
+  background: color-mix(in srgb, var(--hl) 30%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--hl) 70%, transparent);
+}
+.rnote-bg--rouge,
+.cm-md-bg--rouge {
+  --hl: var(--c-rouge);
+}
+.rnote-bg--orange,
+.cm-md-bg--orange {
+  --hl: var(--c-orange);
+}
+.rnote-bg--jaune,
+.cm-md-bg--jaune {
+  --hl: var(--c-jaune);
+}
+.rnote-bg--vert,
+.cm-md-bg--vert {
+  --hl: var(--c-vert);
+}
+.rnote-bg--bleu,
+.cm-md-bg--bleu {
+  --hl: var(--c-bleu);
+}
+.rnote-bg--violet,
+.cm-md-bg--violet {
+  --hl: var(--c-violet);
+}
+.rnote-bg--gris,
+.cm-md-bg--gris {
+  --hl: var(--c-gris);
+}
+
+/* Links between notes */
+.rnote .rnote-wikilink {
+  color: var(--cosmetic-accent-hover);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  font: inherit;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.rnote .rnote-wikilink::before {
+  content: "↗ ";
+  font-size: 0.8em;
+}
+.rnote .rnote-wikilink--missing {
+  color: var(--note-muted);
+  border-bottom-style: dotted;
+}
+.rnote button.rnote-wikilink--missing:hover {
+  color: var(--note-ink);
+}
+
+/* Callouts */
+.rnote .rnote-callout {
+  --hl: var(--c-gris);
+  border-left: 3px solid var(--hl);
+  background: color-mix(in srgb, var(--hl) 9%, var(--note-panel));
+  padding: 0.8em 1em;
+}
+.rnote-callout--info,
+.rnote-callout--note {
+  --hl: var(--c-bleu);
+}
+.rnote-callout--astuce,
+.rnote-callout--succes {
+  --hl: var(--c-vert);
+}
+.rnote-callout--attention {
+  --hl: var(--c-orange);
+}
+.rnote-callout--danger {
+  --hl: var(--c-rouge);
+}
+.rnote-callout--question {
+  --hl: var(--c-violet);
+}
+.rnote-callout--exemple {
+  --hl: var(--c-gris);
+}
+.rnote .rnote-callout__title {
+  font-weight: 700;
+  color: var(--hl);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8em;
+}
+.rnote .rnote-callout > p + p {
+  margin-top: 0.4em;
+}
+
+/* Tables */
+.rnote .rnote-table {
+  overflow-x: auto;
+  border: 1px solid var(--note-line);
+}
+.rnote table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95em;
+}
+.rnote :is(th, td) {
+  padding: 0.5em 0.8em;
+  border-bottom: 1px solid var(--note-line);
+  text-align: left;
+  vertical-align: top;
+}
+.rnote th {
+  background: var(--note-raised);
+  font-weight: 700;
+}
+.rnote tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Flashcards */
+.rnote .rnote-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1em 0.9em;
+  border: 1px solid var(--note-line);
+  border-left: 3px solid var(--cosmetic-accent);
+  padding: 0.7em 1em;
+  background: var(--note-sunk);
+}
+.rnote .rnote-card__label {
+  grid-row: span 2;
+  font:
+    600 11px / 1.9 var(--font-mono),
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cosmetic-accent-hover);
+}
+.rnote .rnote-card__front {
+  font-weight: 700;
+}
+.rnote .rnote-card__back {
+  color: var(--note-muted);
+}
+
+/* Code blocks */
+.rnote .rnote-code {
+  margin-inline: 0;
+  border: 1px solid var(--note-line);
+  background: var(--note-sunk);
+}
+.rnote .rnote-code__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.35em 0.4em 0.35em 0.9em;
+  border-bottom: 1px solid var(--note-line);
+  background: var(--note-panel);
+}
+.rnote .rnote-code__lang {
+  font:
+    600 11px / 1 var(--font-mono),
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cosmetic-accent-hover);
+}
+.rnote .rnote-code__copy {
+  font:
+    12px var(--font-interface),
+    sans-serif;
+  color: var(--note-muted);
+  background: none;
+  border: 1px solid transparent;
+  padding: 0.3em 0.7em;
+  cursor: pointer;
+}
+.rnote .rnote-code__copy:hover,
+.rnote .rnote-code__copy:focus-visible {
+  color: var(--note-ink);
+  border-color: var(--note-line);
+}
+.rnote .rnote-code pre {
+  margin: 0;
+  padding: 0.9em 0;
+  overflow-x: auto;
+  font:
+    13.5px / 1.65 var(--font-mono),
+    monospace;
+  counter-reset: line;
+}
+.rnote .rnote-code__line {
+  display: block;
+  padding: 0 1em 0 0;
+  white-space: pre;
+}
+.rnote .rnote-code__line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 3.2em;
+  padding-right: 1em;
+  text-align: right;
+  color: #4b4e55;
+  user-select: none;
+}
+.rnote .tok-keyword {
+  color: #ff8a5c;
+}
+.rnote .tok-string {
+  color: #8fd694;
+}
+.rnote .tok-comment {
+  color: #6f727a;
+  font-style: italic;
+}
+.rnote .tok-number {
+  color: #f6c445;
+}
+.rnote .tok-title {
+  color: #6cb0ff;
+}
+.rnote .tok-builtin {
+  color: #bb8cff;
+}
+.rnote .tok-type {
+  color: #5ed1d6;
+}
+.rnote .tok-attr {
+  color: #f6c445;
+}
+.rnote .tok-meta {
+  color: #bb8cff;
+}
+.rnote .tok-variable {
+  color: #e7e4dc;
+}
+.rnote .tok-deletion {
+  color: #ff7a85;
+}
+.rnote .tok-addition {
+  color: #4fd99a;
+}
+
+/* ── Editor ────────────────────────────────────────────────────────────── */
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--note-panel);
+  border: 1px solid var(--note-line);
+}
+.note-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--note-line);
+  background: var(--note-sunk);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.note-editor__group {
+  display: flex;
+  gap: 2px;
+  padding-right: 10px;
+  border-right: 1px solid var(--note-line);
+}
+.note-editor__modes {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+.note-editor__tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  color: #c2bfb8;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.note-editor__tool:hover {
+  color: var(--note-ink);
+  background: var(--note-raised);
+}
+.note-editor__tool:focus-visible {
+  outline: 2px solid var(--cosmetic-accent-hover);
+  outline-offset: -2px;
+}
+.note-editor__tool[aria-pressed="true"],
+.note-editor__tool[aria-expanded="true"] {
+  color: var(--note-ink);
+  border-color: var(--note-line);
+  background: var(--note-raised);
+}
+.note-editor__modes .note-editor__tool[aria-pressed="true"] {
+  color: var(--cosmetic-accent-ink, #0b0c0e);
+  background: var(--cosmetic-accent);
+  border-color: var(--cosmetic-accent);
+}
+.note-editor__caret {
+  font-size: 9px;
+  color: var(--note-muted);
+}
+.note-editor__menu {
+  position: relative;
+}
+.note-editor__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 200px;
+  max-width: 320px;
+  padding: 6px;
+  background: var(--note-panel);
+  border: 1px solid #44454a;
+  box-shadow: 0 18px 40px #000a;
+  display: grid;
+  gap: 2px;
+}
+.note-editor__popover-label {
+  margin: 4px 6px 2px;
+  font:
+    600 11px var(--font-mono),
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--note-muted);
+}
+.note-editor__swatches {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 4px;
+  padding: 2px 6px 6px;
+}
+.note-editor__swatch {
+  width: 32px;
+  height: 32px;
+  font:
+    700 15px var(--font-interface),
+    sans-serif;
+  background: var(--note-sunk);
+  border: 1px solid var(--note-line);
+  cursor: pointer;
+}
+.note-editor__swatch--bg {
+  color: var(--note-ink);
+  background: color-mix(in srgb, var(--hl) 40%, var(--note-sunk));
+  border-color: var(--hl);
+}
+.note-editor__swatch:hover,
+.note-editor__swatch:focus-visible {
+  outline: 2px solid var(--note-ink);
+  outline-offset: 1px;
+}
+.note-editor__menu-item {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--note-ink);
+  background: none;
+  border: 0;
+  font:
+    14px var(--font-interface),
+    sans-serif;
+  cursor: pointer;
+}
+.note-editor__menu-item span {
+  color: var(--note-muted);
+  font-size: 12px;
+}
+.note-editor__menu-item:hover,
+.note-editor__menu-item:focus-visible {
+  background: var(--note-raised);
+  outline: none;
+}
+.note-editor__menu-item--mono {
+  font-family: var(--font-mono), monospace;
+}
+.note-editor__callout-item {
+  border-left: 3px solid var(--hl, var(--c-gris));
+}
+.note-editor__panes {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.note-editor[data-mode="split"] .note-editor__panes {
+  grid-template-columns: 1fr 1fr;
+}
+.note-editor__source,
+.note-editor__preview {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.note-editor__source[hidden] {
+  display: none;
+}
+.note-editor[data-mode="split"] .note-editor__preview {
+  border-left: 1px solid var(--note-line);
+}
+.note-editor__preview {
+  padding: 22px 26px 40px;
+  background: var(--note-sunk);
+}
+.note-editor__empty {
+  color: var(--note-muted);
+  font-style: italic;
+}
+.note-editor__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--note-line);
+  font:
+    12px var(--font-mono),
+    monospace;
+  color: var(--note-muted);
+}
+
+/* CodeMirror */
+.note-editor .cm-editor {
+  height: 100%;
+  background: transparent;
+  color: var(--note-ink);
+  font:
+    15px / 1.75 var(--font-mono),
+    monospace;
+}
+.note-editor .cm-editor.cm-focused {
+  outline: none;
+}
+.note-editor .cm-scroller {
+  font-family: inherit;
+  line-height: inherit;
+}
+.note-editor .cm-content {
+  padding: 22px 26px 48px;
+  caret-color: var(--cosmetic-accent);
+}
+.note-editor .cm-cursor {
+  border-left: 2px solid var(--cosmetic-accent);
+}
+.note-editor .cm-selectionBackground,
+.note-editor .cm-focused .cm-selectionBackground,
+.note-editor .cm-content ::selection {
+  background: color-mix(in srgb, var(--cosmetic-accent) 32%, transparent) !important;
+}
+.note-editor .cm-selectionMatch {
+  background: color-mix(in srgb, var(--cosmetic-accent) 14%, transparent);
+}
+.note-editor .cm-placeholder {
+  color: #5e6168;
+  font-style: italic;
+}
+.note-editor .cm-md-punct {
+  color: #5e6168;
+}
+.note-editor .cm-md-h {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  color: var(--note-ink);
+}
+.note-editor .cm-md-h1 {
+  font-size: 1.7em;
+  text-transform: uppercase;
+}
+.note-editor .cm-md-h2 {
+  font-size: 1.4em;
+}
+.note-editor .cm-md-h3 {
+  font-size: 1.2em;
+}
+.note-editor .cm-md-strong {
+  font-weight: 700;
+  color: #fff;
+}
+.note-editor .cm-md-em {
+  font-style: italic;
+}
+.note-editor .cm-md-strike {
+  text-decoration: line-through;
+  color: var(--note-muted);
+}
+.note-editor .cm-md-code {
+  color: #f6c445;
+  background: var(--note-raised);
+}
+.note-editor .cm-md-codeline {
+  background: var(--note-sunk);
+  color: #d6d3cb;
+}
+.note-editor .cm-md-fence {
+  color: var(--cosmetic-accent-hover);
+}
+.note-editor .cm-md-quote {
+  color: var(--note-muted);
+  border-left: 3px solid var(--note-line);
+}
+.note-editor .cm-md-callout {
+  color: var(--c-bleu);
+  font-weight: 700;
+}
+.note-editor .cm-md-list {
+  color: var(--cosmetic-accent-hover);
+  font-weight: 700;
+}
+.note-editor .cm-md-task {
+  color: var(--cosmetic-accent-hover);
+}
+.note-editor .cm-md-taskline--done {
+  color: var(--note-muted);
+}
+.note-editor .cm-md-link {
+  color: var(--cosmetic-accent-hover);
+  text-decoration: underline;
+}
+.note-editor .cm-md-url {
+  color: #6f727a;
+}
+.note-editor .cm-md-wiki {
+  color: var(--cosmetic-accent-hover);
+  border-bottom: 1px dashed currentColor;
+}
+.note-editor .cm-md-hr {
+  color: #5e6168;
+}
+.note-editor .cm-md-table {
+  color: #d6d3cb;
+}
+.note-editor .cm-md-cardline {
+  background: color-mix(in srgb, var(--cosmetic-accent) 7%, transparent);
+}
+.note-editor .cm-md-cardsep {
+  color: var(--cosmetic-accent);
+  font-weight: 700;
+}
+.note-editor .cm-tooltip {
+  background: var(--note-panel);
+  border: 1px solid #44454a;
+  color: var(--note-ink);
+}
+.note-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: var(--cosmetic-accent);
+  color: var(--cosmetic-accent-ink, #0b0c0e);
+}
+.note-editor .cm-tooltip-autocomplete ul {
+  font-family: var(--font-interface), sans-serif;
+}
+.note-editor .cm-panels {
+  background: var(--note-sunk);
+  color: var(--note-ink);
+  border-color: var(--note-line);
+}
+.note-editor .cm-searchMatch {
+  background: color-mix(in srgb, var(--c-jaune) 30%, transparent);
+}
+
+.note-editor--compact .note-editor__toolbar {
+  gap: 2px 6px;
+}
+.note-editor--compact .note-editor__group {
+  padding-right: 6px;
+}
+.note-editor--compact .note-editor__tool {
+  min-width: 30px;
+  height: 30px;
+}
+.note-editor--compact .cm-content {
+  padding: 16px 18px 32px;
+}
+.note-editor--compact .note-editor__preview {
+  padding: 16px 18px 32px;
+}
+
+@media (max-width: 900px) {
+  .note-editor[data-mode="split"] .note-editor__panes {
+    grid-template-columns: 1fr;
+  }
+  .note-editor[data-mode="split"] .note-editor__preview {
+    border-left: 0;
+    border-top: 1px solid var(--note-line);
+  }
+  .note-editor__modes {
+    margin-left: 0;
+  }
+}

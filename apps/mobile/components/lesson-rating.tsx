@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { RatingCard } from "@/components/rating-card";
 import { fetchLessonRatingApi, rateLessonApi } from "@/lib/api";
 

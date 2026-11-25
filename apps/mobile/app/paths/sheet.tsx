@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import React from "react";
+import type React from "react";
 import { Pressable, Share, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { sheetAsText, sheetSummary } from "@cyberlearn/lib/paths/sheet";

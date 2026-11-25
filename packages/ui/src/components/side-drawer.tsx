@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useId, useInsertionEffect, useLayoutEffect, useRef } from "react";
+import type React from "react";
+import { useId, useInsertionEffect, useLayoutEffect, useRef } from "react";
 import { cn } from "../lib/utils.js";
 import { ModalShell } from "./modal-shell.js";
 

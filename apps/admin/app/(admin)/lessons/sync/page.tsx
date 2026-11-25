@@ -310,8 +310,9 @@ function ChallengesSection({
       <div className="a-card-pad a-sync-body">
         <p className="a-sync-file">
           Chaque fichier de content/challenges est un défi CTF joué sur une machine Linux, avec un
-          flag propre à chaque élève. Les fichiers passent dans leur ordre, qui est celui des
-          prérequis. Un nouveau défi arrive désactivé : active-le depuis la liste des défis.
+          flag propre à chaque élève. Ils passent dans l’ordre de leurs prérequis, chacun après
+          celui qu’il demande. Un nouveau défi arrive désactivé : active-le depuis la liste des
+          défis.
         </p>
         {overview.errors.length > 0 ? (
           <ul className="a-sync-failures" role="alert">

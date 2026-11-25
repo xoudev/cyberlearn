@@ -1,5 +1,5 @@
 import { Redirect } from "expo-router";
-import React from "react";
+import type React from "react";
 import { useSession } from "@/lib/session";
 
 export default function Index(): React.JSX.Element | null {

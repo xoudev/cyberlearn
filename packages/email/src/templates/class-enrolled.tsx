@@ -10,7 +10,7 @@ import {
   Text,
   render,
 } from "@react-email/components";
-import React from "react";
+import type React from "react";
 import { Resend } from "resend";
 import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";

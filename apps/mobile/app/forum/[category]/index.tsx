@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import { GradientButton, BackButton } from "@/components/buttons";
 import { Pager, TopicRow } from "@/components/forum";

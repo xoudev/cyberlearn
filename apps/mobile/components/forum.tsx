@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import type React from "react";
 import { TextInput, type TextInputProps, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { HELD_FOR_REVIEW } from "@cyberlearn/lib/moderation/notice";

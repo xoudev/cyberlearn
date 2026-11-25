@@ -394,6 +394,22 @@ export async function checkAccountDeletionRequest(userId: string): Promise<RateL
   return toResult(await limiter.limit(userId));
 }
 
+/** 5 "close my other sessions" per user per 15 minutes: each one is a call to the auth server. */
+export async function checkSessionsSignOut(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "sessions:sign-out",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(5, "15 m"),
+        prefix: "rl:sessions:sign-out",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
 /** 5 password-change attempts per user per 15 minutes. */
 export async function checkPasswordChange(userId: string): Promise<RateLimitResult> {
   if (IS_DEV) return PASS_THROUGH;
@@ -420,6 +436,44 @@ export async function checkClassExport(userId: string): Promise<RateLimitResult>
         redis: r,
         limiter: Ratelimit.slidingWindow(20, "1 h"),
         prefix: "rl:class:export",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/**
+ * 10 note imports per user per hour, counted on an import's first batch: an
+ * import writes up to 500 notes, a library's worth, not a gesture repeated.
+ */
+export async function checkNoteImport(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "notes:import",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(10, "1 h"),
+        prefix: "rl:notes:import",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/**
+ * 30 note PDFs per user per hour: each is rendered on the server, a whole
+ * library at the most, which is real work for a request.
+ */
+export async function checkNotePdf(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "notes:pdf",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(30, "1 h"),
+        prefix: "rl:notes:pdf",
       }),
   );
   if (!limiter) return PASS_THROUGH;

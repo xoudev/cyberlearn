@@ -1,7 +1,8 @@
 import { passwordUpdateSchema } from "@cyberlearn/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { GradientButton } from "@/components/buttons";
 import {
   AuthError,

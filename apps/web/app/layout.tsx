@@ -6,6 +6,7 @@ import { SplashScreen } from "@/components/splash-screen";
 import { brandTypeface } from "@/components/brand-typeface";
 import "@/components/splash-screen.css";
 import { CookieBanner } from "@/components/cookie-banner";
+import { SiteContextMenu } from "@/components/context-menu/site-context-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { OPEN_GRAPH_SITE } from "./page-metadata";
 import { SITE_URL } from "./site-url";
@@ -91,6 +92,7 @@ export default async function RootLayout({
           <SplashScreen nonce={nonce} />
           {children}
           <CookieBanner initialConsent={consentCookie?.value} />
+          <SiteContextMenu />
           <Toaster />
         </ThemeProvider>
       </body>

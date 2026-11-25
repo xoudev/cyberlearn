@@ -30,99 +30,100 @@ enum LeaderboardVisibility {
 }
 
 model User {
-  id            String   @id @db.Uuid // Direct link with Supabase auth.users
-  email         String   @unique
-  username      String?  @unique @db.VarChar(32) // Null until onboarding is complete
-  displayName   String   @db.VarChar(64)
-  avatarUrl     String?
-  bio           String?  @db.VarChar(280)
-  role          UserRole @default(STUDENT)
-  xpTotal       Int      @default(0)
-  level         Int      @default(1)
-  streakDays    Int      @default(0)
-  longestStreak Int      @default(0) // Record streak (all-time best)
-  streakFreezes Int      @default(1) // Freeze tokens in reserve (auto-cover one missed day)
+  id                      String    @id @db.Uuid // Direct link with Supabase auth.users
+  email                   String    @unique
+  username                String?   @unique @db.VarChar(32) // Null until onboarding is complete
+  displayName             String    @db.VarChar(64)
+  avatarUrl               String?
+  bio                     String?   @db.VarChar(280)
+  role                    UserRole  @default(STUDENT)
+  xpTotal                 Int       @default(0)
+  level                   Int       @default(1)
+  streakDays              Int       @default(0)
+  longestStreak           Int       @default(0) // Record streak (all-time best)
+  streakFreezes           Int       @default(1) // Freeze tokens in reserve (auto-cover one missed day)
   /// The streak's last active day, and the inactivity clock. A lesson, a daily
   /// recall, a challenge, the nightly freeze and a console correction move it.
   /// A sign-in moves it only while no streak is running (upsertFromAuth): it
   /// is not an activity of the streak.
-  lastActiveAt  DateTime @default(now())
+  lastActiveAt            DateTime  @default(now())
   /// When the account was told it would be erased for inactivity: 24 months
   /// without signing in or learning, 30 days' notice (rgpd/inactive-accounts).
   /// Void as soon as lastActiveAt passes it. Not granted to any client role.
   inactivityNoticeAt      DateTime?
   /// SHA-256 of the "keep my account" link that notice carried.
   inactivityKeepTokenHash String?   @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
-  preferences       UserPreferences?
-  lessonProgress    UserLessonProgress[]
-  pathProgress      UserPathProgress[]
-  badges            UserBadge[]
-  certificates      Certificate[]
-  notifications     Notification[]
-  reviewCards       ReviewCard[]
-  reviewSessions    ReviewSession[]
-  contactTickets    ContactTicket[]
-  ratings           Rating[]
-  lessonQuizAnswers LessonQuizAnswer[]
-  quizReports       QuizReport[]
-  questions         LessonQuestion[]
-  answers           LessonAnswer[]
-  challengeWriteups ChallengeWriteup[]
-  mockExamAttempts  MockExamAttempt[]
-  duelsSent         Duel[]                  @relation("DuelChallenger")
-  duelsReceived     Duel[]                  @relation("DuelOpponent")
-  duelAnswers       DuelAnswer[]
-  tournamentsMade   Tournament[]            @relation("TournamentCreator")
-  tournamentSolves  TournamentSolve[]       @relation("TournamentSolvePlayer")
-  disqualifications TournamentSolve[]       @relation("TournamentSolveDisqualifier")
-  auditLogs         AuditLog[]              @relation("ActorLogs")
-  placementResult   UserPlacementResult?
-  skipWaivers       UserSkipWaiver[]
-  challengeProgress UserChallengeProgress[]
-  exerciseCompletions ExerciseCompletion[]
-  hintReveals       ChallengeHintReveal[]
-  deletionTokens    AccountDeletionToken[]
-  lessonPreviews    LessonPreview[]
-  lessonDrafts      LessonDraft[]           @relation("LessonDraftEditor")
-  lessonVersions    LessonVersion[]         @relation("LessonVersionPublisher")
-  quizAttempts      QuizAttempt[]
-  activityDays      UserActivityDay[]
-  questProgress     UserQuestProgress[]
-  cosmetics         UserCosmetic[]
-  cosmeticLoadout   UserCosmeticLoadout?
-  leagueMemberships LeagueMembership[]
-  xpLedger          XpLedger[]
-  wrappedSnapshots  WrappedSnapshot[]
-  answerUpvotes     LessonAnswerUpvote[]
-  notes             Note[]
-  noteFolders       NoteFolder[]
-  classMemberships  ClassMember[]
-  taughtClasses     ClassTeacher[]          @relation("ClassTeacher")
-  sentInvitations   ClassInvitation[]       @relation("ClassInvitationSender")
-  setAssignments    ClassAssignment[]       @relation("ClassAssignmentAuthor")
-  classResources    ClassResource[]         @relation("ClassResourceAuthor")
-  notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
-  noteReports       NoteReport[]            @relation("NoteReporter")
-  contentReports    ContentReport[]         @relation("ContentReporter")
-  contentReportsResolved ContentReport[]    @relation("ContentReportResolver")
-  moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
-  moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
-  authoredLessons   Lesson[]                @relation("LessonAuthor")
-  authoredPaths     Path[]                  @relation("PathAuthor")
-  ticketMessages    TicketMessage[]         @relation("TicketMessageAuthor")
-  ticketNotes       TicketNote[]            @relation("TicketNoteAuthor")
-  assignedTickets   ContactTicket[]         @relation("TicketAssignee")
-  forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
-  forumPosts        ForumPost[]             @relation("ForumPostAuthor")
-  friendshipsA      Friendship[]            @relation("FriendshipUserA")
-  friendshipsB      Friendship[]            @relation("FriendshipUserB")
-  friendRequests    Friendship[]            @relation("FriendshipRequester")
-  bans              UserBan[]               @relation("BanSubject")
-  bansIssued        UserBan[]               @relation("BanIssuer")
-  bansLifted        UserBan[]               @relation("BanLifter")
+  preferences            UserPreferences?
+  lessonProgress         UserLessonProgress[]
+  pathProgress           UserPathProgress[]
+  badges                 UserBadge[]
+  certificates           Certificate[]
+  notifications          Notification[]
+  reviewCards            ReviewCard[]
+  reviewSessions         ReviewSession[]
+  contactTickets         ContactTicket[]
+  ratings                Rating[]
+  lessonQuizAnswers      LessonQuizAnswer[]
+  quizReports            QuizReport[]
+  questions              LessonQuestion[]
+  answers                LessonAnswer[]
+  challengeWriteups      ChallengeWriteup[]
+  mockExamAttempts       MockExamAttempt[]
+  duelsSent              Duel[]                  @relation("DuelChallenger")
+  duelsReceived          Duel[]                  @relation("DuelOpponent")
+  duelAnswers            DuelAnswer[]
+  tournamentsMade        Tournament[]            @relation("TournamentCreator")
+  tournamentSolves       TournamentSolve[]       @relation("TournamentSolvePlayer")
+  disqualifications      TournamentSolve[]       @relation("TournamentSolveDisqualifier")
+  auditLogs              AuditLog[]              @relation("ActorLogs")
+  placementResult        UserPlacementResult?
+  skipWaivers            UserSkipWaiver[]
+  challengeProgress      UserChallengeProgress[]
+  exerciseCompletions    ExerciseCompletion[]
+  hintReveals            ChallengeHintReveal[]
+  deletionTokens         AccountDeletionToken[]
+  lessonPreviews         LessonPreview[]
+  lessonDrafts           LessonDraft[]           @relation("LessonDraftEditor")
+  lessonVersions         LessonVersion[]         @relation("LessonVersionPublisher")
+  quizAttempts           QuizAttempt[]
+  activityDays           UserActivityDay[]
+  questProgress          UserQuestProgress[]
+  cosmetics              UserCosmetic[]
+  cosmeticLoadout        UserCosmeticLoadout?
+  leagueMemberships      LeagueMembership[]
+  xpLedger               XpLedger[]
+  wrappedSnapshots       WrappedSnapshot[]
+  answerUpvotes          LessonAnswerUpvote[]
+  notes                  Note[]
+  noteFolders            NoteFolder[]
+  noteCards              NoteCard[]
+  classMemberships       ClassMember[]
+  taughtClasses          ClassTeacher[]          @relation("ClassTeacher")
+  sentInvitations        ClassInvitation[]       @relation("ClassInvitationSender")
+  setAssignments         ClassAssignment[]       @relation("ClassAssignmentAuthor")
+  classResources         ClassResource[]         @relation("ClassResourceAuthor")
+  notesSharedWithMe      NoteShare[]             @relation("NoteRecipient")
+  noteReports            NoteReport[]            @relation("NoteReporter")
+  contentReports         ContentReport[]         @relation("ContentReporter")
+  contentReportsResolved ContentReport[]         @relation("ContentReportResolver")
+  moderationEvents       ModerationEvent[]       @relation("ModerationSubject")
+  moderationReviews      ModerationEvent[]       @relation("ModerationReviewer")
+  authoredLessons        Lesson[]                @relation("LessonAuthor")
+  authoredPaths          Path[]                  @relation("PathAuthor")
+  ticketMessages         TicketMessage[]         @relation("TicketMessageAuthor")
+  ticketNotes            TicketNote[]            @relation("TicketNoteAuthor")
+  assignedTickets        ContactTicket[]         @relation("TicketAssignee")
+  forumTopics            ForumTopic[]            @relation("ForumTopicAuthor")
+  forumPosts             ForumPost[]             @relation("ForumPostAuthor")
+  friendshipsA           Friendship[]            @relation("FriendshipUserA")
+  friendshipsB           Friendship[]            @relation("FriendshipUserB")
+  friendRequests         Friendship[]            @relation("FriendshipRequester")
+  bans                   UserBan[]               @relation("BanSubject")
+  bansIssued             UserBan[]               @relation("BanIssuer")
+  bansLifted             UserBan[]               @relation("BanLifter")
 
   @@index([username])
   @@index([role])
@@ -530,22 +531,22 @@ model Lesson {
 
   author User? @relation("LessonAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
-  pathLessons      PathLesson[]
-  progress         UserLessonProgress[]
+  pathLessons         PathLesson[]
+  progress            UserLessonProgress[]
   exerciseCompletions ExerciseCompletion[]
-  quizAnswers      LessonQuizAnswer[]
-  quizReports      QuizReport[]
-  reviewCards      ReviewCard[]
-  ratings          Rating[]
-  questions        LessonQuestion[]
-  prerequisites    LessonPrerequisite[] @relation("LessonPrerequisites")
-  prerequisiteOf   LessonPrerequisite[] @relation("PrerequisiteOf")
-  skipWaivers      UserSkipWaiver[]
-  notes            Note[]
-  classAssignments ClassAssignment[]
-  classLinks       LessonClass[]
-  draft            LessonDraft?
-  versions         LessonVersion[]
+  quizAnswers         LessonQuizAnswer[]
+  quizReports         QuizReport[]
+  reviewCards         ReviewCard[]
+  ratings             Rating[]
+  questions           LessonQuestion[]
+  prerequisites       LessonPrerequisite[] @relation("LessonPrerequisites")
+  prerequisiteOf      LessonPrerequisite[] @relation("PrerequisiteOf")
+  skipWaivers         UserSkipWaiver[]
+  notes               Note[]
+  classAssignments    ClassAssignment[]
+  classLinks          LessonClass[]
+  draft               LessonDraft?
+  versions            LessonVersion[]
 
   @@index([category, difficulty, status])
   @@index([slug])
@@ -556,37 +557,83 @@ model Lesson {
   @@map("lessons")
 }
 
-// One markdown note per (user, lesson): written from the in-lesson note drawer
-// and listed in the notes library. A user fully owns their notes (RLS: own rows
-// only). content is markdown; wordCount is denormalized for the library cards.
-// folderId is the user's optional custom organization (SetNull: deleting a
-// folder ungroups its notes rather than deleting them).
+// A markdown note owned by one user, listed in the notes library. It is either
+// tied to a lesson (written from the lesson's note drawer, or attached later)
+// or free: lessonId null. At most one live note per (user, lesson); a note in
+// the trash gives its lesson up (lessonId null, trashedLessonId remembers it)
+// so a new note can be written on that lesson meanwhile. A user fully owns
+// their notes (RLS: own rows only, and only live ones over the Data API).
+// title: set for every note the site writes (a lesson note starts with the
+// lesson's title); "" for rows written without one, read as the lesson's.
+// folderId is the user's optional organization (SetNull: deleting a folder
+// never deletes a note). Deleting a lesson frees its notes (SetNull).
 model Note {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  lessonId  String   @db.Uuid
-  folderId  String?  @db.Uuid
-  content   String   @default("") @db.Text
-  wordCount Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  lessonId        String?   @db.Uuid
+  folderId        String?   @db.Uuid
+  title           String    @default("") @db.VarChar(120)
+  content         String    @default("") @db.Text
+  wordCount       Int       @default(0)
+  pinned          Boolean   @default(false)
+  /// In the trash since then; purged NOTE_TRASH_DAYS later (rgpd/retention.ts).
+  deletedAt       DateTime?
+  /// The lesson a trashed note was on, to give it back on restore. No foreign
+  /// key: the lesson may be gone by then, and restore checks.
+  trashedLessonId String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson  Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
   folder  NoteFolder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   shares  NoteShare[]
   reports NoteReport[]
+  cards   NoteCard[]
 
   @@unique([userId, lessonId])
   @@index([userId])
   @@index([folderId])
+  @@index([deletedAt])
   @@map("notes")
 }
 
+/// A flashcard taken from a note: a line written `question :: réponse`. The
+/// learner's own deck, apart from the lesson cards (ReviewCard): the learner
+/// grades their own answer, so it earns nothing. Same boxes as the lesson
+/// cards (@cyberlearn/lib/revisions/cards). key is a hash of the question, so
+/// editing the answer keeps the card's progress; the card goes with its note.
+model NoteCard {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  noteId         String    @db.Uuid
+  key            String    @db.VarChar(64)
+  front          String    @db.VarChar(500)
+  back           String    @db.VarChar(2000)
+  box            Int       @default(1) @db.SmallInt
+  dueAt          DateTime
+  lapses         Int       @default(0) @db.SmallInt
+  lastAnsweredAt DateTime?
+  retiredAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, key])
+  @@index([userId, dueAt])
+  @@map("note_cards")
+}
+
 // A user-owned folder for organizing notes. A note points at most to one folder
-// (single-membership, "dossier" model). A user fully owns their folders
-// (RLS: own rows only). position drives manual ordering; color and icon are
-// optional and picked from fixed client palettes (icon defaults to "folder").
+// (single-membership, "dossier" model); a folder sits in at most one parent,
+// NOTE_FOLDER_MAX_DEPTH levels deep at most and never inside itself (checked by
+// noteFolderRepository.move). Deleting a folder through the site lifts what it
+// holds to its parent; parentId SetNull keeps any other delete from losing a
+// subfolder. A user fully owns their folders (RLS: own rows only). position
+// drives manual ordering; color and icon are optional and picked from fixed
+// client palettes (icon defaults to "folder").
 /// A note handed to a classmate.
 ///
 /// A row per recipient rather than a flag on the note, because "shared" is not
@@ -654,14 +701,18 @@ model NoteFolder {
   name      String   @db.Text
   color     String?  @db.Text
   icon      String?  @db.Text
+  parentId  String?  @db.Uuid
   position  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notes Note[]
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   NoteFolder?  @relation("NoteFolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children NoteFolder[] @relation("NoteFolderTree")
+  notes    Note[]
 
   @@index([userId])
+  @@index([parentId])
   @@map("note_folders")
 }
 
@@ -1410,16 +1461,16 @@ model QuizQuestion {
 }
 
 model QuizAttempt {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
-  quizId      String    @db.Uuid
-  score       Int // Percent (0–100)
-  passed      Boolean
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  quizId           String    @db.Uuid
+  score            Int // Percent (0–100)
+  passed           Boolean
   // User selection + correct/incorrect per question. MUST NOT include
   // correctOptionId (reading one's own attempt would leak the answer key).
-  answers     Json
-  startedAt   DateTime  @default(now())
-  submittedAt DateTime?
+  answers          Json
+  startedAt        DateTime  @default(now())
+  submittedAt      DateTime?
   /// When an administrator lifted the wait after this attempt, from the
   /// account's page in the console. Null while the wait runs its course.
   cooldownWaivedAt DateTime?
@@ -2386,14 +2437,14 @@ model TournamentChallenge {
 /// A flag found during a tournament, checked on the server: one per player and
 /// challenge. The class is the team the player stood for when they found it.
 model TournamentSolve {
-  id           String   @id @default(uuid()) @db.Uuid
-  tournamentId String   @db.Uuid
-  challengeId  String   @db.Uuid
+  id                 String    @id @default(uuid()) @db.Uuid
+  tournamentId       String    @db.Uuid
+  challengeId        String    @db.Uuid
   /// Null once the account is erased: the team keeps its points.
-  userId       String?  @db.Uuid
-  classId      String   @db.Uuid
-  points       Int
-  solvedAt     DateTime @default(now())
+  userId             String?   @db.Uuid
+  classId            String    @db.Uuid
+  points             Int
+  solvedAt           DateTime  @default(now())
   /// Set when the console takes the flag back. The row stays: the player
   /// cannot submit the same flag again, and it scores for nobody.
   disqualifiedAt     DateTime?

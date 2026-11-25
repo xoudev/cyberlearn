@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import React from "react";
+import type React from "react";
 import { colors } from "@cyberlearn/tokens";
 
 export default function AuthLayout(): React.JSX.Element {

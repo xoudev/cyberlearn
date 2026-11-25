@@ -31,6 +31,7 @@ export type {
   LandingStats,
   FeaturedPath,
   PublicCatalogPath,
+  PublicPathDetail,
 } from "./repositories/stats.repository.js";
 export type {
   CatalogueFilters,
@@ -217,6 +218,13 @@ export {
   type SeasonReferenceRow,
 } from "./repositories/reference.repository.js";
 export {
+  usageRepository,
+  STALLED_AFTER_DAYS,
+  type UsageActivityDay,
+  type UsageLessonRow,
+  type UsageSignup,
+} from "./repositories/usage.repository.js";
+export {
   cronRunRepository,
   cronRunAction,
   cronRunFrom,
@@ -281,7 +289,18 @@ export {
   type ReportedQuiz,
 } from "./repositories/quiz-report.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
-export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
+export {
+  noteRepository,
+  type AttachResult,
+  type CreateNoteRefusal,
+  type NoteSummary,
+} from "./repositories/note.repository.js";
+export { noteCardRepository, type NoteCardRow } from "./repositories/note-card.repository.js";
+export {
+  noteImportRepository,
+  type ImportBatchResult,
+  type ImportItem,
+} from "./repositories/note-import.repository.js";
 export {
   searchRepository,
   MIN_SEARCH_LENGTH,
@@ -306,6 +325,8 @@ export {
 } from "./repositories/note-report.repository.js";
 export {
   noteFolderRepository,
+  type CreateFolderRefusal,
+  type MoveFolderRefusal,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";
 export {

@@ -16,12 +16,10 @@ const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
 ]);
 
 function parseOtpType(value: string | null): EmailOtpType | null {
-  // SAFETY: the first cast only feeds the Set membership test; the value is
-  // returned as EmailOtpType exactly when the Set proves it is one of the
-  // literals, so the narrowing cast cannot mislabel the string.
-  return value !== null && EMAIL_OTP_TYPES.has(value as EmailOtpType)
-    ? (value as EmailOtpType)
-    : null;
+  // EmailOtpType admits any string since supabase-js 2.119 (`| (string & {})`),
+  // so the type no longer narrows anything: the Set is what keeps this route
+  // to the five types the e-mail hook sends.
+  return value !== null && EMAIL_OTP_TYPES.has(value) ? value : null;
 }
 
 /**

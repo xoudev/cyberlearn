@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { trimHyphens } from "@cyberlearn/lib/slug";
 import { prisma } from "../prisma.js";
 
 // Classes and who is in them.
@@ -942,13 +943,12 @@ export const classRepository = {
     // CL-CLS marks the origin at a glance in the admin list and cannot collide
     // with the CL-LSN-000-V00 series the catalogue uses.
     const token = randomUUID().slice(0, 8);
-    const slugBase = lesson.title
+    const lessonSlug = lesson.title
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/gu, "")
-      .replace(/[^a-z0-9]+/gu, "-")
-      .replace(/^-+|-+$/gu, "")
-      .slice(0, 60);
+      .replace(/[^a-z0-9]+/gu, "-");
+    const slugBase = trimHyphens(lessonSlug).slice(0, 60);
 
     const created = await prisma.lesson.create({
       data: {
@@ -1103,13 +1103,12 @@ export const classRepository = {
   }): Promise<{ id: string; slug: string }> {
     const { classId, lessonIds, ...path } = input;
     const token = randomUUID().slice(0, 8);
-    const slugBase = path.title
+    const pathSlug = path.title
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/gu, "")
-      .replace(/[^a-z0-9]+/gu, "-")
-      .replace(/^-+|-+$/gu, "")
-      .slice(0, 60);
+      .replace(/[^a-z0-9]+/gu, "-");
+    const slugBase = trimHyphens(pathSlug).slice(0, 60);
 
     return prisma.path.create({
       data: {

@@ -1,5 +1,6 @@
 import type { Category, Difficulty } from "@prisma/client";
 import { FOLD_ACCENTED, FOLD_PLAIN, foldText } from "@cyberlearn/lib";
+import { noteDisplayTitle } from "@cyberlearn/lib/notes/workspace";
 import { prisma } from "../prisma.js";
 import { lessonsVisibleTo } from "./lesson.repository.js";
 import { PUBLISHED_PATH_LESSON, pathsVisibleTo } from "./path.repository.js";
@@ -60,11 +61,13 @@ export interface NoteSearchRow {
   content: string;
   wordCount: number;
   updatedAt: Date;
-  /** The note's lesson: the app opens a note by its lesson. */
-  lessonId: string;
-  lessonSlug: string;
-  lessonTitle: string;
-  lessonCategory: Category;
+  /** The note's title (its lesson's when it has none of its own). */
+  title: string;
+  /** The note's lesson, when it is on one: the app opens a note by its lesson. */
+  lessonId: string | null;
+  lessonSlug: string | null;
+  lessonTitle: string | null;
+  lessonCategory: Category | null;
 }
 
 export interface SearchRows {
@@ -113,15 +116,18 @@ export const searchRepository = {
           AND translate(lower("title" || ' ' || "description"), ${FOLD_ACCENTED}, ${FOLD_PLAIN}) LIKE ${like}
         LIMIT ${CANDIDATE_LIMIT}
       `,
-      // A note is looked up by what is in it and by the lesson it hangs off:
-      // "the note I took on injection" is how people remember their own notes.
+      // A note is looked up by what is in it, its title and the lesson it
+      // hangs off: "the note I took on injection" is how people remember their
+      // own notes. A note in the trash is not found.
       prisma.$queryRaw<{ id: string }[]>`
         SELECT n."id" FROM "notes" n
-        JOIN "lessons" l ON l."id" = n."lessonId"
+        LEFT JOIN "lessons" l ON l."id" = n."lessonId"
         WHERE n."userId" = ${userId}::uuid
+          AND n."deletedAt" IS NULL
           AND (
             translate(lower(n."content"), ${FOLD_ACCENTED}, ${FOLD_PLAIN}) LIKE ${like}
-            OR translate(lower(l."title"), ${FOLD_ACCENTED}, ${FOLD_PLAIN}) LIKE ${like}
+            OR translate(lower(n."title"), ${FOLD_ACCENTED}, ${FOLD_PLAIN}) LIKE ${like}
+            OR translate(lower(coalesce(l."title", '')), ${FOLD_ACCENTED}, ${FOLD_PLAIN}) LIKE ${like}
           )
         LIMIT ${CANDIDATE_LIMIT}
       `,
@@ -171,11 +177,12 @@ export const searchRepository = {
             // userId again: the pre-filter already scoped to the owner, and a
             // note is the one thing here nobody else may read, so it is worth
             // saying twice.
-            where: { id: { in: ids(noteIds) }, userId },
+            where: { id: { in: ids(noteIds) }, userId, deletedAt: null },
             take,
             orderBy: { updatedAt: "desc" },
             select: {
               id: true,
+              title: true,
               content: true,
               wordCount: true,
               updatedAt: true,
@@ -201,10 +208,11 @@ export const searchRepository = {
         content: n.content,
         wordCount: n.wordCount,
         updatedAt: n.updatedAt,
-        lessonId: n.lesson.id,
-        lessonSlug: n.lesson.slug,
-        lessonTitle: n.lesson.title,
-        lessonCategory: n.lesson.category,
+        title: noteDisplayTitle(n.title, n.lesson?.title),
+        lessonId: n.lesson?.id ?? null,
+        lessonSlug: n.lesson?.slug ?? null,
+        lessonTitle: n.lesson?.title ?? null,
+        lessonCategory: n.lesson?.category ?? null,
       })),
     };
   },

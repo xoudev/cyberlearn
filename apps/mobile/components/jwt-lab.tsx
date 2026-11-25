@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { guessSecret, splitToken } from "@cyberlearn/lib/crypto/jwt";
 import {

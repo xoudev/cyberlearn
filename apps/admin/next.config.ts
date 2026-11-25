@@ -102,6 +102,12 @@ export default withSentryConfig(nextConfig, {
   },
   // Keep browser telemetry same-origin so privacy filters and Cloudflare's
   // ingest cookies cannot block or pollute client-side error reporting.
+  // Deprecated since @sentry/nextjs 11.13 in favour of a managed tunnel (an
+  // app/sentry-tunnel route, `tunnel: true` in the browser's Sentry.init,
+  // serveTunnelIntegration() on the server). That moves the endpoint off
+  // /monitoring, which the CSP and the middleware know: a migration of its
+  // own, not part of a lint bump. tunnelRoute keeps working until then.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- see above
   tunnelRoute: "/monitoring",
   webpack: {
     // Remove Sentry logger statements from the production bundle

@@ -62,7 +62,7 @@
     "husky": "catalog:",
     "lint-staged": "catalog:",
     "next": "catalog:",
-    "turbo": "^2.11.4"
+    "turbo": "^2.11.11"
   },
   "pnpm": {
     "overrides": {
@@ -76,7 +76,13 @@
       "source-map-js@<1.2.2": "^1.2.2",
       "shell-quote@<1.11.0": "^1.11.0",
       "@humanfs/node@<0.16.8": "^0.16.8",
-      "postcss-selector-parser@>=7.0.0 <7.1.6": "^7.1.6"
+      "postcss-selector-parser@>=7.0.0 <7.1.6": "^7.1.6",
+      "postcss-selector-parser@<6.1.5": "^6.1.5",
+      "node-forge@<1.4.3": "^1.4.3",
+      "undici@>=8.0.0 <8.12.2": "^8.12.2",
+      "fast-uri@>=3.0.0 <3.1.9": "^3.1.9",
+      "zod@>=4.0.0 <4.6.6": "^4.6.7",
+      "vite@>=7.0.0 <7.3.7": "^7.3.7"
     }
   }
 }

@@ -11,6 +11,13 @@ loadRootEnv(path.join(__dirname, "../../"));
 const nextConfig: NextConfig = {
   // No X-Powered-By: naming the framework only saves an attacker a lookup.
   poweredByHeader: false,
+  // Hosts besides localhost that may reach `next dev`, comma-separated: a dev
+  // box behind a reverse proxy (dev.cyberlearn.fr behind the GitHub login).
+  // Read in development only; empty everywhere else.
+  allowedDevOrigins: (process.env.NEXT_DEV_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean),
   // Must point to the monorepo root so Next.js file tracing follows imports
   // up through pnpm's node_modules/.pnpm/ tree.
   outputFileTracingRoot: path.join(__dirname, "../../"),
@@ -47,6 +54,19 @@ const nextConfig: NextConfig = {
   // Full env schema is in lib/env.ts
   typescript: {
     ignoreBuildErrors: false,
+  },
+  experimental: {
+    // Vercel builds on 8 GB. The webpack() hook below turns Next's build
+    // worker off (it is on by default only without a custom webpack config),
+    // so webpack compiled inside the main `next build` process and kept its
+    // 4 GB and more while "Running TypeScript" started next to it: the build
+    // was killed for lack of memory, at random after #562, then on every
+    // deployment from #579 on. In a worker, the compilation exits and gives
+    // its memory back before the type check.
+    webpackBuildWorker: true,
+    // Lowers webpack's peak during the compilation itself, for a few seconds
+    // more (node_modules/next/dist/docs/01-app/02-guides/memory-usage.md).
+    webpackMemoryOptimizations: true,
   },
   images: {
     // Next 16 raised the default to four hours. A badge icon replaced under the
@@ -224,6 +244,12 @@ export default withSentryConfig(nextConfig, {
   },
   // Keep browser telemetry same-origin so privacy filters and Cloudflare's
   // ingest cookies cannot block or pollute client-side error reporting.
+  // Deprecated since @sentry/nextjs 11.13 in favour of a managed tunnel (an
+  // app/sentry-tunnel route, `tunnel: true` in the browser's Sentry.init,
+  // serveTunnelIntegration() on the server). That moves the endpoint off
+  // /monitoring, which the CSP and the middleware know: a migration of its
+  // own, not part of a lint bump. tunnelRoute keeps working until then.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- see above
   tunnelRoute: "/monitoring",
   webpack: {
     // Remove Sentry logger statements from the production bundle

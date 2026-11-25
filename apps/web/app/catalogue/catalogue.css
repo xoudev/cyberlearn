@@ -46,3 +46,174 @@
     max-width: none;
   }
 }
+
+/* One path's public page (catalogue/[slug]): the catalogue's heading, then
+   the programme as a list a visitor can read down. */
+.public-path__crumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 20px;
+  color: #aaa79f;
+  font-size: 12px;
+}
+.public-path__crumb a {
+  color: inherit;
+}
+.public-path__crumb a:hover {
+  color: #f4f2ed;
+}
+.public-path__crumb [aria-current="page"] {
+  color: #f4f2ed;
+}
+/* A path's name is a sentence, not the two words of the catalogue's title. */
+.public-path__heading h1 {
+  font-size: clamp(38px, 4.6vw, 68px);
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+}
+.public-path__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.public-path__facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.public-path__facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid #bdbab3;
+}
+.public-path__facts > div:last-child {
+  border-bottom: 0;
+}
+.public-path__facts dt {
+  font-size: 12px;
+  color: #55524d;
+}
+.public-path__facts dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+.public-path .catalogue-summary__note {
+  margin-top: 16px;
+}
+.public-path__programme {
+  padding: 34px 0 10px;
+  border-top: 1px solid #303137;
+}
+.public-path__programme h2 {
+  margin: 0 0 26px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.public-path__empty {
+  color: #aaa79f;
+}
+.public-path__module {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.34fr) minmax(0, 1fr);
+  gap: 16px 40px;
+  padding: 26px 0;
+  border-top: 1px solid #303137;
+}
+.public-path__module-number {
+  margin: 0 0 8px;
+  color: var(--cosmetic-accent);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+.public-path__module h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+}
+.public-path__module-description {
+  margin: 10px 0 0;
+  color: #aaa79f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.public-path__module ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.public-path__module li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid #25262b;
+}
+.public-path__module li:last-child {
+  border-bottom: 0;
+}
+.public-path__lesson-number,
+.public-path__lesson-time {
+  color: #8f8b83;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+.public-path__lesson-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.public-path__lesson-text strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.public-path__lesson-text span {
+  color: #aaa79f;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.public-path__closing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-top: 30px;
+  padding: 26px 24px;
+  background: #eae7df;
+  color: #141518;
+}
+.public-path__closing p {
+  margin: 0;
+  font-size: 15px;
+}
+@media (max-width: 860px) {
+  .public-path__heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .public-path__module {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .public-path__module li {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+  .public-path__lesson-time {
+    grid-column: 2;
+  }
+  .public-path__actions .home-button {
+    flex: 1 1 100%;
+  }
+}

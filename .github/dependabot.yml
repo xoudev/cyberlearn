@@ -3,9 +3,18 @@
 #
 # Without this file nothing proposed a bump: Next sat on 16.3.8 for a month
 # after two critical advisories were fixed in 16.4.1, found by an audit rather
-# than by a pull request. Minor and patch versions come grouped in one weekly
-# pull request per ecosystem, so the review is one diff and one CI run; a major
-# version comes alone, to be taken on its own.
+# than by a pull request.
+#
+# Its first version put every minor and patch version in one weekly pull
+# request. The first one carried 44 updates and failed five jobs: it moved the
+# app's React Native without its Expo SDK, took a 0.x "minor" that is a
+# breaking release, and a Biome whose formatter rewrites files. So:
+#
+# - what moves with the Expo SDK is not proposed here at all (the app is
+#   upgraded as a whole, with `expo install --fix`);
+# - a 0.x package only gets its patches;
+# - the rest comes in a few groups that can each be read and merged alone.
+#   A major version still comes alone, to be taken on its own.
 version: 2
 updates:
   - package-ecosystem: "npm"
@@ -15,7 +24,7 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Paris"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 6
     # A release is proposed a week after it is published, not the same day: a
     # compromised version is usually pulled within days, and a security
     # update, which does not wait, is not held back by this.
@@ -25,8 +34,94 @@ updates:
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"
+    ignore:
+      # The app's native side: these versions are a set, chosen by the Expo
+      # SDK. React is in it, because React Native pins the one it runs on.
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "@expo-google-fonts/*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@react-native/*"
+      - dependency-name: "@react-native-async-storage/*"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@types/react"
+      - dependency-name: "@types/react-dom"
+      # 0.x: a "minor" is where these ship their breaking changes.
+      - dependency-name: "@supabase/ssr"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@t3-oss/env-nextjs"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "class-variance-authority"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "next-themes"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@tailwindcss/typography"
+        update-types: ["version-update:semver-minor"]
     groups:
-      minor-and-patch:
+      # Alone: a new Biome reformats files, and its pull request needs a
+      # `pnpm format` commit that the others do not.
+      biome:
+        patterns:
+          - "@biomejs/biome"
+      # What runs on a developer's machine and in CI, never in production.
+      tooling:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "@next/eslint-plugin-next"
+          - "vitest"
+          - "@vitest/*"
+          - "jsdom"
+          - "@testing-library/*"
+          - "turbo"
+          - "husky"
+          - "lint-staged"
+          - "@commitlint/*"
+          - "@types/*"
+          - "typescript"
+        update-types:
+          - "minor"
+          - "patch"
+      # The data and auth layer: read with the migrations and the sign-in in mind.
+      data:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+          - "@supabase/*"
+          - "@upstash/*"
+          - "resend"
+          - "pino"
+          - "jose"
+          - "zod"
+        update-types:
+          - "minor"
+          - "patch"
+      # What draws the interface.
+      interface:
+        patterns:
+          - "@radix-ui/*"
+          - "lucide-react"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "tailwind-merge"
+          - "clsx"
+          - "sonner"
+          - "@xyflow/react"
+          - "mermaid"
+          - "remotion"
+          - "@remotion/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Everything else, Next and Sentry among it.
+      runtime:
+        patterns:
+          - "*"
         update-types:
           - "minor"
           - "patch"

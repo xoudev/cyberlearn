@@ -8,6 +8,7 @@ import React, { type ReactNode, useState } from "react";
 import { SideDrawer } from "@cyberlearn/ui";
 import { useSidebar } from "@/components/ui/sidebar";
 import { LESSON_TOOLBAR_HEIGHT, NAVBAR_HEIGHT } from "@/lib/chrome";
+import { AddToNotes, quoteMarkdown } from "./add-to-notes";
 import { NoteDrawer } from "./note-drawer";
 
 /** Where the reader stands in the lesson: what the stepper knows of them. */
@@ -156,6 +157,7 @@ export function LessonToolbar({
 }: LessonToolbarProps): React.ReactElement {
   const [planOpen, setPlanOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [quote, setQuote] = useState<{ id: number; markdown: string } | null>(null);
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
 
   const isLastStep = currentStep === totalSteps - 1;
@@ -358,6 +360,16 @@ export function LessonToolbar({
         open={notesOpen}
         onClose={() => {
           setNotesOpen(false);
+        }}
+        quote={quote}
+      />
+      <AddToNotes
+        onAdd={(text) => {
+          setQuote({
+            id: Date.now(),
+            markdown: quoteMarkdown(text, sections[currentStep]?.text ?? lessonTitle),
+          });
+          setNotesOpen(true);
         }}
       />
     </>

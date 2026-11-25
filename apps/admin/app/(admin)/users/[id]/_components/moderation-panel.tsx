@@ -7,6 +7,7 @@ import type {
   ReportAgainstAuthor,
 } from "@cyberlearn/db";
 import { NOTE_REPORT_REASON_LABELS } from "@cyberlearn/lib/notes/report-reasons";
+import { noteDisplayTitle } from "@cyberlearn/lib/notes/workspace";
 import { Card, Tag, type Tone } from "../../../_components/admin-ui";
 import { USER_CARDS } from "../../_components/columns";
 import { SURFACE_LABEL } from "../../../moderation/surface-labels";
@@ -149,7 +150,9 @@ export function ModerationPanel({
                         <span className="a-row-link-title">
                           {NOTE_REPORT_REASON_LABELS[report.reason]}
                         </span>
-                        <div className="a-field-hint">Note sur « {report.note.lesson.title} »</div>
+                        <div className="a-field-hint">
+                          Note « {noteDisplayTitle(report.note.title, report.note.lesson?.title)} »
+                        </div>
                       </td>
                       <td className="mono a-field-hint">{formatDay(report.createdAt)}</td>
                       <td align="right">

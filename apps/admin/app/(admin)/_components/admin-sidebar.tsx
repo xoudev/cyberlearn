@@ -47,6 +47,15 @@ function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null 
           <rect x="9" y="9" width="5" height="5" />
         </svg>
       );
+    case "chart":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M2 14 H14" />
+          <path d="M4 14 V9" />
+          <path d="M8 14 V4" />
+          <path d="M12 14 V7" />
+        </svg>
+      );
     case "book":
       return (
         <svg viewBox="0 0 16 16" {...s}>

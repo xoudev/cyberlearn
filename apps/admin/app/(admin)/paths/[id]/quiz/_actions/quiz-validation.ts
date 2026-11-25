@@ -22,7 +22,7 @@ export const questionSchema = z
       .min(2, "Au moins 2 options")
       .max(10)
       .refine((opts) => new Set(opts.map((o) => o.id)).size === opts.length, {
-        message: "Les identifiants d'options doivent être uniques",
+        error: "Les identifiants d'options doivent être uniques",
       }),
     correctOptionId: z.string().trim().min(1),
     explanation: z.string().trim().max(2000).optional(),
@@ -31,7 +31,7 @@ export const questionSchema = z
   })
   // The answer key must point to one of the options, else the question is unscorable.
   .refine((q) => q.options.some((o) => o.id === q.correctOptionId), {
-    message: "La bonne réponse doit correspondre à l'une des options",
+    error: "La bonne réponse doit correspondre à l'une des options",
     path: ["correctOptionId"],
   });
 

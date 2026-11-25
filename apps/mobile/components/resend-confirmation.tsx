@@ -2,7 +2,8 @@ import {
   CONFIRMATION_RESENT_MESSAGE,
   RESEND_CONFIRMATION_LABEL,
 } from "@cyberlearn/lib/auth/email-confirmation";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { AuthError, AuthNotice, AuthTextLink } from "@/components/auth-form";
 import { SITE_URL } from "@/lib/api";
 import { supabase } from "@/lib/supabase";

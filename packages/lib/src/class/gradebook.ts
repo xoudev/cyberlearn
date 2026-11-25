@@ -12,6 +12,8 @@
  * file says can be tested without either.
  */
 
+import { trimHyphens } from "../slug.js";
+
 export interface GradebookStudent {
   id: string;
   displayName: string;
@@ -115,13 +117,12 @@ export function gradebookRows(input: GradebookInput): string[][] {
 
 /** The file's name: the class, made safe for a download header, and the day. */
 export function gradebookFilename(className: string, now: Date): string {
-  const slug = className
+  const folded = className
     .normalize("NFD")
     .replace(/[̀-ͯ]/gu, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .slice(0, 60);
+    .replace(/[^a-z0-9]+/gu, "-");
+  const slug = trimHyphens(folded).slice(0, 60);
   const day = now.toISOString().slice(0, 10);
   return `classe-${slug === "" ? "sans-nom" : slug}-${day}.csv`;
 }

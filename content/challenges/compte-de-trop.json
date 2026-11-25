@@ -1,0 +1,40 @@
+{
+  "refCode": "CL-CHG-008",
+  "slug": "compte-de-trop",
+  "title": "Le compte de trop",
+  "description": "L'intrus est parti, mais il compte revenir. Sur ce serveur, un compte de service a les pleins pouvoirs et personne ne l'a créé.",
+  "instructions": "## Le contexte\n\nLe serveur `app02` a été compromis la semaine dernière. Le mot de passe de `root` a été changé, les clés des administrateurs aussi. Pourtant quelqu'un s'y est reconnecté hier soir, avec tous les droits.\n\nSous Linux, ce qui fait d'un compte l'administrateur n'est pas son nom : c'est son numéro, l'UID `0`. Un compte qui porte ce numéro est `root` sous un autre nom. Et pour revenir sans mot de passe, il suffit d'une clé SSH posée dans le dossier personnel du compte.\n\nLe disque du serveur a été copié dans la machine : son `/etc` est ici `etc/`, son `/home` est `home/`, son `/var` est `var/`.\n\n## Ta mission\n\n1. Dans `etc/passwd`, chaque ligne décrit un compte, ses champs séparés par des deux-points : le nom, puis `x`, puis l'UID. Trouve le compte qui a l'UID `0` sans être `root`.\n2. La même ligne donne son dossier personnel. Vas-y.\n3. La clé qui permet à l'intrus de revenir y est, dans `.ssh/authorized_keys`. Une clé se termine par un commentaire : ici, c'est le flag.\n\n`awk -F:`, `ls -a` et `cat` suffisent.\n\n## Le flag\n\nLe flag a la forme `CL{` suivi de vingt caractères hexadécimaux et de `}`. Il est le tien : la machine de chaque élève a le sien, et celui d'un camarade ne marchera pas sur ton compte.",
+  "category": "CYBERSEC",
+  "difficulty": "ADVANCED",
+  "xpReward": 175,
+  "maxAttempts": 10,
+  "orderIndex": 8,
+  "prerequisite": "CL-CHG-007",
+  "machine": {
+    "title": "app02 : les comptes du serveur",
+    "files": {
+      "LISEZMOI.txt": "Copie du disque de app02, 28 octobre.\nLes chemins du serveur sont relatifs à ce dossier : /etc/passwd est ici etc/passwd.\n",
+      "etc/passwd": "root:x:0:0:root:/root:/bin/sh\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\nsync:x:4:65534:sync:/bin:/bin/sync\nmail:x:8:8:mail:/var/mail:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nbackup:x:34:34:backup:/var/backups:/usr/sbin/nologin\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\nsystemd-network:x:100:102:systemd Network Management:/run/systemd:/usr/sbin/nologin\nsshd:x:101:65534::/run/sshd:/usr/sbin/nologin\npostgres:x:102:104:PostgreSQL administrator:/var/lib/postgresql:/bin/sh\nsvc-monitoring:x:103:105:Sonde de supervision:/var/lib/monitoring:/usr/sbin/nologin\nsvc-sauvegarde:x:0:0:Service de sauvegarde:/var/lib/.svc:/bin/sh\nsvc-courrier:x:104:106:Relais de courrier:/var/spool/courrier:/usr/sbin/nologin\nalice:x:1000:1000:Alice Bernard:/home/alice:/bin/sh\nbruno:x:1001:1001:Bruno Carré:/home/bruno:/bin/sh\nchloe:x:1002:1002:Chloé Dumas:/home/chloe:/bin/sh\ndeploy:x:1003:1003:Compte de déploiement:/home/deploy:/bin/sh\n",
+      "etc/group": "root:x:0:\ndaemon:x:1:\nadm:x:4:alice\nsudo:x:27:alice,bruno\nwww-data:x:33:\nbackup:x:34:\npostgres:x:104:\nalice:x:1000:\nbruno:x:1001:\nchloe:x:1002:\ndeploy:x:1003:\n",
+      "root/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIuVrDb3z8PaDspcts/A489JRG5g8RXMe2ksNz+btN6Q4 alice@poste-admin\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDO55IPs4d+YpcvZw5/kTORJ6vJB3rJew41vaG7om/68 bruno@poste-admin\n",
+      "home/alice/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIv1CwQczduerNOk1b/9g2TGS365MEEuvsg2PqUNHjngW alice@poste-admin\n",
+      "home/bruno/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI8qdrm12WJt6od0gnsx/fLk9Ja0VNHVRtgXHBEplS+js bruno@poste-admin\n",
+      "home/deploy/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILSNHq49MV4ItB2FmM2Xn/Ktr3dPHveqsjJZuK04a7gB ci@forge-interne\n",
+      "home/chloe/notes.txt": "Rappel : demander à Alice l'accès au serveur de recette.\n",
+      "var/lib/monitoring/sonde.conf": "intervalle = 60\ncible = app02\n",
+      "var/lib/.svc/.profile": "# rien\n",
+      "var/lib/.svc/.ssh/authorized_keys": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI/WND9kjXRFXqp2i+cVVFBvk8UJGjVJZZJ0dYIvqdMdl {{FLAG}}\n",
+      "var/log/auth.log": "Oct 21 03:41:12 app02 useradd[8841]: new user: name=svc-sauvegarde, UID=0, GID=0, home=/var/lib/.svc, shell=/bin/sh\nOct 21 03:41:30 app02 sshd[8850]: Accepted password for root from 203.0.113.47 port 51022 ssh2\nOct 21 03:44:02 app02 sshd[8850]: pam_unix(sshd:session): session closed for user root\nOct 22 09:02:11 app02 passwd[9120]: pam_unix(passwd:chauthtok): password changed for root\nOct 27 22:17:45 app02 sshd[11203]: Accepted publickey for svc-sauvegarde from 203.0.113.47 port 49877 ssh2\nOct 27 22:31:09 app02 sshd[11203]: pam_unix(sshd:session): session closed for user svc-sauvegarde\n"
+    }
+  },
+  "hints": [
+    {
+      "content": "awk -F: '$3 == 0' etc/passwd affiche les comptes dont le troisième champ, l'UID, vaut 0. Il ne devrait y en avoir qu'un : root.",
+      "xpCost": 15
+    },
+    {
+      "content": "Le sixième champ de la ligne est le dossier personnel, à lire sans sa première barre oblique. Un dossier dont le nom commence par un point est caché : ls -a var/lib, puis cherche .ssh/authorized_keys dedans.",
+      "xpCost": 30
+    }
+  ]
+}

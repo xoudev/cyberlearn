@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import Svg, { Path } from "react-native-svg";
 
 // RN port of the web folder glyphs (apps/web/app/(app)/notes/_components/

@@ -1,4 +1,3 @@
-import React from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Select, type SelectOption } from "../components/select.js";

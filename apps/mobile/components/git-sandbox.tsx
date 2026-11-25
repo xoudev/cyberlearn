@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
+import type React from "react";
+import { useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { checkHolds } from "@cyberlearn/lib/git/checks";

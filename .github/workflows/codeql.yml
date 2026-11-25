@@ -5,9 +5,9 @@ name: CodeQL
 # the Actions workflows) with .github/codeql/codeql-config.yml, which leaves
 # out the third-party runtimes served to the browser.
 #
-# Switch the default setup off when this lands (Settings > Code security >
-# CodeQL analysis > "Switch to advanced"): GitHub refuses a workflow's results
-# while the default setup is on.
+# The default setup is off (switched off on 25 November 2026): GitHub refuses a
+# workflow's results while it is on. Turning it back on would silently stop
+# this workflow from reporting.
 
 on:
   push:

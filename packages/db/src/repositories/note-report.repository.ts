@@ -1,4 +1,5 @@
 import type { NoteReportReason } from "@prisma/client";
+import { noteDisplayTitle } from "@cyberlearn/lib/notes/workspace";
 import { prisma } from "../prisma.js";
 
 export const NOTE_REPORT_REASONS = [
@@ -24,7 +25,8 @@ export type NoteReportOutcome = "UNSHARED" | "DISMISSED";
 export interface ReportedNote {
   noteId: string;
   content: string;
-  lessonTitle: string;
+  /** The note's title (its lesson's when it has none of its own). */
+  title: string;
   /** The author, named for the team only. Null once the account is erased. */
   authorUsername: string | null;
   authorDisplayName: string | null;
@@ -91,7 +93,7 @@ export const noteReportRepository = {
         reason: true,
         status: true,
         createdAt: true,
-        note: { select: { lesson: { select: { title: true } } } },
+        note: { select: { title: true, lesson: { select: { title: true } } } },
       },
     });
   },
@@ -122,6 +124,7 @@ export const noteReportRepository = {
         note: {
           select: {
             content: true,
+            title: true,
             lesson: { select: { title: true } },
             user: { select: { username: true, displayName: true, avatarUrl: true } },
             _count: { select: { shares: true } },
@@ -136,7 +139,7 @@ export const noteReportRepository = {
         group = {
           noteId: r.noteId,
           content: r.note.content,
-          lessonTitle: r.note.lesson.title,
+          title: noteDisplayTitle(r.note.title, r.note.lesson?.title),
           authorUsername: r.note.user.username,
           authorDisplayName: r.note.user.displayName,
           authorAvatarUrl: r.note.user.avatarUrl,
@@ -189,7 +192,7 @@ export const noteReportRepository = {
         comment: true,
         status: true,
         createdAt: true,
-        note: { select: { lesson: { select: { title: true } } } },
+        note: { select: { title: true, lesson: { select: { title: true } } } },
       },
       orderBy: { createdAt: "asc" },
     });

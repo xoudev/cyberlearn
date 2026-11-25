@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { Alert, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { ActionChip, GradientButton } from "@/components/buttons";

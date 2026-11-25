@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React from "react";
+import type React from "react";
 import { View, type ViewStyle } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import {
