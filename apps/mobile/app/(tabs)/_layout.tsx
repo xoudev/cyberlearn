@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts } from "@cyberlearn/tokens";

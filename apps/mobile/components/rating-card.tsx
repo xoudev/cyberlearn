@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { averageLine, ratingLabel } from "@cyberlearn/lib/content/rating";

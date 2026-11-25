@@ -77,10 +77,10 @@ const batchInputSchema = z
   .min(1)
   .max(BATCH_MAX_FILES)
   .refine((arr) => new Set(arr.map((f) => f.name)).size === arr.length, {
-    message: "Noms de fichiers en double dans le lot",
+    error: "Noms de fichiers en double dans le lot",
   })
   .refine((arr) => arr.reduce((sum, f) => sum + f.content.length, 0) <= BATCH_MAX_TOTAL_BYTES, {
-    message: "Lot trop volumineux (max 4 Mo au total)",
+    error: "Lot trop volumineux (max 4 Mo au total)",
   });
 
 /**

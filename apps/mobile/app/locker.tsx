@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import Svg, { Polygon } from "react-native-svg";
 import { colors } from "@cyberlearn/tokens";

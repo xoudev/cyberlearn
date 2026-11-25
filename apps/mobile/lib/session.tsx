@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import type React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { setAuthAutoRefreshEnabled, supabase } from "@/lib/supabase";
 

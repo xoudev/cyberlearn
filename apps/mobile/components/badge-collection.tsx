@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { AnimatedXPBar } from "@/components/anim";

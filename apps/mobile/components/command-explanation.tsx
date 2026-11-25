@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { explainLine, PART_KIND_LABELS, type PartKind } from "@cyberlearn/lib/terminal/explain";
 import { colors, fonts } from "@cyberlearn/tokens";

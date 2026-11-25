@@ -1,6 +1,7 @@
 import { passwordResetRequestSchema } from "@cyberlearn/types";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { GradientButton } from "@/components/buttons";
 import {
   AuthError,

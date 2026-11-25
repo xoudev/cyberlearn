@@ -1,6 +1,7 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { ActionChip } from "@/components/buttons";

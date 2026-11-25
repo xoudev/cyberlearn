@@ -18,7 +18,7 @@ export interface UploadCoverState {
 const previousSchema = z.string().max(2048).nullable();
 
 const uploadSchema = z.object({
-  cover: z.instanceof(File, { message: "Aucun fichier reçu." }),
+  cover: z.instanceof(File, { error: "Aucun fichier reçu." }),
   previous: previousSchema,
 });
 

@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import type React from "react";
+import { useEffect, useRef } from "react";
 import { View } from "react-native";
 import { BackButton } from "@/components/buttons";
 import { RecallFlow, RecallHeader } from "@/components/recall-flow";

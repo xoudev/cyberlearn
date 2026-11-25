@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, {
+import type React from "react";
+import {
   createContext,
   useCallback,
   useContext,

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { Share, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { receivedInvitations } from "@cyberlearn/lib/dashboard/your-move";

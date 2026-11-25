@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";

@@ -9,7 +9,8 @@ import {
   sanitizeOtpCode,
 } from "@cyberlearn/lib/auth/otp-code";
 import { mfaCodeSchema, passwordUpdateSchema } from "@cyberlearn/types";
-import React, { useCallback, useEffect, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";

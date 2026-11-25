@@ -647,6 +647,7 @@ function NoticeRow({
             marginBottom: 4,
             display: "-webkit-box",
             WebkitLineClamp: 2,
+            // eslint-disable-next-line @typescript-eslint/no-deprecated -- -webkit-line-clamp only clamps inside a vertical -webkit-box; the standard line-clamp has no support yet
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
           }}

@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { View } from "react-native";
 import { GLOSSARY, type GlossaryCategory } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";

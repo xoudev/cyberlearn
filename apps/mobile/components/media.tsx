@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Image, View } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 // The CSS-aware loader: uploaded icons (SVG Repo exports) hide their bounding

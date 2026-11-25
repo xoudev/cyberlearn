@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radius } from "@cyberlearn/tokens";

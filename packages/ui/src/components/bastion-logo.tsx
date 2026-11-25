@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 // The const assertion preserves the read-only path contract used by web and Remotion.
 export const BASTION_MARK_PATHS = {

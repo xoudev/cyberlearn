@@ -30,7 +30,7 @@ const resourceSchema = z
   // A resource with neither a body nor a link hands over nothing at all, and
   // would sit in the list looking like something went missing.
   .refine((v) => (v.body ?? "") !== "" || (v.url ?? "") !== "", {
-    message: "Ajoute un contenu ou un lien.",
+    error: "Ajoute un contenu ou un lien.",
   });
 
 export interface ResourceState {

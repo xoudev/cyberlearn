@@ -1,4 +1,5 @@
-import React, { useDeferredValue, useMemo, useState } from "react";
+import type React from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { ScrollView, TextInput, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Rise, PressableScale } from "@/components/anim";

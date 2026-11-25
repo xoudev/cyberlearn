@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { SELECT_PALETTE, SELECT_ROW_HEIGHT } from "./select.js";
 import { firstEnabled, fold, moveActive } from "./select-nav.js";
 

@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import React from "react";
+import type React from "react";
 import { Share, View } from "react-native";
 import Svg, { Polygon } from "react-native-svg";
 import { certificateVerifyUrl } from "@cyberlearn/lib/social/portfolio";

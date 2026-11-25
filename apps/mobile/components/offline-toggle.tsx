@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { Alert, Pressable } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";

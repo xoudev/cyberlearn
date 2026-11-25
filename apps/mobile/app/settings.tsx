@@ -2,7 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, Switch, View } from "react-native";
 import {
   SHOWN_NOTIFICATION_SETTINGS,

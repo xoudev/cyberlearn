@@ -30,7 +30,7 @@ const ticketSchema = z.object({
   theme: z.custom<TicketFormTheme>(
     (value) => typeof value === "string" && isTicketFormTheme(value),
     {
-      message: "Choisis un thème.",
+      error: "Choisis un thème.",
     },
   ),
   message: z.string().trim().min(TICKET_MESSAGE_MIN).max(TICKET_MESSAGE_MAX),

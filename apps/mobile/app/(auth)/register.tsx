@@ -1,6 +1,7 @@
 import { passwordSignUpSchema } from "@cyberlearn/types";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";

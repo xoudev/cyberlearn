@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { Image, View, type ViewStyle } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
