@@ -46,6 +46,8 @@ const { tx, mockPrisma } = vi.hoisted(() => {
       userChallengeProgress: { findUnique: vi.fn() },
       classResource: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn() },
       classMember: { findFirst: vi.fn() },
+      directMessage: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+      contentReport: { findMany: vi.fn() },
     },
   };
 });
@@ -476,6 +478,8 @@ describe("contentModerationRepository.authoredBy", () => {
     mockPrisma.lessonAnswer.findMany.mockResolvedValue([{ id: "a-1" }]);
     mockPrisma.challengeWriteup.findMany.mockResolvedValue([{ id: "w-1" }]);
     mockPrisma.classResource.findMany.mockResolvedValue([{ id: "c-1" }]);
+    mockPrisma.contentReport.findMany.mockResolvedValue([{ contentId: "m-1" }]);
+    mockPrisma.directMessage.findMany.mockResolvedValue([{ id: "m-1" }]);
 
     expect(await contentModerationRepository.authoredBy(AUTHOR.id)).toEqual([
       { surface: "FORUM_POST", ids: ["p-1", "p-2"] },
@@ -483,7 +487,13 @@ describe("contentModerationRepository.authoredBy", () => {
       { surface: "LESSON_ANSWER", ids: ["a-1"] },
       { surface: "CHALLENGE_WRITEUP", ids: ["w-1"] },
       { surface: "CLASS_RESOURCE", ids: ["c-1"] },
+      { surface: "DIRECT_MESSAGE", ids: ["m-1"] },
     ]);
+    // A private message counts only once reported: the console reads no other.
+    expect(mockPrisma.directMessage.findMany).toHaveBeenCalledWith({
+      where: { senderId: AUTHOR.id, fromTeam: false, id: { in: ["m-1"] } },
+      select: { id: true },
+    });
     expect(mockPrisma.forumPost.findMany).toHaveBeenCalledWith({
       where: { authorId: AUTHOR.id },
       select: { id: true },
@@ -556,3 +566,43 @@ function firstAction(): unknown {
   const call = tx.auditLog.create.mock.calls[0] as [{ data: { action: string } }] | undefined;
   return call?.[0].data.action;
 }
+
+describe("private messages in the moderation queue", () => {
+  it("lists the reported messages only, never a conversation", async () => {
+    mockPrisma.contentReport.findMany.mockResolvedValue([{ contentId: "m-1" }]);
+    mockPrisma.directMessage.count.mockResolvedValue(1);
+    mockPrisma.directMessage.findMany.mockResolvedValue([]);
+
+    await contentModerationRepository.listForConsole({
+      surface: "DIRECT_MESSAGE",
+      q: "",
+      hidden: undefined,
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(mockPrisma.contentReport.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { surface: "DIRECT_MESSAGE" } }),
+    );
+    expect(mockPrisma.directMessage.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ id: { in: ["m-1"] }, fromTeam: false }),
+    });
+  });
+
+  it("lets only the recipient of a learner's message report it", async () => {
+    mockPrisma.directMessage.findFirst.mockResolvedValue({ senderId: AUTHOR.id });
+
+    expect(await contentModerationRepository.reportable("DIRECT_MESSAGE", ID, ADMIN)).toEqual({
+      authorId: AUTHOR.id,
+    });
+    expect(mockPrisma.directMessage.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: ID,
+        isHidden: false,
+        fromTeam: false,
+        conversation: { OR: [{ userAId: ADMIN }, { userBId: ADMIN }] },
+      },
+      select: { senderId: true },
+    });
+  });
+});

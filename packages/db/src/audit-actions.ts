@@ -27,6 +27,10 @@ export const AUDIT_ACTION = {
   announcement: {
     send: "announcement.send",
   },
+  /** A message the team wrote in a learner's conversation with it. */
+  teamMessage: {
+    send: "message.team.send",
+  },
   /** The journal itself: its CSV export carries addresses. */
   audit: {
     export: "admin.audit.export",

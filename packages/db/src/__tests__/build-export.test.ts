@@ -64,6 +64,9 @@ const { mockPrisma } = vi.hoisted(() => {
       exerciseCompletion: read(),
       userBan: read(),
       moderationEvent: read(),
+      conversation: read(),
+      directMessage: read(),
+      userBlock: read(),
     },
   };
 });
@@ -102,7 +105,38 @@ function seed(): void {
     publicProfile: false,
     learningGoals: ["career"],
     startingLevel: "beginner",
+    messagesFrom: "FRIENDS",
   });
+  mockPrisma.conversation.findMany.mockResolvedValue([
+    {
+      id: "conv-direct",
+      kind: "DIRECT",
+      status: "ACCEPTED",
+      createdAt: d("2026-10-01T10:00:00.000Z"),
+      userAId: USER,
+      userA: { username: "ada" },
+      userB: { username: "ines" },
+    },
+    {
+      id: "conv-team",
+      kind: "TEAM",
+      status: "ACCEPTED",
+      createdAt: d("2026-10-02T10:00:00.000Z"),
+      userAId: USER,
+      userA: { username: "ada" },
+      userB: null,
+    },
+  ]);
+  mockPrisma.directMessage.findMany.mockResolvedValue([
+    {
+      conversationId: "conv-direct",
+      body: "Tu as fini le module XSS ?",
+      createdAt: d("2026-10-01T10:00:00.000Z"),
+    },
+  ]);
+  mockPrisma.userBlock.findMany.mockResolvedValue([
+    { createdAt: d("2026-10-03T10:00:00.000Z"), blocked: { username: "spam" } },
+  ]);
   mockPrisma.userPlacementResult.findUnique.mockResolvedValue({
     devScore: 40,
     cybersecScore: 70,
@@ -546,7 +580,7 @@ function seed(): void {
 const EXPECTED = {
   exportMetadata: {
     exportedAt: "2026-10-18T12:00:00.000Z",
-    version: "1.3",
+    version: "1.4",
     format: "json",
     rgpdContext: "Article 20 RGPD - Droit à la portabilité",
     rights: "https://cyberlearn.fr/privacy#section-7",
@@ -583,6 +617,7 @@ const EXPECTED = {
     publicProfile: false,
     learningGoals: ["career"],
     startingLevel: "beginner",
+    messagesFrom: "FRIENDS",
   },
   placementTest: {
     devScore: 40,
@@ -949,6 +984,32 @@ const EXPECTED = {
       respondedAt: null,
     },
   ],
+  messages: {
+    conversations: [
+      {
+        id: "conv-direct",
+        kind: "DIRECT",
+        status: "ACCEPTED",
+        createdAt: "2026-10-01T10:00:00.000Z",
+        with: "ines",
+      },
+      {
+        id: "conv-team",
+        kind: "TEAM",
+        status: "ACCEPTED",
+        createdAt: "2026-10-02T10:00:00.000Z",
+        with: "Équipe CyberLearn",
+      },
+    ],
+    messagesSent: [
+      {
+        conversationId: "conv-direct",
+        body: "Tu as fini le module XSS ?",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+    ],
+    blocked: [{ username: "spam", since: "2026-10-03T10:00:00.000Z" }],
+  },
   classMemberships: [
     {
       className: "SIO1-A",
@@ -1063,6 +1124,7 @@ describe("buildExportPayload", () => {
       "forumTopics",
       "forumPosts",
       "friendships",
+      "messages",
       "classMemberships",
       "exerciseCompletions",
       "bans",
@@ -1156,6 +1218,7 @@ describe("buildExportPayload", () => {
     expect(payload.cosmeticLoadout).toBeNull();
     expect(payload.lessonsProgress).toEqual([]);
     expect(payload.qaActivity).toEqual({ questions: [], answers: [] });
+    expect(payload.messages).toEqual({ conversations: [], messagesSent: [], blocked: [] });
     for (const section of [
       payload.forumTopics,
       payload.forumPosts,

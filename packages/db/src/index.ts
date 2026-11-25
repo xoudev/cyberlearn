@@ -324,6 +324,13 @@ export {
   type ReportedNote,
 } from "./repositories/note-report.repository.js";
 export {
+  messageRepository,
+  INBOX_LIMIT,
+  type ConversationSummary,
+  type MessagePerson,
+  type ThreadMessage,
+} from "./repositories/message.repository.js";
+export {
   noteFolderRepository,
   type CreateFolderRefusal,
   type MoveFolderRefusal,

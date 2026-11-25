@@ -124,6 +124,12 @@ model User {
   bans                   UserBan[]               @relation("BanSubject")
   bansIssued             UserBan[]               @relation("BanIssuer")
   bansLifted             UserBan[]               @relation("BanLifter")
+  conversationsA         Conversation[]          @relation("ConversationUserA")
+  conversationsB         Conversation[]          @relation("ConversationUserB")
+  conversationsStarted   Conversation[]          @relation("ConversationRequester")
+  sentMessages           DirectMessage[]         @relation("DirectMessageSender")
+  blocksMade             UserBlock[]             @relation("UserBlocker")
+  blocksReceived         UserBlock[]             @relation("UserBlocked")
 
   @@index([username])
   @@index([role])
@@ -423,6 +429,11 @@ model UserPreferences {
   /// and null for anyone who has not answered.
   learningGoals String[] @default([])
   startingLevel String?
+
+  /// Who may start a conversation with this person. EVERYONE: a friend writes
+  /// at once, anybody else lands in their requests. FRIENDS: friends only.
+  /// NOBODY: no new conversation at all. The team always can.
+  messagesFrom MessagePrivacy @default(EVERYONE)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1583,6 +1594,7 @@ enum ContentReportSurface {
   LESSON_ANSWER
   CHALLENGE_WRITEUP
   CLASS_RESOURCE
+  DIRECT_MESSAGE
 }
 
 /// The same reasons as a reported note: the forms word them the same way.
@@ -2463,4 +2475,104 @@ model TournamentSolve {
   @@index([userId])
   @@index([disqualifiedById])
   @@map("tournament_solves")
+}
+
+// ============================================================
+// MESSAGES
+// ============================================================
+
+/// Who may start a conversation with an account (UserPreferences.messagesFrom).
+enum MessagePrivacy {
+  EVERYONE
+  FRIENDS
+  NOBODY
+}
+
+/// DIRECT: two learners. TEAM: one learner and the CyberLearn team, written to
+/// from the console; the learner has nothing to accept there.
+enum ConversationKind {
+  DIRECT
+  TEAM
+}
+
+/// A DIRECT conversation between two accounts that are not friends starts as a
+/// REQUESTED one: it waits in the recipient's requests, the requester may not
+/// write again, and is not told whether it was read. DECLINED looks the same
+/// to the requester, on purpose. Friends write in an ACCEPTED one, and so does
+/// the team.
+enum ConversationStatus {
+  REQUESTED
+  ACCEPTED
+  DECLINED
+}
+
+/// A conversation, between two learners or between one learner and the team.
+///
+/// The two sides are stored in a fixed order, so a pair has one conversation
+/// whoever wrote first: `pairKey` is "direct:<lower id>:<higher id>", or
+/// "team:<learner id>", and is unique.
+model Conversation {
+  id              String             @id @default(uuid()) @db.Uuid
+  kind            ConversationKind
+  pairKey         String             @unique @db.VarChar(100)
+  /// DIRECT: the lower of the two ids. TEAM: the learner.
+  userAId         String             @db.Uuid
+  /// DIRECT: the higher of the two ids. TEAM: null.
+  userBId         String?            @db.Uuid
+  /// DIRECT: who wrote first. Null for the team's conversations.
+  requestedById   String?            @db.Uuid
+  status          ConversationStatus @default(ACCEPTED)
+  /// When each side last read it: what is newer than this is unread.
+  userALastReadAt DateTime?
+  userBLastReadAt DateTime?
+  /// TEAM: when the console last read the learner's replies.
+  teamLastReadAt  DateTime?
+  lastMessageAt   DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+
+  userA       User            @relation("ConversationUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User?           @relation("ConversationUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  requestedBy User?           @relation("ConversationRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  messages    DirectMessage[]
+
+  @@index([userAId, lastMessageAt])
+  @@index([userBId, lastMessageAt])
+  @@index([kind, lastMessageAt])
+  @@map("conversations")
+}
+
+/// One message of a conversation. Plain text, screened before it is written.
+model DirectMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  /// Who wrote it. For a message from the team, the administrator: the learner
+  /// is shown the team, never the person. Null once that account is erased.
+  senderId       String?  @db.Uuid
+  fromTeam       Boolean  @default(false)
+  body           String   @db.VarChar(1000)
+  /// Taken down after a report: kept for the reviewer, shown to nobody.
+  isHidden       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("direct_messages")
+}
+
+/// One account refusing another's messages. Either way round, nothing passes:
+/// a conversation between them takes no new message.
+model UserBlock {
+  blockerId String   @db.Uuid
+  blockedId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  blocker User @relation("UserBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("UserBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("user_blocks")
 }

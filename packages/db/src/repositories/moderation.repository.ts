@@ -102,6 +102,10 @@ export type ModerationSurface = (typeof MODERATION_SURFACE)[keyof typeof MODERAT
  */
 export const UNACTIONED_SURFACE = {
   noteShare: "note.share",
+  // A private message the screen flags is not sent: there is no row to hide,
+  // and a stranger's insult held for review would still reach its target the
+  // day a reviewer lets it through by mistake.
+  directMessage: "message.direct",
 } as const;
 
 export type ScreenSurface =

@@ -33,6 +33,7 @@ const SURFACE_NOUN: Record<string, string> = {
   "challenge.writeup": "ta solution",
   "class.resource": "ta ressource",
   "note.share": "ta note",
+  "message.direct": "ton message privé",
 };
 
 /** The neutral fall-back, for a surface this was not taught about. */

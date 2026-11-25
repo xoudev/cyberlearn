@@ -28,6 +28,7 @@ export const CONTENT_SURFACES = [
   "LESSON_ANSWER",
   "CHALLENGE_WRITEUP",
   "CLASS_RESOURCE",
+  "DIRECT_MESSAGE",
 ] as const satisfies readonly ContentReportSurface[];
 
 export type ContentSurface = (typeof CONTENT_SURFACES)[number];
@@ -809,12 +810,122 @@ const classResourceHandler: SurfaceHandler = {
   reviewIds: (content) => [content.id],
 };
 
+// ── Private messages ───────────────────────────────────────────────────────
+//
+// Two learners' conversation is theirs. A message reaches the console only
+// once its recipient reports it, and only that message: the lists, the counts
+// and an author's record all read the reported ones alone, never a thread.
+
+const MESSAGE_SELECT = {
+  id: true,
+  body: true,
+  isHidden: true,
+  createdAt: true,
+  sender: AUTHOR,
+} satisfies Prisma.DirectMessageSelect;
+
+type MessageRow = Prisma.DirectMessageGetPayload<{ select: typeof MESSAGE_SELECT }>;
+
+function messageContent(row: MessageRow): ModeratedContent {
+  return {
+    surface: "DIRECT_MESSAGE",
+    id: row.id,
+    text: row.body,
+    isHidden: row.isHidden,
+    createdAt: row.createdAt,
+    author: row.sender,
+    context: "Message privé signalé par son destinataire",
+    learnerPath: null,
+    consolePath: null,
+    opensThread: false,
+    threadId: null,
+    replies: 0,
+    authorWithdrew: false,
+  };
+}
+
+/** The ids of the messages somebody reported: all the console may read of them. */
+async function reportedMessageIds(): Promise<string[]> {
+  const rows = await prisma.contentReport.findMany({
+    where: { surface: "DIRECT_MESSAGE" },
+    distinct: ["contentId"],
+    select: { contentId: true },
+  });
+  return rows.map((r) => r.contentId);
+}
+
+async function messageWhere(query: ConsoleContentQuery): Promise<Prisma.DirectMessageWhereInput> {
+  return {
+    id: { in: await reportedMessageIds() },
+    fromTeam: false,
+    ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { senderId: query.authorId }),
+    ...(query.q !== "" && {
+      OR: [{ body: contains(query.q) }, { sender: authorMatches(query.q) }],
+    }),
+  };
+}
+
+const directMessageHandler: SurfaceHandler = {
+  async read(db, ids) {
+    const rows = await db.directMessage.findMany({
+      where: { id: { in: ids } },
+      select: MESSAGE_SELECT,
+    });
+    return rows.map(messageContent);
+  },
+  count: async (query) => prisma.directMessage.count({ where: await messageWhere(query) }),
+  async list(query, window) {
+    const rows = await prisma.directMessage.findMany({
+      where: await messageWhere(query),
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      ...window,
+      select: MESSAGE_SELECT,
+    });
+    return rows.map(messageContent);
+  },
+  async setHidden(db, id, hidden) {
+    const { count } = await db.directMessage.updateMany({
+      where: { id, isHidden: !hidden },
+      data: { isHidden: hidden },
+    });
+    return count > 0;
+  },
+  async destroy(db, id) {
+    const { count } = await db.directMessage.deleteMany({ where: { id } });
+    return count === 0 ? [] : [{ surface: "DIRECT_MESSAGE", id }];
+  },
+  async reportable(viewerId, id) {
+    // The recipient, reading it: a learner's message, still shown, in a
+    // conversation the viewer is the other side of.
+    const row = await prisma.directMessage.findFirst({
+      where: {
+        id,
+        isHidden: false,
+        fromTeam: false,
+        conversation: { OR: [{ userAId: viewerId }, { userBId: viewerId }] },
+      },
+      select: { senderId: true },
+    });
+    return row === null ? null : { authorId: row.senderId };
+  },
+  async authoredBy(userId) {
+    const rows = await prisma.directMessage.findMany({
+      where: { senderId: userId, fromTeam: false, id: { in: await reportedMessageIds() } },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+  reviewIds: (content) => [content.id],
+};
+
 const HANDLERS: Record<ContentSurface, SurfaceHandler> = {
   FORUM_POST: forumPostHandler,
   LESSON_QUESTION: lessonQuestionHandler,
   LESSON_ANSWER: lessonAnswerHandler,
   CHALLENGE_WRITEUP: challengeWriteupHandler,
   CLASS_RESOURCE: classResourceHandler,
+  DIRECT_MESSAGE: directMessageHandler,
 };
 
 async function readOne(

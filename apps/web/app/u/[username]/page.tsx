@@ -40,6 +40,7 @@ import { ProgressBar } from "@/components/progress-bar";
 import { StatTile } from "@/components/stat-tile";
 import { ProfileProgress } from "@/components/profile-progress";
 import { FriendshipActions } from "./_components/friendship-actions";
+import { MessageButton } from "./_components/message-button";
 import "./public-profile.css";
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
@@ -241,7 +242,10 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   />
                 </>
               ) : viewerId !== null ? (
-                <FriendshipActions targetId={user.id} name={name} initialState={friendState} />
+                <>
+                  <FriendshipActions targetId={user.id} name={name} initialState={friendState} />
+                  <MessageButton userId={user.id} displayName={name} username={handle} />
+                </>
               ) : null}
             </div>
           </div>

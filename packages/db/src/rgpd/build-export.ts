@@ -5,6 +5,7 @@ import { certificateRepository } from "../repositories/certificate.repository.js
 import { challengeRepository } from "../repositories/challenge.repository.js";
 import { classRepository } from "../repositories/class.repository.js";
 import { contentReportRepository } from "../repositories/content-report.repository.js";
+import { messageRepository } from "../repositories/message.repository.js";
 import { cosmeticRepository } from "../repositories/cosmetic.repository.js";
 import { duelRepository } from "../repositories/duel.repository.js";
 import { exerciseRepository } from "../repositories/exercise.repository.js";
@@ -419,6 +420,13 @@ export interface ExportPayload {
     createdAt: Date;
     respondedAt: Date | null;
   }[];
+  /**
+   * The private messages: who may write to the account, its conversations
+   * (the other side by username, the team by name), the messages it wrote,
+   * and the accounts it blocked. The messages it received are the other
+   * person's writing and stay theirs.
+   */
+  messages: Awaited<ReturnType<typeof messageRepository.exportFor>>;
   /** The classes the account belongs to, archived ones included. */
   classMemberships: {
     className: string;
@@ -511,6 +519,7 @@ export async function buildExportPayload(
     exerciseCompletions,
     bans,
     moderationEvents,
+    messages,
   ] = await Promise.all([
     userRepository.exportProfileFor(userId),
     preferencesRepository.exportFor(userId),
@@ -554,6 +563,7 @@ export async function buildExportPayload(
     exerciseRepository.exportFor(userId),
     banRepository.exportFor(userId),
     moderationRepository.exportFor(userId),
+    messageRepository.exportFor(userId),
   ]);
   const { cards: reviewCards, sessions: reviewSessions } = review;
   const noteCards = await noteCardRepository.exportFor(userId);
@@ -565,8 +575,9 @@ export async function buildExportPayload(
       // filter decisions. 1.2 drops reviewSchedules: the retired SM-2 queue's
       // table is gone, its rows converted into the reviewCards that stay.
       // 1.3 gives notes a title, a pin and their trash date, folders their
-      // parent, and adds the flashcards taken from notes (noteCards).
-      version: "1.3",
+      // parent, and adds the flashcards taken from notes (noteCards). 1.4
+      // adds the private messages (messages).
+      version: "1.4",
       format: "json",
       rgpdContext: "Article 20 RGPD - Droit à la portabilité",
       rights: `${siteUrl}/privacy#section-7`,
@@ -814,6 +825,7 @@ export async function buildExportPayload(
       createdAt: f.createdAt,
       respondedAt: f.respondedAt,
     })),
+    messages,
     classMemberships: classMemberships.map((m) => ({
       className: m.class.name,
       promotionName: m.class.promotion.name,

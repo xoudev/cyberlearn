@@ -33,6 +33,25 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "4.1",
+    date: "2026-11-25",
+    title: "Les messages privés",
+    changes: [
+      {
+        type: "new",
+        text: "Écris à tes amis : le bouton en bas à droite ouvre tes messages, sur toutes les pages. Tu peux aussi écrire à quelqu'un depuis son profil (« Envoyer un message »), ou par son @pseudo. Un compte qui n'est pas ton ami t'envoie une demande : tu l'acceptes, tu la refuses ou tu le bloques, et il ne sait pas que tu l'as lue tant que tu n'as pas accepté.",
+      },
+      {
+        type: "new",
+        text: "L'équipe CyberLearn peut t'écrire, et tu peux lui répondre au même endroit. Dans Confidentialité, choisis qui peut t'écrire (tout le monde, tes amis seulement ou personne) et retrouve les comptes que tu as bloqués. Un message déplacé se signale d'un clic : l'équipe lit ce message, et lui seul.",
+      },
+      {
+        type: "improved",
+        text: "Le texte d'une notification se lit en entier sur la page Notifications, retours à la ligne compris. Pour l'instant, les messages privés sont sur le site ; l'app reçoit les messages de l'équipe dans ses notifications.",
+      },
+    ],
+  },
+  {
     version: "4.0",
     date: "2026-11-24",
     title: "Un nouveau bloc-notes, et le clic droit sur tout le site",

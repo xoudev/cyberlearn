@@ -18,6 +18,7 @@
     "./gamification/*": "./src/gamification/*.ts",
     "./content/*": "./src/content/*.ts",
     "./moderation/*": "./src/moderation/*.ts",
+    "./messages/*": "./src/messages/*.ts",
     "./search/*": "./src/search/*.ts",
     "./tickets/*": "./src/tickets/*.ts",
     "./mdx-check": "./src/mdx/check.ts",

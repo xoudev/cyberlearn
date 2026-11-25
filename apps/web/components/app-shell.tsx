@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { QueryDialogHost } from "@/components/query-dialog-host";
+import { MessagesDock } from "@/components/messages/messages-dock";
 import { SettingsDrawerProvider } from "@/app/(app)/_settings/_components/SettingsDrawer";
 import { brandTypeface } from "@/components/brand-typeface";
 import "./app-chrome.css";
@@ -104,6 +105,7 @@ export async function AppShell({
           </div>
         </SidebarProvider>
         <QueryDialogHost />
+        <MessagesDock userId={userId} />
       </SettingsDrawerProvider>
     </CosmeticsProvider>
   );

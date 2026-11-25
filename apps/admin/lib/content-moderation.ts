@@ -13,6 +13,7 @@ const THIS: Record<ContentSurface, string> = {
   LESSON_ANSWER: "cette réponse",
   CHALLENGE_WRITEUP: "cette solution",
   CLASS_RESOURCE: "cette ressource",
+  DIRECT_MESSAGE: "ce message privé",
 };
 
 export interface GestureSubject {

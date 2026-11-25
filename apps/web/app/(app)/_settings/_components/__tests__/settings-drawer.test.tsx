@@ -48,7 +48,13 @@ function payload(displayName = "Ada"): SettingsData {
       avatarUrl: "/avatars/01.png",
       avatarPreview: null,
     },
-    privacy: { visibility: "ANONYMOUS", publicProfile: true, friendsLeaderboard: false },
+    privacy: {
+      visibility: "ANONYMOUS",
+      publicProfile: true,
+      friendsLeaderboard: false,
+      messagesFrom: "EVERYONE",
+      blocked: [],
+    },
     preferences: { spacedRepetition: true },
     notifications: {
       reviewReminders: true,

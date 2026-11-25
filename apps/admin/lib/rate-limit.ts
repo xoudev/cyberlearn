@@ -37,6 +37,18 @@ const announcementRateLimit = redis
   : null;
 
 /**
+ * 60 messages per hour per administrator, in learners' conversations with the
+ * team: a conversation, where an announcement is a broadcast.
+ */
+const teamMessageRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(60, "1 h"),
+      prefix: "rl:admin:team-message",
+    })
+  : null;
+
+/**
  * 10 GDPR exports per hour per administrator. Each one reads the whole of an
  * account and hands it over in one file, which is why the learner's own export
  * is held to one a day: here a session that is not its owner's, or a script,
@@ -112,6 +124,12 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
 export async function checkAnnouncementRateLimit(adminId: string): Promise<boolean> {
   if (!announcementRateLimit) return true;
   return allowedBy(announcementRateLimit, adminId, "announcement");
+}
+
+/** Whether this administrator may write one more message to a learner now. */
+export async function checkTeamMessageRateLimit(adminId: string): Promise<boolean> {
+  if (!teamMessageRateLimit) return true;
+  return allowedBy(teamMessageRateLimit, adminId, "team message");
 }
 
 /**

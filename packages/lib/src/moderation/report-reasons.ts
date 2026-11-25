@@ -22,6 +22,7 @@ export const CONTENT_REPORT_SURFACE_KEYS = [
   "LESSON_ANSWER",
   "CHALLENGE_WRITEUP",
   "CLASS_RESOURCE",
+  "DIRECT_MESSAGE",
 ] as const;
 
 export type ContentReportSurfaceKey = (typeof CONTENT_REPORT_SURFACE_KEYS)[number];
@@ -38,6 +39,7 @@ export const CONTENT_REPORT_TARGET: Record<ContentReportSurfaceKey, string> = {
   LESSON_ANSWER: "cette réponse",
   CHALLENGE_WRITEUP: "cette solution",
   CLASS_RESOURCE: "cette ressource",
+  DIRECT_MESSAGE: "ce message",
 };
 
 /** What the console calls each surface, in its lists and its tabs. */
@@ -47,6 +49,7 @@ export const CONTENT_SURFACE_LABEL: Record<ContentReportSurfaceKey, string> = {
   LESSON_ANSWER: "Réponse sous une leçon",
   CHALLENGE_WRITEUP: "Solution d'un défi",
   CLASS_RESOURCE: "Ressource de classe",
+  DIRECT_MESSAGE: "Message privé",
 };
 
 /**
@@ -60,6 +63,7 @@ export const CONTENT_NOTICE_SURFACE: Record<ContentReportSurfaceKey, string> = {
   LESSON_ANSWER: "lesson.answer",
   CHALLENGE_WRITEUP: "challenge.writeup",
   CLASS_RESOURCE: "class.resource",
+  DIRECT_MESSAGE: "message.direct",
 };
 
 export const CONTENT_REPORT_REASON_LABELS = NOTE_REPORT_REASON_LABELS;

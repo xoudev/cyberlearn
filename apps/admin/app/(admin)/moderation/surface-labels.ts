@@ -6,6 +6,7 @@ export const SURFACE_LABEL: Record<string, string> = {
   "lesson.question": "Question sous une leçon",
   "lesson.answer": "Réponse sous une leçon",
   "note.share": "Note partagée",
+  "message.direct": "Message privé",
   "forum.topic": "Sujet du forum",
   "forum.post": "Message du forum",
   "challenge.writeup": "Solution d'un défi",

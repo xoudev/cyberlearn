@@ -25,6 +25,7 @@ vi.mock("next/font/google", () => ({
 vi.mock("@/components/splash-screen", () => ({ SplashScreen: () => null }));
 vi.mock("@/components/cookie-banner", () => ({ CookieBanner: () => null }));
 vi.mock("@/components/ui/sonner", () => ({ Toaster: () => null }));
+vi.mock("@/components/messages/messages-dock", () => ({ MessagesDock: () => null }));
 vi.mock("@cyberlearn/db", () => ({ statsRepository: {} }));
 vi.mock("@/lib/paths/cover", () => ({ resolvePathCovers: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ getRequestUser: vi.fn(), getActiveBan: vi.fn() }));

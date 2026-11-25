@@ -1,6 +1,7 @@
 import type React from "react";
 import type { PrivacySectionData } from "../../_lib/settings-data";
 import { SectionHead } from "../../_components/SettingsPrimitives";
+import { MessagesPrivacyCard } from "./MessagesPrivacyCard";
 import { PrivacyForm } from "./PrivacyForm";
 
 /** The privacy section, in the settings drawer. */
@@ -13,6 +14,7 @@ export function PrivacySection({ data }: { data: PrivacySectionData }): React.JS
         initialPublicProfile={data.publicProfile}
         initialFriendsLeaderboard={data.friendsLeaderboard}
       />
+      <MessagesPrivacyCard initialPrivacy={data.messagesFrom} initialBlocked={data.blocked} />
     </div>
   );
 }
