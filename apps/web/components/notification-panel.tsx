@@ -163,40 +163,65 @@ export function NotificationPanel({
     });
   }, [open, loaded]);
 
+  // Whether the panel is open, for the subscription below to read without
+  // being torn down and joined again at every opening and closing.
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
   // Supabase Realtime - increment badge on new notifications
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `userId=eq.${userId}`,
-        },
-        (payload) => {
-          setUnread((c) => c + 1);
-          // If panel is open, prepend the new item
-          if (open) {
-            const incoming = payload.new as NotificationItem;
-            setItems((prev) => [incoming, ...prev]);
-            // A request that has just arrived is waiting by definition.
-            const sender = friendRequestSender(incoming);
-            if (sender !== null) setWaiting((prev) => new Set([...prev, sender]));
-          } else {
-            // Force reload next time panel opens
-            setLoaded(false);
-          }
-        },
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    // Read through a function: the cleanup's write happens between the awaits.
+    const run = { cancelled: false };
+    const cancelled = (): boolean => run.cancelled;
+    void (async () => {
+      // The socket must carry the session's token before the channel joins:
+      // the browser client reads its session from the cookie later, and a
+      // channel joined with the anon key is let through the notifications
+      // policy as nobody, so it never received a row.
+      const { data } = await supabase.auth.getSession();
+      if (cancelled()) return;
+      await supabase.realtime.setAuth(data.session?.access_token ?? null);
+      if (cancelled()) return;
+      // A topic of its own per subscription: realtime-js hands back the
+      // channel already open under a topic, and the one an earlier cleanup is
+      // closing (React runs this effect twice in development) never delivers.
+      channel = supabase
+        .channel(`notifications:${userId}:${crypto.randomUUID()}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `userId=eq.${userId}`,
+          },
+          (payload) => {
+            setUnread((c) => c + 1);
+            // If panel is open, prepend the new item
+            if (openRef.current) {
+              const incoming = payload.new as NotificationItem;
+              setItems((prev) => [incoming, ...prev]);
+              // A request that has just arrived is waiting by definition.
+              const sender = friendRequestSender(incoming);
+              if (sender !== null) setWaiting((prev) => new Set([...prev, sender]));
+            } else {
+              // Force reload next time panel opens
+              setLoaded(false);
+            }
+          },
+        )
+        .subscribe();
+    })();
 
     return () => {
-      void supabase.removeChannel(channel);
+      run.cancelled = true;
+      if (channel !== null) void supabase.removeChannel(channel);
     };
-  }, [userId, open]);
+  }, [userId]);
 
   const handleMarkRead = useCallback((id: string) => {
     startTransition(async () => {
