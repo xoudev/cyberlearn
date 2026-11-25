@@ -249,9 +249,9 @@ export default function Notifications(): React.JSX.Element {
                           </Pulse>
                         ) : null}
                       </View>
-                      <Text variant="bodySm" numberOfLines={2}>
-                        {n.body}
-                      </Text>
+                      {/* The whole text, as the site's /notifications shows it: a
+                          message from the console runs to a few paragraphs. */}
+                      <Text variant="bodySm">{n.body}</Text>
                       <Text variant="micro" style={{ color: colors.textDisabled, marginTop: 2 }}>
                         {notificationAge(n.createdAt, Date.now())}
                         {isUnread ? " · toucher pour marquer lu" : ""}

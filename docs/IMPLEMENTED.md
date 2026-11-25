@@ -56,7 +56,7 @@
 | `/revisions` · `/review` | Pas de page : redirection vers le rappel du jour, `/dashboard?rappel=1` (`next.config.ts`) ; l'ancienne file SM-2 est retirée |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes : arborescence de dossiers, liste, éditeur avec aperçu, corbeille, cartes de révision des notes, import et export, partages reçus. `?note=<id>` ouvre une note, `?titre=<titre>` la note de ce titre (un lien `[[ ]]` suivi depuis une leçon) |
-| `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu » |
+| `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu ». Chaque texte s'y lit en entier, retours à la ligne compris (la cloche le coupe à deux lignes, et y mène une annonce sans lien) |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
@@ -363,7 +363,7 @@
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
-| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression. « Exporter les données (RGPD) » télécharge le fichier que l'apprenant obtient sur le site |
+| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression. « Exporter les données (RGPD) » télécharge le fichier que l'apprenant obtient sur le site. « Écrire à ce compte » lui envoie un message, une notification sur le site et dans l'app (voir Annonces) |
 | `/users/[id]/export` | Export RGPD d'un compte, pour une demande faite à l'équipe : le même fichier JSON que `/api/me/export`, construit par le même `buildExportPayload` de `@cyberlearn/db`. Inscrit au journal (`admin.user.data.exported`) avant de partir, et refusé si l'inscription échoue ; 10 exports par heure et par administrateur |
 | `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
@@ -581,6 +581,12 @@
 - Historique des envois sur la même page, lu dans l'audit log, sans table à
   part ; l'annonce arrive dans la cloche du site et dans les notifications de
   l'app
+- « Écrire à ce compte », sur la page d'un compte : la même annonce, pour ce
+  seul compte (audience `USER`, « Compte : Nom (@pseudo) » dans
+  l'historique) ; le message est relu avant l'envoi, refusé pour un compte
+  banni. Sur le site, la cloche mène une annonce sans lien à `/notifications`,
+  où son texte se lit en entier ; l'app le montre en entier dans son écran
+  Notifications
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)

@@ -74,6 +74,29 @@ beforeEach(() => {
   m.markAllNotificationsReadAction.mockResolvedValue({ success: true });
 });
 
+describe("NotificationHistory rows", () => {
+  it("shows an announcement in full, its paragraphs kept, without sending it back here", () => {
+    const body =
+      "Bonjour,\n\nMerci d'avoir essayé les leçons.\n\nLa plateforme est encore en développement.";
+    render(
+      <NotificationHistory
+        initialItems={[{ ...notice(A, "Merci"), body }]}
+        initialNext={null}
+        initialUnread={1}
+        initialWaiting={[]}
+        unreadOnly={false}
+      />,
+    );
+    const text = screen.getByText(/La plateforme est encore en développement/);
+    expect(text.textContent).toBe(body);
+    expect(text.style.whiteSpace).toBe("pre-line");
+    expect(text.style.overflow).not.toBe("hidden");
+    // Read here: the row marks it read rather than linking to this very page.
+    expect(screen.queryByRole("link", { name: /Merci/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Merci/ })).toBeTruthy();
+  });
+});
+
 describe("NotificationHistory and the bell", () => {
   it("tells the bell when everything was marked read here", async () => {
     const panel = vi.fn();

@@ -517,6 +517,25 @@ function FriendRequestAnswer({
   );
 }
 
+/** Where every notice is read in full. */
+const NOTIFICATIONS_PAGE = "/notifications";
+
+/** The bell's text: two lines at most. */
+const CLAMPED_BODY: React.CSSProperties = {
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- -webkit-line-clamp only clamps inside a vertical -webkit-box; the standard line-clamp has no support yet
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
+};
+
+/** The history page's text: all of it, its paragraphs kept, a long address wrapped. */
+const FULL_BODY: React.CSSProperties = {
+  display: "block",
+  whiteSpace: "pre-line",
+  overflowWrap: "anywhere",
+};
+
 /** Whether a notice's link is one of the site's route handlers, not a page. */
 function isRouteHandler(href: string): boolean {
   return href === "/api" || href.startsWith("/api/");
@@ -530,24 +549,30 @@ function isRouteHandler(href: string): boolean {
  * It used to be a clickable <div>: no role, out of the tab order, deaf to
  * Enter, and following it reloaded the whole site.
  *
- * Exported for the history page (/notifications), which lists the same rows.
+ * Exported for the history page (/notifications), which lists the same rows
+ * with their text in full (`full`). The bell cuts a text at two lines, so an
+ * announcement with no link of its own leads there, where it can be read: a
+ * message from the console runs to a few paragraphs.
  */
 export function NotificationRow({
   item,
   waiting,
   onRead,
   onFollow,
+  full = false,
 }: {
   item: NotificationItem;
   /** The senders whose request still waits on the reader. */
   waiting: ReadonlySet<string>;
   onRead: (id: string) => void;
   onFollow: () => void;
+  /** The whole text, its line breaks kept: the history page. */
+  full?: boolean;
 }): React.JSX.Element {
   // A friend request still waiting is answered from the notice itself: its
   // row and the two buttons under it, side by side in one item.
   const sender = friendRequestSender(item);
-  const row = <NoticeRow item={item} onRead={onRead} onFollow={onFollow} />;
+  const row = <NoticeRow item={item} onRead={onRead} onFollow={onFollow} full={full} />;
   if (sender === null || !waiting.has(sender)) return row;
   return (
     <div className="notif-item">
@@ -567,12 +592,16 @@ function NoticeRow({
   item,
   onRead,
   onFollow,
+  full,
 }: {
   item: NotificationItem;
   onRead: (id: string) => void;
   onFollow: () => void;
+  full: boolean;
 }): React.JSX.Element {
   const isUnread = !item.readAt;
+  const href =
+    item.actionUrl ?? (!full && item.type === "ANNOUNCEMENT" ? NOTIFICATIONS_PAGE : null);
   // No fallback: the record is exhaustive over the enum, so there is no type
   // that can arrive here without an icon.
   const icon = TYPE_ICON[item.type];
@@ -645,11 +674,7 @@ function NoticeRow({
             color: "#aaa79f",
             lineHeight: 1.5,
             marginBottom: 4,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            // eslint-disable-next-line @typescript-eslint/no-deprecated -- -webkit-line-clamp only clamps inside a vertical -webkit-box; the standard line-clamp has no support yet
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
+            ...(full ? FULL_BODY : CLAMPED_BODY),
           }}
         >
           {item.body}
@@ -682,7 +707,7 @@ function NoticeRow({
     </>
   );
 
-  if (item.actionUrl) {
+  if (href !== null) {
     const follow = (event: React.MouseEvent<HTMLAnchorElement>): void => {
       if (isUnread) onRead(item.id);
       // A new tab leaves this one where it was, panel included.
@@ -694,16 +719,16 @@ function NoticeRow({
     // once. Certificate notices used to point at the PDF route; the stored
     // ones were rewritten (migration 20261011120000_certificate_notice_links),
     // and this keeps any other route handler off the router.
-    if (isRouteHandler(item.actionUrl)) {
+    if (isRouteHandler(href)) {
       return (
-        <a href={item.actionUrl} className="notif-row" style={style} onClick={follow}>
+        <a href={href} className="notif-row" style={style} onClick={follow}>
           {content}
         </a>
       );
     }
     return (
       <Link
-        href={item.actionUrl}
+        href={href}
         // Twenty rows open at once: fetching every page they point at, on
         // the chance one is clicked, is twenty requests for one click.
         prefetch={false}

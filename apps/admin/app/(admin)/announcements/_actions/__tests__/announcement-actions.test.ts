@@ -5,6 +5,8 @@ const m = vi.hoisted(() => ({
   listLiveOptions: vi.fn<() => Promise<{ id: string; name: string }[]>>(),
   countForAudience: vi.fn<(audience: unknown, now: Date) => Promise<number>>(),
   idsForAudience: vi.fn<(audience: unknown, now: Date) => Promise<string[]>>(),
+  findHandle:
+    vi.fn<(id: string) => Promise<{ displayName: string; username: string | null } | null>>(),
   createMany:
     vi.fn<
       (
@@ -21,7 +23,11 @@ vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@/lib/rate-limit", () => ({ checkAnnouncementRateLimit: m.checkAnnouncementRateLimit }));
 vi.mock("@cyberlearn/db", () => ({
   classRepository: { listLiveOptions: m.listLiveOptions },
-  userRepository: { countForAudience: m.countForAudience, idsForAudience: m.idsForAudience },
+  userRepository: {
+    countForAudience: m.countForAudience,
+    idsForAudience: m.idsForAudience,
+    findHandle: m.findHandle,
+  },
   notificationRepository: { createMany: m.createMany },
 }));
 vi.mock("@cyberlearn/lib/logger", () => ({
@@ -67,6 +73,7 @@ beforeEach(() => {
   m.idsForAudience.mockResolvedValue(["u-1", "u-2", "u-3"]);
   m.createMany.mockImplementation((rows) => Promise.resolve(rows.length));
   m.checkAnnouncementRateLimit.mockResolvedValue(true);
+  m.findHandle.mockResolvedValue({ displayName: "Ada", username: "ada" });
 });
 
 describe("the console's gate", () => {
@@ -270,5 +277,48 @@ describe("sendAnnouncementAction", () => {
     expect(errorOf(result)).toMatch(/personne ne l'a reçue/u);
     expect(m.logError).toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("a message to one account", () => {
+  const LEARNER = "44444444-4444-4444-8444-444444444444";
+  const MESSAGE = { ...VALID, audience: { kind: "USER", userId: LEARNER } };
+
+  it("sends one ANNOUNCEMENT to that account, its name in the trace", async () => {
+    m.countForAudience.mockResolvedValue(1);
+    m.idsForAudience.mockResolvedValue([LEARNER]);
+
+    expect(await countAnnouncementRecipientsAction(MESSAGE)).toEqual({ ok: true, recipients: 1 });
+    expect(await sendAnnouncementAction({ ...MESSAGE, confirmedRecipients: 1 })).toEqual({
+      ok: true,
+      sent: 1,
+    });
+    const [rows, options] = m.createMany.mock.calls[0] ?? [];
+    expect(rows).toEqual([expect.objectContaining({ userId: LEARNER, type: "ANNOUNCEMENT" })]);
+    expect(options?.audit.metadata).toMatchObject({
+      audienceLabel: "Compte : Ada (@ada)",
+      recipients: 1,
+    });
+  });
+
+  it("says the account is banned rather than that nobody matches", async () => {
+    m.countForAudience.mockResolvedValue(0);
+    m.idsForAudience.mockResolvedValue([]);
+
+    expect(errorOf(await countAnnouncementRecipientsAction(MESSAGE))).toMatch(/banni/u);
+    expect(errorOf(await sendAnnouncementAction({ ...MESSAGE, confirmedRecipients: 1 }))).toMatch(
+      /banni/u,
+    );
+    expect(m.createMany).not.toHaveBeenCalled();
+  });
+
+  it("sends nothing to an account that no longer exists", async () => {
+    m.findHandle.mockResolvedValue(null);
+
+    expect(errorOf(await sendAnnouncementAction({ ...MESSAGE, confirmedRecipients: 1 }))).toMatch(
+      /n'existe plus/u,
+    );
+    expect(m.idsForAudience).not.toHaveBeenCalled();
+    expect(m.createMany).not.toHaveBeenCalled();
   });
 });

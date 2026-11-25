@@ -179,6 +179,7 @@ export function NotificationHistory({
               waiting={waiting}
               onRead={markRead}
               onFollow={stay}
+              full
             />
           ))}
         </div>

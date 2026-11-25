@@ -56,6 +56,14 @@ describe("announcementAudienceWhere", () => {
   });
 });
 
+describe("announcementAudienceWhere, one account", () => {
+  it("reaches that account only, unless it is banned", () => {
+    expect(announcementAudienceWhere({ kind: "USER", userId: CLASS_A }, NOW)).toEqual({
+      AND: [NOT_BANNED, { id: CLASS_A }],
+    });
+  });
+});
+
 describe("userRepository audience reads", () => {
   it("counts through the filter the send uses", async () => {
     mockPrisma.user.count.mockResolvedValue(42);

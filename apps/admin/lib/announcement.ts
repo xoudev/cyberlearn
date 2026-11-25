@@ -73,6 +73,11 @@ export const audienceSchema = z.discriminatedUnion(
         .max(ANNOUNCEMENT_LIMITS.maxClasses, "Trop de classes pour une seule annonce.")
         .transform(unique),
     }),
+    // One account, written to from its page (users/[id]/_components/message-form.tsx).
+    z.object({
+      kind: z.literal("USER"),
+      userId: z.guid("Ce compte n'existe pas."),
+    }),
   ],
   "Choisis à qui envoyer l'annonce.",
 );
@@ -109,6 +114,13 @@ export const sendAnnouncementSchema = announcementSchema.extend({
 export type AnnouncementInput = z.input<typeof announcementSchema>;
 export type Announcement = z.output<typeof announcementSchema>;
 
+/** An account as a message's history names it: "Ada (@ada)", or the name alone. */
+export function accountLabel(account: { displayName: string; username: string | null }): string {
+  const name = account.displayName.trim();
+  if (account.username === null) return name || "Compte sans nom";
+  return name ? `${name} (@${account.username})` : `@${account.username}`;
+}
+
 /** The first thing wrong with a refused announcement, in the form's words. */
 export function announcementProblem(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Annonce invalide.";
@@ -119,11 +131,12 @@ const NAMED_CLASSES = 4;
 
 /**
  * The audience in words, for the confirmation and the history: "Tous les
- * comptes", "Rôles : Admin, Professeur", "Classes : SIO1-A, SIO1-B".
+ * comptes", "Rôles : Admin, Professeur", "Classes : SIO1-A, SIO1-B",
+ * "Compte : Ada (@ada)". `names` holds the classes' names, or the account's.
  */
 export function audienceLabel(
   audience: AnnouncementAudience,
-  classNames: ReadonlyMap<string, string>,
+  names: ReadonlyMap<string, string>,
 ): string {
   switch (audience.kind) {
     case "ALL":
@@ -133,12 +146,14 @@ export function audienceLabel(
       return `${roles.length > 1 ? "Rôles" : "Rôle"} : ${roles.map((role) => ROLE_LABEL[role]).join(", ")}`;
     }
     case "CLASSES": {
-      const names = audience.classIds.map((id) => classNames.get(id) ?? "classe inconnue");
-      const shown = names.slice(0, NAMED_CLASSES).join(", ");
-      const rest = names.length - NAMED_CLASSES;
+      const classes = audience.classIds.map((id) => names.get(id) ?? "classe inconnue");
+      const shown = classes.slice(0, NAMED_CLASSES).join(", ");
+      const rest = classes.length - NAMED_CLASSES;
       const list = rest > 0 ? `${shown} et ${String(rest)} autre${rest > 1 ? "s" : ""}` : shown;
-      return `${names.length > 1 ? "Classes" : "Classe"} : ${list}`;
+      return `${classes.length > 1 ? "Classes" : "Classe"} : ${list}`;
     }
+    case "USER":
+      return `Compte : ${names.get(audience.userId) ?? "compte inconnu"}`;
   }
 }
 
