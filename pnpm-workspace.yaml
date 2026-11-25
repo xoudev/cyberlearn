@@ -98,7 +98,7 @@ catalog:
   exifr: "^7.1.3"
   leaflet: "^1.9.4"
   "@types/leaflet": "^1.9.22"
-  "@xyflow/react": "^12.12.0"
+  "@xyflow/react": "^13.0.2"
 
   # JWT lab (lesson exercise): ECDSA in pure JS for the site and the app, and the
   # reference JOSE library the tests check the lab against. jose needs WebCrypto,
