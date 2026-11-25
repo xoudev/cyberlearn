@@ -12,6 +12,7 @@ import {
   contentReportRepository,
   isTicketOpen,
   lessonProgressRepository,
+  messageRepository,
   moderationRepository,
   noteReportRepository,
   pathRepository,
@@ -122,6 +123,7 @@ export default async function AdminUserPage({
     ledger,
     heldBadges,
     activeBadges,
+    teamConversation,
   ] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
@@ -148,6 +150,7 @@ export default async function AdminUserPage({
     xpLedgerRepository.recentForUser(user.id, RECENT_LEDGER_ROWS),
     badgeRepository.heldForConsole(user.id),
     badgeRepository.findAllActive(),
+    messageRepository.teamConversationOf(user.id),
   ]);
 
   const stamp = (date: Date): string =>
@@ -339,6 +342,7 @@ export default async function AdminUserPage({
             userId={user.id}
             name={user.displayName || handle}
             banned={activeBan !== null}
+            conversationId={teamConversation?.id ?? null}
           />
 
           <BanForm userId={user.id} active={activeBan} history={banHistory} />

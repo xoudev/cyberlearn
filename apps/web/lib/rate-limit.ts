@@ -443,6 +443,45 @@ export async function checkClassExport(userId: string): Promise<RateLimitResult>
 }
 
 /**
+ * 30 private messages per user per minute: a conversation goes fast, a flood
+ * goes faster.
+ */
+export async function checkMessageSend(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "messages:send",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(30, "1 m"),
+        prefix: "rl:messages:send",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/**
+ * 10 message requests per user per hour: a first message to somebody who is
+ * not a friend lands in their requests, and writing to strangers by the dozen
+ * is what a spammer does.
+ */
+export async function checkMessageRequest(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "messages:request",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(10, "1 h"),
+        prefix: "rl:messages:request",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/**
  * 10 note imports per user per hour, counted on an import's first batch: an
  * import writes up to 500 notes, a library's worth, not a gesture repeated.
  */

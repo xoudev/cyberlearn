@@ -183,6 +183,7 @@ const CASES: ReadCase[] = [
         publicProfile: true,
         learningGoals: true,
         startingLevel: true,
+        messagesFrom: true,
       },
     },
   },

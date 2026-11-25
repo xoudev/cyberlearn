@@ -196,6 +196,41 @@
 - Préférences : répétition espacée (le rappel du jour) ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans la coquille de l'app (`components/app-shell.tsx`, dessinée par `(app)/layout.tsx`), les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse (entrée `settings` des fenêtres ouvertes par l'adresse, `components/query-dialogs.ts`, dessinées par `QueryDialogHost` monté dans la même coquille ; cadre `SideDrawer` de `@cyberlearn/ui`, voir `docs/dev/dialogs.md`)
 
+#### Messages
+- Un bouton en bas à droite de chaque page connectée ouvre le panneau des
+  messages (`components/messages/messages-dock.tsx`, monté dans la coquille de
+  l'app ; plein écran sur un téléphone) : onglets « Discussions » et
+  « Demandes », la discussion avec l'équipe épinglée en tête (« Officiel »),
+  un fil par discussion (plus anciens à la demande, 50 par page), « Nouveau
+  message » vers un ami ou un @pseudo exact, et « Envoyer un message » sur le
+  profil de quelqu'un. Les nouveaux messages arrivent en direct (Supabase
+  Realtime sur `direct_messages`, que la policy limite aux deux côtés)
+- Règles (`@cyberlearn/lib/messages/rules`) : des amis s'écrivent tout de
+  suite ; un autre compte envoie un seul message, qui attend dans les demandes
+  du destinataire (accepter, refuser, bloquer) ; le demandeur ne sait ni s'il
+  a été lu ni s'il a été refusé ; deux comptes devenus amis entre-temps
+  s'écrivent librement. « Qui peut m'écrire » (Confidentialité) : tout le
+  monde, mes amis seulement, personne. Un blocage, dans un sens ou dans
+  l'autre, arrête tout ; la liste des comptes bloqués est dans Confidentialité
+- Chaque message passe par le filtre automatique avant d'être écrit
+  (`UNACTIONED_SURFACE.directMessage`) : un message retenu n'est pas envoyé,
+  son auteur en est prévenu avec le motif. Les liens passent entre deux
+  comptes qui ont accepté de se parler, pas dans une première demande. 30
+  messages par minute et 10 demandes par heure au plus
+- « Signaler » sous un message reçu : il entre dans la file des signalements
+  de la console (surface `DIRECT_MESSAGE`), lui seul. La console ne lit jamais
+  une discussion entre apprenants : ni liste, ni fil, seulement les messages
+  signalés (`directMessageHandler`)
+- La discussion avec l'équipe : écrite depuis la console (« Écrire à ce
+  compte »), rien à accepter, l'apprenant y répond ; ses réponses arrivent
+  dans la console (`/messages`). Le message de l'équipe arrive aussi en
+  notification, le même texte, pour l'app qui n'a pas encore d'écran Messages
+- Tables `conversations`, `direct_messages`, `user_blocks` (RLS : lecture par
+  les deux côtés seulement, aucune écriture par l'API, aucune policy
+  d'administrateur) ; réglage `user_preferences.messagesFrom`. L'export RGPD
+  (version 1.4) contient les discussions, les messages écrits et les comptes
+  bloqués, pas les messages reçus
+
 #### Notifications
 - 19 types : REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED,
   CERTIFICATE_ISSUED, ANNOUNCEMENT, TICKET_UPDATE, CLASS_ENROLLED,
@@ -375,6 +410,7 @@
 | `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
 | `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord, 20 contenus par page groupés et paginés par la base (`?page=`) ; masquer, supprimer, classer sans suite, ou le renvoi à la file du filtre pour un contenu qu'elle tient encore |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
+| `/messages` · `/messages/[id]` | Les discussions des apprenants avec l'équipe, leurs réponses à lire, et « Répondre » |
 | `/announcements` | Envoyer une annonce (notification `ANNOUNCEMENT`) à tous les comptes, à des rôles ou à des classes, et l'historique des envois, lu dans l'audit log |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période ; les passages des tâches planifiées masqués sauf demande (`?crons=1`, ou un filtre qui les nomme) |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
@@ -581,12 +617,21 @@
 - Historique des envois sur la même page, lu dans l'audit log, sans table à
   part ; l'annonce arrive dans la cloche du site et dans les notifications de
   l'app
-- « Écrire à ce compte », sur la page d'un compte : la même annonce, pour ce
-  seul compte (audience `USER`, « Compte : Nom (@pseudo) » dans
-  l'historique) ; le message est relu avant l'envoi, refusé pour un compte
-  banni. Sur le site, la cloche mène une annonce sans lien à `/notifications`,
-  où son texte se lit en entier ; l'app le montre en entier dans son écran
-  Notifications
+- L'audience `USER` (un seul compte, « Compte : Nom (@pseudo) » dans
+  l'historique) reste acceptée par les actions des annonces. Sur le site, la
+  cloche mène une annonce sans lien à `/notifications`, où son texte se lit en
+  entier ; l'app le montre en entier dans son écran Notifications
+
+#### Messages de l'équipe
+- « Écrire à ce compte », sur la page d'un compte : un message signé « Équipe
+  CyberLearn » dans la discussion du compte avec l'équipe, relu avant l'envoi,
+  refusé pour un compte banni (`sendTeamMessageAction`) ; il arrive aussi en
+  notification. Ligne d'audit `message.team.send`, 60 messages par heure et
+  par administrateur au plus
+- `/messages` : les discussions des apprenants avec l'équipe, la plus récente
+  en tête, « À lire » quand l'apprenant a répondu depuis la dernière lecture
+  (compté dans la barre latérale) ; `/messages/[id]` : le fil entier, chaque
+  message de l'équipe avec l'administrateur qui l'a écrit, et « Répondre »
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)

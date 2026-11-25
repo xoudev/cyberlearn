@@ -23,6 +23,7 @@ export type ConsoleNavIcon =
   | "flag"
   | "ticket"
   | "megaphone"
+  | "chat"
   | "shield"
   | "alert"
   | "flask"
@@ -39,6 +40,8 @@ export type ConsoleCountKey =
   | "challenges"
   | "users"
   | "tickets"
+  /** Learners' replies in their conversations with the team, not read yet. */
+  | "messages"
   /** Contents with an open report: what learners are waiting on the team for. */
   | "reports";
 
@@ -100,6 +103,13 @@ export const CONSOLE_MAIN_SECTIONS: readonly ConsoleSection[] = [
     keywords: ["diplômes", "attestations", "révocation"],
   },
   { label: "Tickets", href: "/tickets", icon: "ticket", count: "tickets", keywords: ["support"] },
+  {
+    label: "Messages",
+    href: "/messages",
+    icon: "chat",
+    count: "messages",
+    keywords: ["discussions", "équipe", "réponses", "apprenants"],
+  },
   {
     label: "Annonces",
     href: "/announcements",
@@ -294,6 +304,7 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["users", "Utilisateurs"],
   ["certificates", "Certificats"],
   ["tickets", "Tickets"],
+  ["messages", "Messages"],
   ["announcements", "Annonces"],
   ["moderation", "Modération"],
   ["lab", "Banc d'essai"],

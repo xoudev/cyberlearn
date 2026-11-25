@@ -24,6 +24,10 @@ export const privacySectionSchema = z.object({
   visibility: z.enum(["HIDDEN", "ANONYMOUS", "PUBLIC"]),
   publicProfile: z.boolean(),
   friendsLeaderboard: z.boolean(),
+  messagesFrom: z.enum(["EVERYONE", "FRIENDS", "NOBODY"]),
+  blocked: z.array(
+    z.object({ id: z.string(), displayName: z.string(), username: z.string().nullable() }),
+  ),
 });
 
 export const preferencesSectionSchema = z.object({

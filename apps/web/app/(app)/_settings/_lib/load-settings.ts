@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { moderationRepository, prisma } from "@cyberlearn/db";
+import { messageRepository, moderationRepository, prisma } from "@cyberlearn/db";
 import { canDisableOwnMfa } from "@/lib/auth/mfa-removal";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import type {
@@ -42,14 +42,24 @@ export async function loadProfileSection(userId: string): Promise<ProfileSection
 }
 
 export async function loadPrivacySection(userId: string): Promise<PrivacySectionData> {
-  const prefs = await prisma.userPreferences.findUnique({
-    where: { userId },
-    select: { leaderboardVisibility: true, publicProfile: true, friendsLeaderboard: true },
-  });
+  const [prefs, blocked] = await Promise.all([
+    prisma.userPreferences.findUnique({
+      where: { userId },
+      select: {
+        leaderboardVisibility: true,
+        publicProfile: true,
+        friendsLeaderboard: true,
+        messagesFrom: true,
+      },
+    }),
+    messageRepository.listBlocked(userId),
+  ]);
   return {
     visibility: prefs?.leaderboardVisibility ?? "ANONYMOUS",
     publicProfile: prefs?.publicProfile ?? true,
     friendsLeaderboard: prefs?.friendsLeaderboard ?? false,
+    messagesFrom: prefs?.messagesFrom ?? "EVERYONE",
+    blocked: blocked.map((b) => ({ id: b.id, displayName: b.displayName, username: b.username })),
   };
 }
 

@@ -16,6 +16,7 @@ const { db, resolveAvatarSrc, canDisableOwnMfa } = vi.hoisted(() => ({
       certificate: { count: vi.fn() },
     },
     moderationRepository: { findForUser: vi.fn() },
+    messageRepository: { listBlocked: vi.fn() },
   },
   resolveAvatarSrc: vi.fn(),
   canDisableOwnMfa: vi.fn<(userId: string) => Promise<boolean>>(),
@@ -48,6 +49,7 @@ beforeEach(() => {
   db.prisma.accountDeletionToken.findFirst.mockResolvedValue(null);
   db.prisma.certificate.count.mockResolvedValue(0);
   db.moderationRepository.findForUser.mockResolvedValue([]);
+  db.messageRepository.listBlocked.mockResolvedValue([]);
   canDisableOwnMfa.mockResolvedValue(true);
 });
 
@@ -65,6 +67,8 @@ describe("the settings loaders", () => {
       visibility: "ANONYMOUS",
       publicProfile: true,
       friendsLeaderboard: false,
+      messagesFrom: "EVERYONE",
+      blocked: [],
     });
     expect(settings.preferences).toEqual({ spacedRepetition: true });
     expect(Object.values(settings.notifications).every(Boolean)).toBe(true);
@@ -151,6 +155,7 @@ describe("the settings loaders", () => {
       expect(call[0]).toMatchObject({ where: { userId: "user-1" } });
     }
     expect(db.moderationRepository.findForUser).toHaveBeenCalledWith("user-1");
+    expect(db.messageRepository.listBlocked).toHaveBeenCalledWith("user-1");
     expect(db.prisma.certificate.count).toHaveBeenCalledWith({ where: { userId: "user-1" } });
     expect(canDisableOwnMfa).toHaveBeenCalledWith("user-1");
   });

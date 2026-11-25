@@ -38,6 +38,7 @@ export const preferencesRepository = {
         publicProfile: true,
         learningGoals: true,
         startingLevel: true,
+        messagesFrom: true,
       },
     });
   },

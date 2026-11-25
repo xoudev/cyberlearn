@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { resolveAvatarSrc } from "@/lib/avatar";
 import {
   contentReportRepository,
+  messageRepository,
   statsRepository,
   ticketRepository,
   userRepository,
@@ -23,7 +24,7 @@ import { SavedNoticeToast } from "./_components/saved-notice-toast";
 // from paying seven count queries while staying fresh enough for admin work.
 const getSidebarCounts = unstable_cache(
   async () => {
-    const [content, tickets, reports] = await Promise.all([
+    const [content, tickets, reports, messages] = await Promise.all([
       statsRepository.findSidebarCounts(),
       // What the team owes: new tickets, and the ones whose requester wrote
       // back after an answer - a reply on a ticket in progress changes no
@@ -31,8 +32,10 @@ const getSidebarCounts = unstable_cache(
       ticketRepository.countNeedingTeam(),
       // Contents learners reported and nobody has read yet.
       contentReportRepository.countOpenContents(),
+      // Learners who answered the team and are waiting to be read.
+      messageRepository.teamUnreadCount(),
     ]);
-    return { ...content, tickets, reports };
+    return { ...content, tickets, reports, messages };
   },
   ["admin-sidebar-counts"],
   { revalidate: 30 },

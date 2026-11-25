@@ -47,7 +47,13 @@ import SettingsPanels from "../SettingsPanels";
 // The stand-ins ignore it: any value of the right shape will do.
 const DATA: SettingsData = {
   profile: { username: "ada", displayName: "", bio: "", avatarUrl: "", avatarPreview: null },
-  privacy: { visibility: "HIDDEN", publicProfile: false, friendsLeaderboard: false },
+  privacy: {
+    visibility: "HIDDEN",
+    publicProfile: false,
+    friendsLeaderboard: false,
+    messagesFrom: "EVERYONE",
+    blocked: [],
+  },
   preferences: { spacedRepetition: true },
   notifications: {
     reviewReminders: true,
