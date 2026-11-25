@@ -118,6 +118,15 @@ describe("noteFileContent", () => {
     expect(md).toContain('lesson_url: "https://cyberlearn.fr/lessons/injection-sql"');
     expect(md.endsWith("---\n\n# Corps\n")).toBe(true);
   });
+
+  it("writes the workspace's colours and callouts the way other readers draw them", () => {
+    const md = noteFileContent(
+      note({ content: "Port [22]{rouge}, ==ssh==\n\n> [!astuce]\n> chiffré" }),
+      "https://cyberlearn.fr",
+    );
+    expect(md).toContain('Port <span style="color: #C62E3A">22</span>, <mark>ssh</mark>');
+    expect(md).toContain("> [!TIP]\n> chiffré");
+  });
 });
 
 describe("buildNotesZip", () => {

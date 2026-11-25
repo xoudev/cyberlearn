@@ -1,4 +1,5 @@
 import { strToU8, zipSync, type Zippable } from "fflate";
+import { toPortableMarkdown } from "@cyberlearn/lib/notes/portable-markdown";
 import { folderAncestors, parentMap } from "@cyberlearn/lib/notes/workspace";
 
 /**
@@ -6,7 +7,8 @@ import { folderAncestors, parentMap } from "@cyberlearn/lib/notes/workspace";
  * page already holds: nothing goes to a server, and a whole library of text
  * zips in a blink. The archive mirrors the folders: a folder is a directory,
  * a note a .md file named after its title, with a YAML header Obsidian, VS
- * Code or any static site generator reads (title, lesson, dates).
+ * Code or any static site generator reads (title, lesson, dates), and its
+ * text in markdown those tools draw (portable-markdown.ts).
  */
 
 /** The top directory of the whole-library export (the import drops it). */
@@ -77,7 +79,11 @@ function yamlString(value: string): string {
   return JSON.stringify(value);
 }
 
-/** A note as a .md file: YAML header, then the note as written. */
+/**
+ * A note as a .md file: YAML header, then the note with the workspace's own
+ * marks (colours, highlights, callouts) written the way other readers draw
+ * them. The import reads them back.
+ */
 export function noteFileContent(note: ArchiveNote, siteUrl: string): string {
   const lines = ["---", `title: ${yamlString(note.title)}`];
   if (note.lessonTitle) lines.push(`lesson: ${yamlString(note.lessonTitle)}`);
@@ -95,7 +101,7 @@ export function noteFileContent(note: ArchiveNote, siteUrl: string): string {
     "---",
     "",
   );
-  return `${lines.join("\n")}\n${note.content.trimEnd()}\n`;
+  return `${lines.join("\n")}\n${toPortableMarkdown(note.content).trimEnd()}\n`;
 }
 
 /**

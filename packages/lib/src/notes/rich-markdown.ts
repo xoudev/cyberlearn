@@ -38,6 +38,31 @@ export const NOTE_COLOR_LABELS: Record<NoteColor, string> = {
   gris: "Gris",
 };
 
+/**
+ * The colours on paper and in an exported file: the screen's hues, darker for
+ * text and paler for a highlight, readable on white. The PDF draws with them,
+ * and the .md export writes them into the HTML it uses for coloured text
+ * (portable-markdown.ts), which reads them back on import.
+ */
+export const NOTE_INK_HEX: Record<NoteColor, string> = {
+  rouge: "#C62E3A",
+  orange: "#C25A12",
+  jaune: "#8F6A00",
+  vert: "#1E7F4F",
+  bleu: "#1F5FA8",
+  violet: "#6E3BB0",
+  gris: "#6B6862",
+};
+export const NOTE_HIGHLIGHT_HEX: Record<NoteColor, string> = {
+  rouge: "#FAD7DA",
+  orange: "#FCE0CB",
+  jaune: "#FBEFB8",
+  vert: "#D2F1E0",
+  bleu: "#D5E6FA",
+  violet: "#E7DBFA",
+  gris: "#E6E4DF",
+};
+
 /** Callout kinds, as written after `> [!`. French keys first, then Obsidian's. */
 export const CALLOUT_KINDS = [
   "note",
@@ -62,7 +87,7 @@ export const CALLOUT_LABELS: Record<CalloutKind, string> = {
   exemple: "Exemple",
 };
 
-const CALLOUT_ALIASES: Record<string, CalloutKind> = {
+export const CALLOUT_ALIASES: Readonly<Record<string, CalloutKind | undefined>> = {
   note: "note",
   info: "info",
   abstract: "info",
@@ -134,18 +159,20 @@ export type RichBlock =
 
 /** Longest run a delimiter pair may enclose: past it, the opener is text. */
 const MAX_SPAN = 1000;
-const SAFE_LINK = /^(https?:|mailto:)/i;
+export const SAFE_LINK = /^(https?:|mailto:)/i;
+/** What a backslash escapes: the character after it is text. */
+export const ESCAPABLE = /[\\`*_~=[\]{}()#>|:!-]/;
 const COLOR_SET: ReadonlySet<string> = new Set(NOTE_COLORS);
 
 /** Where `delim` next occurs in `text` after `from`, within MAX_SPAN, or -1. */
-function findCloser(text: string, delim: string, from: number): number {
+export function findCloser(text: string, delim: string, from: number): number {
   const end = text.indexOf(delim, from);
   if (end < 0 || end - from > MAX_SPAN) return -1;
   return end;
 }
 
 /** `[label]` followed by `(url)` or `{colour}` at `i`; null when it is neither. */
-function bracketSpan(
+export function bracketSpan(
   text: string,
   i: number,
 ): { label: string; next: number; close: "(" | "{"; arg: string } | null {
@@ -188,7 +215,7 @@ function bracketSpan(
 }
 
 /** The colour a `{…}` names, and whether it is a background (fond-…). */
-function parseColorArg(arg: string): { color: NoteColor; background: boolean } | null {
+export function parseColorArg(arg: string): { color: NoteColor; background: boolean } | null {
   const background = arg.startsWith("fond-");
   const name = background ? arg.slice(5) : arg;
   if (!COLOR_SET.has(name)) return null;
@@ -215,7 +242,7 @@ export function parseRichInline(text: string): RichInline[] {
     const c = text[i] ?? "";
 
     // Backslash escape: the next character is text.
-    if (c === "\\" && i + 1 < text.length && /[\\`*_~=[\]{}()#>|:!-]/.test(text[i + 1] ?? "")) {
+    if (c === "\\" && i + 1 < text.length && ESCAPABLE.test(text[i + 1] ?? "")) {
       buf += text[i + 1] ?? "";
       i += 2;
       continue;
@@ -322,9 +349,9 @@ export function parseRichInline(text: string): RichInline[] {
 
 const HR = /^ {0,3}(-{3,}|\*{3,}|_{3,})\s*$/;
 const HEADING = /^(#{1,6})\s+(.*)$/;
-const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([\w+#.-]{0,30})/;
-const QUOTE = /^ {0,3}>\s?(.*)$/;
-const CALLOUT_HEAD = /^\[!([a-zA-Zéè]{1,20})\][+-]?\s*(.*)$/;
+export const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([\w+#.-]{0,30})/;
+export const QUOTE = /^ {0,3}>\s?(.*)$/;
+export const CALLOUT_HEAD = /^\[!([a-zA-Zéè]{1,20})\][+-]?\s*(.*)$/;
 const LIST_ITEM = /^(\s*)([-*+]|\d{1,9}[.)])\s+(.*)$/;
 const TASK = /^\[([ xX])\]\s+(.*)$/;
 const TABLE_SEP = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;

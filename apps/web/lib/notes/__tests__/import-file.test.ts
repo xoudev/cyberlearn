@@ -35,6 +35,11 @@ describe("front matter", () => {
     expect(noteFromText("dir/Mon fichier.md", "texte", []).title).toBe("Mon fichier");
   });
 
+  it("reads the colours the .md export wrote back into the workspace's marks", () => {
+    const text = '---\ntitle: "A"\n---\n\n<span style="color: #C62E3A">22</span> <mark>ssh</mark>';
+    expect(noteFromText("A.md", text, []).content).toBe("[22]{rouge} ==ssh==");
+  });
+
   it("drops a BOM and control characters, keeps tabs and newlines", () => {
     expect(cleanImportedText("﻿a\r\nb\u0000\tc\u0007")).toBe("a\nb\tc");
   });
