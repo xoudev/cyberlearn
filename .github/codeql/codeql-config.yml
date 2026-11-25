@@ -1,0 +1,15 @@
+# CodeQL's configuration for this repository, read by .github/workflows/codeql.yml.
+#
+# apps/web/public/runtimes/ holds third-party engines served to the browser as
+# they were built upstream: Pyodide, PHP, v86, JSCPP. They run in the
+# learner's own tab, on the code the learner just typed, and receive nothing
+# from the server or from another user. Their alerts (six in JSCPP's bundle,
+# November 2026) are the upstream project's to fix; patching the bundle here
+# would make it drift from its source, and scanning it only buried the alerts
+# about this repository's own code. docs/hardening/known-issues.md has the
+# reasoning.
+name: cyberlearn
+paths-ignore:
+  - apps/web/public/runtimes
+  - "**/node_modules"
+  - "**/.next"
