@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NotificationItem } from "@cyberlearn/db";
 
@@ -16,14 +16,29 @@ const friends = vi.hoisted(() => ({
 
 vi.mock("@/app/(app)/_actions/notification-actions", () => m);
 vi.mock("@/app/(app)/_actions/friend-actions", () => friends);
+const realtime = vi.hoisted(() => ({
+  topics: [] as string[],
+  setAuth: vi.fn<(token: string | null) => Promise<void>>(() => Promise.resolve()),
+  insert: null as ((payload: { new: unknown }) => void) | null,
+}));
 vi.mock("@cyberlearn/db/supabase/client", () => {
   const channel = {
-    on: () => channel,
+    on: (_event: string, _filter: unknown, handler: (payload: { new: unknown }) => void) => {
+      realtime.insert = handler;
+      return channel;
+    },
     subscribe: () => channel,
   };
   return {
     createSupabaseBrowserClient: () => ({
-      channel: () => channel,
+      auth: {
+        getSession: () => Promise.resolve({ data: { session: { access_token: "session-token" } } }),
+      },
+      realtime: { setAuth: realtime.setAuth },
+      channel: (topic: string) => {
+        realtime.topics.push(topic);
+        return channel;
+      },
       removeChannel: () => Promise.resolve(),
     }),
   };
@@ -412,5 +427,40 @@ describe("NotificationPanel on a phone", () => {
     }
     // The panel is the one holding the notices.
     expect(panel?.textContent).toContain("Révision recommandée");
+  });
+});
+
+describe("NotificationPanel, live", () => {
+  beforeEach(() => {
+    realtime.topics.length = 0;
+    realtime.insert = null;
+  });
+
+  it("joins with the session's token, and counts a notification as it arrives", async () => {
+    render(<NotificationPanel initialUnreadCount={2} userId="me" />);
+    await waitFor(() => {
+      expect(realtime.insert).not.toBeNull();
+    });
+    expect(realtime.setAuth).toHaveBeenCalledWith("session-token");
+
+    act(() => {
+      realtime.insert?.({ new: notice({ id: "99999999-9999-4999-8999-999999999999" }) });
+    });
+    expect(screen.getByRole("button", { name: "3 notifications non lues" })).toBeTruthy();
+  });
+
+  it("keeps one subscription through the panel opening and closing", async () => {
+    render(<NotificationPanel initialUnreadCount={2} userId="me" />);
+    await waitFor(() => {
+      expect(realtime.insert).not.toBeNull();
+    });
+    const joined = realtime.topics.length;
+    const bell = screen.getByRole("button", { name: "2 notifications non lues" });
+    fireEvent.click(bell);
+    await screen.findByText("Révision recommandée");
+    fireEvent.click(bell);
+    expect(realtime.topics.length).toBe(joined);
+    // A topic of its own each time: realtime-js would hand back a closing channel.
+    expect(new Set(realtime.topics).size).toBe(realtime.topics.length);
   });
 });
