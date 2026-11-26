@@ -31,6 +31,12 @@ export function isPublicPath(pathname: string): boolean {
 }
 
 /** Reachable with a session that has not passed the TOTP step yet. */
+/**
+ * Where an administrator whose second factor changed outside the console is
+ * sent (lib/auth.ts): under /mfa, so the middleware lets any session reach it.
+ */
+export const MFA_CHANGED_PATH = "/mfa/changed";
+
 export function isMfaPath(pathname: string): boolean {
   return pathname === "/mfa" || pathname.startsWith("/mfa/");
 }

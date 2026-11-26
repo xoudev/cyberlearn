@@ -14,10 +14,12 @@ const m = vi.hoisted(() => ({
   sendMfaResetEmail: vi.fn<(options: Record<string, unknown>) => Promise<void>>(),
   heldAdminRoleSince: vi.fn(),
   revokeAllSessions: vi.fn<(userId: string, by: { actorId: string }) => Promise<number>>(),
+  clearPins: vi.fn<(userId: string) => Promise<number>>(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
+  adminMfaPinRepository: { clear: m.clearPins },
   auditLogRepository: { record: m.record },
   userRepository: {
     findConsoleTarget: m.findConsoleTarget,
@@ -122,6 +124,7 @@ beforeEach(() => {
   });
   m.deleteFactor.mockResolvedValue({ data: {}, error: null });
   m.sendMfaResetEmail.mockResolvedValue(undefined);
+  m.clearPins.mockResolvedValue(0);
   m.getUserById.mockResolvedValue({
     data: { user: { email: "2222@exemple.fr", email_confirmed_at: null } },
     error: null,
@@ -208,6 +211,19 @@ describe("resetMfaAction", () => {
     // Whatever the sign-in method: a GitHub account has no password.
     expect(result.notice).toMatch(/comme d'habitude, sans code/u);
     expect(result.notice).not.toMatch(/mot de passe/u);
+  });
+
+  it("forgets the console's pins once every factor is gone, so the next enrolment is pinned", async () => {
+    await resetMfaAction({}, typed(LEARNER));
+    expect(m.clearPins).toHaveBeenCalledWith(LEARNER);
+  });
+
+  it("keeps the pins when the reset stopped halfway", async () => {
+    m.deleteFactor
+      .mockResolvedValueOnce({ data: {}, error: null })
+      .mockResolvedValueOnce({ data: null, error: new Error("down") });
+    await resetMfaAction({}, typed(LEARNER));
+    expect(m.clearPins).not.toHaveBeenCalled();
   });
 
   it("never hands out the sender as the address to write to", async () => {

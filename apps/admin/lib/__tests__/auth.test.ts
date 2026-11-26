@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 interface Factor {
+  id?: string;
   factor_type: string;
   status: string;
 }
@@ -27,6 +28,9 @@ const m = vi.hoisted(
   }),
 );
 const findRoleById = vi.hoisted(() => vi.fn());
+const checkPins = vi.hoisted(() =>
+  vi.fn<(userId: string, ids: readonly string[]) => Promise<string>>(),
+);
 
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
@@ -39,7 +43,9 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@cyberlearn/db", () => ({
   userRepository: { findRoleById },
+  adminMfaPinRepository: { check: checkPins },
 }));
+vi.mock("@cyberlearn/lib/logger", () => ({ logger: { warn: vi.fn() } }));
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: () =>
@@ -53,7 +59,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const { requireAdminAction } = await import("../auth");
 
-const VERIFIED_TOTP: Factor[] = [{ factor_type: "totp", status: "verified" }];
+const VERIFIED_TOTP: Factor[] = [{ id: "f1", factor_type: "totp", status: "verified" }];
 
 beforeEach(() => {
   m.user = null;
@@ -61,6 +67,8 @@ beforeEach(() => {
   m.assurance = { data: { currentLevel: "aal1" }, error: null };
   findRoleById.mockReset();
   findRoleById.mockImplementation(() => Promise.resolve(m.role));
+  checkPins.mockReset();
+  checkPins.mockResolvedValue("match");
 });
 
 describe("requireAdminAction", () => {
@@ -117,5 +125,39 @@ describe("requireAdminAction", () => {
       role: "ADMIN",
     });
     expect(findRoleById).toHaveBeenCalledWith("u1");
+    // Its verified factors, compared with the ones the console pinned.
+    expect(checkPins).toHaveBeenCalledWith("u1", ["f1"]);
+  });
+
+  it("pins the factors of an administrator the console sees for the first time", async () => {
+    m.user = { id: "u1", factors: VERIFIED_TOTP };
+    m.role = { role: "ADMIN" };
+    m.assurance = { data: { currentLevel: "aal2" }, error: null };
+    checkPins.mockResolvedValue("pin");
+    await expect(requireAdminAction()).resolves.toMatchObject({ id: "u1" });
+  });
+
+  it("shuts the console when the factors changed outside it, even past the TOTP step", async () => {
+    m.user = {
+      id: "u1",
+      factors: [
+        ...VERIFIED_TOTP,
+        { id: "f2", factor_type: "totp", status: "verified" },
+        { id: "f3", factor_type: "totp", status: "unverified" },
+      ],
+    };
+    m.role = { role: "ADMIN" };
+    m.assurance = { data: { currentLevel: "aal2" }, error: null };
+    checkPins.mockResolvedValue("changed");
+    await expect(requireAdminAction()).rejects.toThrow("NEXT_REDIRECT:/mfa/changed");
+    // Only the verified factors are compared: an enrolment never finished is none.
+    expect(checkPins).toHaveBeenCalledWith("u1", ["f1", "f2"]);
+  });
+
+  it("asks nothing of the pins before the TOTP step is passed", async () => {
+    m.user = { id: "u1", factors: VERIFIED_TOTP };
+    m.role = { role: "ADMIN" };
+    await expect(requireAdminAction()).rejects.toThrow("NEXT_REDIRECT:/mfa");
+    expect(checkPins).not.toHaveBeenCalled();
   });
 });

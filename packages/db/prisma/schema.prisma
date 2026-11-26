@@ -58,6 +58,7 @@ model User {
 
   preferences            UserPreferences?
   onboardingEmails       OnboardingEmail[]
+  adminMfaPins           AdminMfaPin[]
   lessonProgress         UserLessonProgress[]
   pathProgress           UserPathProgress[]
   badges                 UserBadge[]
@@ -410,6 +411,26 @@ enum OnboardingStep {
   COME_BACK
   /// Day 7: the week told back, and what comes next.
   FIRST_WEEK
+}
+
+/// The TOTP factors an administrator signs in to the console with, as the
+/// console first saw them (apps/admin/lib/auth.ts). A set that changes after
+/// that, a factor removed or added from the site, closes the console until
+/// the recovery procedure clears it (prisma/reset-mfa.ts, or the console's
+/// reset of another account). Supabase lets any aal2 session remove or add
+/// its own factors, and the auth schema takes no trigger of ours: this is
+/// where that is caught.
+///
+/// Server only: RLS with no policy denies every client.
+model AdminMfaPin {
+  userId   String   @db.Uuid
+  factorId String   @db.Uuid
+  pinnedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, factorId])
+  @@map("admin_mfa_pins")
 }
 
 model UserPreferences {

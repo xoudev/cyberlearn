@@ -153,6 +153,20 @@ asks for a new enrolment. Check the person's identity out of band before
 running it, and record it in the operational incident log. Do not add an
 application-level backdoor.
 
+Once every factor is gone, the script also clears the account's console pins
+(`admin_mfa_pins`, below), so that the next enrolment is pinned in turn.
+
+### Factor changed outside the console
+
+The console pins each administrator's verified TOTP factors the first time it
+sees them (`admin_mfa_pins`, checked by `requireAdminAction` on every page and
+action). If the set changes afterwards, a factor removed or added through
+Supabase's API from a session on the site, the console sends that account to
+`/mfa/changed` and stays shut for it, whatever code is typed. Supabase lets
+any aal2 session remove or add its own factors, and the `auth` schema takes no
+trigger of ours: this is where a swapped factor is caught. The way back in is
+the procedure above, which clears the factors and the pins.
+
 The console refuses this on purpose (see below): one administrator removing
 another's second factor is exactly what a single stolen admin session would
 do. A two-person flow inside the console may replace this procedure later.

@@ -483,28 +483,37 @@ périmètre à son prochain passage.
 
 ## Un administrateur peut retirer son second facteur par l'API de Supabase
 
-Le site et l'app ne proposent plus à un `ADMIN` de désactiver sa double
-authentification : le panneau renvoie à la procédure de secours de
-`docs/authentication.md` (« Lost authenticator »). C'est un contrôle masqué,
-pas un refus. Supabase Auth laisse toute session aal2 retirer ses propres
-facteurs vérifiés (`DELETE /factors/{id}`) : quelqu'un qui détient la session
-aal2 d'un administrateur sur le site peut encore l'appeler directement, puis
-inscrire son propre facteur, celui que la console demande. Le code frais que demande la
-désactivation est vérifié dans le client et ne l'en empêche pas non plus.
+**Fermé côté console le 26 novembre 2026.** Le site et l'app ne proposent pas à
+un `ADMIN` de désactiver sa double authentification, mais Supabase Auth laisse
+toute session aal2 retirer ses propres facteurs (`DELETE /factors/{id}`) et en
+inscrire d'autres. Une session aal2 volée sur le site pouvait donc remplacer le
+facteur que la console demande.
 
-Un vrai refus devrait se faire en base, par exemple un déclencheur
-`BEFORE DELETE` sur `auth.mfa_factors` pour les propriétaires `ADMIN`. Il n'est
-pas posé, pour trois raisons à trancher d'abord :
+La parade envisagée, un déclencheur `BEFORE DELETE` sur `auth.mfa_factors`,
+n'est pas posable : depuis le 21 avril 2025, Supabase refuse les déclencheurs
+d'un projet sur les tables du schéma `auth`, qui appartiennent à
+`supabase_auth_admin`. Le crochet de vérification MFA de Supabase, qui pourrait
+refuser un facteur, est réservé aux offres Team et Enterprise.
 
-- Supabase Auth efface les facteurs avec le même rôle de base
-  (`supabase_auth_admin`) pour l'appel de l'utilisateur et pour
-  `auth.admin.mfa.deleteFactor`, dont se sert le script de secours
-  (`packages/db/prisma/reset-mfa.ts`) : le déclencheur ne les distingue pas, et
-  le script devrait effacer les lignes lui-même en SQL, sous un drapeau de
-  contournement.
-- La suppression d'un compte `auth.users` efface ses facteurs en cascade : le
-  déclencheur doit la laisser passer.
-- Supabase restreint ce qu'un projet peut créer dans le schéma `auth`.
+La console épingle donc les facteurs : la première fois qu'elle voit un
+administrateur, elle retient ses facteurs TOTP vérifiés (`admin_mfa_pins`,
+réservée au serveur). À chaque page et chaque action, `requireAdminAction`
+compare les facteurs du compte, lus sur l'utilisateur déjà chargé, sans appel
+réseau de plus, à ceux retenus. Un facteur retiré ou ajouté ferme la console à
+ce compte (`/mfa/changed`) jusqu'à la procédure de secours (`db:reset-mfa`),
+qui efface facteurs et épingles. La prochaine activation est épinglée à son
+tour.
+
+Ce qui reste ouvert :
+
+- Le retrait lui-même n'est pas empêché : un administrateur dont la session a
+  été volée perd son facteur, et la console le lui dit. C'est le signal qu'il
+  faut changer de mot de passe.
+- La première épingle fait confiance à ce qu'elle voit : un facteur échangé
+  avant la première visite de la console après ce changement serait épinglé.
+  Les administrateurs existants sont épinglés à leur prochaine page.
+- Un administrateur qui veut ajouter un second téléphone passe par la
+  procédure de secours, puis inscrit les deux.
 
 ## Les runtimes tiers hors de l'analyse CodeQL
 

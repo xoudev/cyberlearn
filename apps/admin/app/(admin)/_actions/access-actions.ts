@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { auditLogRepository, userRepository } from "@cyberlearn/db";
+import { adminMfaPinRepository, auditLogRepository, userRepository } from "@cyberlearn/db";
 import { AUDIT_ACTION, type AuditAction } from "@cyberlearn/db/audit-actions";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { sendMfaResetEmail } from "@cyberlearn/email";
@@ -216,6 +216,19 @@ export async function resetMfaAction(
     complete: removed.length === found.length,
   });
   revalidatePath(`/users/${target.id}`);
+
+  // Every factor gone: the console's pins go too, so that an administrator's
+  // next enrolment is pinned in turn (admin_mfa_pins). Harmless for a learner,
+  // who has none. A failure here leaves an administrator's console shut, which
+  // the recovery script clears.
+  if (removed.length === found.length) {
+    await adminMfaPinRepository.clear(target.id).catch((error: unknown) => {
+      logger.error(
+        { scope: "admin", err: errorMessage(error) },
+        "resetMfaAction: pins not cleared",
+      );
+    });
+  }
 
   if (removed.length === 0) return { error: "La réinitialisation a échoué. Rien n'a été retiré." };
   if (removed.length < found.length) {

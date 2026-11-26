@@ -94,6 +94,13 @@ async function main() {
     factors.map((factor) => factor.id),
   );
   const resetAt = new Date();
+  // The console's pins go with the factors: the next enrolment is pinned in
+  // turn (admin_mfa_pins). Only once every factor is gone: a reset that
+  // stopped halfway leaves the console shut, as the factors no longer match.
+  if (result.failed.length === 0) {
+    const { count } = await prisma.adminMfaPin.deleteMany({ where: { userId: user.id } });
+    if (count > 0) console.log(`   ${String(count)} console pin(s) cleared`);
+  }
   const auditFailure = await recordReset(user.id, result);
 
   console.log(`✅ ${String(result.removed.length)} factor(s) removed`);

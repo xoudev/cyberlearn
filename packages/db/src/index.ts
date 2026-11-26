@@ -18,6 +18,7 @@ export {
   lessonsVisibleTo,
 } from "./repositories/lesson.repository.js";
 export { banRepository, activeBanFilter, type BanView } from "./repositories/ban.repository.js";
+export { adminMfaPinRepository } from "./repositories/admin-mfa-pin.repository.js";
 export {
   friendshipRepository,
   type FriendActivityRow,
