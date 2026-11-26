@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
         message: string;
         email: string;
         userId: string | null;
+        userAgent?: string | null;
       }) => Promise<{ id: string }>
     >(),
   findOwnedId: vi.fn<(ticketId: string, userId: string) => Promise<string | null>>(),
@@ -128,6 +129,48 @@ describe("fileAccountTicket", () => {
       ok: false,
       error: NO_REPLY_ADDRESS,
     });
+    expect(m.create).not.toHaveBeenCalled();
+  });
+
+  it("adds the page, the screen and the browser of a report under the message", async () => {
+    m.findEmailById.mockResolvedValue("profil@example.org");
+    const userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0";
+    await fileAccountTicket({
+      user,
+      ip: "x",
+      fields: request,
+      report: { page: "/lessons/injections-sql", width: 1280, height: 800 },
+      userAgent,
+    });
+    const filed = m.create.mock.calls[0]?.[0];
+    expect(filed?.message).toBe(
+      `${FIELDS.message}\n\nEnvoyé depuis le site :\nPage : /lessons/injections-sql\nÉcran : 1280 × 800\nNavigateur : Firefox sur Linux`,
+    );
+    expect(filed).toMatchObject({ userAgent });
+  });
+
+  it("files a report whose context is not one without it, rather than refusing it", async () => {
+    m.findEmailById.mockResolvedValue("profil@example.org");
+    // A query string can carry a token: only a bare path is taken.
+    await fileAccountTicket({
+      user,
+      ip: "x",
+      fields: request,
+      report: { page: "/reset?token=secret", width: 1280, height: 800 },
+      userAgent: null,
+    });
+    expect(m.create.mock.calls[0]?.[0].message).toBe(FIELDS.message);
+  });
+
+  it("does not let the context make a message long enough", async () => {
+    m.findEmailById.mockResolvedValue("profil@example.org");
+    const result = await fileAccountTicket({
+      user,
+      ip: "x",
+      fields: { ...request, message: "Bug." },
+      report: { page: "/dashboard", width: 375, height: 812 },
+    });
+    expect(result.ok).toBe(false);
     expect(m.create).not.toHaveBeenCalled();
   });
 

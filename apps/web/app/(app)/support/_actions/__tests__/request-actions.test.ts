@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   fileAccountTicket: vi.fn<(input: unknown) => Promise<unknown>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   forwardedFor: null as string | null,
+  userAgent: null as string | null,
 }));
 
 vi.mock("@/lib/auth", () => ({ requireRequestUser: m.requireRequestUser }));
@@ -18,7 +19,12 @@ vi.mock("@/lib/tickets/requester", () => ({ fileAccountTicket: m.fileAccountTick
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/headers", () => ({
   headers: () =>
-    Promise.resolve(new Headers(m.forwardedFor ? { "x-forwarded-for": m.forwardedFor } : {})),
+    Promise.resolve(
+      new Headers({
+        ...(m.forwardedFor ? { "x-forwarded-for": m.forwardedFor } : {}),
+        ...(m.userAgent ? { "user-agent": m.userAgent } : {}),
+      }),
+    ),
 }));
 
 const { fileRequestAction } = await import("../request-actions");
@@ -29,6 +35,7 @@ const TICKET_ID = "5b7c2d9e-1f3a-4c5b-8d7e-9f0a1b2c3d4e";
 beforeEach(() => {
   vi.clearAllMocks();
   m.forwardedFor = "203.0.113.7, 10.0.0.1";
+  m.userAgent = "Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0";
   m.requireRequestUser.mockResolvedValue({ id: "user-1", email: "session@example.org" });
 });
 
@@ -42,6 +49,19 @@ describe("fileRequestAction", () => {
       fields: INPUT,
     });
     expect(m.revalidatePath).toHaveBeenCalledWith("/support");
+  });
+
+  it("sends a report's page with the browser read from the request, never from the form", async () => {
+    m.fileAccountTicket.mockResolvedValue({ ok: true, ticketId: TICKET_ID });
+    const report = { page: "/dashboard", width: 1280, height: 800 };
+    await fileRequestAction(INPUT, report);
+    expect(m.fileAccountTicket).toHaveBeenCalledWith({
+      user: { id: "user-1", email: "session@example.org" },
+      ip: "203.0.113.7",
+      fields: INPUT,
+      report,
+      userAgent: "Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0",
+    });
   });
 
   it("passes a refusal on, and refreshes nothing", async () => {

@@ -16,6 +16,7 @@ import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
 import { NewsButton } from "./news-button";
 import { NotificationPanel } from "./notification-panel";
+import { ReportButton } from "./report-button";
 import { RevisionsButton } from "./revisions-button";
 import { WrappedChip } from "./wrapped-chip";
 import { NavigationLocation } from "./navigation-location";
@@ -113,6 +114,8 @@ export async function Navbar(): Promise<React.ReactElement> {
         {userId && recall !== null && <RevisionsButton waiting={recall.waiting} />}
         {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
+        {/* « Signaler un souci », over the page it is about (hidden on a phone). */}
+        {userId && <ReportButton />}
         {/* The settings, behind their icon: a section's address, which the
             settings drawer opens over the page instead of following it (see
             settings/_components/SettingsDrawer). Not prefetched: the page is

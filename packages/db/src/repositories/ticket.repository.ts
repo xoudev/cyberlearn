@@ -239,6 +239,8 @@ export const ticketRepository = {
     message: string;
     email: string | null;
     userId: string | null;
+    /** The browser that filed it, shown in the console; absent from the app and the contact form. */
+    userAgent?: string | null;
   }): Promise<{ id: string }> {
     return prisma.contactTicket.create({
       data: {
@@ -247,6 +249,8 @@ export const ticketRepository = {
         message: input.message,
         email: input.email,
         userId: input.userId,
+        // Written only when there is one: the contact form and the app send none.
+        ...(input.userAgent ? { userAgent: input.userAgent } : {}),
         status: "OPEN" satisfies TicketStatus,
       },
       select: { id: true },

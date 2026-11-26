@@ -87,6 +87,12 @@ describe("ticketRepository.create", () => {
     ]);
     expect(written()["status"]).toBe("OPEN");
   });
+
+  it("keeps the browser of a report from the site, for the console", async () => {
+    mockPrisma.contactTicket.create.mockResolvedValue({ id: TICKET });
+    await ticketRepository.create({ ...request, userId: REQUESTER, userAgent: "Firefox/140.0" });
+    expect(written()["userAgent"]).toBe("Firefox/140.0");
+  });
 });
 
 describe("ticketRepository.findOwnedId", () => {

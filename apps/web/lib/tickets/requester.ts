@@ -12,6 +12,7 @@ import {
 } from "@cyberlearn/lib/tickets/tickets";
 import { checkContactForm, checkNotifyingWrite } from "@/lib/rate-limit";
 import { tooManyRequests } from "@/lib/rate-limit-copy";
+import { pageReportBlock, pageReportSchema, USER_AGENT_MAX } from "./page-report";
 
 /**
  * A help request, from the side of the person asking: filing one, and adding
@@ -52,6 +53,14 @@ export async function fileTicket(input: {
   /** Whoever is asking, for the contact form's rate limit. */
   ip: string;
   fields: unknown;
+  /**
+   * What « Signaler un souci » adds under the message (page-report.ts), once
+   * the reader's own words have passed the checks: it is not theirs to make
+   * long enough, and it does not count against their 5000 characters.
+   */
+  appendix?: string;
+  /** The browser's user agent, kept for the console. */
+  userAgent?: string | null;
 }): Promise<FileTicketResult> {
   const parsed = ticketSchema.safeParse(input.fields);
   if (!parsed.success) {
@@ -76,7 +85,13 @@ export async function fileTicket(input: {
     };
   }
 
-  const ticket = await ticketRepository.create({ ...parsed.data, userId: input.userId });
+  const ticket = await ticketRepository.create({
+    ...parsed.data,
+    message: `${parsed.data.message}${input.appendix ?? ""}`,
+    userId: input.userId,
+    // Only a report sends one: the contact form and the app keep the call they had.
+    ...(input.userAgent ? { userAgent: input.userAgent.slice(0, USER_AGENT_MAX) } : {}),
+  });
   return { ok: true, ticketId: ticket.id };
 }
 
@@ -104,6 +119,12 @@ export async function fileAccountTicket(input: {
   /** Whoever is asking, for the contact form's rate limit. */
   ip: string;
   fields: unknown;
+  /**
+   * « Signaler un souci »: the page and screen the window measured. Dropped,
+   * not refused, when it is not one: the request matters more than its context.
+   */
+  report?: unknown;
+  userAgent?: string | null;
 }): Promise<FileTicketResult> {
   const email = (await userRepository.findEmailById(input.user.id)) ?? input.user.email;
   if (!email) return { ok: false, error: NO_REPLY_ADDRESS };
@@ -111,10 +132,14 @@ export async function fileAccountTicket(input: {
   // Not an object at all: the request's fields are missing, and fileTicket
   // names each of them.
   const fields = accountFieldsSchema.safeParse(input.fields);
+  const report = input.report === undefined ? null : pageReportSchema.safeParse(input.report);
+  const userAgent = input.userAgent ?? null;
   return fileTicket({
     userId: input.user.id,
     ip: input.ip,
     fields: { ...(fields.success ? fields.data : {}), email },
+    ...(report?.success === true ? { appendix: pageReportBlock(report.data, userAgent) } : {}),
+    userAgent,
   });
 }
 

@@ -66,7 +66,7 @@
 | `/my-class` | Ma classe — vue élève ou vue enseignant |
 | `/my-class/lessons/new` · `/[id]/edit` | Leçon écrite par un enseignant pour ses classes |
 | `/my-class/paths/new` · `/[id]/edit` | Parcours composé par un enseignant |
-| `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande ; « Nouvelle demande » ouvre une fenêtre (`?request=1`) : thème, objet, message, réponse à l'adresse du compte |
+| `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande ; « Nouvelle demande » ouvre une fenêtre (`?request=1`) : thème, objet, message, réponse à l'adresse du compte. « Signaler un souci » (bouton de la barre du haut, et ligne du tiroir du compte sur téléphone) ouvre la même fenêtre sur la page en cours (`?request=page`) : thème Bug, objet tiré du titre de la page, et sous le message la page (son chemin seul, sans paramètres), la taille de l'écran et le navigateur, annoncés avant l'envoi ; le user agent complet est gardé pour la console (`lib/tickets/page-report.ts`) |
 | `/wrapped` | Récap annuel, ouvert du 1er décembre au 7 janvier |
 | `/changelog` | Pas de page : redirection vers `/dashboard?news=1`. Les notes de version s'ouvrent dans un tiroir sur la page en cours, depuis le bouton Nouveautés de la barre du haut |
 | `/profile` | Profil, en trois onglets dans l'adresse (`?tab=activite`, `badges`, `certificats`) : l'activité, la collection de badges (gagnés et verrouillés, avec leur progression), tous les certificats, révoqués compris |

@@ -187,6 +187,16 @@
 .app-frame .sidebar-account-tray-btn + .sidebar-account-tray-btn {
   border-left: 1px solid #34363c;
 }
+/* « Signaler un souci », a row of its own under the two links. */
+.app-frame .sidebar-account-tray-btn--wide {
+  grid-column: 1 / -1;
+  border: 0;
+  cursor: pointer;
+}
+.app-frame .sidebar-account-tray-btn + .sidebar-account-tray-btn--wide {
+  border-left: 0;
+  border-top: 1px solid #34363c;
+}
 .app-frame .navbar-header {
   display: flex;
   align-items: center;
@@ -466,6 +476,10 @@
     padding: 0;
   }
   .chrome-actions .news-chip__label {
+    display: none;
+  }
+  /* The bar is full on a phone: the account tray carries the report there. */
+  .chrome-actions .navbar-report {
     display: none;
   }
   .chrome-actions .navbar-me {
