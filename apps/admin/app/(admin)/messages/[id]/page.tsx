@@ -75,6 +75,12 @@ export default async function ConversationPage({
                 <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", lineHeight: 1.55 }}>
                   {m.body}
                 </div>
+                {/* Seen in the messages panel or in the bell, whichever came first. */}
+                {m.fromTeam && (
+                  <div className="a-field-hint" style={{ marginTop: 6, textAlign: "right" }}>
+                    {m.seenAt !== null ? `Vu le ${stamp(m.seenAt)}` : "Pas encore vu"}
+                  </div>
+                )}
               </li>
             ))}
           </ol>

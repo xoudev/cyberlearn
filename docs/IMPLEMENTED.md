@@ -203,7 +203,9 @@
   « Demandes », la discussion avec l'équipe épinglée en tête (« Officiel »),
   un fil par discussion (plus anciens à la demande, 50 par page), « Nouveau
   message » vers un ami ou un @pseudo exact, et « Envoyer un message » sur le
-  profil de quelqu'un. Les nouveaux messages arrivent en direct (Supabase
+  profil de quelqu'un. Chaque personne y figure avec sa photo quand elle en a
+  téléversé une (URL signée), ses initiales sinon : les avatars proposés ne
+  distinguent personne. Les nouveaux messages arrivent en direct (Supabase
   Realtime sur `direct_messages`, que la policy limite aux deux côtés)
 - Règles (`@cyberlearn/lib/messages/rules`) : des amis s'écrivent tout de
   suite ; un autre compte envoie un seul message, qui attend dans les demandes
@@ -211,7 +213,8 @@
   a été lu ni s'il a été refusé ; deux comptes devenus amis entre-temps
   s'écrivent librement. « Qui peut m'écrire » (Confidentialité) : tout le
   monde, mes amis seulement, personne. Un blocage, dans un sens ou dans
-  l'autre, arrête tout ; la liste des comptes bloqués est dans Confidentialité
+  l'autre, arrête tout ; la liste des comptes bloqués, avec « Débloquer », est
+  dans Confidentialité, où mène aussi le lien au bas du panneau des messages
 - Chaque message passe par le filtre automatique avant d'être écrit
   (`UNACTIONED_SURFACE.directMessage`) : un message retenu n'est pas envoyé,
   son auteur en est prévenu avec le motif. Les liens passent entre deux
@@ -632,6 +635,17 @@
   en tête, « À lire » quand l'apprenant a répondu depuis la dernière lecture
   (compté dans la barre latérale) ; `/messages/[id]` : le fil entier, chaque
   message de l'équipe avec l'administrateur qui l'a écrit, et « Répondre »
+- « Vu » : un message de l'équipe est vu quand l'apprenant a ouvert la
+  discussion depuis, ou lu sa notification (qui porte l'identifiant du
+  message, `@cyberlearn/lib/messages/team`) ; « Vu le … » sous chaque message
+  de l'équipe, « Vu » ou « Pas encore vu » dans la liste quand l'équipe a
+  parlé en dernier. Ouvrir la discussion dans le panneau marque aussi sa
+  notification lue
+- Quand l'apprenant répond, un e-mail (`team-reply`) part à l'administrateur
+  qui a écrit le dernier message de l'équipe (à tous les administrateurs s'il
+  ne l'est plus), avec la réponse et le lien vers la conversation ; un seul
+  tant que la conversation n'a pas été relue dans la console
+  (`messageRepository.teamReplyAlert`)
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)

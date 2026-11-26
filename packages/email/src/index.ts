@@ -13,6 +13,7 @@ export {
   type AssignedWorkKind,
 } from "./templates/work-assigned";
 export { TicketReplyEmail, sendTicketReplyEmail } from "./templates/ticket-reply";
+export { TeamReplyEmail, sendTeamReplyEmail, teamReplySubject } from "./templates/team-reply";
 export { BanNoticeEmail, sendBanNoticeEmail } from "./templates/ban-notice";
 export {
   InactivityNoticeEmail,

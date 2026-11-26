@@ -5,6 +5,7 @@ import { z } from "zod";
 import { messageRepository, notificationRepository, userRepository } from "@cyberlearn/db";
 import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { MESSAGE_BODY_MAX } from "@cyberlearn/lib/messages/rules";
+import { TEAM_NOTICE_TITLE } from "@cyberlearn/lib/messages/team";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { requireAdminAction } from "@/lib/auth";
 import { checkTeamMessageRateLimit } from "@/lib/rate-limit";
@@ -36,9 +37,6 @@ const schema = z.object({
       `Le message fait ${MESSAGE_BODY_MAX.toLocaleString("fr-FR")} caractères au plus.`,
     ),
 });
-
-/** The notification's title: the message itself is the body. */
-const TEAM_NOTICE_TITLE = "Message de l'équipe CyberLearn";
 
 export async function sendTeamMessageAction(input: unknown): Promise<TeamMessageResult> {
   const admin = await requireAdminAction();
@@ -82,7 +80,9 @@ export async function sendTeamMessageAction(input: unknown): Promise<TeamMessage
           title: TEAM_NOTICE_TITLE,
           body,
           actionUrl: null,
-          metadata: { teamConversationId: conversationId },
+          // The message it carries: reading the notice is the message seen
+          // (@cyberlearn/lib/messages/team), in the app as on the site.
+          metadata: { teamConversationId: conversationId, messageId: sent.messageId },
         },
       ],
       {

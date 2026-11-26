@@ -2543,16 +2543,19 @@ model Conversation {
 
 /// One message of a conversation. Plain text, screened before it is written.
 model DirectMessage {
-  id             String   @id @default(uuid()) @db.Uuid
-  conversationId String   @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @db.Uuid
   /// Who wrote it. For a message from the team, the administrator: the learner
   /// is shown the team, never the person. Null once that account is erased.
-  senderId       String?  @db.Uuid
-  fromTeam       Boolean  @default(false)
-  body           String   @db.VarChar(1000)
+  senderId       String?   @db.Uuid
+  fromTeam       Boolean   @default(false)
+  body           String    @db.VarChar(1000)
   /// Taken down after a report: kept for the reviewer, shown to nobody.
-  isHidden       Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  isHidden       Boolean   @default(false)
+  /// When the other side first read it, in the messages panel. Null until then,
+  /// and on messages from before this was recorded.
+  seenAt         DateTime?
+  createdAt      DateTime  @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User?        @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: SetNull)

@@ -9,6 +9,7 @@ import { InactivityNoticeEmail } from "./templates/inactivity-notice.js";
 import { MagicLinkEmail } from "./templates/magic-link.js";
 import { MfaResetEmail } from "./templates/mfa-reset.js";
 import { ModerationNoticeEmail } from "./templates/moderation-notice.js";
+import { TeamReplyEmail } from "./templates/team-reply.js";
 import { TicketReplyEmail } from "./templates/ticket-reply.js";
 import { WorkAssignedEmail } from "./templates/work-assigned.js";
 
@@ -59,6 +60,11 @@ export const EMAIL_SAMPLES: EmailSample[] = [
   { key: "class-enrolled", label: "Inscription en classe", when: "ajout à une classe" },
   { key: "work-assigned", label: "Travail assigné", when: "leçon ou parcours donné à une classe" },
   { key: "ticket-reply", label: "Réponse à un ticket", when: "réponse de la console" },
+  {
+    key: "team-reply",
+    label: "Réponse d'un apprenant à l'équipe",
+    when: "première réponse non lue dans une conversation avec l'équipe",
+  },
   { key: "moderation-notice", label: "Avis de modération", when: "contenu signalé ou refusé" },
   { key: "ban-notice", label: "Suspension de compte", when: "bannissement" },
   {
@@ -161,6 +167,15 @@ async function renderSample(key: string): Promise<string | null> {
           statusLabel: "Résolu",
           ticketUrl: `${SITE}/support/exemple`,
           siteUrl: SITE,
+        }),
+      );
+    case "team-reply":
+      return render(
+        TeamReplyEmail({
+          adminName: "Claire",
+          learnerLabel: "Amélie (@amelie)",
+          reply: "Merci pour le message ! Je continue les leçons, le module réseau est top.",
+          conversationUrl: "https://admin.cyberlearn.fr/messages/exemple",
         }),
       );
     case "moderation-notice":
