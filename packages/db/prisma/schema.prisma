@@ -57,6 +57,7 @@ model User {
   updatedAt               DateTime  @updatedAt
 
   preferences            UserPreferences?
+  onboardingEmails       OnboardingEmail[]
   lessonProgress         UserLessonProgress[]
   pathProgress           UserPathProgress[]
   badges                 UserBadge[]
@@ -383,6 +384,32 @@ model ClassMember {
   @@id([classId, userId])
   @@index([userId])
   @@map("class_members")
+}
+
+/// The first week's e-mails (lib/onboarding/first-week.ts): one row per
+/// account and step once it was handled, sent or found not needed, so a step
+/// never goes twice, whatever the cron does.
+///
+/// Server only: no client reads it, and RLS with no policy denies them all.
+model OnboardingEmail {
+  userId String         @db.Uuid
+  step   OnboardingStep
+  sentAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, step])
+  @@map("onboarding_emails")
+}
+
+/// The first week, by the day after sign-up it is due.
+enum OnboardingStep {
+  /// Day 1: no lesson finished yet, the first mission named.
+  FIRST_MISSION
+  /// Day 3: no lesson finished for two days, the next one named.
+  COME_BACK
+  /// Day 7: the week told back, and what comes next.
+  FIRST_WEEK
 }
 
 model UserPreferences {

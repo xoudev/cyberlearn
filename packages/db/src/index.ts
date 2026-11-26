@@ -324,6 +324,11 @@ export {
   type ReportedNote,
 } from "./repositories/note-report.repository.js";
 export {
+  onboardingRepository,
+  type FirstDays,
+  type OnboardingRecipient,
+} from "./repositories/onboarding.repository.js";
+export {
   messageRepository,
   INBOX_LIMIT,
   type ConversationSummary,

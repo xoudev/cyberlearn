@@ -82,6 +82,7 @@
 | `/api/cron/tournament-badges` | Cron - badges de la place prise par l'équipe, pour les tournois finis depuis une semaine |
 | `/api/cron/retention` | Cron - purge du journal d'audit (12 mois), des tickets (3 mois après résolution, 12 mois sans activité) et des notes restées 30 jours dans la corbeille, avec leurs cartes |
 | `/api/cron/inactive-accounts` | Cron - préavis par e-mail puis effacement des comptes inactifs depuis 24 mois |
+| `/api/cron/onboarding-emails` | Cron - les e-mails de la première semaine : jour 1 la première mission (seulement sans leçon terminée), jour 3 la suivante (seulement sans leçon depuis deux jours), jour 7 le bilan de la semaine ; la leçon nommée est celle de la carte mission du tableau de bord ; chaque étape une fois par compte (`onboarding_emails`), jamais aux comptes de l'équipe ni bannis, coupée par `emailNotifications` ; un envoi en échec est retenté le lendemain (`lib/onboarding/first-week.ts`) |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
 | `/api/paths/[slug]/sheet?module=N` | Fiche de révision d'un module, en PDF (les points « à retenir » de ses leçons) |
@@ -731,10 +732,10 @@
   PathProgress, NotificationBell, MdxEditorPanel, Select
 
 ### `packages/email` - Templates e-mail
-- Onze templates React Email : magic-link, mfa-reset, ticket-reply,
+- Douze templates React Email : magic-link, mfa-reset, ticket-reply,
   work-assigned, class-enrolled, class-invitation, ban-notice,
   moderation-notice, inactivity-notice, account-deleted,
-  account-deletion-confirm
+  account-deletion-confirm, first-week (trois variantes, jours 1, 3 et 7)
 - `theme.ts` porte les tokens et le vocabulaire de styles partagé, `shell.tsx`
   le `<head>` commun : un template n'ajoute que ce qui lui est propre, et il
   n'y a de `border-radius` nulle part — le site est carré

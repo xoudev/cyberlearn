@@ -5,6 +5,7 @@ import { AccountDeletionConfirmEmail } from "./templates/account-deletion-confir
 import { BanNoticeEmail } from "./templates/ban-notice.js";
 import { ClassEnrolledEmail } from "./templates/class-enrolled.js";
 import { ClassInvitationEmail } from "./templates/class-invitation.js";
+import { FirstWeekEmail } from "./templates/first-week.js";
 import { InactivityNoticeEmail } from "./templates/inactivity-notice.js";
 import { MagicLinkEmail } from "./templates/magic-link.js";
 import { MfaResetEmail } from "./templates/mfa-reset.js";
@@ -83,7 +84,29 @@ export const EMAIL_SAMPLES: EmailSample[] = [
     label: "Préavis d'inactivité",
     when: "30 jours avant l'effacement d'un compte inactif",
   },
+  {
+    key: "first-week-mission",
+    label: "Première semaine, jour 1",
+    when: "un jour après l'inscription, sans leçon terminée",
+  },
+  {
+    key: "first-week-come-back",
+    label: "Première semaine, jour 3",
+    when: "trois jours après l'inscription, sans leçon depuis deux jours",
+  },
+  {
+    key: "first-week-recap",
+    label: "Première semaine, jour 7",
+    when: "une semaine après l'inscription",
+  },
 ];
+
+const SAMPLE_LESSON = {
+  title: "Introduction aux injections SQL",
+  minutes: 30,
+  xp: 100,
+  url: `${SITE}/lessons/introduction-injections-sql`,
+};
 
 /** The rendered HTML for one sample, or null for a key nothing matches. */
 export async function renderEmailSample(
@@ -236,6 +259,34 @@ async function renderSample(key: string): Promise<string | null> {
           displayName: "Amélie",
           eraseOn: "2 novembre 2026",
           keepUrl: `${SITE}/account/keep?token=exemple`,
+          siteUrl: SITE,
+        }),
+      );
+    case "first-week-mission":
+      return render(
+        FirstWeekEmail({
+          step: "FIRST_MISSION",
+          displayName: "Amélie",
+          lesson: SAMPLE_LESSON,
+          siteUrl: SITE,
+        }),
+      );
+    case "first-week-come-back":
+      return render(
+        FirstWeekEmail({
+          step: "COME_BACK",
+          displayName: "Amélie",
+          lesson: { ...SAMPLE_LESSON, title: "Cross-Site Scripting (XSS)" },
+          siteUrl: SITE,
+        }),
+      );
+    case "first-week-recap":
+      return render(
+        FirstWeekEmail({
+          step: "FIRST_WEEK",
+          displayName: "Amélie",
+          lesson: { ...SAMPLE_LESSON, title: "Cross-Site Scripting (XSS)" },
+          tally: { lessons: 3, xp: 320, streakDays: 2 },
           siteUrl: SITE,
         }),
       );

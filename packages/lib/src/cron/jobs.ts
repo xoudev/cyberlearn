@@ -2,7 +2,7 @@
  * The site's scheduled jobs: where each one lives, when it is meant to run,
  * and what it is called in the console.
  *
- * Six are Vercel Crons, declared in apps/web/vercel.json; a test in apps/web
+ * Seven are Vercel Crons, declared in apps/web/vercel.json; a test in apps/web
  * fails when this list and that file disagree, or when a route under
  * app/api/cron is missing from here. keep-alive is called from outside, by
  * cron-job.org every six hours (docs/infra/keep-alive.md), and is listed for
@@ -84,6 +84,15 @@ export const CRON_JOBS = [
     schedule: "0 8 * * *",
     label: "Rappels de révision",
     description: "Prévient chaque apprenant dont le rappel du jour a une question à poser.",
+    source: "vercel",
+  },
+  {
+    name: "onboarding-emails",
+    path: "/api/cron/onboarding-emails",
+    schedule: "0 9 * * *",
+    label: "Première semaine",
+    description:
+      "Envoie les e-mails de la première semaine : la première mission au jour 1, la suivante au jour 3 sans leçon depuis deux jours, le bilan au jour 7.",
     source: "vercel",
   },
   {

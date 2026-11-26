@@ -120,6 +120,11 @@ const SUMMARY_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>>
     failed: "rappels non envoyés",
     skipped: "déjà prévenus aujourd'hui",
   },
+  "onboarding-emails": {
+    sent: "e-mails envoyés",
+    skipped: "apprenants déjà au travail",
+    failed: "e-mails non envoyés",
+  },
   "keep-alive": { postgres: "Postgres", redis: "Redis" },
 };
 

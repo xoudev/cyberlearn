@@ -26,3 +26,12 @@ export {
 } from "./templates/moderation-notice";
 export { MfaResetEmail, mfaResetSubject, sendMfaResetEmail } from "./templates/mfa-reset";
 export { EMAIL_SAMPLES, renderEmailSample, type EmailSample } from "./preview";
+export {
+  FirstWeekEmail,
+  firstWeekSubject,
+  sendFirstWeekEmail,
+  type FirstWeekEmailProps,
+  type FirstWeekLesson,
+  type FirstWeekStep,
+  type FirstWeekTally,
+} from "./templates/first-week";
