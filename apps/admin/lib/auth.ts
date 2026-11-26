@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { userRepository } from "@cyberlearn/db";
-import { ACCESS_DENIED_PATH } from "@/lib/auth-redirect";
+import { adminMfaPinRepository, userRepository } from "@cyberlearn/db";
+import { logger } from "@cyberlearn/lib/logger";
+import { ACCESS_DENIED_PATH, MFA_CHANGED_PATH } from "@/lib/auth-redirect";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Requires an ADMIN session that has completed the mandatory TOTP challenge. */
@@ -28,11 +29,23 @@ export async function requireAdminAction(): Promise<{
 
   // The verified TOTP factors ride on the user object already fetched above -
   // calling mfa.listFactors() would trigger a second network roundtrip.
-  const hasVerifiedTotp =
-    user.factors?.some((factor) => factor.factor_type === "totp" && factor.status === "verified") ??
-    false;
-  if (!hasVerifiedTotp) redirect("/mfa/setup");
+  const verifiedTotp = (user.factors ?? [])
+    .filter((factor) => factor.factor_type === "totp" && factor.status === "verified")
+    .map((factor) => factor.id);
+  if (verifiedTotp.length === 0) redirect("/mfa/setup");
   if (assurance.error || assurance.data.currentLevel !== "aal2") redirect("/mfa");
+
+  // The factors must be the ones the console pinned: a session on the site
+  // can remove or add its own through Supabase's API, which no trigger of
+  // ours can stop (admin_mfa_pins). A changed set keeps the console shut
+  // until the recovery procedure clears the pins.
+  if ((await adminMfaPinRepository.check(user.id, verifiedTotp)) === "changed") {
+    logger.warn(
+      { scope: "admin.mfa", userId: user.id },
+      "second factor changed outside the console",
+    );
+    redirect(MFA_CHANGED_PATH);
+  }
 
   return { id: user.id, email: user.email, role: "ADMIN" };
 }
