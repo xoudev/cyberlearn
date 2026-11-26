@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { newRequestHref, newRequestPrefill } from "../new-request-query";
+import { TICKET_SUBJECT_MAX } from "@cyberlearn/lib/tickets/tickets";
+import {
+  newRequestHref,
+  newRequestPrefill,
+  PAGE_REPORT_VALUE,
+  pageReportSubject,
+} from "../new-request-query";
 
 /**
  * The window's address, and what it says to write in advance. The public
@@ -59,5 +65,27 @@ describe("newRequestPrefill", () => {
       theme: "BUG",
       subject: "Incident abc-123_X",
     });
+  });
+});
+
+describe("« Signaler un souci »", () => {
+  it("files a bug about the page under the window, named by its title", () => {
+    expect(
+      newRequestPrefill(PAGE_REPORT_VALUE, "Introduction aux injections SQL · CyberLearn"),
+    ).toEqual({
+      theme: "BUG",
+      subject: "Souci sur « Introduction aux injections SQL »",
+    });
+  });
+
+  it("says « une page » for a page without a title of its own", () => {
+    expect(pageReportSubject("CyberLearn")).toBe("Souci sur une page du site");
+    expect(pageReportSubject("")).toBe("Souci sur une page du site");
+  });
+
+  it("cuts a long title to fit the subject", () => {
+    const subject = pageReportSubject(`${"a".repeat(400)} · CyberLearn`);
+    expect(subject.length).toBeLessThanOrEqual(TICKET_SUBJECT_MAX);
+    expect(subject.endsWith("… »")).toBe(true);
   });
 });

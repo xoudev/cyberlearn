@@ -1,4 +1,4 @@
-import type { TicketFormTheme } from "@cyberlearn/lib/tickets/tickets";
+import { TICKET_SUBJECT_MAX, type TicketFormTheme } from "@cyberlearn/lib/tickets/tickets";
 
 /**
  * The parameter that opens the "Nouvelle demande" window over the page:
@@ -24,6 +24,29 @@ export type RequestAbout =
   | { incident: string }
   /** "Être prévenu" of the Android app, on /download. */
   | "android";
+
+/**
+ * « Signaler un souci »: the window over the page the reader is on, which it
+ * names in the subject and sends with the request (lib/tickets/page-report.ts).
+ * Opened in place, `?request=page`, never through /support.
+ */
+export const PAGE_REPORT_VALUE = "page";
+
+/** The suffix every page's title carries (app/layout.tsx's template). */
+const SITE_SUFFIX = /\s*·\s*CyberLearn\s*$/u;
+
+/**
+ * The subject of a report, from the title of the page it was opened over:
+ * « Souci sur « Introduction aux injections SQL » ». The site's name is left
+ * out, a title too long is cut to fit, and a page without one is "une page".
+ */
+export function pageReportSubject(documentTitle: string): string {
+  const title = documentTitle.replace(SITE_SUFFIX, "").trim();
+  if (title === "" || title === "CyberLearn") return "Souci sur une page du site";
+  const frame = (inner: string): string => `Souci sur « ${inner} »`;
+  const room = TICKET_SUBJECT_MAX - frame("").length;
+  return frame(title.length > room ? `${title.slice(0, room - 1).trimEnd()}…` : title);
+}
 
 const INCIDENT_PREFIX = "incident-";
 const ANDROID_VALUE = "android";
@@ -53,8 +76,11 @@ export function newRequestHref(about?: RequestAbout): string {
  * What the parameter's value says to write in advance: null for `1` and for
  * anything this does not know, since an address is something anybody can write.
  */
-export function newRequestPrefill(value: string): RequestPrefill | null {
+export function newRequestPrefill(value: string, documentTitle = ""): RequestPrefill | null {
   if (value === ANDROID_VALUE) return ANDROID_PREFILL;
+  if (value === PAGE_REPORT_VALUE) {
+    return { theme: "BUG", subject: pageReportSubject(documentTitle) };
+  }
   if (value.startsWith(INCIDENT_PREFIX)) {
     const reference = value.slice(INCIDENT_PREFIX.length);
     if (INCIDENT_REFERENCE.test(reference)) {

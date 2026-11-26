@@ -13,7 +13,10 @@ import type { FileTicketResult } from "@/lib/tickets/requester";
 const m = vi.hoisted(() => ({
   fileRequestAction:
     vi.fn<
-      (input: { subject: string; theme: string; message: string }) => Promise<FileTicketResult>
+      (
+        input: { subject: string; theme: string; message: string },
+        report?: unknown,
+      ) => Promise<FileTicketResult>
     >(),
 }));
 
@@ -184,6 +187,32 @@ describe("NewRequestDialog", () => {
     render(<NewRequestDialog value="incident-abc123" onClose={onClose} />);
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a souci on the page under it, with the page and the screen", async () => {
+    m.fileRequestAction.mockResolvedValue({ ok: true, ticketId: TICKET_ID });
+    window.history.replaceState(null, "", "/lessons/injections-sql?request=page");
+    document.title = "Introduction aux injections SQL · CyberLearn";
+    render(<NewRequestDialog value="page" onClose={vi.fn()} />);
+
+    const dialog = screen.getByRole("dialog", { name: "Signaler un souci" });
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Objet" }).value).toBe(
+      "Souci sur « Introduction aux injections SQL »",
+    );
+    expect(screen.getByRole("combobox", { name: "Thème" }).textContent).toContain("Bug");
+    // Said before it is sent: the path, never the query string.
+    expect(dialog.textContent).toContain("/lessons/injections-sql");
+    expect(dialog.textContent).not.toContain("request=page");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Message" }), {
+      target: { value: MESSAGE },
+    });
+    send();
+    await screen.findByRole("dialog", { name: "Demande envoyée" });
+    expect(m.fileRequestAction).toHaveBeenCalledWith(
+      { theme: "BUG", subject: "Souci sur « Introduction aux injections SQL »", message: MESSAGE },
+      { page: "/lessons/injections-sql", width: window.innerWidth, height: window.innerHeight },
+    );
   });
 
   it("ignores a value it does not know, as an address anybody can write", () => {

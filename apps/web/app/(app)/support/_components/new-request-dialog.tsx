@@ -18,7 +18,7 @@ import {
 } from "@cyberlearn/lib/tickets/tickets";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import { fileRequestAction, type FileTicketResult } from "../_actions/request-actions";
-import { newRequestPrefill } from "./new-request-query";
+import { newRequestPrefill, PAGE_REPORT_VALUE } from "./new-request-query";
 
 type FieldErrors = Extract<FileTicketResult, { ok: false }>["fieldErrors"];
 
@@ -32,6 +32,11 @@ type FieldErrors = Extract<FileTicketResult, { ok: false }>["fieldErrors"];
  * the app's screen does: the answer goes to the account's own address. The
  * public page stays, for visitors.
  *
+ * Opened as « Signaler un souci » (?request=page, from the navbar or the
+ * account tray), it is the same window over the page the reader is on: a bug,
+ * the page's title in the subject, and the page, the screen and the browser
+ * sent with the message, which says so before it is sent.
+ *
  * Once sent, the window says so and the request is at the top of "Mes
  * demandes" behind it. Until then a click beside it or Escape closes it only
  * while nothing has been written: what was, the close button or "Annuler"
@@ -41,7 +46,19 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
   const formId = useId();
   // What a link wrote in advance (an error screen's incident, the Android
   // app's "Être prévenu"), the same as the public form does from its address.
-  const [prefill] = useState(() => newRequestPrefill(value));
+  // A report reads its page once, when it opens: the path and the title of
+  // what is under the window, and the screen it is seen on.
+  const [report] = useState(() =>
+    value === PAGE_REPORT_VALUE && typeof window !== "undefined"
+      ? {
+          page: window.location.pathname,
+          width: window.innerWidth,
+          height: window.innerHeight,
+          title: document.title,
+        }
+      : null,
+  );
+  const [prefill] = useState(() => newRequestPrefill(value, report?.title));
   const [theme, setTheme] = useState<string>(prefill?.theme ?? "");
   const [subject, setSubject] = useState(prefill?.subject ?? "");
   const [message, setMessage] = useState("");
@@ -66,7 +83,16 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
       return;
     }
     start(() => {
-      void fileRequestAction({ theme, subject: subject.trim(), message: message.trim() }).then(
+      const sent = { theme, subject: subject.trim(), message: message.trim() };
+      const filing =
+        report === null
+          ? fileRequestAction(sent)
+          : fileRequestAction(sent, {
+              page: report.page,
+              width: report.width,
+              height: report.height,
+            });
+      void filing.then(
         (res) => {
           if (res.ok) {
             setTicketId(res.ticketId);
@@ -122,7 +148,7 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
       open
       onClose={onClose}
       eyebrow="Support"
-      title="Nouvelle demande"
+      title={report === null ? "Nouvelle demande" : "Signaler un souci"}
       className="community-dialog request-dialog"
       meta="L'équipe te répond ici et par e-mail, à l'adresse de ton compte."
       maxWidth={640}
@@ -222,7 +248,11 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
             minLength={TICKET_MESSAGE_MIN}
             maxLength={TICKET_MESSAGE_MAX}
             rows={7}
-            placeholder="Décris ta demande en détail…"
+            placeholder={
+              report === null
+                ? "Décris ta demande en détail…"
+                : "Ce que tu faisais, ce qui s'est passé, ce que tu attendais…"
+            }
             aria-describedby={
               fieldErrors?.message !== undefined ? `${formId}-message-error` : undefined
             }
@@ -233,6 +263,13 @@ export default function NewRequestDialog({ value, onClose }: QueryDialogProps): 
             </p>
           )}
         </div>
+
+        {report !== null && (
+          <p className="tk-new__context">
+            Envoyé avec ta demande : la page <code>{report.page}</code>, la taille de ton écran (
+            {report.width} × {report.height}) et ton navigateur.
+          </p>
+        )}
 
         {error !== null && (
           <p className="cls-alert" data-tone="bad" role="alert">

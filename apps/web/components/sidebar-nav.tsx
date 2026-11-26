@@ -7,6 +7,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useQueryDialog } from "@/hooks/use-query-dialog";
+import { REPORT_LABEL } from "@/components/report-button";
+import {
+  NEW_REQUEST_QUERY,
+  PAGE_REPORT_VALUE,
+} from "@/app/(app)/support/_components/new-request-query";
 import { AvatarView } from "@/components/avatar-view";
 import { BastionLogo } from "@/components/bastion-logo";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
@@ -203,6 +209,7 @@ export function SidebarNav({
   // Match this streamed component's server snapshot even when the provider hydrated first.
   const isMobile = useMediaQuery("(max-width: 1023px)");
   const [accountOpen, setAccountOpen] = useState(false);
+  const request = useQueryDialog(NEW_REQUEST_QUERY);
   // On mobile the sidebar is always shown expanded inside the drawer.
   const collapsed = !isMobile && state === "collapsed";
 
@@ -328,6 +335,19 @@ export function SidebarNav({
             >
               Support
             </Link>
+            {/* The navbar's report button, which a phone's bar has no room for. */}
+            <button
+              type="button"
+              className="sidebar-account-tray-btn sidebar-account-tray-btn--wide"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setAccountOpen(false);
+                if (isMobile) setOpenMobile(false);
+                request.open(PAGE_REPORT_VALUE);
+              }}
+            >
+              {REPORT_LABEL}
+            </button>
           </div>
         )}
         <div className="sidebar-account-row">

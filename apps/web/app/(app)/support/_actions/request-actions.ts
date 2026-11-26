@@ -20,21 +20,27 @@ import { fileAccountTicket, type FileTicketResult } from "@/lib/tickets/requeste
 
 export type { FileTicketResult };
 
-export async function fileRequestAction(input: {
-  subject: string;
-  theme: string;
-  message: string;
-}): Promise<FileTicketResult> {
+export async function fileRequestAction(
+  input: {
+    subject: string;
+    theme: string;
+    message: string;
+  },
+  /** « Signaler un souci »: the page and screen, validated by the service. */
+  report?: unknown,
+): Promise<FileTicketResult> {
   const user = await requireRequestUser();
   const headerStore = await headers();
   const ip = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
   // The input goes on as it came: the service reads the request's three fields
-  // from it, validated, and nothing else.
+  // from it, validated, and nothing else. The browser is read here, from the
+  // request, never from the form.
   const result = await fileAccountTicket({
     user: { id: user.id, email: user.email ?? null },
     ip,
     fields: input,
+    ...(report === undefined ? {} : { report, userAgent: headerStore.get("user-agent") }),
   });
   // The new request takes its place at the top of "Mes demandes".
   if (result.ok) revalidatePath("/support");
