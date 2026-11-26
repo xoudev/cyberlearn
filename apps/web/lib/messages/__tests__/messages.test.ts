@@ -16,6 +16,14 @@ const m = vi.hoisted(() => ({
   checkMessageSend: vi.fn(),
   checkMessageRequest: vi.fn(),
   reportContentFor: vi.fn(),
+  teamReplyAlert: vi.fn(),
+  alertTeamOfReply: vi.fn(),
+  thread: vi.fn(),
+  markRead: vi.fn(),
+  summaryFor: vi.fn(),
+  markTeamNoticesRead: vi.fn(),
+  inbox: vi.fn(),
+  resolveAvatarSrcMany: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -28,6 +36,12 @@ vi.mock("@cyberlearn/db", () => ({
     blockedEither: m.blockedEither,
     block: m.block,
     privacyOf: m.privacyOf,
+    teamReplyAlert: m.teamReplyAlert,
+    thread: m.thread,
+    markRead: m.markRead,
+    summaryFor: m.summaryFor,
+    markTeamNoticesRead: m.markTeamNoticesRead,
+    inbox: m.inbox,
     sideOf: (row: { userAId: string; userBId: string | null }, id: string) =>
       row.userAId === id ? "A" : row.userBId === id ? "B" : null,
   },
@@ -38,15 +52,16 @@ vi.mock("@cyberlearn/db", () => ({
 }));
 vi.mock("@/lib/moderation/announce", () => ({ announceModeration: m.announceModeration }));
 vi.mock("@/lib/moderation/content-report", () => ({ reportContentFor: m.reportContentFor }));
+vi.mock("../team-alert", () => ({ alertTeamOfReply: m.alertTeamOfReply }));
+vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
 vi.mock("@/lib/rate-limit", () => ({
   checkMessageSend: m.checkMessageSend,
   checkMessageRequest: m.checkMessageRequest,
 }));
 vi.mock("@cyberlearn/lib/logger", () => ({ logger: { error: vi.fn() }, errorMessage: String }));
 
-const { answerRequestFor, blockFor, reportMessageFor, sendMessageFor } = await import(
-  "../messages"
-);
+const { answerRequestFor, blockFor, inboxFor, reportMessageFor, sendMessageFor, threadFor } =
+  await import("../messages");
 
 /**
  * Sending a private message: the rules (@cyberlearn/lib/messages/rules)
@@ -77,6 +92,7 @@ beforeEach(() => {
   m.findDirect.mockResolvedValue(null);
   m.append.mockResolvedValue(MSG);
   m.startDirect.mockResolvedValue({ conversationId: CONV, messageId: MSG });
+  m.teamReplyAlert.mockResolvedValue(null);
 });
 
 describe("a first message", () => {
@@ -151,6 +167,48 @@ describe("a message in a conversation", () => {
       expect.objectContaining({ conversationId: CONV, senderId: ME, side: "A" }),
     );
     expect(m.screen).toHaveBeenCalledWith(expect.objectContaining({ allowLinks: true }));
+  });
+
+  it("tells the team of the first answer it has not read, after writing it", async () => {
+    m.findForMember.mockResolvedValue({
+      id: CONV,
+      kind: "TEAM",
+      userAId: ME,
+      userBId: null,
+      requestedById: null,
+      status: "ACCEPTED",
+    });
+    const alert = {
+      learner: { displayName: "Ada", username: "ada" },
+      recipients: [{ email: "claire@cyberlearn.test", displayName: "Claire" }],
+    };
+    m.teamReplyAlert.mockResolvedValue(alert);
+    expect((await sendMessageFor(ME, { conversationId: CONV, body: "Merci !" })).ok).toBe(true);
+    expect(m.teamReplyAlert).toHaveBeenCalledWith(CONV);
+    expect(m.alertTeamOfReply).toHaveBeenCalledWith({
+      conversationId: CONV,
+      reply: "Merci !",
+      ...alert,
+    });
+
+    m.alertTeamOfReply.mockClear();
+    m.teamReplyAlert.mockResolvedValue(null);
+    await sendMessageFor(ME, { conversationId: CONV, body: "Et encore une chose" });
+    expect(m.alertTeamOfReply).not.toHaveBeenCalled();
+  });
+
+  it("never alerts the team about two learners' conversation", async () => {
+    m.findForMember.mockResolvedValue({
+      id: CONV,
+      kind: "DIRECT",
+      userAId: ME,
+      userBId: YOU,
+      requestedById: ME,
+      status: "ACCEPTED",
+    });
+    await sendMessageFor(ME, { conversationId: CONV, body: "Salut" });
+    expect(m.teamReplyAlert).not.toHaveBeenCalled();
+    expect(m.alertTeamOfReply).not.toHaveBeenCalled();
   });
 
   it("lets a learner answer the team without accepting anything", async () => {
@@ -232,5 +290,69 @@ describe("requests, blocks and reports", () => {
       contentId: MSG,
       reason: "HATE",
     });
+  });
+});
+
+describe("reading the team's conversation", () => {
+  it("marks the same message read in the bell", async () => {
+    m.thread.mockResolvedValue({ messages: [], hasMore: false });
+    m.summaryFor.mockResolvedValue({ id: CONV, kind: "TEAM", unread: true });
+    expect((await threadFor(ME, { conversationId: CONV })).ok).toBe(true);
+    expect(m.markRead).toHaveBeenCalledWith(ME, CONV);
+    expect(m.markTeamNoticesRead).toHaveBeenCalledWith(ME, CONV);
+  });
+
+  it("leaves the bell alone for two learners' conversation", async () => {
+    m.thread.mockResolvedValue({ messages: [], hasMore: false });
+    m.summaryFor.mockResolvedValue({ id: CONV, kind: "DIRECT", unread: true });
+    await threadFor(ME, { conversationId: CONV });
+    expect(m.markTeamNoticesRead).not.toHaveBeenCalled();
+  });
+});
+
+describe("photos in the panel", () => {
+  const person = (id: string, avatarUrl: string | null) => ({
+    id,
+    username: id,
+    displayName: id,
+    avatarUrl,
+    level: 1,
+  });
+  const conversation = (id: string, other: ReturnType<typeof person> | null) => ({
+    id,
+    kind: other === null ? "TEAM" : "DIRECT",
+    other,
+    status: "ACCEPTED",
+    outgoingRequest: false,
+    incomingRequest: false,
+    lastMessage: { body: "x", mine: false, createdAt: new Date() },
+    unread: true,
+    lastMessageAt: new Date(),
+  });
+
+  it("signs the photos people uploaded, and leaves the stock avatars to initials", async () => {
+    m.inbox.mockResolvedValue([
+      conversation("c-1", person("ada", "__upload:ada/photo.webp")),
+      conversation("c-2", person("ines", "/avatars/03.png")),
+      conversation("c-3", null),
+    ]);
+    m.resolveAvatarSrcMany.mockResolvedValue(["https://signed/ada", null, null]);
+
+    const { conversations, unread } = await inboxFor(ME);
+
+    expect(m.resolveAvatarSrcMany).toHaveBeenCalledWith(["__upload:ada/photo.webp", null, null]);
+    expect(conversations.map((c) => c.other?.photo ?? null)).toEqual([
+      "https://signed/ada",
+      null,
+      null,
+    ]);
+    expect(unread).toBe(3);
+  });
+
+  it("signs nothing when nobody uploaded a photo", async () => {
+    m.inbox.mockResolvedValue([conversation("c-2", person("ines", "/avatars/03.png"))]);
+    const { conversations } = await inboxFor(ME);
+    expect(m.resolveAvatarSrcMany).not.toHaveBeenCalled();
+    expect(conversations[0]?.other?.photo).toBeNull();
   });
 });

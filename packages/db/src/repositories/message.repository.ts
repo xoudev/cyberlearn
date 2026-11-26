@@ -7,6 +7,12 @@ import {
   type ConversationStatusValue,
   type MessagePrivacyValue,
 } from "@cyberlearn/lib/messages/rules";
+import {
+  readTeamNotice,
+  TEAM_NOTICE_TITLE,
+  teamMessageSeenAt,
+  type TeamNoticeRead,
+} from "@cyberlearn/lib/messages/team";
 import { prisma } from "../prisma.js";
 
 /**
@@ -40,7 +46,14 @@ const LAST_MESSAGE = {
   where: { isHidden: false },
   orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   take: 1,
-  select: { id: true, body: true, senderId: true, fromTeam: true, createdAt: true },
+  select: {
+    id: true,
+    body: true,
+    senderId: true,
+    fromTeam: true,
+    createdAt: true,
+    seenAt: true,
+  },
 } satisfies Prisma.Conversation$messagesArgs;
 
 const CONVERSATION = {
@@ -359,7 +372,10 @@ export const messageRepository = {
     return count > 0;
   },
 
-  /** Marks the conversation read by this account, up to now. */
+  /**
+   * Marks the conversation read by this account, up to now, and stamps the
+   * other side's messages it had not seen yet: the moment each was first seen.
+   */
   async markRead(userId: string, conversationId: string): Promise<boolean> {
     const now = new Date();
     const [a, b] = await prisma.$transaction([
@@ -372,7 +388,18 @@ export const messageRepository = {
         data: { userBLastReadAt: now },
       }),
     ]);
-    return a.count + b.count > 0;
+    const member = a.count + b.count > 0;
+    if (member) {
+      await prisma.directMessage.updateMany({
+        where: {
+          conversationId,
+          seenAt: null,
+          OR: [{ fromTeam: true }, { senderId: null }, { senderId: { not: userId } }],
+        },
+        data: { seenAt: now },
+      });
+    }
+    return member;
   },
 
   // ── Blocks ────────────────────────────────────────────────────────────────
@@ -460,6 +487,34 @@ export const messageRepository = {
     return { conversationId: conversation.id, messageId };
   },
 
+  /**
+   * The team notices these learners read, by conversation: what says, with
+   * the conversation's own read mark, whether a message from the team was
+   * seen (@cyberlearn/lib/messages/team).
+   */
+  async teamNoticesRead(learnerIds: readonly string[]): Promise<Map<string, TeamNoticeRead[]>> {
+    const byConversation = new Map<string, TeamNoticeRead[]>();
+    if (learnerIds.length === 0) return byConversation;
+    const rows = await prisma.notification.findMany({
+      where: {
+        userId: { in: [...learnerIds] },
+        type: "ANNOUNCEMENT",
+        title: TEAM_NOTICE_TITLE,
+        readAt: { not: null },
+      },
+      select: { readAt: true, metadata: true },
+    });
+    for (const row of rows) {
+      const notice = readTeamNotice(row.metadata, row.readAt);
+      if (notice === null) continue;
+      byConversation.set(notice.conversationId, [
+        ...(byConversation.get(notice.conversationId) ?? []),
+        notice,
+      ]);
+    }
+    return byConversation;
+  },
+
   /** The learners' conversations with the team, newest first, for the console's inbox. */
   async teamInbox(page: { skip: number; take: number }) {
     const where: Prisma.ConversationWhereInput = { kind: "TEAM" };
@@ -474,11 +529,13 @@ export const messageRepository = {
           id: true,
           lastMessageAt: true,
           teamLastReadAt: true,
+          userALastReadAt: true,
           userA: { select: { ...PERSON, email: true } },
           messages: LAST_MESSAGE,
         },
       }),
     ]);
+    const notices = await this.teamNoticesRead(rows.map((row) => row.userA.id));
     return {
       total,
       rows: rows.map((row) => {
@@ -492,6 +549,14 @@ export const messageRepository = {
             last !== undefined &&
             !last.fromTeam &&
             (row.teamLastReadAt === null || last.createdAt > row.teamLastReadAt),
+          /**
+           * When the learner saw the team's last word, when the team spoke
+           * last; null while unseen, and when the learner spoke last.
+           */
+          seenAt:
+            last?.fromTeam === true
+              ? teamMessageSeenAt(last, row.userALastReadAt, notices.get(row.id) ?? [])
+              : null,
         };
       }),
     };
@@ -513,12 +578,16 @@ export const messageRepository = {
     }).length;
   },
 
-  /** A learner's conversation with the team, whole, for the console: who wrote each message. */
+  /**
+   * A learner's conversation with the team, whole, for the console: who wrote
+   * each message, and when the learner saw each of the team's.
+   */
   async teamThread(conversationId: string) {
-    return prisma.conversation.findFirst({
+    const conversation = await prisma.conversation.findFirst({
       where: { id: conversationId, kind: "TEAM" },
       select: {
         id: true,
+        userALastReadAt: true,
         userA: { select: { ...PERSON, email: true } },
         messages: {
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -529,10 +598,84 @@ export const messageRepository = {
             fromTeam: true,
             isHidden: true,
             createdAt: true,
+            seenAt: true,
             sender: { select: { id: true, displayName: true, username: true } },
           },
         },
       },
+    });
+    if (conversation === null) return null;
+    const notices =
+      (await this.teamNoticesRead([conversation.userA.id])).get(conversation.id) ?? [];
+    return {
+      ...conversation,
+      messages: conversation.messages.map((m) => ({
+        ...m,
+        seenAt: m.fromTeam ? teamMessageSeenAt(m, conversation.userALastReadAt, notices) : null,
+      })),
+    };
+  },
+
+  /**
+   * Who to tell that a learner is answering the team, read before the answer
+   * is written; null when nobody needs telling.
+   *
+   * Only for an answer the team has nothing unread before: one e-mail when a
+   * learner starts answering, not one per line of their answer. It goes to the
+   * administrator who wrote the team's last message, who knows what it is
+   * about; to every administrator when that account is gone or no longer one.
+   */
+  async teamReplyAlert(conversationId: string): Promise<{
+    learner: { displayName: string; username: string | null };
+    recipients: { email: string; displayName: string }[];
+  } | null> {
+    const conversation = await prisma.conversation.findFirst({
+      where: { id: conversationId, kind: "TEAM" },
+      select: {
+        teamLastReadAt: true,
+        userA: { select: { displayName: true, username: true } },
+        messages: LAST_MESSAGE,
+      },
+    });
+    if (conversation === null) return null;
+    const last = conversation.messages[0];
+    const waiting =
+      last !== undefined &&
+      !last.fromTeam &&
+      (conversation.teamLastReadAt === null || last.createdAt > conversation.teamLastReadAt);
+    if (waiting) return null;
+
+    const lastFromTeam = await prisma.directMessage.findFirst({
+      where: { conversationId, fromTeam: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { sender: { select: { email: true, displayName: true, role: true } } },
+    });
+    const writer = lastFromTeam?.sender;
+    const recipients =
+      writer?.role === "ADMIN"
+        ? [{ email: writer.email, displayName: writer.displayName }]
+        : await prisma.user.findMany({
+            where: { role: "ADMIN" },
+            select: { email: true, displayName: true },
+          });
+    if (recipients.length === 0) return null;
+    return { learner: conversation.userA, recipients };
+  },
+
+  /**
+   * Marks read the team notices of one conversation: the learner opened it in
+   * the panel, so the same text waiting in their bell is read too.
+   */
+  async markTeamNoticesRead(userId: string, conversationId: string): Promise<void> {
+    await prisma.notification.updateMany({
+      where: {
+        userId,
+        readAt: null,
+        type: "ANNOUNCEMENT",
+        title: TEAM_NOTICE_TITLE,
+        metadata: { path: ["teamConversationId"], equals: conversationId },
+      },
+      data: { readAt: new Date() },
     });
   },
 

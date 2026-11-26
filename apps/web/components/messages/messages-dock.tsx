@@ -8,7 +8,8 @@ import React, { useCallback, useEffect, useRef, useState, useTransition } from "
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { MESSAGE_BODY_MAX } from "@cyberlearn/lib/messages/rules";
 import { NOTE_REPORT_REASON_LABELS } from "@cyberlearn/lib/notes/report-reasons";
-import type { ConversationSummary, ThreadMessage } from "@cyberlearn/db";
+import type { ThreadMessage } from "@cyberlearn/db";
+import type { ConversationView as ConversationSummary } from "@/lib/messages/messages";
 import {
   answerRequestAction,
   blockConversationAction,
@@ -26,6 +27,8 @@ interface Person {
   id: string;
   displayName: string;
   username: string | null;
+  /** Their own photo, when they uploaded one; initials otherwise. */
+  photo?: string | null;
 }
 
 type View =
@@ -71,6 +74,14 @@ function Avatar({ person, team }: { person: Person | null; team?: boolean }): Re
           <path d="M9 12l2 2 4-4" />
         </svg>
       </span>
+    );
+  }
+  if (typeof person.photo === "string") {
+    return (
+      // A signed address of a private bucket, valid for a short while: not
+      // something next/image can cache or optimise.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img className="msg-avatar" src={person.photo} alt="" aria-hidden="true" />
     );
   }
   return (
@@ -336,6 +347,18 @@ export function MessagesDock({ userId }: { userId: string }): React.JSX.Element 
                   </p>
                 )}
               </div>
+              {/* The settings drawer catches this link and opens on the section. */}
+              <footer className="msg-foot">
+                <a
+                  href="/settings/privacy"
+                  className="msg-link-btn"
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                >
+                  Comptes bloqués et qui peut m&apos;écrire
+                </a>
+              </footer>
             </>
           )}
 
@@ -437,7 +460,13 @@ function NewMessage({
 }): React.JSX.Element {
   const [q, setQ] = useState("");
   const [people, setPeople] = useState<
-    { id: string; username: string | null; displayName: string; friend: boolean }[]
+    {
+      id: string;
+      username: string | null;
+      displayName: string;
+      photo: string | null;
+      friend: boolean;
+    }[]
   >([]);
   const [, startTransition] = useTransition();
 
@@ -589,7 +618,11 @@ function Conversation({
   const block = (): void => {
     if (conversationId === null) return;
     setMenu(false);
-    if (!window.confirm(`Bloquer ${title} ? Vous ne pourrez plus vous écrire, ni l'un ni l'autre.`))
+    if (
+      !window.confirm(
+        `Bloquer ${title} ? Vous ne pourrez plus vous écrire, ni l'un ni l'autre. Tu pourras le débloquer dans Paramètres, Confidentialité.`,
+      )
+    )
       return;
     startTransition(async () => {
       const res = await blockConversationAction({ conversationId });

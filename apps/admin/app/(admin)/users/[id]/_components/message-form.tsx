@@ -90,7 +90,8 @@ export function MessageForm({
           ) : (
             <Link href="/messages">Messages</Link>
           )}
-          .
+          , et sa première réponse t&apos;arrive aussi par e-mail. La conversation dit quand le
+          message a été vu.
         </p>
         <label className="a-field">
           <span className="a-label">Message</span>

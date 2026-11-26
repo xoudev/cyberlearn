@@ -94,6 +94,13 @@ export default async function MessagesPage({
                         </span>
                       </span>
                       {row.unread && <Tag tone="warning">À lire</Tag>}
+                      {/* The team spoke last: has the learner seen it yet? */}
+                      {row.lastMessage?.fromTeam === true &&
+                        (row.seenAt !== null ? (
+                          <Tag tone="success">Vu</Tag>
+                        ) : (
+                          <Tag tone="neutral">Pas encore vu</Tag>
+                        ))}
                       <span className="mono a-field-hint">{stamp(row.lastMessageAt)}</span>
                     </Link>
                   </li>

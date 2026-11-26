@@ -6,8 +6,10 @@ import {
   UNACTIONED_SURFACE,
   userRepository,
   type ConversationSummary,
+  type MessagePerson,
   type ThreadMessage,
 } from "@cyberlearn/db";
+import { isUploadedAvatar } from "@cyberlearn/types";
 import { FLAG_BUDGET_MESSAGE } from "@cyberlearn/lib";
 import { labelRules } from "@cyberlearn/lib/moderation/labels";
 import {
@@ -22,7 +24,9 @@ import {
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { announceModeration } from "@/lib/moderation/announce";
 import { reportContentFor, type ContentReportResult } from "@/lib/moderation/content-report";
+import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { checkMessageRequest, checkMessageSend } from "@/lib/rate-limit";
+import { alertTeamOfReply } from "./team-alert";
 
 /**
  * Private messages: the conversations a learner has, the threads, sending,
@@ -61,11 +65,38 @@ function refused(refusal: MessageRefusal): { ok: false; error: string } {
 
 const SEND_FAILED = "Le message n'a pas pu partir. Réessaie.";
 
+/** A person as the panel draws them: their own photo, when they uploaded one. */
+export type MessagePersonView = MessagePerson & { photo: string | null };
+
+/** A conversation as the panel draws it. */
+export type ConversationView = Omit<ConversationSummary, "other"> & {
+  other: MessagePersonView | null;
+};
+
+/**
+ * The photos of these avatars, signed, for those who uploaded their own;
+ * null for the rest. The eight stock avatars and the glyphs tell nobody apart
+ * in a list of conversations, so the panel shows initials for them.
+ */
+async function photosOf(avatars: readonly (string | null)[]): Promise<(string | null)[]> {
+  const uploaded = avatars.map((a) => (isUploadedAvatar(a) ? a : null));
+  if (uploaded.every((a) => a === null)) return uploaded;
+  return resolveAvatarSrcMany(uploaded);
+}
+
+async function withPhotos(list: readonly ConversationSummary[]): Promise<ConversationView[]> {
+  const photos = await photosOf(list.map((c) => c.other?.avatarUrl ?? null));
+  return list.map((c, i) => ({
+    ...c,
+    other: c.other === null ? null : { ...c.other, photo: photos[i] ?? null },
+  }));
+}
+
 /** The account's conversations, and how many of them have something unread. */
 export async function inboxFor(
   userId: string,
-): Promise<{ conversations: ConversationSummary[]; unread: number }> {
-  const conversations = await messageRepository.inbox(userId);
+): Promise<{ conversations: ConversationView[]; unread: number }> {
+  const conversations = await withPhotos(await messageRepository.inbox(userId));
   return { conversations, unread: conversations.filter((c) => c.unread).length };
 }
 
@@ -82,7 +113,7 @@ export async function threadFor(
   userId: string,
   input: unknown,
 ): Promise<
-  MessageResult<{ conversation: ConversationSummary; messages: ThreadMessage[]; hasMore: boolean }>
+  MessageResult<{ conversation: ConversationView; messages: ThreadMessage[]; hasMore: boolean }>
 > {
   const parsed = z
     .object({ conversationId: uuid, before: z.iso.datetime().optional() })
@@ -99,7 +130,14 @@ export async function threadFor(
   if (before === undefined) await messageRepository.markRead(userId, conversationId);
   const conversation = await messageRepository.summaryFor(userId, conversationId);
   if (conversation === null) return refused("notFound");
-  return { ok: true, conversation: { ...conversation, unread: false }, ...page };
+  // The team's message also waits in the bell, the same text: read here, it
+  // is read there.
+  if (before === undefined && conversation.kind === "TEAM") {
+    await messageRepository.markTeamNoticesRead(userId, conversationId);
+  }
+  const [view] = await withPhotos([{ ...conversation, unread: false }]);
+  if (view === undefined) return refused("notFound");
+  return { ok: true, conversation: view, ...page };
 }
 
 /** The account's conversation with somebody, if they have one: what a profile's button opens. */
@@ -136,6 +174,7 @@ export async function sendMessageFor(
   let recipientId: string | null = null;
   let firstStatus: "ACCEPTED" | "REQUESTED" | null = null;
   let accepted: boolean;
+  let toTeam = false;
 
   const existing =
     "conversationId" in parsed.data
@@ -152,6 +191,7 @@ export async function sendMessageFor(
     if (row.kind === "TEAM") {
       // The learner's answer to the team: nothing to accept, nobody to block.
       accepted = true;
+      toTeam = true;
     } else {
       const other = side === "A" ? row.userBId : row.userAId;
       if (other === null) return refused("notFound");
@@ -225,12 +265,18 @@ export async function sendMessageFor(
   try {
     let messageId: string;
     if (conversationId !== null && side !== null) {
+      // Who to tell, read before the answer is written: only the first one
+      // the team has not read yet sends an e-mail.
+      const alert = toTeam ? await messageRepository.teamReplyAlert(conversationId) : null;
       messageId = await messageRepository.append({
         conversationId,
         senderId: userId,
         side,
         body: text,
       });
+      if (alert !== null) {
+        await alertTeamOfReply({ conversationId, reply: text, ...alert });
+      }
     } else if (recipientId !== null && firstStatus !== null) {
       const started = await messageRepository.startDirect({
         senderId: userId,
@@ -330,7 +376,8 @@ export async function recipientsFor(
       id: string;
       username: string | null;
       displayName: string;
-      avatarUrl: string | null;
+      /** Their own photo, signed, when they uploaded one. */
+      photo: string | null;
       friend: boolean;
     }[];
   }>
@@ -368,5 +415,17 @@ export async function recipientsFor(
       }
     }
   }
-  return { ok: true, people: matching.slice(0, 20) };
+  const shown = matching.slice(0, 20);
+  const photos = await photosOf(shown.map((p) => p.avatarUrl));
+  return {
+    ok: true,
+    // The stored avatar stays on the server: the panel gets the signed photo.
+    people: shown.map((p, i) => ({
+      id: p.id,
+      username: p.username,
+      displayName: p.displayName,
+      photo: photos[i] ?? null,
+      friend: p.friend,
+    })),
+  };
 }
