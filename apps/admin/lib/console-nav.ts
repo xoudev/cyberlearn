@@ -329,6 +329,7 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["crons", "Tâches planifiées"],
   ["account", "Mon compte"],
   ["ratings", "Avis"],
+  ["progress", "Progression"],
   ["flags", "Flags"],
   ["new", "Nouveau"],
   ["lessons/new", "Nouvelle"],

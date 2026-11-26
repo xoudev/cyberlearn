@@ -59,6 +59,27 @@ export const LESSON_RATINGS_HEADER = {
 
 export const LESSON_RATING_KPI_LABELS = ["Note moyenne", "Avis"] as const;
 
+export const LESSON_PROGRESS_HEADER = {
+  title: "Progression des apprenants",
+  description:
+    "Qui a commencé la leçon, qui l'a finie, et où s'arrêtent ceux qui ne reviennent pas : le dernier quiz auquel ils ont répondu, chaque section se débloquant par le sien. Les comptes de l'équipe ne sont pas comptés.",
+};
+
+export const LESSON_PROGRESS_KPI_LABELS = [
+  "Commencée",
+  "Terminée",
+  "Arrêtée en route",
+  "Bonnes réponses",
+] as const;
+
+export const LESSON_PROGRESS_COLUMNS: readonly GridColumn[] = [
+  { label: "#", sortable: true },
+  { label: "Question" },
+  { label: "Réponses", align: "right", sortable: true },
+  { label: "Bonnes réponses", align: "right", sortable: true },
+  { label: "Arrêtés après", align: "right", sortable: true },
+];
+
 export const LESSON_RATING_COLUMNS: readonly GridColumn[] = [
   { label: "Note" },
   { label: "Commentaire" },
