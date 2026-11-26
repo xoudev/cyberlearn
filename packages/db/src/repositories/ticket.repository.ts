@@ -249,7 +249,8 @@ export const ticketRepository = {
         message: input.message,
         email: input.email,
         userId: input.userId,
-        userAgent: input.userAgent ?? null,
+        // Written only when there is one: the contact form and the app send none.
+        ...(input.userAgent ? { userAgent: input.userAgent } : {}),
         status: "OPEN" satisfies TicketStatus,
       },
       select: { id: true },
