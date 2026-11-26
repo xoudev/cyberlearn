@@ -5,12 +5,13 @@ import {
   lessonBaseOf,
   lessonContentOf,
   lessonDraftRepository,
+  lessonQuizRepository,
   lessonRepository,
   lessonVersionRepository,
   pathRepository,
   ratingRepository,
 } from "@cyberlearn/db";
-import { PageHeader, Tag } from "../../../_components/admin-ui";
+import { Card, CardLink, PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
 import { RatingsCard } from "../../../_components/ratings-card";
 import { LESSON_CRUMBS } from "../../_components/lesson-headers";
@@ -48,12 +49,14 @@ export default async function LessonStudioPage({
   await requireAdminPage();
   const id = routeIdOrNotFound((await params).id);
 
-  const [lesson, draft, versions, ratings] = await Promise.all([
+  const [lesson, draft, versions, ratings, reach] = await Promise.all([
     lessonRepository.findForStudio(id),
     lessonDraftRepository.get(id),
     lessonVersionRepository.list(id),
     // The latest only: the card links to the page that holds every one.
     ratingRepository.findLessonRatings(id, LATEST_RATINGS),
+    // Two counts: where they stop is on the lesson's progress page.
+    lessonQuizRepository.startedAndCompleted(id),
   ]);
 
   if (!lesson) notFound();
@@ -204,6 +207,19 @@ export default async function LessonStudioPage({
           count={lesson.ratingsCount}
           allHref={`/lessons/${lesson.id}/ratings`}
         />
+        <Card
+          title="Progression des apprenants"
+          action={
+            <CardLink href={`/lessons/${lesson.id}/progress`}>Où ils s&apos;arrêtent →</CardLink>
+          }
+          pad
+        >
+          <p style={{ margin: 0, fontSize: 13, color: "var(--a-fg-2)" }}>
+            {reach.started === 0
+              ? "Aucun apprenant n'a encore ouvert cette leçon."
+              : `${reach.started.toLocaleString("fr-FR")} ${reach.started > 1 ? "l'ont" : "l'a"} commencée, ${reach.completed.toLocaleString("fr-FR")} ${reach.completed > 1 ? "l'ont" : "l'a"} terminée (${String(Math.round((reach.completed / reach.started) * 100))} %).`}
+          </p>
+        </Card>
       </div>
     </main>
   );

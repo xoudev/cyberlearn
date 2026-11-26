@@ -40,6 +40,45 @@ export const lessonQuizRepository = {
     });
   },
 
+  /**
+   * What the console's funnel of a lesson is read from (/lessons/[id]/progress,
+   * `lessonDropoff` of @cyberlearn/lib): the lesson's text, for its quizzes in
+   * order, every learner's progress on it and every answer to its quizzes.
+   * The team's own accounts are left out: their tests are not learners.
+   * Null when there is no such lesson.
+   */
+  async dropoffRows(lessonId: string) {
+    const learner = { role: { not: "ADMIN" as const } };
+    const [lesson, progress, answers] = await Promise.all([
+      prisma.lesson.findUnique({
+        where: { id: lessonId },
+        select: { id: true, title: true, contentMdx: true },
+      }),
+      prisma.userLessonProgress.findMany({
+        where: { lessonId, user: learner },
+        select: { userId: true, status: true, lastAccessedAt: true },
+      }),
+      prisma.lessonQuizAnswer.findMany({
+        where: { lessonId, user: learner },
+        select: { userId: true, quizId: true, correct: true, answeredAt: true },
+      }),
+    ]);
+    if (lesson === null) return null;
+    return { lesson, progress, answers };
+  },
+
+  /** How many learners opened the lesson and finished it, for the card on its console page. */
+  async startedAndCompleted(lessonId: string): Promise<{ started: number; completed: number }> {
+    const learner = { role: { not: "ADMIN" as const } };
+    const [started, completed] = await Promise.all([
+      prisma.userLessonProgress.count({
+        where: { lessonId, user: learner, status: { not: "NOT_STARTED" } },
+      }),
+      prisma.userLessonProgress.count({ where: { lessonId, user: learner, status: "COMPLETED" } }),
+    ]);
+    return { started, completed };
+  },
+
   async findForLesson(userId: string, lessonId: string): Promise<RecordedQuizAnswer[]> {
     return prisma.lessonQuizAnswer.findMany({
       where: { userId, lessonId },
